@@ -19,9 +19,28 @@ The `src` directory contains all the source code, organized into the following m
 
 The `tests` directory mirrors the `src` structure, containing automated tests for each corresponding module. ([details](./tests/README.md))
 
+## Technology Stack
+
+### Frontend
+- Vue
+- TypeScript
+- Vuetify
+
+### Backend
+- Cloudflare Worker with TypeScript
+- Cloudflare D1 (Sqlite like DB for data store)
+- Cloudflare KV for session cache
+- Cloudflare R2 for static content and images store
+
+### CI/CD and Hosting
+- Github Actions as CI
+- Cloudflare R2 as artifactory
+- Cloudflare Workflows as CD
+- Cloudflare as a hosting
+
 ## Development
 
-This project uses [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces). To install all dependencies for all modules, run:
+This project uses [npm workspaces](httpss://docs.npmjs.com/cli/v7/using-npm/workspaces). To install all dependencies for all modules, run:
 
 ```bash
 npm install
@@ -33,9 +52,8 @@ To build all modules, run:
 npm run build
 ```
 
-This project uses [Vitest](https://vitest.dev/) for testing. To run tests for all modules, run:
+This project uses [Vitest](httpss://vitest.dev/) for testing. To run tests for all modules, run:
 
 ```bash
 npm run test
 ```
-
