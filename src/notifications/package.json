@@ -1,0 +1,10 @@
+{
+  "name": "@strzel-sobie/notifications",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest",
+    "clean": "rm -rf dist",
+    "build": "tsc"
+  }
+}

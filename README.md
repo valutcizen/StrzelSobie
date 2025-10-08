@@ -18,3 +18,24 @@ The `src` directory contains all the source code, organized into the following m
 -   **`src/notifications`**: Responsible for sending email notifications for events like new propositions or confirmed reservations. ([details](./src/notifications/README.md))
 
 The `tests` directory mirrors the `src` structure, containing automated tests for each corresponding module. ([details](./tests/README.md))
+
+## Development
+
+This project uses [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces). To install all dependencies for all modules, run:
+
+```bash
+npm install
+```
+
+To build all modules, run:
+
+```bash
+npm run build
+```
+
+This project uses [Vitest](https://vitest.dev/) for testing. To run tests for all modules, run:
+
+```bash
+npm run test
+```
+
