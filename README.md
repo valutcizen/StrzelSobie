@@ -1,25 +1,28 @@
 # Strzel Sobie
 
-This repository contains the source code for the "Strzel Sobie" shooting range reservation system.
+[![License](https://img.shields.io/badge/License-Not%20Specified-blue.svg)](LICENSE)
 
-## Project Structure
+A specialized reservation management application for shooting ranges, designed to comply with Polish law.
 
-This project is built as a **modular monolith**. The backend source code is divided into independent modules, each responsible for a specific business domain. This approach promotes separation of concerns, making the application easier to develop, test, and maintain.
+## Table of Contents
 
-The `src` directory contains all the source code, organized into the following modules:
+- [Project Description](#project-description)
+- [Tech Stack](#tech-stack)
+- [Getting Started Locally](#getting-started-locally)
+- [Available Scripts](#available-scripts)
+- [Project Scope (MVP)](#project-scope-mvp)
+- [Project Status](#project-status)
+- [License](#license)
 
--   **`src/client`**: The Vue.js frontend application. ([details](./src/client/README.md))
--   **`src/worker`**: The Cloudflare Worker that acts as the API gateway and composition root, assembling the different backend modules to serve API requests. ([details](./src/worker/README.md))
--   **`src/common`**: Shared utilities, types, and constants that are not specific to any business domain. ([details](./src/common/README.md))
--   **`src/auth`**: Handles user authentication (login, passwords, sessions) and authorization (permissions). ([details](./src/auth/README.md))
--   **`src/users`**: Manages user accounts, profiles, roles, and the verification process for Members and Coordinators. ([details](./src/users/README.md))
--   **`src/reservations`**: Contains the core business logic for propositions, reservations, scheduling. ([details](./src/reservations/README.md))
--   **`src/admin`**: Implements the administrative functions for Range and Club Admins, such as managing range settings and logging external records. ([details](./src/admin/README.md))
--   **`src/notifications`**: Responsible for sending email notifications for events like new propositions or confirmed reservations. ([details](./src/notifications/README.md))
+## Project Description
 
-The `tests` directory mirrors the `src` structure, containing automated tests for each corresponding module. ([details](./tests/README.md))
+**Strzel Sobie** is a reservation management application for shooting ranges, specifically tailored to address a key requirement of Polish law: the mandatory presence of a licensed shooting coordinator ("prowadzący strzelanie") during shooting events.
 
-## Technology Stack
+The application solves this logistical challenge by integrating coordinators directly into the booking workflow. Regular users can propose a time for a shooting session, and available coordinators can view and accept these propositions, converting them into official, legally compliant reservations.
+
+The system is built with a robust role-based access control system to ensure users have appropriate permissions, from guests to club administrators. The initial MVP focuses on a single shooting range in Dobczyce, with an architecture designed for future expansion.
+
+## Tech Stack
 
 ### Frontend
 - Vue
@@ -28,32 +31,66 @@ The `tests` directory mirrors the `src` structure, containing automated tests fo
 
 ### Backend
 - Cloudflare Worker with TypeScript
-- Cloudflare D1 (Sqlite like DB for data store)
-- Cloudflare KV for session cache
-- Cloudflare R2 for static content and images store
+- Cloudflare D1 (SQLite-like database)
+- Cloudflare KV (Session cache)
+- Cloudflare R2 (Static content and image storage)
 
 ### CI/CD and Hosting
-- Github Actions as CI
-- Cloudflare R2 as artifactory
-- Cloudflare Workflows as CD
-- Cloudflare as a hosting
+- GitHub Actions (CI)
+- Cloudflare R2 (Artifactory)
+- Cloudflare Workflows (CD)
+- Cloudflare (Hosting)
 
-## Development
+## Getting Started Locally
 
-This project uses [npm workspaces](httpss://docs.npmjs.com/cli/v7/using-npm/workspaces). To install all dependencies for all modules, run:
+To set up the project for local development, follow these steps:
 
-```bash
-npm install
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/strzel-sobie.git
+    cd strzel-sobie
+    ```
 
-To build all modules, run:
+2.  **Install dependencies:**
+    The project uses npm workspaces. To install all dependencies for all modules, run the following command from the root directory:
+    ```bash
+    npm install
+    ```
 
-```bash
-npm run build
-```
+## Available Scripts
 
-This project uses [Vitest](httpss://vitest.dev/) for testing. To run tests for all modules, run:
+The following scripts are available to be run from the project's root directory:
 
-```bash
-npm run test
-```
+- `npm run build`: Builds all modules/workspaces.
+- `npm run test`: Runs the test suite for the entire project using Vitest.
+
+## Project Scope (MVP)
+
+### In Scope
+- A single shooting range (Dobczyce).
+- User roles: Guest, Member, Coordinator, Confirmator, Range Admin, Club/Community Admin.
+- Full lifecycle for propositions and reservations: creation, acceptance, modification by coordinator, cancellation.
+- Weekly calendar view with clear visual distinctions for different booking types.
+- Email notifications for core workflows.
+- Manual logging of external bookings ("Records") for metric tracking.
+- Basic conflict management (block user propositions on full slots, warn coordinators of overlaps).
+- An informational "Joinable Reservations" view (without in-app joining functionality).
+- UI in Polish and inclusion of a privacy policy.
+
+### Out of Scope
+- Support for multiple shooting ranges in the UI.
+- Splitting a single proposition among multiple coordinators.
+- Merging multiple propositions into a single reservation.
+- A formal waitlist system for fully booked time slots.
+- Maintenance of the official shooting range register book ("książka pobytu na strzelnicy").
+- Advanced range details (maps, photos, policies).
+- In-app mechanism for users to join "Joinable Reservations."
+- Multi-language support.
+
+## Project Status
+
+The project is currently in the **early stage of development**. The primary focus is on delivering the Minimum Viable Product (MVP) as defined in the project scope. The frontend has a placeholder `App.vue` and the core backend worker implementation is in progress.
+
+## License
+
+This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
