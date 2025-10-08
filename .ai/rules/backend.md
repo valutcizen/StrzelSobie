@@ -37,3 +37,7 @@
 - Use `async/await` syntax for all asynchronous operations.
 - Ensure every promise is handled with a `.catch()` or a `try/catch` block.
 - Use `Promise.all` and `Promise.allSettled` for efficient handling of concurrent operations.
+
+## PERSISTANCE
+- Every module has ownersip of DB tables, where name starts from module name
+- Every change needed to be done on not owned table, need to be performed by calling module that own the table
