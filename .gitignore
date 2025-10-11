@@ -1,4 +1,5 @@
 .ai/history
+dist/
 
 # Node.js
 node_modules/
