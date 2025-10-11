@@ -28,6 +28,7 @@
 
 - Every endpoint must be documented using OpenAPI 3.0+ specifications.
 - Automatically generate Swagger/OpenAPI documentation from code comments or decorators.
+- Use `chanfana`'s `OpenAPIRoute` to define endpoints and their schemas. Schemas should be defined using `zod` to match the DTOs from the `common` module.
 - Documentation must include:
   - A clear summary and description of the endpoint's purpose.
   - Detailed descriptions of all request parameters (path, query, header, cookie).
