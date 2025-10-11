@@ -105,3 +105,6 @@ jspm_packages/
 
 # TernJS port file
 .tern-port
+
+# TypeScript build info files
+*.tsbuildinfo
