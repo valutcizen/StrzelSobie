@@ -119,7 +119,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 **`reservations_records`**
 
 *   **Owner**: `reservations`
-*   **Description**: Manual entries for off-system bookings (e.g., walk-ins), used for tracking metrics. Conceptually, these are post-factum reservations created by an administrator.
+*   **Description**: Manual entries for off-system bookings (e.g., walk-ins), used for tracking metrics. While created by a user with administrative privileges, these are conceptually post-factum reservations and thus belong to the reservations domain.
 
 | Column Name | Data Type | Constraints | Description |
 | --- | --- | --- | --- |

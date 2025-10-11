@@ -72,7 +72,7 @@ The following scripts are available to be run from the project's root directory:
 - Full lifecycle for propositions and reservations: creation, acceptance, modification by coordinator, cancellation.
 - Weekly calendar view with clear visual distinctions for different booking types.
 - Email notifications for core workflows.
-- Manual logging of external bookings ("Records") for metric tracking.
+- Manual logging of external bookings ("Records") for metric tracking, which is part of the reservations domain.
 - Basic conflict management (block user propositions on full slots, warn coordinators of overlaps).
 - An informational "Joinable Reservations" view (without in-app joining functionality).
 - UI in Polish and inclusion of a privacy policy.

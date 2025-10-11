@@ -13,7 +13,7 @@ Standard booking and reservation applications available on the market do not add
   - Member: A verified member of the club/community. Their propositions are visually highlighted.
   - Coordinator: A user with a verified shooting coordinator license. Can create reservations directly and convert user propositions into reservations.
   - Confirmator: An administrative role responsible for verifying user memberships and licenses, granting "Member" or "Coordinator" status.
-  - Shooting Range Administrator: Manages the settings and schedule for a specific shooting range, including logging manual bookings.
+  - Shooting Range Administrator: Manages the settings for a specific shooting range.
   - Club/Community Administrator (Main Admin): Has global permissions to manage users, roles, and system settings.
 - Public users can self-register for a "Guest" account.
 - The initial Club/Community Administrator (superuser) account will be created via a one-time deployment script.
@@ -26,6 +26,7 @@ Standard booking and reservation applications available on the market do not add
 - Coordinators can modify a proposition's details (e.g., time, tracks) before accepting it. For the MVP, the original user does not need to re-confirm these changes.
 - Coordinators can create "Reservations" directly without a preceding proposition.
 - A "Cancel and Re-propose" function will allow coordinators to revert a reservation back into an active proposition.
+- Range Administrators can manually log "Records" for shootings that were booked outside the application (e.g., walk-ins) to ensure accurate success metric tracking. This is considered part of the reservation domain.
 
 ### 3.3. Scheduling, Calendar, and Conflict Management
 - A weekly calendar view will be the primary interface for viewing the range schedule.
@@ -201,7 +202,7 @@ Standard booking and reservation applications available on the market do not add
 
 - ID: US-014
 - Title: Log External Booking (Record)
-- Description: As a Range Administrator, I want to log a shooting that happened without being booked through the app to ensure our metrics are accurate.
+- Description: As a Range Administrator, I want to log a shooting that happened without being booked through the app to ensure our metrics are accurate. This functionality is part of the reservations domain.
 - Acceptance Criteria:
   - I have an interface to create a "Record".
   - I can enter the date, time, and number of participants for the external booking.

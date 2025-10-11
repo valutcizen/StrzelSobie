@@ -35,6 +35,7 @@ When editing files, please adhere to the following rulesets:
 **Backend modules** (`src/auth`, `src/users`, `src/reservations`, `src/admin`, `src/notifications`): Use the rules defined in `.ai/rules/backend.md`.
 **Client module** (`src/client`): Use the rules defined in `.ai/rules/client.md`.
 **Worker module** (`src/worker`): Use the rules defined in `.ai/rules/worker.md`.
+**Data Flow**: Use the rules defined in `.ai/rules/data-flow.md`.
 
 The project uses npm workspaces to manage the different modules. Each module has its own `package.json` file. The backend is designed to be a set of independent modules that are composed together in the Cloudflare Worker. The frontend is a standard Vue.js application.
 
