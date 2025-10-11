@@ -38,8 +38,9 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 
 | Column Name | Data Type | Constraints | Description |
 | --- | --- | --- | --- |
-| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique identifier for the role. |
+| `id` | INTEGER | PRIMARY KEY | Unique identifier for the role. |
 | `name` | TEXT | NOT NULL, UNIQUE | The name of the role (e.g., "Member"). |
+| `scope` | TEXT | NOT NULL | The scope of the role ('global' or 'range'). |
 
 **`users_user_global_roles`**
 
@@ -115,10 +116,10 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | `is_joinable` | INTEGER | NOT NULL, DEFAULT 0 | `1` if Members can join, `0` otherwise. |
 | `created_at` | TEXT | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp of when the reservation was created. |
 
-**`admin_records`**
+**`reservations_records`**
 
-*   **Owner**: `admin`
-*   **Description**: Manual entries for off-system bookings, used for tracking metrics.
+*   **Owner**: `reservations`
+*   **Description**: Manual entries for off-system bookings (e.g., walk-ins), used for tracking metrics. Conceptually, these are post-factum reservations created by an administrator.
 
 | Column Name | Data Type | Constraints | Description |
 | --- | --- | --- | --- |
@@ -154,8 +155,8 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
   Deleting a user or role will cascade and remove the corresponding entries in these join tables.
 - **User and Proposition**: A one-to-many relationship (`users_users` 1-to-N `reservations_propositions`).
 - **Proposition and Reservation**: An optional one-to-one relationship (`reservations_propositions` 1-to-1 `reservations_reservations`).
-- **User and Reservation/Record**: A one-to-many relationship where a `coordinator_id` in `reservations_reservations` or an `admin_id` in `admin_records` links back to `users_users`.
-- **Shooting Range and Events**: A one-to-many relationship (`admin_shooting_ranges` 1-to-N `reservations_propositions`/`reservations_reservations`/`admin_records`).
+- **User and Reservation/Record**: A one-to-many relationship where a `coordinator_id` in `reservations_reservations` or an `admin_id` in `reservations_records` links back to `users_users`.
+- **Shooting Range and Events**: A one-to-many relationship (`admin_shooting_ranges` 1-to-N `reservations_propositions`/`reservations_reservations`/`reservations_records`).
 
 ### 5. Indexes
 
@@ -163,7 +164,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 - **Composite Indexes for Calendar Performance**: To optimize queries that filter by shooting range and then by date, the following indexes are created:
   - `CREATE INDEX idx_propositions_range_date ON reservations_propositions(range_id, event_date);`
   - `CREATE INDEX idx_reservations_range_date ON reservations_reservations(range_id, event_date);`
-  - `CREATE INDEX idx_records_range_date ON admin_records(range_id, event_date);`
+  - `CREATE INDEX idx_records_range_date ON reservations_records(range_id, event_date);`
 
 ### 6. Row-Level Security (RLS)
 

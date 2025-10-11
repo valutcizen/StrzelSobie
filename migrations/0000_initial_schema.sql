@@ -22,8 +22,9 @@ CREATE TABLE users_users (
 -- Defines all possible user roles within the system.
 -- This table is pre-populated with initial data (see bottom of file).
 CREATE TABLE users_roles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE -- e.g., 'Member', 'Coordinator', 'Shooting Range Administrator'.
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE, -- e.g., 'Member', 'Coordinator', 'Shooting Range Administrator'.
+    scope TEXT NOT NULL -- The scope of the role ('global' or 'range').
 );
 
 -- Assigns system-wide (global) roles to users.
@@ -78,20 +79,6 @@ CREATE TABLE admin_shooting_ranges (
     operating_hours TEXT NOT NULL -- e.g., '{"monday": {"open": "09:00", "close": "17:00"}, ...}'
 );
 
--- Manual entries for off-system bookings, used for tracking metrics.
-CREATE TABLE admin_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    admin_id INTEGER NOT NULL, -- The administrator who logged the record.
-    range_id INTEGER NOT NULL,
-    event_date TEXT NOT NULL, -- Format: 'YYYY-MM-DD'
-    start_time TEXT NOT NULL, -- Format: 'HH:MM'
-    end_time TEXT NOT NULL, -- Format: 'HH:MM'
-    num_participants INTEGER NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES users_users (id),
-    FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
-);
-
 -- A simple audit trail for logging key events in the system.
 CREATE TABLE admin_audit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,6 +129,20 @@ CREATE TABLE reservations_reservations (
     FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
 );
 
+-- Manual entries for off-system bookings, used for tracking metrics.
+CREATE TABLE reservations_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id INTEGER NOT NULL, -- The administrator who logged the record.
+    range_id INTEGER NOT NULL,
+    event_date TEXT NOT NULL, -- Format: 'YYYY-MM-DD'
+    start_time TEXT NOT NULL, -- Format: 'HH:MM'
+    end_time TEXT NOT NULL, -- Format: 'HH:MM'
+    num_participants INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES users_users (id),
+    FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
+);
+
 -- =============================================================================
 -- Indexes
 -- =============================================================================
@@ -149,16 +150,17 @@ CREATE TABLE reservations_reservations (
 -- Composite indexes to optimize calendar performance by filtering by range and then date.
 CREATE INDEX idx_propositions_range_date ON reservations_propositions(range_id, event_date);
 CREATE INDEX idx_reservations_range_date ON reservations_reservations(range_id, event_date);
-CREATE INDEX idx_records_range_date ON admin_records(range_id, event_date);
+CREATE INDEX idx_records_range_date ON reservations_records(range_id, event_date);
 
 -- =============================================================================
 -- Data Seeding
 -- =============================================================================
 
 -- Pre-populates the roles table with the initial set of system roles.
-INSERT INTO users_roles (name) VALUES
-('Member'),
-('Coordinator'),
-('Confirmator'),
-('Shooting Range Administrator'),
-('Club/Community Administrator');
+INSERT INTO users_roles (id, name, scope) VALUES
+(1, 'Guest', 'global'),
+(2, 'Member', 'global'),
+(3, 'Coordinator', 'global'),
+(4, 'Confirmator', 'global'),
+(5, 'Shooting Range Administrator', 'range'),
+(6, 'Club/Community Administrator', 'global');
