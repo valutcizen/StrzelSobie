@@ -7,6 +7,7 @@
 - Isolate pure business logic from infrastructure concerns (Ports & Adapters).
 - Adhere strictly to the Single Responsibility Principle (SRP) for all classes and functions.
 - Structure modules internally into `domain`, `application`, and `infrastructure` layers.
+- Return domain-specific results (`Result` objects, DTOs) from application services, not HTTP-specific responses. The `worker` module is solely responsible for translating these results into HTTP status codes and payloads.
 
 ## TYPESCRIPT_BEST_PRACTICES
 
