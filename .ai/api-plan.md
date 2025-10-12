@@ -96,7 +96,7 @@ Example: `GET /api/v1/ranges`
 
 #### `GET /api/v1/roles`
 
--   **Description**: Retrieves a list of all available roles with their IDs and scopes. (Confirmator/Admin access).
+-   **Description**: Retrieves a list of all available roles with their IDs and scopes. (Club/Community Admin and Confirmator only).
 -   **Response Payload (Success)**:
     ```json
     [
@@ -113,7 +113,7 @@ Example: `GET /api/v1/ranges`
 
 ---
 
-### Users & Roles (Admin/Confirmator only)
+### Users & Roles (Club/Community Admin and Confirmator only)
 
 #### `GET /api/v1/users`
 
@@ -138,7 +138,7 @@ Example: `GET /api/v1/ranges`
 
 #### `POST /api/v1/users/{userId}/roles`
 
--   **Description**: Assigns a role to a user. (Confirmator/Admin access).
+-   **Description**: Assigns a role to a user. (Club/Community Admin and Confirmator only).
 -   **Request Payload**:
     ```json
     {
@@ -151,7 +151,7 @@ Example: `GET /api/v1/ranges`
 
 #### `DELETE /api/v1/users/{userId}/roles/{roleId}`
 
--   **Description**: Removes a role from a user. (Confirmator/Admin access).
+-   **Description**: Removes a role from a user. (Club/Community Admin and Confirmator only).
 -   **Query Parameters**: `rangeId` (optional, for range-specific roles).
 -   **Success Code**: `204 No Content`
 -   **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
