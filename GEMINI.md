@@ -13,6 +13,14 @@ To install all dependencies for all modules, run:
 npm install
 ```
 
+### Development
+
+To start the backend development server, run:
+
+```bash
+npm run dev:backend
+```
+
 ### Build
 
 To build all modules, run:
@@ -21,12 +29,31 @@ To build all modules, run:
 npm run build
 ```
 
+This will build both the frontend and the backend. You can also build them separately:
+
+- **Frontend:** `npm run build:frontend`
+- **Backend:** `npm run build:backend`
+
 ### Testing
 
 To run tests for all modules, run:
 
 ```bash
 npm run test
+```
+
+### Database
+
+To apply database migrations, run:
+
+```bash
+npm run db:migrate
+```
+
+To reset the database to its initial state with mock data, run:
+
+```bash
+npm run db:reset
 ```
 
 ## Development Conventions
