@@ -13,3 +13,11 @@ export class RegisteredUserDto {
   email!: string;
   roles!: string[];
 }
+
+export interface MeDto {
+  id: number;
+  email: string;
+  phoneNumber: string | null;
+  roles: string[];
+  rangeRoles: Record<string, string[]>;
+}

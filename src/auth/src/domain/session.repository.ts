@@ -1,5 +1,7 @@
+import { SessionData } from '@strzel-sobie/common';
+
 export interface ISessionRepository {
-  createSession(userId: number): Promise<string>;
-  getSession(token: string): Promise<number | null>;
+  createSession(session: SessionData): Promise<string>;
+  getSession(token: string): Promise<SessionData | null>;
   deleteSession(token: string): Promise<void>;
 }

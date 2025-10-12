@@ -1,4 +1,4 @@
-import { IUserService, UserIdentifierDto } from '@strzel-sobie/common';
+import { IUserService, MeDto, UserIdentifierDto } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
@@ -10,5 +10,9 @@ export class UserService implements IUserService {
 
   async createUser(email: string): Promise<UserIdentifierDto> {
     return this.userRepository.create(email);
+  }
+
+  async getFullUserProfile(userId: number): Promise<MeDto | null> {
+    return this.userRepository.getFullUserProfile(userId);
   }
 }

@@ -60,7 +60,7 @@ export class Login extends OpenAPIRoute {
     const result = await authService.login(data);
 
     if (result.isSuccess) {
-      const { token } = result.getValue();
+      const { token, session } = result.getValue();
       setCookie(c, 'session_token', token, {
         httpOnly: true,
         secure: true,
@@ -70,6 +70,8 @@ export class Login extends OpenAPIRoute {
 
       return c.json({
         message: 'Login successful.',
+        roles: session.roles,
+        rangeRoles: session.rangeRoles,
       });
     } else {
       return c.json(

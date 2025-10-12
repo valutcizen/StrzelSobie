@@ -2,6 +2,7 @@ import { fromHono } from 'chanfana';
 import { Hono } from 'hono';
 import { Login } from './endpoints/v1/auth/login';
 import { Logout } from './endpoints/v1/auth/logout';
+import { Me } from './endpoints/v1/auth/me';
 import { Register } from './endpoints/v1/auth/register';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
@@ -43,6 +44,7 @@ const openapi = fromHono(app, {
   docs_url: '/',
 });
 
+openapi.get('/api/v1/auth/me', Me);
 openapi.post('/api/v1/auth/register', Register);
 openapi.post('/api/v1/auth/login', Login);
 openapi.post('/api/v1/auth/logout', Logout);

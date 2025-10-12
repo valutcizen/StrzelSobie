@@ -6,6 +6,7 @@ import {
   RegisteredUserDto,
   RegisterUserRequestDto,
   Result,
+  SessionData,
 } from '@strzel-sobie/common';
 import { IAuthRepository } from '../domain/auth.repository';
 import { EmailAlreadyExistsError, InvalidCredentialsError } from '../domain/errors';
@@ -20,7 +21,7 @@ export class AuthService {
     private readonly adminService: IAdminService
   ) {}
 
-  public async login(dto: LoginUserDto): Promise<Result<{ token: string }, InvalidCredentialsError>> {
+  public async login(dto: LoginUserDto): Promise<Result<{ token: string, session: SessionData }, InvalidCredentialsError>> {
     const user = await this.userService.findUserByEmail(dto.email);
 
     if (!user) {
@@ -39,9 +40,34 @@ export class AuthService {
       return Result.fail(new InvalidCredentialsError());
     }
 
-    const token = await this.sessionRepository.createSession(user.id);
+    const userProfile = await this.userService.getFullUserProfile(user.id);
 
-    return Result.ok({ token });
+    if (!userProfile) {
+      // This should not happen if user exists
+      return Result.fail(new InvalidCredentialsError());
+    }
+
+    const session: SessionData = {
+      userId: userProfile.id,
+      email: userProfile.email,
+      phoneNumber: userProfile.phoneNumber,
+      roles: userProfile.roles,
+      rangeRoles: userProfile.rangeRoles,
+    };
+
+    const token = await this.sessionRepository.createSession(session);
+
+    return Result.ok({ token, session });
+  }
+
+  public async validateSession(token: string): Promise<Result<SessionData, Error>> {
+    const session = await this.sessionRepository.getSession(token);
+
+    if (!session) {
+      return Result.fail(new Error('Invalid session token'));
+    }
+
+    return Result.ok(session);
   }
 
   public async register(
@@ -93,4 +119,3 @@ export class AuthService {
     }
   }
 }
-""
