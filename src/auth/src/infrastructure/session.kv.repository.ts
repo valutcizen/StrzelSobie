@@ -14,4 +14,8 @@ export class SessionKvRepository implements ISessionRepository {
     const userId = await this.kv.get(token);
     return userId ? parseInt(userId, 10) : null;
   }
+
+  async deleteSession(token: string): Promise<void> {
+    await this.kv.delete(token);
+  }
 }

@@ -83,5 +83,14 @@ export class AuthService {
 
     return Result.ok(registeredUser);
   }
+
+  public async logout(sessionToken: string): Promise<Result<void, Error>> {
+    try {
+      await this.sessionRepository.deleteSession(sessionToken);
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
 }
 ""
