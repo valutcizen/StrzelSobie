@@ -1,5 +1,10 @@
 import { User, UserGlobalRole, UserRangeRole } from '../models/users.models';
 
+export type UserIdentifierDto = {
+  id: User['id'];
+  email: User['email'];
+};
+
 /**
  * DTO for a user.
  * Corresponds to an item in the `data` array for `GET /api/v1/users`.

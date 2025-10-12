@@ -1,14 +1,14 @@
-import { User } from '../domain/user.entity';
+import { IUserService, UserIdentifierDto } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
-export class UserService {
+export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string): Promise<UserIdentifierDto | null> {
     return this.userRepository.findByEmail(email);
   }
 
-  async createUser(email: string): Promise<User> {
+  async createUser(email: string): Promise<UserIdentifierDto> {
     return this.userRepository.create(email);
   }
 }

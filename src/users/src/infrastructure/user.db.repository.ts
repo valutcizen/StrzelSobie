@@ -1,11 +1,10 @@
 import { IUserRepository } from '../domain/user.repository';
-import { User } from '../domain/user.entity';
-import { IDatabase } from '@strzel-sobie/common';
+import { IDatabase, UserIdentifierDto } from '@strzel-sobie/common';
 
 export class UserDbRepository implements IUserRepository {
   constructor(private readonly db: IDatabase) {}
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserIdentifierDto | null> {
     const stmt = this.db.prepare('SELECT id, email FROM users_users WHERE email = ?');
     const result = await stmt.bind(email).first<{ id: number; email: string }>();
 
@@ -13,10 +12,10 @@ export class UserDbRepository implements IUserRepository {
       return null;
     }
 
-    return new User(result.id, result.email);
+    return { id: result.id, email: result.email };
   }
 
-  async create(email: string): Promise<User> {
+  async create(email: string): Promise<UserIdentifierDto> {
     const stmt = this.db.prepare('INSERT INTO users_users (email) VALUES (?) RETURNING id, email');
     const result = await stmt.bind(email).first<{ id: number; email: string }>();
 
@@ -25,6 +24,6 @@ export class UserDbRepository implements IUserRepository {
       throw new Error('Could not create user');
     }
 
-    return new User(result.id, result.email);
+    return { id: result.id, email: result.email };
   }
 }

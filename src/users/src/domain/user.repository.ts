@@ -1,6 +1,6 @@
-import { User } from './user.entity';
+import { UserIdentifierDto } from '@strzel-sobie/common';
 
 export interface IUserRepository {
-  findByEmail(email: string): Promise<User | null>;
-  create(email: string): Promise<User>;
+  findByEmail(email: string): Promise<UserIdentifierDto | null>;
+  create(email: string): Promise<UserIdentifierDto>;
 }
