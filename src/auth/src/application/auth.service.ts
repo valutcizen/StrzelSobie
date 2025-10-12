@@ -2,20 +2,47 @@ import {
   AuditLog,
   IAdminService,
   IUserService,
+  LoginUserDto,
   RegisteredUserDto,
   RegisterUserRequestDto,
   Result,
 } from '@strzel-sobie/common';
 import { IAuthRepository } from '../domain/auth.repository';
-import { EmailAlreadyExistsError } from '../domain/errors';
+import { EmailAlreadyExistsError, InvalidCredentialsError } from '../domain/errors';
 import * as bcrypt from 'bcryptjs';
+import { ISessionRepository } from '../domain/session.repository';
 
 export class AuthService {
   constructor(
     private readonly authRepository: IAuthRepository,
+    private readonly sessionRepository: ISessionRepository,
     private readonly userService: IUserService,
     private readonly adminService: IAdminService
   ) {}
+
+  public async login(dto: LoginUserDto): Promise<Result<{ token: string }, InvalidCredentialsError>> {
+    const user = await this.userService.findUserByEmail(dto.email);
+
+    if (!user) {
+      return Result.fail(new InvalidCredentialsError());
+    }
+
+    const credentials = await this.authRepository.findCredentialsByUserId(user.id);
+
+    if (!credentials) {
+      return Result.fail(new InvalidCredentialsError());
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, credentials.passwordHash);
+
+    if (!isPasswordValid) {
+      return Result.fail(new InvalidCredentialsError());
+    }
+
+    const token = await this.sessionRepository.createSession(user.id);
+
+    return Result.ok({ token });
+  }
 
   public async register(
     dto: RegisterUserRequestDto,

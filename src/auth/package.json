@@ -9,7 +9,11 @@
     "clean": "rm -rf dist",
     "build": "tsc"
   },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6"
+  },
   "dependencies": {
-    "@strzel-sobie/common": "file:../common"
+    "@strzel-sobie/common": "file:../common",
+    "bcryptjs": "^2.4.3"
   }
 }

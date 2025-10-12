@@ -1,19 +1,48 @@
-import { fromHono } from "chanfana";
-import { Hono } from "hono";
-import { RegisterUser } from "./endpoints/auth/register";
+import { fromHono } from 'chanfana';
+import { Hono } from 'hono';
+import { Login } from './endpoints/v1/auth/login';
+import { Register } from './endpoints/v1/auth/register';
+import { Env, Variables } from './types';
+import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
+import {
+  AuthDbRepository,
+  AuthService,
+  SessionKvRepository,
+} from '@strzel-sobie/auth';
+import { UserDbRepository, UserService } from '@strzel-sobie/users';
 
-// Start a Hono app
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// Setup OpenAPI registry
-const openapi = fromHono(app, {
-	docs_url: "/",
+// Middleware for setting up services
+app.use('*', async (c, next) => {
+  // Repositories
+  const authRepository = new AuthDbRepository(c.env.DB);
+  const sessionRepository = new SessionKvRepository(c.env.SESSIONS_KV);
+  const userRepository = new UserDbRepository(c.env.DB);
+  const adminRepository = new AdminDbRepository(c.env.DB);
+
+  // Services
+  const adminService = new AdminService(adminRepository);
+  const userService = new UserService(userRepository);
+  const authService = new AuthService(
+    authRepository,
+    sessionRepository,
+    userService,
+    adminService
+  );
+
+  c.set('authService', authService);
+  c.set('userService', userService);
+  c.set('adminService', adminService);
+
+  await next();
 });
 
-openapi.post('/api/v1/auth/register', RegisterUser);
+const openapi = fromHono(app, {
+  docs_url: '/',
+});
 
-// You may also register routes for non OpenAPI directly on Hono
-// app.get('/test', (c) => c.text('Hono!'))
+openapi.post('/api/v1/auth/register', Register);
+openapi.post('/api/v1/auth/login', Login);
 
-// Export the Hono app
 export default app;

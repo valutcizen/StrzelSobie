@@ -72,6 +72,7 @@
 
 - Standardize HTTP error responses across all endpoints.
 - Map internal service errors to appropriate HTTP status codes (e.g., 4xx for client errors, 5xx for server errors).
+- To send a JSON response with a specific status code, use the `c.json(body, statusCode)` method. Do not call `c.status()` and return a separate object, as this will result in a 200 OK status.
 - Return detailed error messages in a consistent JSON format, but avoid exposing sensitive internal details in production.
 - Implement a global error handler to catch unhandled exceptions and return a generic 500 Internal Server Error response.
 

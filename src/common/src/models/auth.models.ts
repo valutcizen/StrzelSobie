@@ -1,4 +1,4 @@
-export interface UserCredentials {
-  user_id: number;
-  password_hash: string;
+export interface AuthCredentials {
+  userId: number;
+  passwordHash: string;
 }
