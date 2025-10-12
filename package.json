@@ -6,7 +6,10 @@
   ],
   "scripts": {
     "build": "npm run build -w src/common && npm run build -w src/auth -w src/users -w src/reservations -w src/admin -w src/notifications && npm run build -w src/worker && npm run build -w src/client",
-    "test": "vitest"
+    "test": "vitest",
+    "db:migrate": "node scripts/generate-db-mock.mjs",
+    "db:reset": "node scripts/generate-db-mock.mjs --regenerate",
+    "dev-backend": "npm run dev -w @strzel-sobie/worker"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

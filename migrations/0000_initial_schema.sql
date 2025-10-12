@@ -141,12 +141,22 @@ CREATE TABLE reservations_records (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_id) REFERENCES users_users (id),
     FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
+    );
+
+-- =============================================================================
+-- Schema Migrations
+-- =============================================================================
+
+-- Tracks the applied database migrations.
+CREATE TABLE schema_migrations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    migration_name TEXT NOT NULL UNIQUE,
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================================================
 -- Indexes
 -- =============================================================================
-
 -- Composite indexes to optimize calendar performance by filtering by range and then date.
 CREATE INDEX idx_propositions_range_date ON reservations_propositions(range_id, event_date);
 CREATE INDEX idx_reservations_range_date ON reservations_reservations(range_id, event_date);
