@@ -4,6 +4,7 @@ import {
   IUserService,
   RegisteredUserDto,
   RegisterUserRequestDto,
+  Result,
 } from '@strzel-sobie/common';
 import { IAuthRepository } from '../domain/auth.repository';
 import { EmailAlreadyExistsError } from '../domain/errors';
@@ -20,11 +21,11 @@ export class AuthService {
     dto: RegisterUserRequestDto,
     sourceIp: string,
     proxiedIp: string
-  ): Promise<RegisteredUserDto> {
+  ): Promise<Result<RegisteredUserDto, EmailAlreadyExistsError>> {
     const existingUser = await this.userService.findUserByEmail(dto.email);
 
     if (existingUser) {
-      throw new EmailAlreadyExistsError(dto.email);
+      return Result.fail(new EmailAlreadyExistsError(dto.email));
     }
 
     const newUser = await this.userService.createUser(dto.email);
@@ -47,11 +48,13 @@ export class AuthService {
 
     // TODO: Assign default "Guest" role
 
-    return {
+    const registeredUser: RegisteredUserDto = {
       id: newUser.id,
       email: newUser.email,
       roles: ['Guest'], // Placeholder
     };
+
+    return Result.ok(registeredUser);
   }
 }
 ""

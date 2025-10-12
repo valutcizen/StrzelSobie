@@ -2,9 +2,14 @@
   "name": "@strzel-sobie/auth",
   "version": "1.0.0",
   "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "test": "vitest",
     "clean": "rm -rf dist",
     "build": "tsc"
+  },
+  "dependencies": {
+    "@strzel-sobie/common": "file:../common"
   }
 }
