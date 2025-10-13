@@ -16,7 +16,7 @@
 - Implement API versioning through URL paths (e.g., `/api/v1/...`).
 - Centralize cross-cutting concerns like authentication, rate limiting, and logging.
 
-## ENDPOINT_CREATION
+## ENDPOINT_DESIGN_PRINCIPLES
 
 - Follow RESTful principles for all API endpoints.
 - Use nouns for resource names (e.g., `/users`, `/reservations`).
@@ -24,17 +24,25 @@
 - Endpoints must be stateless; no session data should be stored on the worker.
 - All request and response bodies should use JSON.
 
-## SWAGGER_OPENAPI_DOCUMENTATION
-
-- Every endpoint must be documented using OpenAPI 3.0+ specifications.
-- Automatically generate Swagger/OpenAPI documentation from code comments or decorators.
-- Use `chanfana`'s `OpenAPIRoute` to define endpoints and their schemas. Schemas should be defined using `zod` to match the DTOs from the `common` module.
-- Documentation must include:
-  - A clear summary and description of the endpoint's purpose.
-  - Detailed descriptions of all request parameters (path, query, header, cookie).
-  - Example request and response bodies for all possible status codes.
-  - Clear definitions of all data schemas (DTOs).
-  - Security scheme requirements (e.g., JWT Bearer token).
+## ENDPOINT_IMPLEMENTATION_PATTERN
+- **Location and Structure:**
+  - All API endpoints MUST be located in `src/worker/src/endpoints/`.
+  - The directory structure MUST follow the pattern: `v<version>/<domain>/<endpoint-name>.ts` (e.g., `v1/auth/login.ts`).
+- **Implementation:**
+  - Each endpoint MUST be implemented as a class that extends `chanfana`'s `OpenAPIRoute`.
+  - The class MUST contain:
+    - A `schema` property defining the `OpenAPIRouteSchema`.
+    - An `async handle(c: Context)` method containing the request logic.
+- **Request Handling Flow in `handle` method:**
+  1.  Parse and validate request data (body, query, params). Validation MUST use `zod` schemas defined locally within the endpoint file.
+  2.  Retrieve the required application service(s) from the Hono context (e.g., `const userService = c.get('userService')`).
+  3.  Call the appropriate service method with the validated data.
+  4.  Inspect the `Result` object returned by the service.
+  5.  Return an HTTP response using `c.json(payload, status)`. The worker is solely responsible for mapping the service result to a final HTTP status code and JSON payload.
+- **API Documentation:**
+  - The `schema` property is the single source of truth for OpenAPI documentation.
+  - It MUST define `summary`, `description`, `tags`, `request` (including schemas for body/query/params), and `responses` for all possible outcomes.
+  - Request and response body schemas defined with `zod` MUST align with the DTO types from the `@strzel-sobie/common` package.
 
 ## MODULE_INTEGRATION
 
@@ -81,3 +89,8 @@
 - Use `async/await` syntax for all asynchronous operations.
 - Ensure every promise is handled with a `.catch()` or a `try/catch` block.
 - Use `Promise.all` and `Promise.allSettled` for efficient handling of concurrent operations when aggregating data from multiple services.
+
+## ENDPOINT_VERIFICATION
+- After implementing a new endpoint and adding relevant automated tests (E2E, integration), the final verification process is as follows:
+  1.  Run `npm run build:backend` to ensure the entire backend, including the new endpoint, compiles without errors.
+  2.  After a successful build, notify user that the endpoint is ready for manual verification.

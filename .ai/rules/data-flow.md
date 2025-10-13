@@ -28,8 +28,10 @@ The application uses a clear hierarchy of data objects, each with a specific pur
 - **Client:** The client application (in `src/client`) MUST only interact with DTOs defined in `src/common/dto`.
 
 - **API Layer (`src/worker`):**
-    - The worker is responsible for receiving requests, validating the incoming DTOs, and calling the appropriate module's service.
-    - It passes the DTOs inward to the service layer. It should NOT be aware of Domain Entities or Database Models.
+    - The worker is responsible for receiving requests and calling the appropriate module's service.
+    - It MUST validate incoming request data (bodies, queries, params) against the DTO contracts defined in `src/common`.
+    - This validation MUST be performed using `zod` schemas defined within the endpoint file. These schemas should correspond to the DTO types from `@strzel-sobie/common`.
+    - It passes the validated DTOs inward to the service layer. It should NOT be aware of Domain Entities or Database Models.
 
 - **Service Layer (in each module):**
     - This is the primary layer for data transformation.

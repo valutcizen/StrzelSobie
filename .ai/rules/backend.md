@@ -9,6 +9,12 @@
 - Structure modules internally into `domain`, `application`, and `infrastructure` layers.
 - Return domain-specific results (`Result` objects, DTOs) from application services, not HTTP-specific responses. The `worker` module is solely responsible for translating these results into HTTP status codes and payloads.
 
+## INTER_MODULE_COMMUNICATION
+- All communication between backend modules (e.g., `auth` calling `users`) MUST go through service interfaces defined in `src/common/interfaces`.
+- A module that provides a service (e.g., `users`) owns its implementation (`src/users/application/user.service.ts`).
+- The public contract for that service (e.g., `src/common/interfaces/user.service.interface.ts`) is shared.
+- **CRITICAL**: Before modifying a service interface in `src/common`, you MUST perform a global search to identify all modules that use that interface. You must ensure that any changes (renaming, removing, or changing the signature of a method) are reflected in all consumer modules to prevent breaking changes. Do not remove methods from a shared interface if they are still used by another module.
+
 ## TYPESCRIPT_BEST_PRACTICES
 
 - Enforce strong typing by enabling `strict` mode in `tsconfig.json`.
