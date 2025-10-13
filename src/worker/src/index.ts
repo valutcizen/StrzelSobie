@@ -4,6 +4,7 @@ import { Login } from './endpoints/v1/auth/login';
 import { Logout } from './endpoints/v1/auth/logout';
 import { Me } from './endpoints/v1/auth/me';
 import { Register } from './endpoints/v1/auth/register';
+import { GetRoles } from './endpoints/v1/user/roles';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
 import {
@@ -48,5 +49,6 @@ openapi.get('/api/v1/auth/me', Me);
 openapi.post('/api/v1/auth/register', Register);
 openapi.post('/api/v1/auth/login', Login);
 openapi.post('/api/v1/auth/logout', Logout);
+openapi.get('/api/v1/user/roles', GetRoles);
 
 export default app;

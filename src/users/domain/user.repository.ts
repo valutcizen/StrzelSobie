@@ -1,6 +1,4 @@
-import { Result } from '../../common/utils/result';
-import { User } from '../../common/models/users.models';
-import { Role } from '../../common/models/roles.models';
+import { Result, User, Role } from '@strzel-sobie/common';
 
 export interface UserRepository {
   findById(id: string): Promise<Result<User, Error>>;

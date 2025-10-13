@@ -1,5 +1,5 @@
 import { IUserRepository } from '../domain/user.repository';
-import { IDatabase, MeDto, UserIdentifierDto } from '@strzel-sobie/common';
+import { IDatabase, MeDto, Role, UserIdentifierDto } from '@strzel-sobie/common';
 
 export class UserDbRepository implements IUserRepository {
   constructor(private readonly db: IDatabase) {}
@@ -73,5 +73,11 @@ export class UserDbRepository implements IUserRepository {
       roles: globalRoles,
       rangeRoles: rangeRoles,
     };
+  }
+
+  async getRoles(): Promise<Role[]> {
+    const stmt = this.db.prepare('SELECT id, name, scope FROM users_roles');
+    const result = await stmt.all<Role>();
+    return result.results || [];
   }
 }

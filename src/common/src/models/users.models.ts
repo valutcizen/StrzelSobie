@@ -1,3 +1,5 @@
+import { Role } from './roles.models';
+
 export interface User {
   id: number;
   email: string;
@@ -6,10 +8,9 @@ export interface User {
   created_at: string;
 }
 
-export interface Role {
-  id: number;
-  name: string;
-  scope: 'global' | 'range';
+export interface UserProfile extends User {
+  roles: Role[];
+  range_roles: Record<string, Role[]>;
 }
 
 export interface UserGlobalRole {

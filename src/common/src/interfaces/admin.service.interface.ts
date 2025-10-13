@@ -1,4 +1,4 @@
-export type AuditLog = {
+export type AuditLogEntry = {
   action_type: 'USER_REGISTRATION';
   target_id: number;
   details: {
@@ -9,5 +9,5 @@ export type AuditLog = {
 };
 
 export interface IAdminService {
-  logAction(log: AuditLog): Promise<void>;
+  logAction(log: AuditLogEntry): Promise<void>;
 }

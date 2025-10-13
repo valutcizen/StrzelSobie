@@ -1,5 +1,5 @@
 import {
-  AuditLog,
+  AuditLogEntry,
   IAdminService,
   IUserService,
   LoginUserDto,
@@ -22,7 +22,13 @@ export class AuthService {
   ) {}
 
   public async login(dto: LoginUserDto): Promise<Result<{ token: string, session: SessionData }, InvalidCredentialsError>> {
-    const user = await this.userService.findUserByEmail(dto.email);
+    const userResult = await this.userService.findUserByEmail(dto.email);
+
+    if (!userResult.isSuccess) {
+      return Result.fail(new InvalidCredentialsError());
+    }
+
+    const user = userResult.getValue();
 
     if (!user) {
       return Result.fail(new InvalidCredentialsError());
@@ -40,7 +46,13 @@ export class AuthService {
       return Result.fail(new InvalidCredentialsError());
     }
 
-    const userProfile = await this.userService.getFullUserProfile(user.id);
+    const userProfileResult = await this.userService.getFullUserProfile(user.id);
+
+    if (!userProfileResult.isSuccess) {
+      return Result.fail(new InvalidCredentialsError());
+    }
+
+    const userProfile = userProfileResult.getValue();
 
     if (!userProfile) {
       // This should not happen if user exists
@@ -75,19 +87,31 @@ export class AuthService {
     sourceIp: string,
     proxiedIp: string
   ): Promise<Result<RegisteredUserDto, EmailAlreadyExistsError>> {
-    const existingUser = await this.userService.findUserByEmail(dto.email);
+    const existingUserResult = await this.userService.findUserByEmail(dto.email);
+
+    if (!existingUserResult.isSuccess) {
+      return Result.fail(existingUserResult.getError());
+    }
+
+    const existingUser = existingUserResult.getValue();
 
     if (existingUser) {
       return Result.fail(new EmailAlreadyExistsError(dto.email));
     }
 
-    const newUser = await this.userService.createUser(dto.email);
+    const newUserResult = await this.userService.createUser(dto.email);
+
+    if (!newUserResult.isSuccess) {
+      return Result.fail(newUserResult.getError());
+    }
+
+    const newUser = newUserResult.getValue();
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     await this.authRepository.saveCredentials(newUser.id, passwordHash);
 
-    const log: AuditLog = {
+    const log: AuditLogEntry = {
       action_type: 'USER_REGISTRATION',
       target_id: newUser.id,
       details: {

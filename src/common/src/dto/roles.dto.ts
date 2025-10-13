@@ -1,4 +1,4 @@
-import { Role } from '../models/users.models';
+import { Role } from '../models/roles.models';
 
 /**
  * DTO for a role.

@@ -1,5 +1,5 @@
-import { AuditLog } from '@strzel-sobie/common';
+import { AuditLogEntry } from '@strzel-sobie/common';
 
 export interface IAdminRepository {
-  logAction(log: AuditLog): Promise<void>;
+  logAction(log: AuditLogEntry): Promise<void>;
 }
