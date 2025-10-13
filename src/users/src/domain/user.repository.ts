@@ -1,8 +1,16 @@
-import { MeDto, Role, UserIdentifierDto } from '@strzel-sobie/common';
+import { GetUsersOptions, MeDto, Role, UserIdentifierDto } from '@strzel-sobie/common';
+import { User } from './user.model';
 
 export interface IUserRepository {
+  getById(id: string): Promise<User | null>;
+  getByEmail(email: string): Promise<User | null>;
+  add(user: User): Promise<User>;
+  update(user: User): Promise<User>;
   findByEmail(email: string): Promise<UserIdentifierDto | null>;
   create(email: string): Promise<UserIdentifierDto>;
   getFullUserProfile(userId: number): Promise<MeDto | null>;
   getRoles(): Promise<Role[]>;
+  findAndCount(
+    options: GetUsersOptions
+  ): Promise<{ users: User[]; total: number }>;
 }

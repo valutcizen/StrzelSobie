@@ -1,5 +1,5 @@
 import { IUserRepository } from '../domain/user.repository';
-import { IDatabase, MeDto, Role, UserIdentifierDto } from '@strzel-sobie/common';
+import { IDatabase, MeDto, Role, UserIdentifierDto, GetUsersOptions, User } from '@strzel-sobie/common';
 
 export class UserDbRepository implements IUserRepository {
   constructor(private readonly db: IDatabase) {}
@@ -79,5 +79,50 @@ export class UserDbRepository implements IUserRepository {
     const stmt = this.db.prepare('SELECT id, name, scope FROM users_roles');
     const result = await stmt.all<Role>();
     return result.results || [];
+  }
+
+  async getById(id: string): Promise<User | null> {
+    throw new Error('Method not implemented.');
+  }
+  async getByEmail(email: string): Promise<User | null> {
+    throw new Error('Method not implemented.');
+  }
+  async add(user: User): Promise<User> {
+    throw new Error('Method not implemented.');
+  }
+  async update(user: User): Promise<User> {
+    throw new Error('Method not implemented.');
+  }
+
+  async findAndCount(options: GetUsersOptions = {}): Promise<{ users: User[]; total: number; }> {
+    const { page = 1, limit = 10, sortBy = 'id', sortOrder = 'desc', filter } = options;
+    const offset = (page - 1) * limit;
+
+    let whereClause = '';
+    const params: (string | number)[] = [];
+
+    if (filter) {
+      whereClause = 'WHERE email LIKE ?';
+      params.push(`%${filter}%`);
+    }
+
+    const countStmt = this.db.prepare(`SELECT COUNT(*) as total FROM users_users ${whereClause}`);
+    const countResult = await countStmt.bind(...params).first<{ total: number }>();
+    const total = countResult?.total || 0;
+
+    const sortColumn = ['id', 'email', 'createdAt'].includes(sortBy) ? sortBy : 'id';
+    const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    const dataStmt = this.db.prepare(
+      `SELECT id, email, is_deleted, created_at FROM users_users ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`
+    );
+    params.push(limit, offset);
+
+    const { results } = await dataStmt.bind(...params).all<User>();
+
+    return {
+      users: results || [],
+      total: total,
+    };
   }
 }

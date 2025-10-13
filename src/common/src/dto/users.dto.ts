@@ -43,3 +43,11 @@ export type AssignRoleCommand = {
   roleId: UserGlobalRole['role_id'];
   rangeId: UserRangeRole['range_id'] | null;
 };
+
+export type GetUsersOptions = {
+  page?: number;
+  limit?: number;
+  sortBy?: 'id' | 'email' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  filter?: string;
+};
