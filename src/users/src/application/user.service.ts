@@ -1,6 +1,5 @@
-import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, MeDto, RoleDto } from '@strzel-sobie/common';
+import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, MeDto, RoleDto, User, AssignRoleCommand, RoleScopeError, UserNotFoundError, RoleNotFoundError } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
-import { User } from '../domain/user.model';
 
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
@@ -67,6 +66,55 @@ export class UserService implements IUserService {
           limit: options.limit || 10,
         },
       });
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  async assignRoleToUser(command: {
+    targetUserId: number;
+    roleId: number;
+    rangeId: number | null;
+    requester: User;
+  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError>> {
+    try {
+      const { targetUserId, roleId, rangeId, requester } = command;
+
+      const requesterProfile = await this.userRepository.getFullUserProfile(requester.id);
+
+      const isAdmin = requesterProfile?.roles.includes('Club Admin');
+      if (!isAdmin) {
+        return Result.fail(new Error('Forbidden'));
+      }
+
+      const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
+      if (!targetUser) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+
+      const roles = await this.userRepository.getRoles();
+      const roleToAssign = roles.find(role => role.id === roleId);
+
+      if (!roleToAssign) {
+        return Result.fail(new RoleNotFoundError(`Role with id ${roleId} not found`));
+      }
+
+      if (roleToAssign.scope === 'global' && rangeId !== null) {
+        return Result.fail(new RoleScopeError('Global roles cannot be assigned to a range.'));
+      }
+
+      if (roleToAssign.scope === 'range' && rangeId === null) {
+        return Result.fail(new RoleScopeError('Range roles must be assigned to a range.'));
+      }
+
+      if (roleToAssign.scope === 'global') {
+        await this.userRepository.assignGlobalRole(targetUserId, roleId);
+      } else {
+        // TODO: Validate rangeId exists in the database
+        await this.userRepository.assignRangeRole(targetUserId, roleId, rangeId as number);
+      }
+
+      return Result.ok(undefined);
     } catch (error) {
       return Result.fail(error as Error);
     }

@@ -1,4 +1,5 @@
 import { GetUsersOptions, MeDto, Role, UserIdentifierDto } from '@strzel-sobie/common';
+import { Result } from '@strzel-sobie/common';
 import { User } from './user.model';
 
 export interface IUserRepository {
@@ -13,4 +14,6 @@ export interface IUserRepository {
   findAndCount(
     options: GetUsersOptions
   ): Promise<{ users: User[]; total: number }>;
+  assignGlobalRole(userId: number, roleId: number): Promise<void>;
+  assignRangeRole(userId: number, roleId: number, rangeId: number): Promise<void>;
 }

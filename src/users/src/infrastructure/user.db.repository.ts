@@ -125,4 +125,14 @@ export class UserDbRepository implements IUserRepository {
       total: total,
     };
   }
+
+  async assignGlobalRole(userId: number, roleId: number): Promise<void> {
+    const stmt = this.db.prepare('INSERT INTO users_user_global_roles (user_id, role_id) VALUES (?, ?)');
+    await stmt.bind(userId, roleId).run();
+  }
+
+  async assignRangeRole(userId: number, roleId: number, rangeId: number): Promise<void> {
+    const stmt = this.db.prepare('INSERT INTO users_user_range_roles (user_id, role_id, range_id) VALUES (?, ?, ?)');
+    await stmt.bind(userId, roleId, rangeId).run();
+  }
 }

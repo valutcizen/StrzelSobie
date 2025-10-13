@@ -6,6 +6,7 @@ import { Me } from './endpoints/v1/auth/me';
 import { Register } from './endpoints/v1/auth/register';
 import { GetRoles } from './endpoints/v1/user/roles';
 import { GetUsers } from './endpoints/v1/user/get-users';
+import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
 import {
@@ -53,5 +54,6 @@ openapi.post('/api/v1/auth/login', Login);
 openapi.post('/api/v1/auth/logout', Logout);
 openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
 openapi.get('/api/v1/users', authMiddleware, GetUsers);
+openapi.post('/api/v1/users/:userId/roles', authMiddleware, SetUserRoleRoute);
 
 export default app;
