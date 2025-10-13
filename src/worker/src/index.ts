@@ -13,6 +13,7 @@ import {
   SessionKvRepository,
 } from '@strzel-sobie/auth';
 import { UserDbRepository, UserService } from '@strzel-sobie/users';
+import { authMiddleware } from './middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -45,10 +46,10 @@ const openapi = fromHono(app, {
   docs_url: '/',
 });
 
-openapi.get('/api/v1/auth/me', Me);
+openapi.get('/api/v1/auth/me', authMiddleware, Me);
 openapi.post('/api/v1/auth/register', Register);
 openapi.post('/api/v1/auth/login', Login);
 openapi.post('/api/v1/auth/logout', Logout);
-openapi.get('/api/v1/user/roles', GetRoles);
+openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
 
 export default app;

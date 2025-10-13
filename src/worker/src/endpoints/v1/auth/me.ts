@@ -1,9 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { AuthService } from '@strzel-sobie/auth';
-import { Context } from '../../../types';
-import { getCookie } from 'hono/cookie';
 import { MeDto } from '@strzel-sobie/common';
+import { Context } from '../../../types';
 
 export class Me extends OpenAPIRoute {
   schema: OpenAPIRouteSchema = {
@@ -39,20 +37,7 @@ export class Me extends OpenAPIRoute {
   };
 
   async handle(c: Context) {
-    const authService: AuthService = c.get('authService');
-    const sessionToken = getCookie(c, 'session_token');
-
-    if (!sessionToken) {
-      return c.json({ message: 'Unauthorized' }, 401);
-    }
-
-    const sessionResult = await authService.validateSession(sessionToken);
-
-    if (!sessionResult.isSuccess) {
-      return c.json({ message: 'Unauthorized' }, 401);
-    }
-
-    const session = sessionResult.getValue();
+    const session = c.get('session');
 
     const meDto: MeDto = {
       id: session.userId,
