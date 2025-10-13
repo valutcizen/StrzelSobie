@@ -123,12 +123,9 @@ export class AuthService {
 
     await this.adminService.logAction(log);
 
-    // TODO: Assign default "Guest" role
-
     const registeredUser: RegisteredUserDto = {
       id: newUser.id,
       email: newUser.email,
-      roles: ['Guest'], // Placeholder
     };
 
     return Result.ok(registeredUser);

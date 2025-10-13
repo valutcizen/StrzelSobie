@@ -11,7 +11,6 @@ export class RegisterUserRequestDto {
 export class RegisteredUserDto {
   id!: number;
   email!: string;
-  roles!: string[];
 }
 
 export interface MeDto {
