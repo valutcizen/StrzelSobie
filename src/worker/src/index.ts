@@ -9,6 +9,7 @@ import { GetUsers } from './endpoints/v1/user/get-users';
 import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
 import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges'
+import { GetRange } from './endpoints/v1/ranges/get-range';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
 import {
@@ -50,14 +51,17 @@ const openapi = fromHono(app, {
   docs_url: '/',
 });
 
-openapi.get('/api/v1/auth/me', authMiddleware, Me);
 openapi.post('/api/v1/auth/register', Register);
 openapi.post('/api/v1/auth/login', Login);
 openapi.post('/api/v1/auth/logout', Logout);
-openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
+openapi.get('/api/v1/auth/me', authMiddleware, Me);
+
 openapi.get('/api/v1/users', authMiddleware, GetUsers);
+openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
 openapi.post('/api/v1/users/:userId/roles', authMiddleware, SetUserRoleRoute);
 openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUserRoleRoute);
+
 openapi.get('/api/v1/ranges', GetRangesRoute);
+openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
 
 export default app;

@@ -5,7 +5,7 @@ import { z } from 'zod';
 export class GetRangesRoute extends OpenAPIRoute {
   static schema: OpenAPIRouteSchema = {
     summary: 'Get all shooting ranges',
-    tags: ['RangesAdmin'],
+    tags: ['Ranges'],
     responses: {
       '200': {
         description: 'A list of shooting ranges',

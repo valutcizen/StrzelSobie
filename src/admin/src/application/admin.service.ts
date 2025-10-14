@@ -1,4 +1,10 @@
-import { AuditLogEntry, IAdminService, RangeSummaryDto, Result } from '@strzel-sobie/common';
+import {
+  AuditLogEntry,
+  IAdminService,
+  RangeDetailsDto,
+  RangeSummaryDto,
+  Result,
+} from '@strzel-sobie/common';
 import { IAdminRepository } from '../domain/admin.repository';
 import { ShootingRange } from '../domain/shooting-range.model';
 
@@ -32,5 +38,20 @@ export class AdminService implements IAdminService {
     } catch (error) {
       return Result.fail(error as Error);
     }
+  }
+
+  public async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto, Error>> {
+    const range = await this.adminRepository.findBySlug(slug);
+
+    if (!range) {
+      return Result.fail(new Error('Range not found'));
+    }
+
+    const dto: RangeDetailsDto = {
+      ...range,
+      operatingHours: JSON.parse(range.operatingHours),
+    };
+
+    return Result.ok(dto);
   }
 }
