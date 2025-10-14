@@ -16,4 +16,6 @@ export interface IUserRepository {
   ): Promise<{ users: User[]; total: number }>;
   assignGlobalRole(userId: number, roleId: number): Promise<void>;
   assignRangeRole(userId: number, roleId: number, rangeId: number): Promise<void>;
+  removeGlobalRole(userId: number, roleId: number): Promise<void>;
+  removeRangeRole(userId: number, roleId: number, rangeId: number): Promise<void>;
 }

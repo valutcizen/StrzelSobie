@@ -17,4 +17,10 @@ export interface IUserService {
     rangeId: number | null;
     requester: User;
   }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>>;
+  removeRoleFromUser(command: {
+    targetUserId: number;
+    roleId: number;
+    rangeId: number | null;
+    requester: User;
+  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>>;
 }

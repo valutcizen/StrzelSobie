@@ -7,6 +7,7 @@ import { Register } from './endpoints/v1/auth/register';
 import { GetRoles } from './endpoints/v1/user/roles';
 import { GetUsers } from './endpoints/v1/user/get-users';
 import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
+import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
 import {
@@ -55,5 +56,6 @@ openapi.post('/api/v1/auth/logout', Logout);
 openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
 openapi.get('/api/v1/users', authMiddleware, GetUsers);
 openapi.post('/api/v1/users/:userId/roles', authMiddleware, SetUserRoleRoute);
+openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUserRoleRoute);
 
 export default app;

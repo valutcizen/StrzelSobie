@@ -129,4 +129,63 @@ export class UserService implements IUserService {
       return Result.fail(error as Error);
     }
   }
+
+  async removeRoleFromUser(command: {
+    targetUserId: number;
+    roleId: number;
+    rangeId: number | null;
+    requester: User;
+  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>> {
+    try {
+      let { targetUserId, roleId, rangeId, requester } = command;
+
+      if (rangeId === 0) {
+        rangeId = null;
+      }
+
+      const requesterProfile = await this.userRepository.getFullUserProfile(requester.id);
+
+      const isAdmin = requesterProfile?.roles.includes('Club/Community Administrator');
+      if (!isAdmin) {
+        return Result.fail(new ForbiddenError('Forbidden'));
+      }
+
+      const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
+      if (!targetUser) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+
+      const roles = await this.userRepository.getRoles();
+      const roleToRemove = roles.find(role => role.id === roleId);
+
+      if (!roleToRemove) {
+        return Result.fail(new RoleNotFoundError(`Role with id ${roleId} not found`));
+      }
+
+      if (roleToRemove.scope === 'global' && rangeId !== null) {
+        return Result.fail(new RoleScopeError('Global roles cannot be removed from a range.'))
+      }
+
+      if (roleToRemove.scope === 'range' && rangeId === null) {
+        return Result.fail(new RoleScopeError('Range roles must be removed from a range.'))
+      }
+
+      if (roleToRemove.scope === 'range') {
+        const rangeResult = await this.adminService.getRangeById(rangeId as number);
+        if (!rangeResult.isSuccess || !rangeResult.getValue()) {
+          return Result.fail(new RangeNotFoundError(`Range with id ${rangeId} not found`));
+        }
+      }
+
+      if (roleToRemove.scope === 'global') {
+        await this.userRepository.removeGlobalRole(targetUserId, roleId);
+      } else {
+        await this.userRepository.removeRangeRole(targetUserId, roleId, rangeId as number);
+      }
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
 }

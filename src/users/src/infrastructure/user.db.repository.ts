@@ -140,4 +140,14 @@ export class UserDbRepository implements IUserRepository {
     const stmt = this.db.prepare('INSERT INTO users_user_range_roles (user_id, role_id, range_id) VALUES (?, ?, ?)');
     await stmt.bind(userId, roleId, rangeId).run();
   }
+
+  async removeGlobalRole(userId: number, roleId: number): Promise<void> {
+    const stmt = this.db.prepare('DELETE FROM users_user_global_roles WHERE user_id = ? AND role_id = ?');
+    await stmt.bind(userId, roleId).run();
+  }
+
+  async removeRangeRole(userId: number, roleId: number, rangeId: number): Promise<void> {
+    const stmt = this.db.prepare('DELETE FROM users_user_range_roles WHERE user_id = ? AND role_id = ? AND range_id = ?');
+    await stmt.bind(userId, roleId, rangeId).run();
+  }
 }
