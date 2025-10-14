@@ -82,7 +82,12 @@ export class UserDbRepository implements IUserRepository {
   }
 
   async getById(id: string): Promise<User | null> {
-    throw new Error('Method not implemented.');
+    const stmt = this.db.prepare(
+      'SELECT id, email, phone_number, is_deleted, created_at FROM users_users WHERE id = ?'
+    );
+    const result = await stmt.bind(parseInt(id, 10)).first<User>();
+
+    return result || null;
   }
   async getByEmail(email: string): Promise<User | null> {
     throw new Error('Method not implemented.');

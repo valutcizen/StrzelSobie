@@ -10,6 +10,7 @@ export class Result<T, E extends Error> {
   }
 
   public static fail<T, E extends Error>(error: E): Result<T, E> {
+    console.error(error);
     return new Result(false, undefined as T, error);
   }
 

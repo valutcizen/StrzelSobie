@@ -1,8 +1,8 @@
-import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, MeDto, RoleDto, User, AssignRoleCommand, RoleScopeError, UserNotFoundError, RoleNotFoundError } from '@strzel-sobie/common';
+import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, MeDto, RoleDto, User, AssignRoleCommand, RoleScopeError, UserNotFoundError, RoleNotFoundError, IAdminService, RangeNotFoundError, ForbiddenError } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(private readonly userRepository: IUserRepository, private readonly adminService: IAdminService) {}
 
   async findUserByEmail(email: string): Promise<Result<UserIdentifierDto | null, Error>> {
     try {
@@ -76,15 +76,19 @@ export class UserService implements IUserService {
     roleId: number;
     rangeId: number | null;
     requester: User;
-  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError>> {
+  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>> {
     try {
-      const { targetUserId, roleId, rangeId, requester } = command;
+      let { targetUserId, roleId, rangeId, requester } = command;
+
+      if (rangeId === 0) {
+        rangeId = null;
+      }
 
       const requesterProfile = await this.userRepository.getFullUserProfile(requester.id);
 
-      const isAdmin = requesterProfile?.roles.includes('Club Admin');
+      const isAdmin = requesterProfile?.roles.includes('Club/Community Administrator');
       if (!isAdmin) {
-        return Result.fail(new Error('Forbidden'));
+        return Result.fail(new ForbiddenError('Forbidden'));
       }
 
       const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
@@ -107,10 +111,16 @@ export class UserService implements IUserService {
         return Result.fail(new RoleScopeError('Range roles must be assigned to a range.'));
       }
 
+      if (roleToAssign.scope === 'range') {
+        const rangeResult = await this.adminService.getRangeById(rangeId as number);
+        if (!rangeResult.isSuccess || !rangeResult.getValue()) {
+          return Result.fail(new RangeNotFoundError(`Range with id ${rangeId} not found`));
+        }
+      }
+
       if (roleToAssign.scope === 'global') {
         await this.userRepository.assignGlobalRole(targetUserId, roleId);
       } else {
-        // TODO: Validate rangeId exists in the database
         await this.userRepository.assignRangeRole(targetUserId, roleId, rangeId as number);
       }
 

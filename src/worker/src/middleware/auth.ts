@@ -2,6 +2,7 @@
 import { getCookie } from 'hono/cookie';
 import { AuthService } from '@strzel-sobie/auth';
 import { MiddlewareHandler } from 'hono';
+import { IUserService } from '@strzel-sobie/common';
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const authService: AuthService = c.get('authService');
@@ -24,6 +25,20 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   }
 
   c.set('session', session);
+  const userService: IUserService = c.get('userService');
+  const userResult = await userService.getUserById(session.userId.toString());
+
+  if (!userResult.isSuccess) {
+    return c.json({ message: 'Unauthorized' }, 401);
+  }
+
+  const user = userResult.getValue();
+
+  if (!user) {
+    return c.json({ message: 'Unauthorized' }, 401);
+  }
+
+  c.set('user', user);
 
   await next();
 };

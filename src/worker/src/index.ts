@@ -29,7 +29,7 @@ app.use('*', async (c, next) => {
 
   // Services
   const adminService = new AdminService(adminRepository);
-  const userService = new UserService(userRepository);
+  const userService = new UserService(userRepository, adminService);
   const authService = new AuthService(
     authRepository,
     sessionRepository,

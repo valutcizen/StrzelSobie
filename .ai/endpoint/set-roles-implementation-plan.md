@@ -40,7 +40,7 @@ This document outlines the implementation plan for an API endpoint that assigns 
 3.  The **endpoint handler** (`set-role.ts`) validates the `userId` path parameter and the request body against a `zod` schema corresponding to `AssignRoleCommand`.
 4.  The handler retrieves the `IUserService` instance from the context and calls `userService.assignRoleToUser()`, passing the target `userId`, the `AssignRoleCommand` payload, and the requesting user's data.
 5.  The **`UserService`** executes the core business logic:
-    a. **Authorization**: It checks if the requesting user has an administrative role (e.g., 'Club Admin', 'Confirmator'). If not, it returns a `ForbiddenError`.
+    a. **Authorization**: It checks if the requesting user has an administrative role (e.g., 'Club/Community Administrator', 'Confirmator'). If not, it returns a `ForbiddenError`.
     b. **Validation**: It queries the database to verify the existence of the target user, the role, and the range (if `rangeId` is provided). It also checks that the role's scope aligns with the presence of `rangeId`. If any check fails, it returns an appropriate error (`UserNotFoundError`, `RoleScopeError`, etc.).
     c. **Persistence**: It calls the corresponding method in the `UserRepository` to insert a new record into either the `users_user_global_roles` or `users_user_range_roles` table in the **D1 Database**.
 6.  The `UserService` returns a `Result` object to the endpoint handler.

@@ -11,6 +11,7 @@ const projectRoot = join(__dirname, '..'); // Assumes script is in 'scripts' sub
 
 const dbName = 'strzel-sobie-db';
 const migrationsDir = join(projectRoot, 'migrations');
+const mockDataDir = join(projectRoot, 'mock-data');
 const wranglerStateDir = join(projectRoot, 'src', 'worker', '.wrangler', 'state');
 const wranglerConfig = join(projectRoot, 'src', 'worker', 'wrangler.jsonc');
 // --- End Configuration ---
@@ -29,17 +30,27 @@ async function main() {
 
     // 1. Get all available migration files from the filesystem
     console.log('[1/4] Finding migration files...');
-    const allFiles = await readdir(migrationsDir);
-    const availableMigrations = allFiles
-      .filter(file => file.endsWith('.sql'))
-      .sort();
+    const migrationFiles = (await readdir(migrationsDir)).map(file => ({ dir: migrationsDir, name: file }));
+    let mockDataFiles = [];
+    try {
+      mockDataFiles = (await readdir(mockDataDir)).map(file => ({ dir: mockDataDir, name: file }));
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+      console.log('No mock-data directory found, skipping.');
+    }
+
+    const availableMigrations = [...migrationFiles, ...mockDataFiles]
+      .filter(file => file.name.endsWith('.sql'))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     if (availableMigrations.length === 0) {
       console.log('No migration files found. Exiting.');
       return;
     }
     console.log(`Found ${availableMigrations.length} migration file(s):`);
-    availableMigrations.forEach(file => console.log(`  - ${file}`));
+    availableMigrations.forEach(file => console.log(`  - ${file.name}`));
 
     // 2. Get already applied migrations from the database
     console.log('[2/4] Checking for applied migrations in the database...');
@@ -61,7 +72,7 @@ async function main() {
     // 3. Determine which migrations to apply
     console.log('[3/4] Determining new migrations to apply...');
     const migrationsToApply = availableMigrations.filter(
-      file => !appliedMigrations.includes(file)
+      file => !appliedMigrations.includes(file.name)
     );
 
     if (migrationsToApply.length === 0) {
@@ -71,18 +82,18 @@ async function main() {
     }
 
     console.log(`Found ${migrationsToApply.length} new migration(s) to apply:`);
-    migrationsToApply.forEach(file => console.log(`  - ${file}`));
+    migrationsToApply.forEach(file => console.log(`  - ${file.name}`));
 
     // 4. Execute each new migration
     console.log('[4/4] Applying new migrations...');
     for (const file of migrationsToApply) {
-      const filePath = join(migrationsDir, file);
-      console.log(`Applying ${file}...`);
+      const filePath = join(file.dir, file.name);
+      console.log(`Applying ${file.name}...`);
       const applyCommand = `wrangler d1 execute ${dbName} --local --file=${filePath} --config=${wranglerConfig}`;
       execSync(applyCommand, { stdio: 'inherit', cwd: projectRoot });
 
-      console.log(`Recording ${file} in schema_migrations...`);
-      const recordCommand = `wrangler d1 execute ${dbName} --local --config=${wranglerConfig} --command="INSERT INTO schema_migrations (migration_name) VALUES ('${file}')"`;
+      console.log(`Recording ${file.name} in schema_migrations...`);
+      const recordCommand = `wrangler d1 execute ${dbName} --local --config=${wranglerConfig} --command="INSERT INTO schema_migrations (migration_name) VALUES ('${file.name}')"`;
       execSync(recordCommand, { stdio: 'inherit', cwd: projectRoot });
     }
 

@@ -20,7 +20,7 @@ A specialized reservation management application for shooting ranges, designed t
 
 The application solves this logistical challenge by integrating coordinators directly into the booking workflow. Regular users can propose a time for a shooting session, and available coordinators can view and accept these propositions, converting them into official, legally compliant reservations.
 
-The system is built with a robust role-based access control system to ensure users have appropriate permissions, from guests to club administrators. The initial MVP focuses on a single shooting range in Dobczyce, with an architecture designed for future expansion.
+The system is built with a robust role-based access control system to ensure users have appropriate permissions, from guests to Club/Community Administrator. The initial MVP focuses on a single shooting range in Dobczyce, with an architecture designed for future expansion.
 
 ## Tech Stack
 

@@ -8,7 +8,7 @@ Below is a description of each module within the `src` directory.
 
 ### `admin`
 
--   **Description:** Implements administrative functions for Range and Club Admins, such as managing range settings.
+-   **Description:** Implements administrative functions for Range and Club/Community Administrator, such as managing range settings.
 -   [Go to module](./admin/README.md)
 
 ### `auth`

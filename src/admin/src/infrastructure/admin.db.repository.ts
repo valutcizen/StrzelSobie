@@ -12,4 +12,10 @@ export class AdminDbRepository implements IAdminRepository {
     );
     await stmt.bind(action_type, target_id, JSON.stringify(details)).run();
   }
+
+  public async getRangeById(rangeId: number): Promise<{ id: number } | null> {
+    const stmt = this.db.prepare('SELECT id FROM admin_shooting_ranges WHERE id = ?');
+    const result = await stmt.bind(rangeId).first<{ id: number }>();
+    return result ?? null;
+  }
 }

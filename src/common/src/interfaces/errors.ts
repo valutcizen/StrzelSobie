@@ -14,7 +14,22 @@ export class RoleNotFoundError extends Error {
 
 export class RoleScopeError extends Error {
   constructor(message: string) {
-    super(message);
-    this.name = 'RoleScopeError';
-  }
-}
+        super(message);
+        this.name = 'RoleScopeError';
+      }
+    }
+    
+    export class RangeNotFoundError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'RangeNotFoundError';
+      }
+    }
+    
+    export class ForbiddenError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'ForbiddenError';
+      }
+    }
+    
