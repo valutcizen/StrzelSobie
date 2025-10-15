@@ -1,44 +1,39 @@
-import { Proposition, Reservation } from '../models/reservations.models';
-
-/**
- * DTO for a proposition displayed on the calendar.
- * Part of the `GET /api/v1/ranges/{rangeSlug}/events` response.
- * Maps entity properties to camelCase.
- */
-export type PropositionCalendarEntryDto = {
-  id: Proposition['id'];
-  userId: Proposition['user_id'];
-  isMember: boolean; // Derived property to highlight for coordinators
-  eventDate: Proposition['event_date'];
-  startTime: Proposition['start_time'];
-  endTime: Proposition['end_time'];
-  tracksRequested: Proposition['tracks_requested'];
+export type PropositionEventDto = {
+  id: number;
+  userId: number;
+  isMember: boolean; // True if the user is a club member, for UI highlighting
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  tracksRequested: number;
 };
 
-/**
- * DTO for a reservation displayed on the calendar.
- * Part of the `GET /api/v1/ranges/{rangeSlug}/events` response.
- * Maps entity properties to camelCase and converts boolean-like numbers to booleans.
- */
-export type ReservationCalendarEntryDto = {
-  id: Reservation['id'];
-  eventDate: Reservation['event_date'];
-  startTime: Reservation['start_time'];
-  endTime: Reservation['end_time'];
-  tracksRequested: Reservation['tracks_requested'];
+export type ReservationEventDto = {
+  id: number;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  tracksRequested: number;
   isPublic: boolean;
   isJoinable: boolean;
   details: {
-    coordinatorId: Reservation['coordinator_id'];
-    numParticipants: Reservation['num_participants'];
+    coordinatorId: number;
+    numParticipants: number;
   } | null;
 };
 
-/**
- * DTO for all calendar events in a given date range.
- * Corresponds to the response payload for `GET /api/v1/ranges/{rangeSlug}/events`.
- */
 export type CalendarEventsDto = {
-  propositions: PropositionCalendarEntryDto[];
-  reservations: ReservationCalendarEntryDto[];
+  propositions: PropositionEventDto[];
+  reservations: ReservationEventDto[];
+};
+
+export type GetCalendarEventsQuery = {
+  rangeSlug: string;
+  startDate: string;
+  endDate: string;
+  user: {
+    id: string;
+    roles: string[];
+    rangeRoles: Record<string, string[]>;
+  };
 };

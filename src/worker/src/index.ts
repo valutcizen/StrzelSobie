@@ -11,6 +11,7 @@ import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
 import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges'
 import { GetRange } from './endpoints/v1/ranges/get-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
+import { GetEvents } from './endpoints/v1/ranges/get-events';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
 import {
@@ -19,6 +20,7 @@ import {
   SessionKvRepository,
 } from '@strzel-sobie/auth';
 import { UserDbRepository, UserService } from '@strzel-sobie/users';
+import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/reservations';
 import { authMiddleware } from './middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -30,6 +32,7 @@ app.use('*', async (c, next) => {
   const sessionRepository = new SessionKvRepository(c.env.SESSIONS_KV);
   const userRepository = new UserDbRepository(c.env.DB);
   const adminRepository = new AdminDbRepository(c.env.DB);
+  const reservationsRepository = new ReservationsDbRepository(c.env.DB);
 
   // Services
   const adminService = new AdminService(adminRepository);
@@ -40,10 +43,12 @@ app.use('*', async (c, next) => {
     userService,
     adminService
   );
+  const reservationsService = new ReservationsService(adminService, reservationsRepository);
 
   c.set('authService', authService);
   c.set('userService', userService);
   c.set('adminService', adminService);
+  c.set('reservationsService', reservationsService);
 
   await next();
 });
@@ -65,5 +70,6 @@ openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUser
 openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
 openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
+openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
 
 export default app;
