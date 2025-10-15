@@ -65,4 +65,16 @@ export class AdminDbRepository implements IAdminRepository {
       operatingHours: result.operating_hours,
     };
   }
+
+  public async update(range: ShootingRange): Promise<Result<void, Error>> {
+    try {
+      const stmt = this.db.prepare(
+        'UPDATE admin_shooting_ranges SET total_tracks = ?, operating_hours = ? WHERE id = ?'
+      );
+      await stmt.bind(range.totalTracks, range.operatingHours, range.id).run();
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
 }

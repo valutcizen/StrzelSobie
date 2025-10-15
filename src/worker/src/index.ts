@@ -10,6 +10,7 @@ import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
 import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges'
 import { GetRange } from './endpoints/v1/ranges/get-range';
+import { UpdateRange } from './endpoints/v1/ranges/update-range';
 import { Env, Variables } from './types';
 import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
 import {
@@ -63,5 +64,6 @@ openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUser
 
 openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
+openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
 
 export default app;

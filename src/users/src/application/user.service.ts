@@ -1,4 +1,7 @@
-import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, MeDto, RoleDto, User, AssignRoleCommand, RoleScopeError, UserNotFoundError, RoleNotFoundError, IAdminService, RangeNotFoundError, ForbiddenError } from '@strzel-sobie/common';
+import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, 
+  MeDto, RoleDto, User, RoleScopeError, UserNotFoundError, RoleNotFoundError, IAdminService, 
+  RangeNotFoundError, ForbiddenError, Role 
+} from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
@@ -51,12 +54,32 @@ export class UserService implements IUserService {
     try {
       const { users, total } = await this.userRepository.findAndCount(options);
 
-      const userDtos: UserDto[] = users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        isDeleted: user.is_deleted as 0 | 1,
-        createdAt: user.created_at,
-      }));
+      const userDtos: UserDto[] = await Promise.all(
+        users.map(async (user) => {
+          const profile = await this.userRepository.getFullUserProfile(user.id);
+          const allRoles = await this.userRepository.getRoles();
+          const roleMap = new Map(allRoles.map((role) => [role.name, role]));
+
+          return {
+            id: user.id,
+            email: user.email,
+            isDeleted: user.is_deleted as 0 | 1,
+            createdAt: user.created_at,
+            roles: profile?.roles.map((roleName) => roleMap.get(roleName)).filter((role) => role) as Role[] || [],
+            range_roles: profile?.rangeRoles
+              ? Object.entries(profile.rangeRoles).reduce(
+                  (acc, [rangeId, roleNames]) => {
+                    acc[rangeId] = roleNames
+                      .map((roleName) => roleMap.get(roleName))
+                      .filter((role) => role) as Role[];
+                    return acc;
+                  },
+                  {} as Record<string, Role[]>
+                )
+              : {},
+          };
+        })
+      );
 
       return Result.ok({
         data: userDtos,

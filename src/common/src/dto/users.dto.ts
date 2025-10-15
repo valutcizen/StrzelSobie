@@ -1,3 +1,4 @@
+import { Role } from '../models/roles.models';
 import { User, UserGlobalRole, UserRangeRole } from '../models/users.models';
 
 export type UserIdentifierDto = {
@@ -15,6 +16,8 @@ export type UserDto = {
   email: User['email'];
   isDeleted: User['is_deleted'];
   createdAt: User['created_at'];
+  roles: Role[];
+  range_roles: Record<string, Role[]>;
 };
 
 /**

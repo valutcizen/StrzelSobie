@@ -3,7 +3,7 @@ import { Context } from '../../../types';
 import { z } from 'zod';
 
 export class GetRangesRoute extends OpenAPIRoute {
-  static schema: OpenAPIRouteSchema = {
+  schema: OpenAPIRouteSchema = {
     summary: 'Get all shooting ranges',
     tags: ['Ranges'],
     responses: {
@@ -37,10 +37,8 @@ export class GetRangesRoute extends OpenAPIRoute {
     const result = await adminService.getRanges();
 
     if (result.isSuccess) {
-      return c.json(result.value, 200);
+      return c.json(result.getValue(), 200);
     }
-
-    console.error(result.error);
     return c.json({ error: 'Internal Server Error' }, 500);
   }
 }

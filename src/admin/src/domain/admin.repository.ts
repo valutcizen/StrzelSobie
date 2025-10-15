@@ -6,4 +6,5 @@ export interface IAdminRepository {
   getRangeById(rangeId: number): Promise<{ id: number } | null>;
   findAll(): Promise<Result<ShootingRange[], Error>>;
   findBySlug(slug: string): Promise<ShootingRange | null>;
+  update(range: ShootingRange): Promise<Result<void, Error>>;
 }
