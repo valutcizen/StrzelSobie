@@ -6,7 +6,6 @@ export * from './auth/model';
 export * from './reservations/dto';
 export * from './reservations/model';
 export * from './reservations/service';
-export * from './roles/dto';
 export * from './roles/model';
 export * from './users/dto';
 export * from './users/model';

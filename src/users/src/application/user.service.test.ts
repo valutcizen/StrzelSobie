@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UserService } from './user.service';
 import { IUserRepository } from '../domain/user.repository';
-import { IAdminService, Result, User, ForbiddenError, UserNotFoundError, RoleNotFoundError, RoleScopeError, RangeNotFoundError, MeDto } from '@strzel-sobie/common';
+import { IAdminService, Result, UserDto, ForbiddenError, UserNotFoundError, RoleNotFoundError, RoleScopeError, RangeNotFoundError, MeDto } from '@strzel-sobie/common';
 
 describe('UserService', () => {
   let userService: UserService;
   let userRepository: IUserRepository;
   let adminService: IAdminService;
 
-  const requester: User = { id: 1, email: 'admin@test.com' } as User;
-  const regularUser: User = { id: 2, email: 'user@test.com' } as User;
+  const requester: UserDto = { id: 1, email: 'admin@test.com' } as UserDto;
+  const regularUser: UserDto = { id: 2, email: 'user@test.com' } as UserDto;
   const requesterProfile: MeDto = { id: 1, email: 'admin@test.com', roles: ['Club/Community Administrator'], rangeRoles: {}, phoneNumber: null };
   const regularUserProfile: MeDto = { id: 2, email: 'user@test.com', roles: [], rangeRoles: {}, phoneNumber: null };
 

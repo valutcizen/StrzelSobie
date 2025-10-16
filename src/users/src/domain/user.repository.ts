@@ -3,7 +3,7 @@ import { Result } from '@strzel-sobie/common';
 import { User } from './user.model';
 
 export interface IUserRepository {
-  getById(id: string): Promise<User | null>;
+  getById(id: number): Promise<User | null>;
   getByEmail(email: string): Promise<User | null>;
   add(user: User): Promise<User>;
   update(user: User): Promise<User>;

@@ -1,5 +1,5 @@
 import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, 
-  MeDto, RoleDto, User, RoleScopeError, UserNotFoundError, RoleNotFoundError, IAdminService, 
+  MeDto, User, RoleScopeError, UserNotFoundError, RoleNotFoundError, IAdminService, 
   RangeNotFoundError, ForbiddenError, Role 
 } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
@@ -31,7 +31,7 @@ export class UserService implements IUserService {
       return Result.fail(error as Error);
     }
   }
-  async getRoles(): Promise<Result<RoleDto[], Error>> {
+  async getRoles(): Promise<Result<Role[], Error>> {
     try {
       const roles = await this.userRepository.getRoles();
       return Result.ok(roles.map(role => ({ id: role.id, name: role.name, scope: role.scope })));
@@ -39,7 +39,7 @@ export class UserService implements IUserService {
       return Result.fail(error as Error);
     }
   }
-  async getUserById(id: string): Promise<Result<User | null, Error>> {
+  async getUserById(id: number): Promise<Result<User | null, Error>> {
     try {
       const user = await this.userRepository.getById(id);
       return Result.ok(user);
@@ -98,7 +98,7 @@ export class UserService implements IUserService {
     targetUserId: number;
     roleId: number;
     rangeId: number | null;
-    requester: User;
+    requester: UserDto;
   }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>> {
     try {
       let { targetUserId, roleId, rangeId, requester } = command;
@@ -157,7 +157,7 @@ export class UserService implements IUserService {
     targetUserId: number;
     roleId: number;
     rangeId: number | null;
-    requester: User;
+    requester: UserDto;
   }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>> {
     try {
       let { targetUserId, roleId, rangeId, requester } = command;

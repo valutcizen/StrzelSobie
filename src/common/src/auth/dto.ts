@@ -1,16 +1,16 @@
-export class LoginUserDto {
-  email!: string;
-  password!: string;
+export interface LoginUserDto {
+  email: string;
+  password: string;
 }
 
-export class RegisterUserRequestDto {
-  email!: string;
-  password!: string;
+export interface RegisterUserRequestDto {
+  email: string;
+  password: string;
 }
 
-export class RegisteredUserDto {
-  id!: number;
-  email!: string;
+export interface RegisteredUserDto {
+  id: number;
+  email: string;
 }
 
 export interface MeDto {

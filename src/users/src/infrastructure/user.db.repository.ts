@@ -81,11 +81,11 @@ export class UserDbRepository implements IUserRepository {
     return result.results || [];
   }
 
-  async getById(id: string): Promise<User | null> {
+  async getById(id: number): Promise<User | null> {
     const stmt = this.db.prepare(
       'SELECT id, email, phone_number, is_deleted, created_at FROM users_users WHERE id = ?'
     );
-    const result = await stmt.bind(parseInt(id, 10)).first<User>();
+    const result = await stmt.bind(id).first<User>();
 
     return result || null;
   }

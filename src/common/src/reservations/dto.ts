@@ -1,6 +1,5 @@
 import { Reservation, Proposition, Record as RangeRecord } from './model';
 
-// from dto.ts
 /**
  * Command model for creating a new reservation directly.
  * Corresponds to the request payload for `POST /api/v1/ranges/{rangeSlug}/reservations`.
@@ -32,7 +31,6 @@ export type CreateReservationFromPropositionCommand = {
  */
 export type CreatedReservationDto = Pick<Reservation, 'id' | 'range_id' | 'coordinator_id'>;
 
-// from calendar.dto.ts
 export type PropositionEventDto = {
   id: number;
   userId: number;
@@ -72,8 +70,6 @@ export type GetCalendarEventsQuery = {
     rangeRoles: Record<string, string[]>;
   };
 };
-
-// from propositions.dto.ts
 /**
  * Command model for creating a new proposition.
  * Corresponds to the request payload for `POST /api/v1/ranges/{rangeSlug}/propositions`.
@@ -93,8 +89,6 @@ export type CreatePropositionCommand = {
  * This type is a subset of the `Proposition` entity.
  */
 export type CreatedPropositionDto = Pick<Proposition, 'id' | 'user_id' | 'range_id' | 'status'>;
-
-// from records.dto.ts
 /**
  * Command model for creating a manual record.
  * Corresponds to the request payload for `POST /api/v1/ranges/{rangeSlug}/records`.
