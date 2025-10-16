@@ -49,7 +49,7 @@ CREATE TABLE users_user_range_roles (
     -- When a role is deleted, assignments of that role are also deleted.
     FOREIGN KEY (role_id) REFERENCES users_roles (id) ON DELETE CASCADE,
     -- When a shooting range is deleted, roles specific to that range are also deleted.
-    FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id) ON DELETE CASCADE
+    FOREIGN KEY (range_id) REFERENCES ranges_shooting_ranges (id) ON DELETE CASCADE
 );
 
 -- =============================================================================
@@ -80,7 +80,7 @@ CREATE TABLE ranges_shooting_ranges (
 );
 
 -- =============================================================================
--- Module: None
+-- Module: audit
 -- =============================================================================
 -- A simple audit trail for logging key events in the system.
 CREATE TABLE audit_logs (
@@ -110,7 +110,7 @@ CREATE TABLE reservations_propositions (
     tracks_requested INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users_users (id),
-    FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
+    FOREIGN KEY (range_id) REFERENCES ranges_shooting_ranges (id)
 );
 
 -- Confirmed bookings, created from propositions or directly by coordinators.
@@ -129,7 +129,7 @@ CREATE TABLE reservations_reservations (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (proposition_id) REFERENCES reservations_propositions (id),
     FOREIGN KEY (coordinator_id) REFERENCES users_users (id),
-    FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
+    FOREIGN KEY (range_id) REFERENCES ranges_shooting_ranges (id)
 );
 
 -- Manual entries for off-system bookings, used for tracking metrics.

@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/users -w src/reservations -w src/ranges -w src/notifications && npm run build -w src/worker",
+    "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/users -w src/reservations -w src/ranges -w src/notifications -w src/audit && npm run build -w src/worker",
     "build:frontend": "npm run build -w src/client",
     "test": "vitest",
     "db:migrate": "node scripts/generate-db-mock.mjs",
