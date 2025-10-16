@@ -1,4 +1,4 @@
-import { Result } from '@strzel-sobie/common/utils/result';
+import { Result } from '@strzel-sobie/common';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsDbRepository implements IReservationsRepository {

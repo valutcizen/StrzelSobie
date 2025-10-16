@@ -1,39 +1,35 @@
-import { UserRole } from '@strzel-sobie/common/models/auth.models';
-import { IReservationsService } from '@strzel-sobie/common/interfaces/reservations.service.interface';
-import { CalendarEventsDto, GetCalendarEventsQuery } from '@strzel-sobie/common/dto/calendar.dto';
-import { Result } from '@strzel-sobie/common/utils/result';
-import { IAdminRepository } from '../../admin/domain/admin.repository';
+import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService } from '@strzel-sobie/common';
 import { IReservationsRepository } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
   constructor(
-    private readonly adminRepository: IAdminRepository,
+    private readonly rangesService: IRangesService,
     private readonly reservationsRepository: IReservationsRepository
   ) {}
 
   public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto, Error>> {
     const { rangeSlug, startDate, endDate, user } = query;
 
-    const rangeIdResult = await this.adminRepository.getRangeIdBySlug(rangeSlug);
-    if (rangeIdResult.isErr()) {
-      return Result.err(rangeIdResult.error);
+    const rangeIdResult = await this.rangesService.getRangeIdBySlug(rangeSlug);
+    if (!rangeIdResult.isSuccess) {
+      return Result.fail(rangeIdResult.getError());
     }
     const rangeId = rangeIdResult.value;
 
-    const [propositionsResult, reservationsResult] = await Promise.all([
+    const [propositionsResult, reservationsResult] : [Result<Proposition[], Error>, Result<Reservation[], Error>] = await Promise.all([
       this.reservationsRepository.getPropositions(rangeId, startDate, endDate),
       this.reservationsRepository.getReservations(rangeId, startDate, endDate),
     ]);
 
-    if (propositionsResult.isErr()) {
-      return Result.err(propositionsResult.error);
+    if (!propositionsResult.isSuccess) {
+      return Result.fail(propositionsResult.getError());
     }
-    if (reservationsResult.isErr()) {
-      return Result.err(reservationsResult.error);
+    if (!reservationsResult.isSuccess) {
+      return Result.fail(reservationsResult.getError());
     }
 
-    const propositions = propositionsResult.value;
-    const reservations = reservationsResult.value;
+    const propositions = propositionsResult.getValue();
+    const reservations = reservationsResult.getValue();
 
     const isClubAdmin = user.roles.includes(UserRole.ClubCommunityAdministrator);
     const rangeAdminRoles = user.rangeRoles[rangeSlug] || [];

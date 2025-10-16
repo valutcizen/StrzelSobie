@@ -1,11 +1,11 @@
 import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, 
-  MeDto, User, RoleScopeError, UserNotFoundError, RoleNotFoundError, IAdminService, 
+  MeDto, User, RoleScopeError, UserNotFoundError, RoleNotFoundError, IRangesService, 
   RangeNotFoundError, ForbiddenError, Role 
 } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: IUserRepository, private readonly adminService: IAdminService) {}
+  constructor(private readonly userRepository: IUserRepository, private readonly rangesService: IRangesService) {}
 
   async findUserByEmail(email: string): Promise<Result<UserIdentifierDto | null, Error>> {
     try {
@@ -135,7 +135,7 @@ export class UserService implements IUserService {
       }
 
       if (roleToAssign.scope === 'range') {
-        const rangeResult = await this.adminService.getRangeById(rangeId as number);
+        const rangeResult = await this.rangesService.getRangeById(rangeId as number);
         if (!rangeResult.isSuccess || !rangeResult.getValue()) {
           return Result.fail(new RangeNotFoundError(`Range with id ${rangeId} not found`));
         }
@@ -194,7 +194,7 @@ export class UserService implements IUserService {
       }
 
       if (roleToRemove.scope === 'range') {
-        const rangeResult = await this.adminService.getRangeById(rangeId as number);
+        const rangeResult = await this.rangesService.getRangeById(rangeId as number);
         if (!rangeResult.isSuccess || !rangeResult.getValue()) {
           return Result.fail(new RangeNotFoundError(`Range with id ${rangeId} not found`));
         }

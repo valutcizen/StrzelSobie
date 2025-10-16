@@ -33,8 +33,8 @@ export class GetRangesRoute extends OpenAPIRoute {
   };
 
   async handle(c: Context) {
-    const adminService = c.get('adminService');
-    const result = await adminService.getRanges();
+    const rangesService = c.get('rangesService');
+    const result = await rangesService.getRanges();
 
     if (result.isSuccess) {
       return c.json(result.getValue(), 200);

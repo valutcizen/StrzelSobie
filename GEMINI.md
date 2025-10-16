@@ -59,7 +59,7 @@ npm run db:reset
 ## Development Conventions
 
 When editing files, please adhere to the following rulesets:
-**Backend modules** (`src/auth`, `src/users`, `src/reservations`, `src/admin`, `src/notifications`): Use the rules defined in `.ai/rules/backend.md`.
+**Backend modules** (`src/auth`, `src/users`, `src/reservations`, `src/ranges`, `src/notifications`): Use the rules defined in `.ai/rules/backend.md`.
 **Client module** (`src/client`): Use the rules defined in `.ai/rules/client.md`.
 **Worker module** (`src/worker`): Use the rules defined in `.ai/rules/worker.md`.
 **Data Flow**: Use the rules defined in `.ai/rules/data-flow.md`.

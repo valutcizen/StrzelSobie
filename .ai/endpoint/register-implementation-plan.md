@@ -64,7 +64,7 @@ This endpoint handles new user registration. It accepts an email and password, c
 9.  `AuthService` uses a secure hashing algorithm (e.g., bcrypt or Argon2) to hash the provided password.
 10. `AuthService` inserts a new record into the `auth_user_credentials` table, linking the `user_id` to the `password_hash`.
 11. `AuthService` assigns the default "Guest" role to the new user by creating an entry in the appropriate roles table (e.g., `auth_user_roles`).
-12. `AuthService` calls the `AdminService.logAction` method to record the registration event. The payload should include `action_type: 'USER_REGISTRATION'`, `target_id: <new_user_id>`, and `details: { email: <user_email>, sourceIp: <source_ip>, proxiedIp: <proxied_ip> }`.
+12. `AuthService` calls the `logAction` method to record the registration event. The payload should include `action_type: 'USER_REGISTRATION'`, `target_id: <new_user_id>`, and `details: { email: <user_email>, sourceIp: <source_ip>, proxiedIp: <proxied_ip> }`.
 13. Upon successful creation, `AuthService` constructs a `RegisteredUserDto` and returns it within a success `Result` (e.g., `Result.ok(dto)`).
 14. The handler receives the `Result` object. It inspects the result and translates it into the appropriate HTTP response:
     - On success, it sends a `201 Created` response with the DTO as the JSON payload.
@@ -83,26 +83,26 @@ This endpoint handles new user registration. It accepts an email and password, c
 ## 8. Implementation Steps
 1.  **Common DTOs & Interfaces**:
     - Create `src/common/src/dto/auth.dto.ts` to define `RegisterUserRequestDto` and `RegisteredUserDto`.
-    - Create an `IAdminService` interface in `src/common` with a `logAction` method. The method should accept a `details` object that can accommodate IP addresses.
+    - Create an `` interface in `src/common` with a `logAction` method. The method should accept a `details` object that can accommodate IP addresses.
     - Update `src/common/src/index.ts` to export all new types.
 2.  **User Service**: In the `users` module, implement `findUserByEmail(email)` and `createUser(email)` methods within the `UserService`. `createUser` should return the newly created user object.
-3.  **Admin Service**: In the `admin` module, create `src/admin/src/application/admin.service.ts` that implements `IAdminService`. The `logAction` method will handle inserting records into the `admin_audit_logs` table.
+3.  ** Service**: In the `` module, create `src//src/application/.service.ts` that implements ``. The `logAction` method will handle inserting records into the `audit_logs` table.
 4.  **Auth Service**: In the `auth` module, create `src/auth/src/application/auth.service.ts`.
 5.  **Implement `register` Method**:
     -   Update the method signature to accept `sourceIp` and `proxiedIp` strings.
-    -   Inject `UserService`, `AdminService` (via interfaces), and the D1 database dependency.
+    -   Inject `UserService`, `` (via interfaces), and the D1 database dependency.
     -   Implement the data flow logic described in section 5, returning a `Result` object.
-    -   After creating the user, call `adminService.logAction`, passing the IPs in the `details` payload.
+    -   After creating the user, call `logAction`, passing the IPs in the `details` payload.
     -   Integrate a password hashing library (e.g., `bcryptjs`).
     -   Define custom domain errors (e.g., `EmailAlreadyExistsError`).
 6.  **Worker Routing**: In `src/worker/index.ts`, add a route for `POST /api/v1/auth/register`.
 7.  **Route Handler**:
-    -   Instantiate all required services (`AuthService`, `UserService`, `AdminService`) and their dependencies.
+    -   Instantiate all required services (`AuthService`, `UserService`, ``) and their dependencies.
     -   Extract source and proxied IP addresses from the request headers/properties.
     -   Implement request body validation, returning a `400 Bad Request` on failure.
     -   Call `authService.register`, passing the validated data and the IPs.
     -   Implement logic to map the returned `Result` object to an appropriate HTTP response (e.g., `201`, `409`, `500`).
 8.  **Unit Tests**: 
     - Create unit tests for the `AuthService`, mocking all dependencies. Verify that `logAction` is called with the correct payload, including IP addresses.
-    - Create unit tests for the `AdminService`.
+    - Create unit tests for the ``.
 9.  **Integration Tests**: Add integration tests that make a real HTTP request to the running worker and verify the endpoint returns the correct status codes and that an audit log with the correct IP information is created in the database.

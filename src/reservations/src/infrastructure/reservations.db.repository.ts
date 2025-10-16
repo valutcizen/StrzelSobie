@@ -29,7 +29,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getPropositions(rangeSlug: string, startDate: string, endDate: string): Promise<Result<Proposition[], Error>> {
     try {
-      const rangeStmt = this.db.prepare('SELECT id FROM admin_shooting_ranges WHERE slug = ?');
+      const rangeStmt = this.db.prepare('SELECT id FROM ranges_shooting_ranges WHERE slug = ?');
       const rangeResult = await rangeStmt.bind(rangeSlug).first<{ id: number }>();
 
       if (!rangeResult) {
@@ -59,7 +59,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getReservations(rangeSlug: string, startDate: string, endDate: string): Promise<Result<Reservation[], Error>> {
     try {
-      const rangeStmt = this.db.prepare('SELECT id FROM admin_shooting_ranges WHERE slug = ?');
+      const rangeStmt = this.db.prepare('SELECT id FROM ranges_shooting_ranges WHERE slug = ?');
       const rangeResult = await rangeStmt.bind(rangeSlug).first<{ id: number }>();
 
       if (!rangeResult) {

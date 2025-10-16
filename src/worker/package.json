@@ -14,7 +14,7 @@
     "@strzel-sobie/auth": "file:../auth",
     "@strzel-sobie/users": "file:../users",
     "@strzel-sobie/reservations": "file:../reservations",
-    "@strzel-sobie/admin": "file:../admin",
+    "@strzel-sobie/ranges": "file:../ranges",
     "@strzel-sobie/notifications": "file:../notifications",
     "chanfana": "^2.6.3",
     "hono": "^4.6.20",

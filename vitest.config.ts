@@ -1,7 +1,7 @@
 import { defineProject, defineConfig } from 'vitest/config';
 
 const projects = [
-  'admin',
+  'ranges',
   'auth',
   'common',
   'notifications',

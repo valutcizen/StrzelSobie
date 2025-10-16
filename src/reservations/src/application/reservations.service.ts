@@ -1,16 +1,16 @@
-import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IAdminService } from '@strzel-sobie/common';
+import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService } from '@strzel-sobie/common';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
   constructor(
-    private readonly adminService: IAdminService,
+    private readonly rangesService: IRangesService,
     private readonly reservationsRepository: IReservationsRepository
   ) {}
 
   public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto, Error>> {
     const { rangeSlug, startDate, endDate, user } = query;
 
-    const rangeDetailsResult = await this.adminService.getRangeDetails(rangeSlug);
+    const rangeDetailsResult = await this.rangesService.getRangeDetails(rangeSlug);
     if (!rangeDetailsResult.isSuccess) {
       return Result.fail(rangeDetailsResult.getError());
     }

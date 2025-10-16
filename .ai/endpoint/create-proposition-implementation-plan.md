@@ -22,8 +22,8 @@ This endpoint allows authenticated users (Guest or Member) to create a new propo
   ```
 
 ## 3. Used Types
-- **Request Body DTO**: `CreatePropositionCommand` from `@strzel-sobie/common/dto/propositions.dto.ts`.
-- **Response Body DTO**: `CreatedPropositionDto` from `@strzel-sobie/common/dto/propositions.dto.ts`.
+- **Request Body DTO**: `CreatePropositionCommand` from `@strzel-sobie/common`.
+- **Response Body DTO**: `CreatedPropositionDto` from `@strzel-sobie/common`.
 - **Zod Schema**: A `zod` schema will be defined within the endpoint file in the `worker` module to validate the incoming request body and path parameters.
 
 ## 4. Response Details

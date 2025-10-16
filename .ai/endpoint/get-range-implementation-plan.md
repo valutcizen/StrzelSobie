@@ -11,7 +11,7 @@ This document outlines the implementation plan for the `GET /api/v1/ranges/{rang
 - **Request Body:** None.
 
 ## 3. Used Types
-- **DTO:** `RangeDetailsDto` from `@strzel-sobie/common/dto/ranges.dto.ts`. This DTO will be used for the response payload.
+- **DTO:** `RangeDetailsDto` from `@strzel-sobie/common`. This DTO will be used for the response payload.
 
 ## 4. Response Details
 - **Success (200 OK):**
@@ -37,10 +37,10 @@ This document outlines the implementation plan for the `GET /api/v1/ranges/{rang
 ## 5. Data Flow
 1.  The Cloudflare Worker receives a `GET` request at `/api/v1/ranges/{rangeSlug}`.
 2.  The endpoint handler in `src/worker` validates the `rangeSlug` path parameter using a `zod` schema to ensure it's a valid string.
-3.  The handler retrieves the `adminService` instance from the Hono context.
-4.  It calls `adminService.getRangeDetails(rangeSlug)`.
-5.  The `adminService` calls the `adminRepository.findBySlug(rangeSlug)` method.
-6.  The `adminRepository` executes a `SELECT` query on the `admin_shooting_ranges` D1 database table using the provided slug.
+3.  The handler retrieves the `rangesService` instance from the Hono context.
+4.  It calls `rangesService.getRangeDetails(rangeSlug)`.
+5.  The `rangesService` calls the `rangesRepository.findBySlug(rangeSlug)` method.
+6.  The `rangesRepository` executes a `SELECT` query on the `ranges_shooting_ranges` D1 database table using the provided slug.
 7.  **If a record is found:**
     - The repository returns the database model to the service.
     - The service maps the database model to the `RangeDetailsDto`, parsing the `operating_hours` JSON string into an object.
@@ -56,24 +56,24 @@ This document outlines the implementation plan for the `GET /api/v1/ranges/{rang
 - **Information Exposure:** The endpoint exposes public, non-sensitive information about shooting ranges.
 
 ## 7. Performance Considerations
-- The `slug` column in the `admin_shooting_ranges` table is constrained to be `UNIQUE`, and should be indexed to ensure fast lookups.
+- The `slug` column in the `ranges_shooting_ranges` table is constrained to be `UNIQUE`, and should be indexed to ensure fast lookups.
 - The data payload is small, so network latency should not be a significant concern.
 
 ## 8. Implementation Steps
-1.  **Module: `admin` (`src/admin`)**
-    1.  **Repository Contract (`domain/admin.repository.ts`):**
-        -   Add the following method to the `AdminRepository` interface:
+1.  **Module: `ranges` (`src/ranges`)**
+    1.  **Repository Contract (`domain/ranges.repository.ts`):**
+        -   Add the following method to the `RangesRepository` interface:
             ```typescript
             findBySlug(slug: string): Promise<ShootingRange | null>;
             ```
-    2.  **Repository Implementation (`infrastructure/admin.db.repository.ts`):**
+    2.  **Repository Implementation (`infrastructure/ranges.db.repository.ts`):**
         -   Implement the `findBySlug` method. It will use the D1 client to execute a parameterized query:
             ```sql
-            SELECT id, slug, display_name, total_tracks, operating_hours FROM admin_shooting_ranges WHERE slug = ?1;
+            SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges WHERE slug = ?1;
             ```
-    3.  **Application Service (`application/admin.service.ts`):**
+    3.  **Application Service (`application/ranges.service.ts`):**
         -   Create a new method: `async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto, Error>>`.
-        -   This method will call `this.adminRepository.findBySlug(slug)`.
+        -   This method will call `this.rangesRepository.findBySlug(slug)`.
         -   If the result is `null`, return `Result.failure(new Error('Range not found'))`.
         -   If a range is found, map the entity to `RangeDetailsDto`, ensuring `operating_hours` is parsed from a JSON string. Return `Result.success(dto)`.
 
@@ -86,15 +86,15 @@ This document outlines the implementation plan for the `GET /api/v1/ranges/{rang
         -   Define a `zod` schema for the `rangeSlug` path parameter.
         -   Implement the `async handle(c: Context)` method:
             -   Parse and validate the `rangeSlug` from the request.
-            -   Get `adminService` from the context: `c.get('adminService')`.
-            -   Call `adminService.getRangeDetails(rangeSlug)`.
+            -   Get `rangesService` from the context: `c.get('rangesService')`.
+            -   Call `rangesService.getRangeDetails(rangeSlug)`.
             -   Based on the returned `Result`, use `c.json()` to return either a `200 OK` with the payload or a `404 Not Found` with an error object.
 
 3.  **Testing (`/tests`)**
     1.  **Unit Test:**
-        -   Add a unit test for the `getRangeDetails` method in `admin.service.ts` to verify both the success and "not found" cases. Mock the `AdminRepository`.
+        -   Add a unit test for the `getRangeDetails` method in `ranges.service.ts` to verify both the success and "not found" cases. Mock the `RangesRepository`.
     2.  **E2E Test:**
-        -   Add a new E2E test file in `tests/admin/` to test the `GET /api/v1/ranges/{rangeSlug}` endpoint.
+        -   Add a new E2E test file in `tests/ranges/` to test the `GET /api/v1/ranges/{rangeSlug}` endpoint.
         -   The test should cover:
             -   Requesting an existing range and asserting a `200 OK` response with the correct data structure.
             -   Requesting a non-existent range and asserting a `404 Not Found` response.

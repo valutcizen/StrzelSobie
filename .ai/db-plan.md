@@ -1,6 +1,6 @@
 ### 1. Overview
 
-This document outlines the database schema for the Strzel Sobie project, designed for Cloudflare D1 (an SQLite-like database). The schema is organized based on the modular architecture of the backend, where each table is "owned" by a specific module (e.g., `users`, `auth`, `reservations`, `admin`).
+This document outlines the database schema for the Strzel Sobie project, designed for Cloudflare D1 (an SQLite-like database). The schema is organized based on the modular architecture of the backend, where each table is "owned" by a specific module (e.g., `users`, `auth`, `reservations`, `ranges`).
 
 ### 2. Table Ownership and Naming Conventions
 
@@ -62,12 +62,12 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | --- | --- | --- | --- |
 | `user_id` | INTEGER | NOT NULL, FOREIGN KEY (users_users.id) | The ID of the user being assigned the role. |
 | `role_id` | INTEGER | NOT NULL, FOREIGN KEY (users_roles.id) | The ID of the range-specific role. |
-| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (admin_shooting_ranges.id) | The ID of the shooting range this role applies to. |
+| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (ranges_shooting_ranges.id) | The ID of the shooting range this role applies to. |
 | | | PRIMARY KEY (user_id, role_id, range_id) | |
 
-**`admin_shooting_ranges`**
+**`ranges_shooting_ranges`**
 
-*   **Owner**: `admin`
+*   **Owner**: `ranges`
 *   **Description**: Stores details about the shooting ranges managed by the system.
 
 | Column Name | Data Type | Constraints | Description |
@@ -87,7 +87,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | --- | --- | --- | --- |
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique identifier for the proposition. |
 | `user_id` | INTEGER | NOT NULL, FOREIGN KEY (users_users.id) | The user who created the proposition. |
-| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (admin_shooting_ranges.id) | The target shooting range for the proposition. |
+| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (ranges_shooting_ranges.id) | The target shooting range for the proposition. |
 | `status` | TEXT | NOT NULL | The current status (e.g., "open", "converted", "cancelled"). |
 | `event_date` | TEXT | NOT NULL | The proposed date for the event (YYYY-MM-DD). |
 | `start_time` | TEXT | NOT NULL | The proposed start time (HH:MM). |
@@ -106,7 +106,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique identifier for the reservation. |
 | `proposition_id` | INTEGER | NULL, FOREIGN KEY (reservations_propositions.id) | The proposition this reservation was converted from (if any). |
 | `coordinator_id` | INTEGER | NOT NULL, FOREIGN KEY (users_users.id) | The coordinator who confirmed or created the reservation. |
-| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (admin_shooting_ranges.id) | The shooting range where the reservation is located. |
+| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (ranges_shooting_ranges.id) | The shooting range where the reservation is located. |
 | `event_date` | TEXT | NOT NULL | The date of the event (YYYY-MM-DD). |
 | `start_time` | TEXT | NOT NULL | The start time of the event (HH:MM). |
 | `end_time` | TEXT | NOT NULL | The end time of the event (HH:MM). |
@@ -125,16 +125,16 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | --- | --- | --- | --- |
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique identifier for the record. |
 | `admin_id` | INTEGER | NOT NULL, FOREIGN KEY (users_users.id) | The administrator who logged the record. |
-| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (admin_shooting_ranges.id) | The shooting range for the record. |
+| `range_id` | INTEGER | NOT NULL, FOREIGN KEY (ranges_shooting_ranges.id) | The shooting range for the record. |
 | `event_date` | TEXT | NOT NULL | The date of the event (YYYY-MM-DD). |
 | `start_time` | TEXT | NOT NULL | The start time of the event (HH:MM). |
 | `end_time` | TEXT | NOT NULL | The end time of the event (HH:MM). |
 | `num_participants` | INTEGER | NOT NULL | The number of participants. |
 | `created_at` | TEXT | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp of when the record was created. |
 
-**`admin_audit_logs`**
+**`audit_logs`**
 
-*   **Owner**: `admin`
+*   **Owner**: `worker`
 *   **Description**: A simple audit trail for logging key events in the system.
 
 | Column Name | Data Type | Constraints | Description |
@@ -156,7 +156,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 - **User and Proposition**: A one-to-many relationship (`users_users` 1-to-N `reservations_propositions`).
 - **Proposition and Reservation**: An optional one-to-one relationship (`reservations_propositions` 1-to-1 `reservations_reservations`).
 - **User and Reservation/Record**: A one-to-many relationship where a `coordinator_id` in `reservations_reservations` or an `admin_id` in `reservations_records` links back to `users_users`.
-- **Shooting Range and Events**: A one-to-many relationship (`admin_shooting_ranges` 1-to-N `reservations_propositions`/`reservations_reservations`/`reservations_records`).
+- **Shooting Range and Events**: A one-to-many relationship (`ranges_shooting_ranges` 1-to-N `reservations_propositions`/`reservations_reservations`/`reservations_records`).
 
 ### 5. Indexes
 

@@ -23,15 +23,15 @@ export class GetRange extends OpenAPIRoute {
   };
 
   async handle(c: Context) {
-    const { params } = await this.getValidatedData<{params: { rangeSlug: string }}>();
-    const adminService = c.get("adminService");
-    const result = await adminService.getRangeDetails(params.rangeSlug);
+    const { params } : {params: { rangeSlug: string }} = await this.getValidatedData<{params: { rangeSlug: string }}>();
+    const rangesService = c.get("rangesService");
+    const result = await rangesService.getRangeDetails(params.rangeSlug);
 
     if (!result.isSuccess) {
       return c.json(
         {
           success: false,
-          error: result.getError().message,
+          error: result.getError()
         },
         404
       );

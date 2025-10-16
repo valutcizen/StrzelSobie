@@ -1,13 +1,13 @@
 import {
   ForbiddenError,
-  IAdminService,
+  IRangesService,
   RangeNotFoundError,
   UpdateRangeCommand,
   UserDto,
 } from '@strzel-sobie/common';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { Context } from 'src/worker/src/types';
+import { Context } from '../../../types';
 
 const paramsSchema = z.object({
   rangeSlug: z.string(),
@@ -70,14 +70,14 @@ export class UpdateRange extends OpenAPIRoute {
   };
 
   async handle(c: Context) {
-    const adminService = c.get('adminService') as IAdminService;
+    const rangesService = c.get('rangesService') as IRangesService;
     const user = c.get('user') as UserDto;
     const {
       params: { rangeSlug },
       body: command,
     } = await this.getValidatedData<{ params: z.infer<typeof paramsSchema>; body: UpdateRangeCommand }>();
 
-    const result = await adminService.updateRangeDetails(rangeSlug, command, user);
+    const result = await rangesService.updateRangeDetails(rangeSlug, command, user);
 
     if (result.isSuccess) {
       return {

@@ -1,4 +1,4 @@
-import { Result } from '@strzel-sobie/common/utils/result';
+import { Result } from '@strzel-sobie/common';
 
 export type Proposition = {
   id: number;

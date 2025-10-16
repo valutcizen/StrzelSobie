@@ -4,7 +4,7 @@
 -- For example, the password for "admin@example.com" is "adminpassword".
 
 -- First, ensure there is a shooting range for range-specific roles.
-INSERT OR IGNORE INTO admin_shooting_ranges (id, slug, display_name, total_tracks, operating_hours)
+INSERT OR IGNORE INTO ranges_shooting_ranges (id, slug, display_name, total_tracks, operating_hours)
 VALUES (1, 'dobczyce', 'Strzelnica Dobczyce', 10, '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"}}');
 
 -- =============================================================================

@@ -1,5 +1,5 @@
 {
-  "name": "@strzel-sobie/admin",
+  "name": "@strzel-sobie/ranges",
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.js",

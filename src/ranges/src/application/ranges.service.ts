@@ -1,6 +1,6 @@
 import {
   AuditLogEntry,
-  IAdminService,
+  IRangesService,
   RangeDetailsDto,
   RangeSummaryDto,
   Result,
@@ -9,14 +9,14 @@ import {
   ForbiddenError,
   RangeNotFoundError,
 } from '@strzel-sobie/common';
-import { IAdminRepository } from '../domain/admin.repository';
+import { IRangesRepository } from '../domain/ranges.repository';
 import { ShootingRange } from '../domain/shooting-range.model';
 
-export class AdminService implements IAdminService {
-  constructor(private readonly adminRepository: IAdminRepository) {}
+export class RangesService implements IRangesService {
+  constructor(private readonly rangesRepository: IRangesRepository) {}
 
   public async getRanges(): Promise<Result<RangeSummaryDto[], Error>> {
-    const result = await this.adminRepository.findAll();
+    const result = await this.rangesRepository.findAll();
 
     if (!result.isSuccess) {
       return Result.fail(result.getError());
@@ -32,12 +32,12 @@ export class AdminService implements IAdminService {
   }
 
   public async logAction(log: AuditLogEntry): Promise<void> {
-    return this.adminRepository.logAction(log);
+    return this.rangesRepository.logAction(log);
   }
 
   public async getRangeById(rangeId: number): Promise<Result<{ id: number } | null, Error>> {
     try {
-      const range = await this.adminRepository.getRangeById(rangeId);
+      const range = await this.rangesRepository.getRangeById(rangeId);
       return Result.ok(range);
     } catch (error) {
       return Result.fail(error as Error);
@@ -45,7 +45,7 @@ export class AdminService implements IAdminService {
   }
 
   public async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto, Error>> {
-    const range = await this.adminRepository.findBySlug(slug);
+    const range = await this.rangesRepository.findBySlug(slug);
 
     if (!range) {
       return Result.fail(new RangeNotFoundError('Range not found'));
@@ -64,7 +64,7 @@ export class AdminService implements IAdminService {
     command: UpdateRangeCommand,
     user: UserDto
   ): Promise<Result<void, Error>> {
-    const range = await this.adminRepository.findBySlug(rangeSlug);
+    const range = await this.rangesRepository.findBySlug(rangeSlug);
 
     if (!range) {
       return Result.fail(new RangeNotFoundError('Range not found'));
@@ -88,6 +88,6 @@ export class AdminService implements IAdminService {
       range.operatingHours = JSON.stringify(command.operatingHours);
     }
 
-    return this.adminRepository.update(range);
+    return this.rangesRepository.update(range);
   }
 }

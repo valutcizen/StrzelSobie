@@ -12,7 +12,7 @@ export type AuditLogEntry = {
   };
 };
 
-export interface IAdminService {
+export interface IRangesService {
   logAction(log: AuditLogEntry): Promise<void>;
   getRangeById(rangeId: number): Promise<Result<{ id: number } | null, Error>>;
   getRanges(): Promise<Result<RangeSummaryDto[], Error>>;

@@ -110,7 +110,7 @@ The following new DTOs and Command Models will be created.
 2.  The `worker` receives the request. The `get-events.ts` endpoint handler validates the path and query parameters using a `zod` schema.
 3.  The handler retrieves the `ReservationsService` and the user session object from the Hono context.
 4.  It calls `reservationsService.getCalendarEvents()` with a `GetCalendarEventsQuery` object containing the validated parameters and user data.
-5.  The `ReservationsService` first calls the `AdminRepository` to resolve the `rangeSlug` to a `range_id`. If not found, it returns a `NotFound` error.
+5.  The `ReservationsService` first calls the `RangesRepository` to resolve the `rangeSlug` to a `range_id`. If not found, it returns a `NotFound` error.
 6.  The service then calls the `ReservationsRepository` to fetch all propositions and reservations from the `reservations_propositions` and `reservations_reservations` tables that fall within the date range for the given `range_id`.
 7.  The service processes the raw data, applying authorization rules based on the user's roles to filter the lists and shape the data into the `CalendarEventsDto` format. It omits or includes data (like reservation `details`) accordingly.
 8.  The service returns a `Result.ok(calendarEventsDto)` on success or a `Result.err()` on failure.
@@ -137,7 +137,7 @@ The following new DTOs and Command Models will be created.
 4.  **Service Logic:**
     - Create the `ReservationsService` at `src/reservations/application/reservations.service.ts` if it doesn't exist.
     - Implement the `getCalendarEvents` method. This will involve:
-        - Calling the `AdminRepository` to get the range ID.
+        - Calling the `RangesRepository` to get the range ID.
         - Calling the new repository methods to fetch data.
         - Implementing the role-based filtering and data mapping logic.
 5.  **Worker Endpoint:**

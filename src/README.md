@@ -6,10 +6,10 @@ This directory contains the source code for the "Strzel Sobie" application, orga
 
 Below is a description of each module within the `src` directory.
 
-### `admin`
+### `ranges`
 
--   **Description:** Implements administrative functions for Range and Club/Community Administrator, such as managing range settings.
--   [Go to module](./admin/README.md)
+-   **Description:** Implements managing range settings.
+-   [Go to module](./ranges/README.md)
 
 ### `auth`
 

@@ -13,12 +13,12 @@ Example: `GET /api/v1/ranges`
 -   **Users**: Represents user accounts. Corresponds to `users_users`.
 -   **Roles**: Represents user roles. Corresponds to `users_roles`.
 -   **Auth**: Handles authentication tasks like registration, login, and session management.
--   **Ranges**: Represents shooting ranges. Corresponds to `admin_shooting_ranges`.
+-   **Ranges**: Represents shooting ranges. Corresponds to `ranges_shooting_ranges`.
 -   **Propositions**: Represents user-created booking proposals. Corresponds to `reservations_propositions`.
 -   **Reservations**: Represents confirmed bookings. Corresponds to `reservations_reservations`.
 -   **Records**: Represents manually logged, off-system bookings. Corresponds to `reservations_records`.
 -   **Events**: A composite resource for fetching calendar data (propositions and reservations).
--   **Audit Logs**: Represents the system audit trail. Corresponds to `admin_audit_logs`.
+-   **Audit Logs**: Represents the system audit trail. Corresponds to `audit_logs`.
 
 ## 3. Endpoints
 

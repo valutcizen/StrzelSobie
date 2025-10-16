@@ -4,7 +4,7 @@
 --
 -- This schema defines the tables, relationships, and indexes for the Strzel Sobie MVP.
 -- It is designed to be modular, with table names prefixed by the owning module
--- (e.g., `users_`, `auth_`, `reservations_`, `admin_`).
+-- (e.g., `users_`, `auth_`, `reservations_`, `ranges_`).
 
 -- =============================================================================
 -- Module: users
@@ -66,11 +66,11 @@ CREATE TABLE auth_user_credentials (
 );
 
 -- =============================================================================
--- Module: admin
+-- Module: ranges
 -- =============================================================================
 
 -- Stores details about the shooting ranges.
-CREATE TABLE admin_shooting_ranges (
+CREATE TABLE ranges_shooting_ranges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT NOT NULL UNIQUE, -- URL-friendly identifier, e.g., "dobczyce".
     display_name TEXT NOT NULL, -- Human-readable name, e.g., "Strzelnica Dobczyce".
@@ -79,8 +79,11 @@ CREATE TABLE admin_shooting_ranges (
     operating_hours TEXT NOT NULL -- e.g., '{"monday": {"open": "09:00", "close": "17:00"}, ...}'
 );
 
+-- =============================================================================
+-- Module: None
+-- =============================================================================
 -- A simple audit trail for logging key events in the system.
-CREATE TABLE admin_audit_logs (
+CREATE TABLE audit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER, -- The user who performed the action (NULL for system actions).
     action_type TEXT NOT NULL, -- e.g., 'RESERVATION_CREATE', 'PROPOSITION_ACCEPT'.
@@ -140,7 +143,7 @@ CREATE TABLE reservations_records (
     num_participants INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_id) REFERENCES users_users (id),
-    FOREIGN KEY (range_id) REFERENCES admin_shooting_ranges (id)
+    FOREIGN KEY (range_id) REFERENCES ranges_shooting_ranges (id)
     );
 
 -- =============================================================================

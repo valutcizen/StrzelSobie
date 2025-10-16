@@ -12,7 +12,7 @@ This document outlines the implementation plan for the `GET /api/v1/ranges` endp
 - **Request Body**: None
 
 ## 3. Used Types
-- **DTO**: `RangeSummaryDto` from `@strzel-sobie/common/dto/ranges.dto.ts` will be used for the response payload.
+- **DTO**: `RangeSummaryDto` from `@strzel-sobie/common` will be used for the response payload.
   ```typescript
   export type RangeSummaryDto = {
     id: number;
@@ -47,10 +47,10 @@ This document outlines the implementation plan for the `GET /api/v1/ranges` endp
 ## 5. Data Flow
 1.  The Cloudflare Worker receives a `GET` request at `/api/v1/ranges`.
 2.  The worker routes the request to the `GetRangesRoute` handler.
-3.  The handler retrieves the `adminService` instance from the application context.
-4.  It calls the `adminService.getRanges()` method.
-5.  The `AdminService` calls the `adminRepository.findAll()` method to fetch the range data.
-6.  The `AdminDbRepository` executes a `SELECT id, slug, display_name FROM admin_shooting_ranges` query against the D1 database.
+3.  The handler retrieves the `rangesService` instance from the application context.
+4.  It calls the `rangesService.getRanges()` method.
+5.  The `RangesService` calls the `rangesRepository.findAll()` method to fetch the range data.
+6.  The `RangesDbRepository` executes a `SELECT id, slug, display_name FROM ranges_shooting_ranges` query against the D1 database.
 7.  The repository maps the raw database rows into `ShootingRange` domain models.
 8.  The service receives the domain models and maps them to `RangeSummaryDto` objects.
 9.  The service wraps the DTO array in a `Success` result object and returns it to the worker.
@@ -63,36 +63,36 @@ This document outlines the implementation plan for the `GET /api/v1/ranges` endp
 
 ## 7. Error Handling
 - The primary error scenario is a database failure (e.g., connectivity issue, query error).
-- The `AdminDbRepository` or `AdminService` will catch any database-related exceptions and return a `Failure` result object containing an `Error`.
+- The `RangesDbRepository` or `RangesService` will catch any database-related exceptions and return a `Failure` result object containing an `Error`.
 - The worker's endpoint handler will check if the result is a `Failure` and, if so, return a generic `500 Internal Server Error` response to avoid leaking internal implementation details.
 
 ## 8. Performance Considerations
-- The `admin_shooting_ranges` table is expected to be small, so a full table scan is acceptable.
+- The `ranges_shooting_ranges` table is expected to be small, so a full table scan is acceptable.
 - The query only selects the necessary columns (`id`, `slug`, `display_name`), which is efficient.
 - No significant performance bottlenecks are anticipated for this endpoint.
 
 ## 9. Implementation Steps
 
-1.  **Update Common Interface (`IAdminService`)**:
-    - In `src/common/src/interfaces/admin.service.interface.ts`, add a new method to the `IAdminService` interface:
+1.  **Update Common Interface (`IRangesService`)**:
+    - In `src/common/src/interfaces/ranges.service.interface.ts`, add a new method to the `IRangesService` interface:
       ```typescript
       getRanges(): Promise<Result<RangeSummaryDto[], Error>>;
       ```
 
-2.  **Update Domain (`admin.repository.ts`)**:
-    - In `src/admin/src/domain/admin.repository.ts`, add a new method to the `IAdminRepository` interface:
+2.  **Update Domain (`ranges.repository.ts`)**:
+    - In `src/ranges/src/domain/ranges.repository.ts`, add a new method to the `IRangesRepository` interface:
       ```typescript
       findAll(): Promise<Result<ShootingRange[], Error>>;
       ```
 
-3.  **Implement Repository (`admin.db.repository.ts`)**:
-    - In `src/admin/src/infrastructure/admin.db.repository.ts`, implement the `findAll` method.
-    - It will use the Drizzle client to execute a `select` query on the `admin_shooting_ranges` table.
+3.  **Implement Repository (`ranges.db.repository.ts`)**:
+    - In `src/ranges/src/infrastructure/ranges.db.repository.ts`, implement the `findAll` method.
+    - It will use the Drizzle client to execute a `select` query on the `ranges_shooting_ranges` table.
     - The method will be wrapped in a `try/catch` block to handle potential database errors and return a `Result` object.
 
-4.  **Implement Service (`admin.service.ts`)**:
-    - In `src/admin/src/application/admin.service.ts`, implement the `getRanges` method.
-    - This method will call `this.adminRepository.findAll()`.
+4.  **Implement Service (`ranges.service.ts`)**:
+    - In `src/ranges/src/application/ranges.service.ts`, implement the `getRanges` method.
+    - This method will call `this.rangesRepository.findAll()`.
     - If the result is a success, it will map the `ShootingRange[]` array to a `RangeSummaryDto[]` array (mapping `display_name` to `displayName`).
     - It will return the `Result` object (either the successful DTO array or the failure from the repository).
 
@@ -101,8 +101,8 @@ This document outlines the implementation plan for the `GET /api/v1/ranges` endp
     - Implement a class `GetRangesRoute` that extends `OpenAPIRoute`.
     - Define the `schema` property with OpenAPI details, including summary, tags, and response schemas for `200 OK` and `500 Internal Server Error`. The `200` response should reference the `RangeSummaryDto`.
     - Implement the `async handle(c: Context)` method:
-        - Get `adminService` from the context: `const adminService = c.get('adminService');`
-        - Call `const result = await adminService.getRanges();`
+        - Get `rangesService` from the context: `const rangesService = c.get('rangesService');`
+        - Call `const result = await rangesService.getRanges();`
         - If `result.isSuccess`, return `c.json(result.value, 200);`.
         - If `result.isFailure`, log the error and return `c.json({ error: 'Internal Server Error' }, 500);`.
 

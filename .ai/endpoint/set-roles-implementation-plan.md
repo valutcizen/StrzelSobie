@@ -21,9 +21,9 @@ This document outlines the implementation plan for an API endpoint that assigns 
       - `rangeId` (number | null): The ID of the shooting range for range-specific roles; `null` for global roles.
 
 ## 3. Used Types
-- **`AssignRoleCommand`** (`@strzel-sobie/common/dto`): Defines the structure of the request body.
-- **`User`** (`@strzel-sobie/common/models`): Represents the requesting user's data retrieved from the session for authorization.
-- **`Result<T, E>`** (`@strzel-sobie/common/utils`): Used for returning success or error states from the service layer.
+- **`AssignRoleCommand`** (`@strzel-sobie/common`): Defines the structure of the request body.
+- **`User`** (`@strzel-sobie/common`): Represents the requesting user's data retrieved from the session for authorization.
+- **`Result<T, E>`** (`@strzel-sobie/common`): Used for returning success or error states from the service layer.
 
 ## 4. Response Details
 - **Success**:
@@ -86,7 +86,7 @@ The service will return specific, typed errors wrapped in a `Result` object, whi
       ```
     - Implement this method in `UserService`. It will contain the authorization, validation, and persistence logic by calling the repository.
 
-### Step 2: Update `admin` Module (if needed)
+### Step 2: Update `ranges` Module (if needed)
 1.  **Repository/Service**: If not already present, create methods to fetch shooting range details to validate `rangeId`. This might involve creating a minimal `IRangeRepository` and `RangeService` if they don't exist.
 
 ### Step 3: Implement Worker Endpoint

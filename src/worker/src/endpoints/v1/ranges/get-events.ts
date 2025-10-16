@@ -1,6 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { IReservationsService } from '@strzel-sobie/common/interfaces/reservations.service.interface';
+import { IReservationsService } from '@strzel-sobie/common';
 import { AppContext } from '../../../types';
 
 const ParamsSchema = z.object({

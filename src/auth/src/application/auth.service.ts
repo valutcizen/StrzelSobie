@@ -1,6 +1,6 @@
 import {
   AuditLogEntry,
-  IAdminService,
+  IRangesService,
   IUserService,
   LoginUserDto,
   RegisteredUserDto,
@@ -18,7 +18,7 @@ export class AuthService {
     private readonly authRepository: IAuthRepository,
     private readonly sessionRepository: ISessionRepository,
     private readonly userService: IUserService,
-    private readonly adminService: IAdminService
+    private readonly rangesService: IRangesService
   ) {}
 
   public async login(dto: LoginUserDto): Promise<Result<{ token: string, session: SessionData }, InvalidCredentialsError>> {
@@ -121,7 +121,7 @@ export class AuthService {
       },
     };
 
-    await this.adminService.logAction(log);
+    await this.rangesService.logAction(log);
 
     const registeredUser: RegisteredUserDto = {
       id: newUser.id,

@@ -13,7 +13,7 @@ import { GetRange } from './endpoints/v1/ranges/get-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
 import { GetEvents } from './endpoints/v1/ranges/get-events';
 import { Env, Variables } from './types';
-import { AdminDbRepository, AdminService } from '@strzel-sobie/admin';
+import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
 import {
   AuthDbRepository,
   AuthService,
@@ -31,23 +31,23 @@ app.use('*', async (c, next) => {
   const authRepository = new AuthDbRepository(c.env.DB);
   const sessionRepository = new SessionKvRepository(c.env.SESSIONS_KV);
   const userRepository = new UserDbRepository(c.env.DB);
-  const adminRepository = new AdminDbRepository(c.env.DB);
+  const rangesRepository = new RangesDbRepository(c.env.DB);
   const reservationsRepository = new ReservationsDbRepository(c.env.DB);
 
   // Services
-  const adminService = new AdminService(adminRepository);
-  const userService = new UserService(userRepository, adminService);
+  const rangesService = new RangesService(rangesRepository);
+  const userService = new UserService(userRepository, rangesService);
   const authService = new AuthService(
     authRepository,
     sessionRepository,
     userService,
-    adminService
+    rangesService
   );
-  const reservationsService = new ReservationsService(adminService, reservationsRepository);
+  const reservationsService = new ReservationsService(rangesService, reservationsRepository);
 
   c.set('authService', authService);
   c.set('userService', userService);
-  c.set('adminService', adminService);
+  c.set('rangesService', rangesService);
   c.set('reservationsService', reservationsService);
 
   await next();

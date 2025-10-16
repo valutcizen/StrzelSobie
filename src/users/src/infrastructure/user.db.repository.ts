@@ -51,7 +51,7 @@ export class UserDbRepository implements IUserRepository {
       SELECT sr.slug, r.name
       FROM users_user_range_roles urr
       JOIN users_roles r ON urr.role_id = r.id
-      JOIN admin_shooting_ranges sr ON urr.range_id = sr.id
+      JOIN ranges_shooting_ranges sr ON urr.range_id = sr.id
       WHERE urr.user_id = ?
     `);
     const rangeRolesResult = await rangeRolesStmt.bind(userId).all<{ slug: string; name: string }>();

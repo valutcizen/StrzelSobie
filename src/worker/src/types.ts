@@ -1,12 +1,11 @@
 import { Context as HonoContext } from 'hono';
-import { D1Database } from '@cloudflare/workers-types';
-import { AdminService } from '@strzel-sobie/admin';
+import { RangesService } from '@strzel-sobie/ranges';
 import { AuthService, Session } from '@strzel-sobie/auth';
 
 export type Variables = {
   authService: AuthService;
   userService: UserService;
-  adminService: AdminService;
+  rangesService: RangesService;
   session: Session;
 };
 

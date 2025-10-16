@@ -1,7 +1,7 @@
 import { AuditLogEntry, Result } from '@strzel-sobie/common';
 import { ShootingRange } from './shooting-range.model';
 
-export interface IAdminRepository {
+export interface IRangesRepository {
   logAction(log: AuditLogEntry): Promise<void>;
   getRangeById(rangeId: number): Promise<{ id: number } | null>;
   findAll(): Promise<Result<ShootingRange[], Error>>;
