@@ -1,8 +1,10 @@
-import { MeDto, RoleDto, UserIdentifierDto } from '../dto';
-import { GetUsersOptions, PaginatedUsersDto } from '../dto';
-import { Result } from '../utils/result';
-import { User } from '../models/users.models';
-import { UserNotFoundError, RoleNotFoundError, RoleScopeError, ForbiddenError, RangeNotFoundError } from '../interfaces/errors';
+import { MeDto } from '../auth/dto';
+import { RoleDto } from '../roles/dto';
+import { GetUsersOptions, PaginatedUsersDto, UserIdentifierDto } from './dto';
+import { Result } from '../result';
+import { User } from './model';
+import { UserNotFoundError, RoleNotFoundError, RoleScopeError, ForbiddenError, RangeNotFoundError } from '../errors';
+
 
 export interface IUserService {
   findUserByEmail(email:string): Promise<Result<UserIdentifierDto | null, Error>>;

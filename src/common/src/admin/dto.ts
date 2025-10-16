@@ -1,4 +1,4 @@
-import { ShootingRange } from '../models/admin.models';
+import { ShootingRange } from './model';
 
 /**
  * DTO for a shooting range summary.

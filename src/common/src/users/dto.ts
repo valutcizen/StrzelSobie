@@ -1,5 +1,5 @@
-import { Role } from '../models/roles.models';
-import { User, UserGlobalRole, UserRangeRole } from '../models/users.models';
+import { Role } from '../roles/model';
+import { User, UserGlobalRole, UserRangeRole } from './model';
 
 export type UserIdentifierDto = {
   id: User['id'];

@@ -1,6 +1,6 @@
-import { Result } from '../utils/result';
-import { RangeDetailsDto, RangeSummaryDto, UpdateRangeCommand } from '../dto/ranges.dto';
-import { UserDto } from '../dto/users.dto';
+import { Result } from '../result';
+import { RangeDetailsDto, RangeSummaryDto, UpdateRangeCommand } from './dto';
+import { UserDto } from '../users/dto';
 
 export type AuditLogEntry = {
   action_type: 'USER_REGISTRATION';
