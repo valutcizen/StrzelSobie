@@ -11,6 +11,12 @@ export interface SessionData {
   rangeRoles: Record<string, string[]>;
 }
 
+export interface Role {
+  id: number;
+  name: string;
+  scope: 'global' | 'range';
+}
+
 export enum UserRole {
   Guest = 'Guest',
   Member = 'Member',

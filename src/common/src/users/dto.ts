@@ -1,4 +1,4 @@
-import { Role } from '../roles/model';
+import { Role } from '../auth/model';
 import { User, UserGlobalRole, UserRangeRole } from './model';
 
 export type UserIdentifierDto = {

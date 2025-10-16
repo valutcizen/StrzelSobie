@@ -1,3 +1,6 @@
+import { User } from '../users/model';
+import { SessionData } from './model';
+
 export interface LoginUserDto {
   email: string;
   password: string;
@@ -9,14 +12,15 @@ export interface RegisterUserRequestDto {
 }
 
 export interface RegisteredUserDto {
-  id: number;
-  email: string;
+  id: User['id'];
+  email: User['email'];
 }
 
 export interface MeDto {
-  id: number;
-  email: string;
-  phoneNumber: string | null;
-  roles: string[];
-  rangeRoles: Record<string, string[]>;
+  id: User['id'];
+  email: User['email'];
+  phoneNumber: User['phone_number'];
+  roles: SessionData['roles'];
+  rangeRoles: SessionData['rangeRoles'];
 }
+

@@ -1,9 +1,9 @@
 import { MeDto } from '../auth/dto';
+import { Role } from '../auth/model';
 import { GetUsersOptions, PaginatedUsersDto, UserDto, UserIdentifierDto } from './dto';
 import { Result } from '../result';
 import { User } from './model';
 import { UserNotFoundError, RoleNotFoundError, RoleScopeError, ForbiddenError, RangeNotFoundError } from '../errors';
-import { Role } from '../roles/model';
 
 
 export interface IUserService {
