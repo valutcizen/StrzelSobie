@@ -1,7 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { AuthService } from '@strzel-sobie/auth';
 import { Context } from '../../../types';
+import { AuthService } from '@strzel-sobie/auth';
 import { setCookie } from 'hono/cookie';
 import { LoginUserDto } from '@strzel-sobie/common';
 

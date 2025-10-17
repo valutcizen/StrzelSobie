@@ -14,23 +14,19 @@ type ShootingRangeDb = {
 export class RangesDbRepository implements IRangesRepository {
   constructor(private readonly db: IDatabase) {}
 
-  public async findAll(): Promise<Result<ShootingRange[], Error>> {
-    try {
-      const stmt = this.db.prepare('SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges');
-      const { results } = await stmt.all<ShootingRangeDb>();
+  public async findAll(): Promise<ShootingRange[]> {
+    const stmt = this.db.prepare('SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges');
+    const { results } = await stmt.all<ShootingRangeDb>();
 
-      const domainRanges = results.map((dbRange) => ({
-        id: dbRange.id,
-        slug: dbRange.slug,
-        displayName: dbRange.display_name,
-        totalTracks: dbRange.total_tracks,
-        operatingHours: dbRange.operating_hours,
-      }));
+    const domainRanges = results.map((dbRange) => ({
+      id: dbRange.id,
+      slug: dbRange.slug,
+      displayName: dbRange.display_name,
+      totalTracks: dbRange.total_tracks,
+      operatingHours: dbRange.operating_hours,
+    }));
 
-      return Result.ok(domainRanges);
-    } catch (error) {
-      return Result.fail(error as Error);
-    }
+    return domainRanges;
   }
 
   public async logAction(log: AuditLogEntry): Promise<void> {
@@ -41,10 +37,10 @@ export class RangesDbRepository implements IRangesRepository {
     await stmt.bind(action_type, target_id, JSON.stringify(details)).run();
   }
 
-  public async getRangeById(rangeId: number): Promise<{ id: number } | null> {
-    const stmt = this.db.prepare('SELECT id FROM ranges_shooting_ranges WHERE id = ?');
-    const result = await stmt.bind(rangeId).first<{ id: number }>();
-    return result ?? null;
+  public async existsRangeById(rangeId: number): Promise<boolean> {
+    const stmt = this.db.prepare('SELECT 1 FROM ranges_shooting_ranges WHERE id = ?');
+    const result = await stmt.bind(rangeId).first<number>();
+    return result ? true : false;
   }
 
   public async findBySlug(slug: string): Promise<ShootingRange | null> {
@@ -66,15 +62,23 @@ export class RangesDbRepository implements IRangesRepository {
     };
   }
 
-  public async update(range: ShootingRange): Promise<Result<void, Error>> {
-    try {
-      const stmt = this.db.prepare(
-        'UPDATE ranges_shooting_ranges SET total_tracks = ?, operating_hours = ? WHERE id = ?'
-      );
-      await stmt.bind(range.totalTracks, range.operatingHours, range.id).run();
-      return Result.ok(undefined);
-    } catch (error) {
-      return Result.fail(error as Error);
+  public async update(range: ShootingRange): Promise<void> {
+    const stmt = this.db.prepare(
+      'UPDATE ranges_shooting_ranges SET total_tracks = ?, operating_hours = ? WHERE id = ?'
+    );
+    await stmt.bind(range.totalTracks, range.operatingHours, range.id).run();
+  }
+  
+  public async getRangeIdBySlug(slug: string): Promise<number | null> {
+    const stmt = this.db.prepare(
+      'SELECT id FROM ranges_shooting_ranges WHERE slug = ?'
+    );
+    const result = await stmt.bind(slug).first<{ id : number }>();
+
+    if (!result) {
+      return null;
     }
+
+    return result.id;
   }
 }

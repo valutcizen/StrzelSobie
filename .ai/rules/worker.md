@@ -29,7 +29,12 @@
   - All API endpoints MUST be located in `src/worker/src/endpoints/`.
   - The directory structure MUST follow the pattern: `v<version>/<domain>/<endpoint-name>.ts` (e.g., `v1/auth/login.ts`).
 - **Implementation:**
-  - Each endpoint MUST be implemented as a class that extends `chanfana`'s `OpenAPIRoute`.
+  - Typical imports for endpoint starts with:
+    ```js
+    import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+    import { z } from 'zod';
+    import { Context } from '../../../types';
+    ```
   - The class MUST contain:
     - A `schema` property defining the `OpenAPIRouteSchema`.
     - An `async handle(c: Context)` method containing the request logic.
@@ -57,24 +62,6 @@
 - Write efficient, non-blocking code to minimize CPU time and ensure fast responses.
 - Be mindful of Cloudflare's resource limits, including memory usage, subrequest count, and total execution time.
 - Optimize for fast cold starts by keeping the worker bundle size small and minimizing complex initialization logic.
-
-## TYPESCRIPT_BEST_PRACTICES
-
-- Enforce strong typing by enabling `strict` mode in `tsconfig.json`.
-- Forbid the use of `any`; prefer `unknown` with type-safe checks.
-- Favor immutability by using `readonly` for properties and arrays.
-- Use `interface` for public-facing APIs and `type` for unions, intersections, and utility types.
-- Prefer string enums over numeric enums for clarity and debuggability.
-- Use ES Modules (`import`/`export`) for all module imports and exports.
-
-## TESTING_STANDARDS
-
-- Utilize `vitest` for all testing.
-- Use `miniflare` to run a local environment that accurately simulates the Cloudflare Workers runtime for development and integration testing.
-- Focus on end-to-end (E2E) and integration tests to validate the entire request lifecycle.
-- E2E tests should simulate real user scenarios from the client's perspective.
-- In integration tests, mock external services that are not part of the current flow to ensure isolation.
-- Write unit tests for any complex logic or utility functions within the worker itself.
 
 ## ERROR_HANDLING
 

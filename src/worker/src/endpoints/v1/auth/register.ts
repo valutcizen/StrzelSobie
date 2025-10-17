@@ -1,7 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { AuthService, EmailAlreadyExistsError } from '@strzel-sobie/auth';
 import { Context } from '../../../types';
+import { AuthService } from '@strzel-sobie/auth';
+import { EmailAlreadyExistsError } from '@strzel-sobie/common';
 
 // Schemas
 const RegisterUserRequestSchema = z.object({

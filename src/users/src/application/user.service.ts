@@ -135,7 +135,7 @@ export class UserService implements IUserService {
       }
 
       if (roleToAssign.scope === 'range') {
-        const rangeResult = await this.rangesService.getRangeById(rangeId as number);
+        const rangeResult = await this.rangesService.existsRangeById(rangeId as number);
         if (!rangeResult.isSuccess || !rangeResult.getValue()) {
           return Result.fail(new RangeNotFoundError(`Range with id ${rangeId} not found`));
         }
@@ -194,7 +194,7 @@ export class UserService implements IUserService {
       }
 
       if (roleToRemove.scope === 'range') {
-        const rangeResult = await this.rangesService.getRangeById(rangeId as number);
+        const rangeResult = await this.rangesService.existsRangeById(rangeId as number);
         if (!rangeResult.isSuccess || !rangeResult.getValue()) {
           return Result.fail(new RangeNotFoundError(`Range with id ${rangeId} not found`));
         }

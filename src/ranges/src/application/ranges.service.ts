@@ -18,11 +18,7 @@ export class RangesService implements IRangesService {
   public async getRanges(): Promise<Result<RangeSummaryDto[], Error>> {
     const result = await this.rangesRepository.findAll();
 
-    if (!result.isSuccess) {
-      return Result.fail(result.getError());
-    }
-
-    const ranges = result.getValue().map((range: ShootingRange) => ({
+    const ranges = result.map((range: ShootingRange) => ({
       id: range.id,
       slug: range.slug,
       displayName: range.displayName,
@@ -31,13 +27,9 @@ export class RangesService implements IRangesService {
     return Result.ok(ranges);
   }
 
-  public async logAction(log: AuditLogEntry): Promise<void> {
-    return this.rangesRepository.logAction(log);
-  }
-
-  public async getRangeById(rangeId: number): Promise<Result<{ id: number } | null, Error>> {
+  public async existsRangeById(rangeId: number): Promise<Result<boolean, Error>> {
     try {
-      const range = await this.rangesRepository.getRangeById(rangeId);
+      const range = await this.rangesRepository.existsRangeById(rangeId);
       return Result.ok(range);
     } catch (error) {
       return Result.fail(error as Error);
@@ -70,7 +62,6 @@ export class RangesService implements IRangesService {
       return Result.fail(new RangeNotFoundError('Range not found'));
     }
 
-
     const isGlobalAdmin = user.roles.some((role) => role.name === 'Club/Community Administrator');
     const rangeId = range.id.toString();
     const userRolesForRange = user.range_roles[rangeId] || [];
@@ -88,6 +79,7 @@ export class RangesService implements IRangesService {
       range.operatingHours = JSON.stringify(command.operatingHours);
     }
 
-    return this.rangesRepository.update(range);
+    this.rangesRepository.update(range);
+    return Result.ok(undefined);
   }
 }

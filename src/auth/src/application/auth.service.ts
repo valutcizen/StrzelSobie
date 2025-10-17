@@ -1,15 +1,16 @@
 import {
   AuditLogEntry,
-  IRangesService,
+  IAuditService,
   IUserService,
   LoginUserDto,
   RegisteredUserDto,
   RegisterUserRequestDto,
   Result,
   SessionData,
+  EmailAlreadyExistsError, 
+  InvalidCredentialsError
 } from '@strzel-sobie/common';
 import { IAuthRepository } from '../domain/auth.repository';
-import { EmailAlreadyExistsError, InvalidCredentialsError } from '../domain/errors';
 import * as bcrypt from 'bcryptjs';
 import { ISessionRepository } from '../domain/session.repository';
 
@@ -18,7 +19,7 @@ export class AuthService {
     private readonly authRepository: IAuthRepository,
     private readonly sessionRepository: ISessionRepository,
     private readonly userService: IUserService,
-    private readonly rangesService: IRangesService
+    private readonly auditService: IAuditService
   ) {}
 
   public async login(dto: LoginUserDto): Promise<Result<{ token: string, session: SessionData }, InvalidCredentialsError>> {
@@ -121,7 +122,7 @@ export class AuthService {
       },
     };
 
-    await this.rangesService.logAction(log);
+    await this.auditService.logAction(log);
 
     const registeredUser: RegisteredUserDto = {
       id: newUser.id,

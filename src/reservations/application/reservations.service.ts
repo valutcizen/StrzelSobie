@@ -1,5 +1,5 @@
-import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService } from '@strzel-sobie/common';
-import { IReservationsRepository } from '../domain/reservations.repository';
+import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService, RangeNotFoundError } from '@strzel-sobie/common';
+import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
   constructor(
@@ -10,11 +10,10 @@ export class ReservationsService implements IReservationsService {
   public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto, Error>> {
     const { rangeSlug, startDate, endDate, user } = query;
 
-    const rangeIdResult = await this.rangesService.getRangeIdBySlug(rangeSlug);
-    if (!rangeIdResult.isSuccess) {
-      return Result.fail(rangeIdResult.getError());
+    const rangeId = await this.rangesService.getRangeIdBySlug(rangeSlug);
+    if (!rangeId) {
+      return Result.fail(new RangeNotFoundError("Range not found"));
     }
-    const rangeId = rangeIdResult.value;
 
     const [propositionsResult, reservationsResult] : [Result<Proposition[], Error>, Result<Reservation[], Error>] = await Promise.all([
       this.reservationsRepository.getPropositions(rangeId, startDate, endDate),
