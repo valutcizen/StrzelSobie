@@ -91,6 +91,10 @@ The following scripts are available to be run from the project's root directory:
 
 The project is currently in the **early stage of development**. The primary focus is on delivering the Minimum Viable Product (MVP) as defined in the project scope. The frontend has a placeholder `App.vue` and the core backend worker implementation is in progress.
 
+### API Snapshot
+- `POST /api/v1/ranges/:rangeSlug/propositions`: Authenticated guests, members, and above can propose a new shooting session. The backend validates schedule overlaps, range capacity, and captures an audit log. Successful responses return `201 Created` with the proposition payload and a `Location` header.
+- `GET /api/v1/ranges/:rangeSlug/events`: Returns the combined list of propositions and reservations for the requested range, filtered by the caller’s role.
+
 ## License
 
 This project is licensed under the terms specified in the [LICENSE](LICENSE) file.

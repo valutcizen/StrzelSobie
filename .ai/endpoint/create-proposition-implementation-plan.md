@@ -1,115 +1,105 @@
-# API Endpoint Implementation Plan: `POST /api/v1/ranges/{rangeSlug}/propositions`
+# API Endpoint Implementation Plan: POST /api/v1/ranges/{rangeSlug}/propositions
 
 ## 1. Endpoint Overview
-This endpoint allows authenticated users (Guest or Member) to create a new proposition for a shooting session at a specific range. The proposition includes the desired date, time, number of participants, and requested tracks. The system validates the request against business rules, such as time conflicts and range availability.
+- Provide authenticated Guests and Members a way to create a shooting-session proposition for a specific range.
+- Persist propositions in `reservations_propositions` with status `open`, tied to the requesting user and range.
+- Enforce range capacity (tracks) and scheduling constraints before accepting the request.
+- Emit audit logs (and prepare for coordinator notifications) whenever a proposition is stored.
 
 ## 2. Request Details
-- **HTTP Method**: `POST`
-- **URL Structure**: `/api/v1/ranges/{rangeSlug}/propositions`
-- **Parameters**:
-  - **Required**:
-    - `rangeSlug` (string, path): The unique slug identifying the shooting range.
-- **Request Body**: The body must be a JSON object conforming to the `CreatePropositionCommand` structure.
-
-  ```json
-  {
-    "eventDate": "2025-10-15",
-    "startTime": "14:00",
-    "endTime": "15:00",
-    "numParticipants": 5,
-    "tracksRequested": 2
-  }
-  ```
+- HTTP Method: `POST`
+- URL Structure: `/api/v1/ranges/{rangeSlug}/propositions`
+- Parameters:
+  - Required path: `rangeSlug` (string, slug of the target range).
+  - No query parameters.
+- Request Body (JSON, required fields):
+  - `eventDate` (`YYYY-MM-DD`, must be a valid calendar date).
+  - `startTime` (`HH:MM`, 24h, minutes aligned to 5-minute increments).
+  - `endTime` (`HH:MM`, strictly later than `startTime`, same-day).
+  - `numParticipants` (integer ≥ 1).
+  - `tracksRequested` (integer ≥ 1, ≤ total tracks for range).
+- Validation rules (Worker-layer via zod):
+  - All fields required and trimmed.
+  - Coherent time window (`startTime` < `endTime`, same date).
+  - `numParticipants` reasonable upper bound (follow business rule or default e.g. ≤ 50 until configurable).
+  - `tracksRequested` cannot exceed range capacity and can be zero.
 
 ## 3. Used Types
-- **Request Body DTO**: `CreatePropositionCommand` from `@strzel-sobie/common`.
-- **Response Body DTO**: `CreatedPropositionDto` from `@strzel-sobie/common`.
-- **Zod Schema**: A `zod` schema will be defined within the endpoint file in the `worker` module to validate the incoming request body and path parameters.
+- `CreatePropositionCommand` and `CreatedPropositionDto` from `@strzel-sobie/common/src/reservations/dto`.
+- Extend `IReservationsService` to expose `createProposition(rangeSlug: string, command: CreatePropositionCommand, user: UserDto): Promise<Result<CreatedPropositionDto>>`.
+- Add domain errors within reservations module (e.g., `PropositionConflictError`, `InvalidPropositionTimeError`, `UnauthorizedPropositionError`) extending `Error`.
+- Update `AuditLogEntry['action_type']` union to include `'PROPOSITION_CREATE'`.
+- Use `UserDto` (from `@strzel-sobie/common/src/users/dto`) inside the service to access global and range roles.
+- Repository-level DTOs for propositions/reservations should keep snake_case mapping consistent with DB schema.
 
 ## 4. Response Details
-- **Success**:
-  - **Status Code**: `201 Created`
-  - **Payload**: A JSON object representing the newly created proposition's basic details.
-    ```json
-    {
-      "id": 1,
-      "userId": 2,
-      "rangeId": 1,
-      "status": "open"
-    }
-    ```
-- **Errors**:
-  - **Status Code**: `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `500 Internal Server Error`.
-  - **Payload**: A standardized error JSON object.
+- Success (`201 Created`): body shaped as `CreatedPropositionDto` (id, userId, rangeId, status) with optional `Location` header pointing to `/api/v1/ranges/{rangeSlug}/propositions/{id}` (future-proof).
+- Client Error (`400 Bad Request`): validation failures (format, ordering, capacity conflicts) or business-rule violations (outside operating hours once enforced).
+- Unauthorized (`401`): session missing/invalid (handled by middleware before handler).
+- Forbidden (`403`): authenticated user lacks required role (e.g., banned or missing Guest/Member privilege).
+- Not Found (`404`): range slug does not map to an existing range.
+- Server Error (`500`): unexpected infrastructure failures (D1 insert fail, audit logging failure, unhandled exceptions).
+- Worker maps service `Result` errors to HTTP codes without leaking internal stack traces; include machine-friendly `code` and human-readable `message` in error payloads.
 
 ## 5. Data Flow
-1.  The `worker` receives the `POST` request.
-2.  Authentication middleware verifies the user's session from the request headers and retrieves user data (including `userId`) from the Cloudflare KV session store. If auth fails, it returns `401 Unauthorized`.
-3.  The endpoint handler in the `worker` validates the `rangeSlug` path parameter and the request body against a `zod` schema. If validation fails, it returns a `400 Bad Request` error.
-4.  The handler retrieves the `ReservationsService` and `AdminService` from the context.
-5.  It calls the `AdminService` to fetch the `ShootingRange` details using the `rangeSlug` to get the `rangeId` and verify its existence and capacity.
-6.  The handler calls the `reservationsService.createProposition` method, passing the validated `CreatePropositionCommand`, `userId`, and `rangeId`.
-7.  The `ReservationsService` performs business logic validation:
-    - Checks that `endTime` is after `startTime`.
-    - Checks that the `eventDate` is not in the past.
-    - Verifies that `tracksRequested` does not exceed the range's available tracks.
-    - Checks for scheduling conflicts with existing reservations or propositions.
-8.  If business validation passes, the service creates a `Proposition` domain entity.
-9.  The service calls the `ReservationsRepository` to persist the new proposition entity into the `reservations_propositions` table. The initial `status` will be "open".
-10. The repository maps the domain entity to a database model and executes the `INSERT` query.
-11. The service receives the persisted data, maps it to the `CreatedPropositionDto`, and returns it inside a `Success` result object.
-12. The `worker` endpoint handler receives the `Success` result, formats the `CreatedPropositionDto` into a JSON response, and sends it with a `201 Created` status.
-13. If any step fails, the service returns an `Error` result, which the worker maps to an appropriate 4xx or 5xx HTTP response.
+- Worker `authMiddleware` resolves session from KV, loads user profile via `userService`, and attaches `user` + `session` to context.
+- New endpoint `src/worker/src/endpoints/v1/ranges/create-proposition.ts`:
+  1. Parse `rangeSlug` and body with zod schema.
+  2. Obtain `reservationsService` and `user` from context.
+  3. Call `reservationsService.createProposition(rangeSlug, command, user)`.
+  4. Inspect `Result`: on success respond `201` with DTO; on failure map known errors to appropriate status and JSON error body.
+- Reservations application service (`ReservationsService`):
+  1. Derive `rangeId` and validate user authorization (Guest/Member/global admin/coordinator acceptance rules via roles).
+  2. Validate command semantics (time ordering, track bounds, optional operating-hours window) using pure domain logic.
+  3. Persist proposition via repository (insert returning id/status).
+  4. Emit audit log via `auditService.logAction({ action_type: 'PROPOSITION_CREATE', target_id: newId, details: { userId, rangeId, command } })`.
+  5. Return `Result.ok` with `CreatedPropositionDto`.
+- Repository layer (`ReservationsDbRepository`):
+  - Provide `createProposition` (INSERT) and `getOverlappingUsage(rangeId, eventDate, startTime, endTime)` that returns aggregated tracks usage from propositions (`status='open'`) and reservations, using prepared statements.
+  - Ensure consistent mapping between DB column names and domain model (e.g., `tracks_requested` ↔ `tracksRequested`).
+- Worker router `index.ts` registers endpoint and ensures `reservationsService` plus `auditService` are bound in context.
 
 ## 6. Security Considerations
-- **Authentication**: The endpoint must be protected by authentication middleware. The user's identity (`userId`) must be securely retrieved from the session, not from the request body.
-- **Authorization**: Any authenticated user (Guest, Member) is permitted to create a proposition. No special roles are required.
-- **Input Validation**: Rigorous validation of the request body and `rangeSlug` using `zod` is mandatory to prevent invalid data, injection attacks, and other vulnerabilities.
-- **Data Ownership**: The `userId` for the new proposition must be set to the ID of the currently authenticated user, ensuring users can only create propositions for themselves.
+- Require `authMiddleware` for the route to ensure authenticated session from KV.
+- Authorize only users with global role `Guest`, `Member`, or higher (e.g., `Coordinator`); optionally reject disabled users if `user.isDeleted`.
+- Prevent privilege escalation by ignoring `userId` in payload and using session-derived value.
+- Validate all inputs server-side to mitigate tampering (e.g., extremely long strings, SQL injection; prepared statements already mitigate injection).
+- Consider rate limiting (future) to avoid proposition spam.
+- Ensure audit log contains non-sensitive details (no raw session tokens).
+- Do not expose internal error messages in responses.
 
 ## 7. Error Handling
-The endpoint will return the following HTTP status codes for specific error scenarios:
-- **`400 Bad Request`**:
-  - The request body fails `zod` validation (e.g., missing fields, incorrect data types).
-  - The `rangeSlug` does not correspond to an existing shooting range.
-  - Business logic validation fails (e.g., `eventDate` in the past, `startTime` after `endTime`, `tracksRequested` > range capacity, time slot conflict).
-- **`401 Unauthorized`**:
-  - The request lacks a valid authentication token or the session has expired.
-- **`403 Forbidden`**:
-  - (Future use) The user is authenticated but lacks the specific permissions to perform this action (e.g., a banned user).
-- **`500 Internal Server Error`**:
-  - An unexpected error occurs within the service or repository (e.g., database connection failure).
+- Map domain errors to HTTP codes:
+  - `RangeNotFoundError` → `404`.
+  - `UnauthorizedPropositionError` / `ForbiddenError` → `403`.
+  - `PropositionConflictError`, `InvalidPropositionTimeError`, validation issues → `400`.
+  - Unexpected errors (repository failures, audit service failure) → `500`.
+- Use `Result.fail` consistently; avoid throwing except for truly unexpected cases, which are caught and converted to `Result.fail`.
+- Worker should log unexpected errors (e.g., via `console.error`) before returning `500`.
+- Audit logging occurs only after successful insert; if audit write fails, decide whether to treat as hard failure (`500`) or log fallback—document strategy (prefer fail to keep audit trail consistent).
 
 ## 8. Performance Considerations
-- Database queries should be optimized. The check for scheduling conflicts should be performed with an efficient query that filters by `range_id` and the relevant time window.
-- The lookup of range details by `rangeSlug` should be indexed for fast retrieval.
-- The overall latency should be low, as this is a standard transactional endpoint.
+- Minimize DB calls by:
+  - Fetching range details once.
+  - Using a single query to compute overlapping track usage, possibly with UNION or SUM across propositions/reservations.
+- Keep worker endpoint lean: instantiate services once per request via middleware (already in place) and avoid unnecessary JSON parsing.
+- Consider wrapping insert + audit log in a transaction if D1 supports it; otherwise ensure audit failures are surfaced promptly.
 
 ## 9. Implementation Steps
-1.  **Worker (`src/worker`):**
-    - Create the endpoint file at `src/worker/src/endpoints/v1/ranges/createProposition.ts`.
-    - Implement the class `CreatePropositionRoute` extending `OpenAPIRoute`.
-    - Define the `zod` schemas for the path parameters (`rangeSlug`) and the request body (`CreatePropositionCommand`).
-    - Define the OpenAPI `schema` property with summary, description, tags, request, and response definitions.
-    - Implement the `handle` method:
-        - Add logic to parse and validate the request.
-        - Get the `userId` from the context (provided by auth middleware).
-        - Get `reservationsService` and `adminService` from the context.
-        - Call the `adminService` to resolve `rangeSlug` to `rangeId`.
-        - Call `reservationsService.createProposition` with the required arguments.
-        - Handle the `Result` object, returning `c.json()` with the correct payload and status code (`201` for success, 4xx/5xx for errors).
-2.  **Reservations Module (`src/reservations`):**
-    - In `src/reservations/application/reservations.service.ts`, add the `createProposition` method.
-    - This method will accept `CreatePropositionCommand`, `userId`, and `rangeId`.
-    - Implement all business logic validations as described in the "Data Flow" section.
-    - If validation succeeds, create and save the proposition via the repository.
-    - Return a `Result<CreatedPropositionDto, Error>`.
-3.  **Common Module (`src/common`):**
-    - Verify that `CreatePropositionCommand` and `CreatedPropositionDto` in `src/common/src/dto/propositions.dto.ts` are correctly defined and sufficient. No changes are expected.
-4.  **Testing (`/tests`):**
-    - Create a new E2E test file `tests/reservations/create-proposition.e2e.test.ts`.
-    - Add test cases for:
-        - Successful proposition creation (returns `201`).
-        - Failure when the request body is invalid (returns `400`).
-        - Failure when unauthenticated (returns `401`).
-        - Failure due to business logic (e.g., time conflict, range not found) (returns `400`).
+1. Update shared contracts:
+   - Extend `AuditLogEntry['action_type']` union with `'PROPOSITION_CREATE'`.
+   - Update `IReservationsService` interface and re-export typings.
+   - Add domain error classes in common/reservations or reservations module (and export as needed).
+2. Expand reservations domain & repository interfaces with `createProposition` and overlap-check methods; document expected return types.
+3. Implement repository methods in `ReservationsDbRepository` (conflict query + insert with last inserted id and default status).
+4. Refactor `ReservationsService`:
+   - Inject `IAuditService` (and `INotificationsService` placeholder if available).
+   - Implement `createProposition` method with validation, conflict detection, persistence, audit logging, and error-to-Result mapping.
+5. Update worker composition (`src/worker/src/index.ts` & `types.ts`):
+   - Instantiate `AuditService`/`AuditDbRepository` and inject into `RangesService` and `ReservationsService`.
+   - Add `reservationsService`, `auditService`, and `user` to context typing.
+   - Register new POST route with `authMiddleware`.
+6. Implement new endpoint handler `create-proposition.ts` with zod schema, dependency resolution, service invocation, and HTTP response mapping.
+7. Ensure `Result` error mapping utility (if available) or add helper to translate domain errors to HTTP codes consistently (optionally shared).
+8. Update documentation if required (e.g., root `README.md` endpoint listings) after evaluating instructions.
+9. Run formatting/build/test commands (`npm run build:backend`) to confirm integrity once implementation is done.

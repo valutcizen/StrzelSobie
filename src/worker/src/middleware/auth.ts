@@ -46,21 +46,24 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const allRoles = allRolesResult.getValue();
   const roleMap = new Map(allRoles.map((role) => [role.name, role]));
 
-  const user: UserDto = {
+  const rangeRoles = Object.entries(userProfile.rangeRoles ?? {}).reduce(
+    (acc, [rangeId, roleNames]) => {
+      acc[rangeId] = roleNames
+        .map((roleName) => roleMap.get(roleName))
+        .filter((role) => role) as Role[];
+      return acc;
+    },
+    {} as Record<string, Role[]>
+  );
+
+  const user: UserDto & { range_roles: Record<string, Role[]> } = {
     id: userProfile.id,
     email: userProfile.email,
     isDeleted: 0, // Assuming user is not deleted if authenticated
     createdAt: new Date().toISOString(), // This should be ideally from the user profile
     roles: userProfile.roles.map((roleName) => roleMap.get(roleName)).filter((role) => role) as Role[],
-    range_roles: Object.entries(userProfile.rangeRoles).reduce(
-      (acc, [rangeId, roleNames]) => {
-        acc[rangeId] = roleNames
-          .map((roleName) => roleMap.get(roleName))
-          .filter((role) => role) as Role[];
-        return acc;
-      },
-      {} as Record<string, Role[]>
-    ),
+    rangeRoles,
+    range_roles: rangeRoles,
   };
 
   c.set('user', user);

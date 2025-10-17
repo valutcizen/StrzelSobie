@@ -2,6 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
 import { IReservationsService } from '@strzel-sobie/common';
 import { AppContext } from '../../../types';
+import { mapReservationsError } from '../../../utils/reservations-error-mapper';
 
 const ParamsSchema = z.object({
   rangeSlug: z.string(),
@@ -51,7 +52,7 @@ export class GetEvents extends OpenAPIRoute {
       user: {
         id: user.id.toString(),
         roles: user.roles.map((role) => role.name),
-        rangeRoles: Object.entries(user.range_roles).reduce(
+        range_roles: Object.entries(user.rangeRoles ?? {}).reduce(
           (acc, [rangeId, roles]) => {
             acc[rangeId] = roles.map((role) => role.name);
             return acc;
@@ -65,11 +66,13 @@ export class GetEvents extends OpenAPIRoute {
       return c.json(result.getValue());
     }
 
-    // Basic error handling
-    if (result.getError().message === 'Range not found') {
-      return c.json({ error: 'Range not found' }, 404);
+    const error = result.getError();
+    const { status, body } = mapReservationsError(error);
+
+    if (status === 500) {
+      console.error('Unexpected error while fetching range events', error);
     }
 
-    return c.json({ error: 'Internal Server Error' }, 500);
+    return c.json(body, status);
   }
 }

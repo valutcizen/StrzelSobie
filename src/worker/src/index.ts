@@ -12,6 +12,7 @@ import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges'
 import { GetRange } from './endpoints/v1/ranges/get-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
 import { GetEvents } from './endpoints/v1/ranges/get-events';
+import { CreateProposition } from './endpoints/v1/ranges/create-proposition';
 import { Env, Variables } from './types';
 import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
 import {
@@ -21,6 +22,7 @@ import {
 } from '@strzel-sobie/auth';
 import { UserDbRepository, UserService } from '@strzel-sobie/users';
 import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/reservations';
+import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -33,6 +35,7 @@ app.use('*', async (c, next) => {
   const userRepository = new UserDbRepository(c.env.DB);
   const rangesRepository = new RangesDbRepository(c.env.DB);
   const reservationsRepository = new ReservationsDbRepository(c.env.DB);
+  const auditRepository = new AuditDbRepository(c.env.DB);
 
   // Services
   const rangesService = new RangesService(rangesRepository);
@@ -43,12 +46,14 @@ app.use('*', async (c, next) => {
     userService,
     rangesService
   );
-  const reservationsService = new ReservationsService(rangesService, reservationsRepository);
+  const auditService = new AuditService(auditRepository);
+  const reservationsService = new ReservationsService(rangesService, reservationsRepository, auditService);
 
   c.set('authService', authService);
   c.set('userService', userService);
   c.set('rangesService', rangesService);
   c.set('reservationsService', reservationsService);
+  c.set('auditService', auditService);
 
   await next();
 });
@@ -71,5 +76,6 @@ openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
 openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
 openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
+openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 
 export default app;

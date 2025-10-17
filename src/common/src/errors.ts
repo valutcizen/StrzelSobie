@@ -46,3 +46,24 @@ export class InvalidCredentialsError extends Error {
     this.name = 'InvalidCredentialsError';
   }
 }
+
+export class PropositionConflictError extends Error {
+  constructor(message = 'Requested time slot conflicts with existing usage') {
+    super(message);
+    this.name = 'PropositionConflictError';
+  }
+}
+
+export class InvalidPropositionTimeError extends Error {
+  constructor(message = 'Proposition time window is invalid') {
+    super(message);
+    this.name = 'InvalidPropositionTimeError';
+  }
+}
+
+export class UnauthorizedPropositionError extends Error {
+  constructor(message = 'User is not allowed to create propositions for this range') {
+    super(message);
+    this.name = 'UnauthorizedPropositionError';
+  }
+}

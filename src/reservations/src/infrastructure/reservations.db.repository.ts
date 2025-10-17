@@ -1,13 +1,21 @@
-import { IDatabase, Result } from '@strzel-sobie/common';
-import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
+import { IDatabase } from '@strzel-sobie/common';
+import {
+  CreatePropositionRecord,
+  IReservationsRepository,
+  OverlappingUsage,
+  Proposition,
+  Reservation,
+} from '../domain/reservations.repository';
 
 type PropositionDb = {
   id: number;
   user_id: number;
   range_id: number;
+  status: 'open' | 'converted' | 'cancelled';
   event_date: string;
   start_time: string;
   end_time: string;
+  num_participants: number;
   tracks_requested: number;
 };
 
@@ -29,21 +37,23 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]> {
     const stmt = this.db.prepare(
-      'SELECT id, user_id, range_id, event_date, start_time, end_time, tracks_requested FROM reservations_propositions WHERE range_id = ? AND event_date BETWEEN ? AND ?'
+      `SELECT id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested
+       FROM reservations_propositions
+       WHERE range_id = ? AND event_date BETWEEN ? AND ?`
     );
     const { results } = await stmt.bind(rangeId, startDate, endDate).all<PropositionDb>();
 
-    const domainPropositions = results.map((dbProposition) => ({
+    return (results ?? []).map((dbProposition) => ({
       id: dbProposition.id,
       user_id: dbProposition.user_id,
       range_id: dbProposition.range_id,
+      status: dbProposition.status,
       event_date: dbProposition.event_date,
       start_time: dbProposition.start_time,
       end_time: dbProposition.end_time,
+      num_participants: dbProposition.num_participants,
       tracks: dbProposition.tracks_requested,
     }));
-
-    return domainPropositions;
   }
 
   public async getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]> {
@@ -52,7 +62,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
     );
     const { results } = await stmt.bind(rangeId, startDate, endDate).all<ReservationDb>();
 
-    const domainReservations = results.map((dbReservation) => ({
+    const domainReservations = (results ?? []).map((dbReservation) => ({
       id: dbReservation.id,
       range_id: dbReservation.range_id,
       coordinator_id: dbReservation.coordinator_id,
@@ -66,5 +76,79 @@ export class ReservationsDbRepository implements IReservationsRepository {
     }));
 
     return domainReservations;
+  }
+
+  public async getOverlappingUsage(
+    rangeId: number,
+    eventDate: string,
+    startTime: string,
+    endTime: string
+  ): Promise<OverlappingUsage> {
+    const stmt = this.db.prepare(
+      `SELECT
+        COALESCE((
+          SELECT SUM(tracks_requested)
+          FROM reservations_propositions
+          WHERE range_id = ?
+            AND event_date = ?
+            AND status = 'open'
+            AND start_time < ?
+            AND end_time > ?
+        ), 0) AS propositions_tracks,
+        COALESCE((
+          SELECT SUM(tracks_requested)
+          FROM reservations_reservations
+          WHERE range_id = ?
+            AND event_date = ?
+            AND start_time < ?
+            AND end_time > ?
+        ), 0) AS reservations_tracks`
+    );
+
+    const usage = await stmt
+      .bind(rangeId, eventDate, endTime, startTime, rangeId, eventDate, endTime, startTime)
+      .first<{ propositions_tracks: number | null; reservations_tracks: number | null }>();
+
+    return {
+      propositions_tracks: usage?.propositions_tracks ?? 0,
+      reservations_tracks: usage?.reservations_tracks ?? 0,
+    };
+  }
+
+  public async createProposition(record: CreatePropositionRecord): Promise<Proposition> {
+    const stmt = this.db.prepare(
+      `INSERT INTO reservations_propositions
+        (user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
+       VALUES (?, ?, 'open', ?, ?, ?, ?, ?)
+       RETURNING id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested`
+    );
+
+    const result = await stmt
+      .bind(
+        record.user_id,
+        record.range_id,
+        record.event_date,
+        record.start_time,
+        record.end_time,
+        record.num_participants,
+        record.tracks_requested
+      )
+      .first<PropositionDb>();
+
+    if (!result) {
+      throw new Error('Failed to create proposition');
+    }
+
+    return {
+      id: result.id,
+      user_id: result.user_id,
+      range_id: result.range_id,
+      status: result.status,
+      event_date: result.event_date,
+      start_time: result.start_time,
+      end_time: result.end_time,
+      num_participants: result.num_participants,
+      tracks: result.tracks_requested,
+    };
   }
 }
