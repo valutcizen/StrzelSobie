@@ -32,6 +32,18 @@ type ReservationDb = {
   num_participants: number;
 };
 
+const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
+  id: dbProposition.id,
+  user_id: dbProposition.user_id,
+  range_id: dbProposition.range_id,
+  status: dbProposition.status,
+  event_date: dbProposition.event_date,
+  start_time: dbProposition.start_time,
+  end_time: dbProposition.end_time,
+  num_participants: dbProposition.num_participants,
+  tracks: dbProposition.tracks_requested,
+});
+
 export class ReservationsDbRepository implements IReservationsRepository {
   constructor(private readonly db: IDatabase) {}
 
@@ -43,17 +55,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
     );
     const { results } = await stmt.bind(rangeId, startDate, endDate).all<PropositionDb>();
 
-    return (results ?? []).map((dbProposition) => ({
-      id: dbProposition.id,
-      user_id: dbProposition.user_id,
-      range_id: dbProposition.range_id,
-      status: dbProposition.status,
-      event_date: dbProposition.event_date,
-      start_time: dbProposition.start_time,
-      end_time: dbProposition.end_time,
-      num_participants: dbProposition.num_participants,
-      tracks: dbProposition.tracks_requested,
-    }));
+    return (results ?? []).map(mapDbProposition);
   }
 
   public async getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]> {
@@ -139,16 +141,39 @@ export class ReservationsDbRepository implements IReservationsRepository {
       throw new Error('Failed to create proposition');
     }
 
-    return {
-      id: result.id,
-      user_id: result.user_id,
-      range_id: result.range_id,
-      status: result.status,
-      event_date: result.event_date,
-      start_time: result.start_time,
-      end_time: result.end_time,
-      num_participants: result.num_participants,
-      tracks: result.tracks_requested,
-    };
+    return mapDbProposition(result);
+  }
+
+  public async getPropositionById(id: number): Promise<Proposition | null> {
+    const stmt = this.db.prepare(
+      `SELECT id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested
+       FROM reservations_propositions
+       WHERE id = ?`
+    );
+
+    const record = await stmt.bind(id).first<PropositionDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbProposition(record);
+  }
+
+  public async cancelProposition(id: number): Promise<Proposition | null> {
+    const stmt = this.db.prepare(
+      `UPDATE reservations_propositions
+       SET status = 'cancelled'
+       WHERE id = ? AND status = 'open'
+       RETURNING id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested`
+    );
+
+    const record = await stmt.bind(id).first<PropositionDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbProposition(record);
   }
 }

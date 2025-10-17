@@ -1,7 +1,9 @@
 import {
   ForbiddenError,
   InvalidPropositionTimeError,
+  PropositionAlreadyClosedError,
   PropositionConflictError,
+  PropositionNotFoundError,
   RangeNotFoundError,
   UnauthorizedPropositionError,
 } from '@strzel-sobie/common';
@@ -40,6 +42,20 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 400,
       body: { code: 'schedule_conflict', message: error.message },
+    };
+  }
+
+  if (error instanceof PropositionAlreadyClosedError) {
+    return {
+      status: 400,
+      body: { code: 'proposition_closed', message: error.message },
+    };
+  }
+
+  if (error instanceof PropositionNotFoundError) {
+    return {
+      status: 404,
+      body: { code: 'proposition_not_found', message: error.message },
     };
   }
 

@@ -80,6 +80,10 @@ export type CreatePropositionCommand = {
   tracksRequested: Proposition['tracks_requested'];
 };
 
+export type CancelPropositionCommand = {
+  propositionId: Proposition['id'];
+};
+
 /**
  * DTO for a newly created proposition.
  * Corresponds to the response payload for `POST /api/v1/ranges/{rangeSlug}/propositions`.

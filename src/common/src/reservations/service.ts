@@ -1,6 +1,7 @@
 import { Result } from '../result';
 import {
   CalendarEventsDto,
+  CancelPropositionCommand,
   CreatePropositionCommand,
   CreatedPropositionDto,
   GetCalendarEventsQuery,
@@ -14,4 +15,5 @@ export interface IReservationsService {
     command: CreatePropositionCommand,
     user: UserDto
   ): Promise<Result<CreatedPropositionDto>>;
+  cancelProposition(command: CancelPropositionCommand, user: UserDto): Promise<Result<void>>;
 }

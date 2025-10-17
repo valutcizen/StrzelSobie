@@ -67,3 +67,17 @@ export class UnauthorizedPropositionError extends Error {
     this.name = 'UnauthorizedPropositionError';
   }
 }
+
+export class PropositionNotFoundError extends Error {
+  constructor(message = 'Proposition not found') {
+    super(message);
+    this.name = 'PropositionNotFoundError';
+  }
+}
+
+export class PropositionAlreadyClosedError extends Error {
+  constructor(message = 'Proposition is no longer open') {
+    super(message);
+    this.name = 'PropositionAlreadyClosedError';
+  }
+}

@@ -48,4 +48,6 @@ export interface IReservationsRepository {
     endTime: string
   ): Promise<OverlappingUsage>;
   createProposition(record: CreatePropositionRecord): Promise<Proposition>;
+  getPropositionById(id: number): Promise<Proposition | null>;
+  cancelProposition(id: number): Promise<Proposition | null>;
 }

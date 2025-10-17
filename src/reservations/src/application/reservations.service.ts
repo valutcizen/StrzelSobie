@@ -5,16 +5,18 @@ import {
   GetCalendarEventsQuery,
   Result,
   IRangesService,
-  RangeNotFoundError,
   getRangeRole,
   CreatePropositionCommand,
   CreatedPropositionDto,
+  CancelPropositionCommand,
   UserDto,
   IAuditService,
   PropositionConflictError,
   InvalidPropositionTimeError,
   UnauthorizedPropositionError,
   ForbiddenError,
+  PropositionNotFoundError,
+  PropositionAlreadyClosedError,
 } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
@@ -173,6 +175,65 @@ export class ReservationsService implements IReservationsService {
       };
 
       return Result.ok(dto);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async cancelProposition(
+    command: CancelPropositionCommand,
+    user: UserDto
+  ): Promise<Result<void>> {
+    if (user.isDeleted) {
+      return Result.fail(new ForbiddenError('Deleted users cannot cancel propositions'));
+    }
+
+    try {
+      const proposition = await this.reservationsRepository.getPropositionById(
+        command.propositionId
+      );
+
+      if (!proposition) {
+        return Result.fail(new PropositionNotFoundError());
+      }
+
+      if (proposition.user_id !== user.id) {
+        return Result.fail(
+          new UnauthorizedPropositionError('User is not allowed to cancel this proposition')
+        );
+      }
+
+      if (proposition.status !== 'open') {
+        return Result.fail(new PropositionAlreadyClosedError());
+      }
+
+      const cancelledProposition = await this.reservationsRepository.cancelProposition(
+        command.propositionId
+      );
+
+      if (!cancelledProposition) {
+        return Result.fail(new PropositionAlreadyClosedError());
+      }
+
+      const auditResult = await this.auditService.logAction({
+        action_type: 'PROPOSITION_CANCEL',
+        target_id: cancelledProposition.id,
+        details: {
+          userId: user.id,
+          rangeId: cancelledProposition.range_id,
+          previousStatus: proposition.status,
+          newStatus: cancelledProposition.status,
+          eventDate: cancelledProposition.event_date,
+          startTime: cancelledProposition.start_time,
+          endTime: cancelledProposition.end_time,
+        },
+      });
+
+      if (!auditResult.isSuccess) {
+        return Result.fail(auditResult.getError());
+      }
+
+      return Result.ok(undefined);
     } catch (error) {
       return Result.fail(error as Error);
     }
