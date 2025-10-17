@@ -119,3 +119,17 @@ export class ReservationCreationError extends Error {
     this.name = 'ReservationCreationError';
   }
 }
+
+export class ReservationNotFoundError extends Error {
+  constructor(message = 'Reservation not found') {
+    super(message);
+    this.name = 'ReservationNotFoundError';
+  }
+}
+
+export class ReservationCancellationError extends Error {
+  constructor(message = 'Failed to cancel reservation') {
+    super(message);
+    this.name = 'ReservationCancellationError';
+  }
+}

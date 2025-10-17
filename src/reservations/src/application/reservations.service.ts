@@ -9,6 +9,7 @@ import {
   CreatePropositionCommand,
   CreatedPropositionDto,
   CancelPropositionCommand,
+  CancelReservationCommand,
   UserDto,
   IAuditService,
   PropositionConflictError,
@@ -27,6 +28,8 @@ import {
   ReservationCreationError,
   ReservationConflictItem,
   RangeDetailsDto,
+  ReservationNotFoundError,
+  ReservationCancellationError,
 } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
@@ -497,6 +500,65 @@ export class ReservationsService implements IReservationsService {
     }));
   }
 
+  public async cancelReservation(
+    command: CancelReservationCommand,
+    user: UserDto
+  ): Promise<Result<void>> {
+    if (user.isDeleted) {
+      return Result.fail(new ForbiddenError('Deleted users cannot cancel reservations'));
+    }
+
+    let reservation: Reservation | null;
+    try {
+      reservation = await this.reservationsRepository.getReservationById(command.reservationId);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+
+    if (!reservation) {
+      return Result.fail(new ReservationNotFoundError());
+    }
+
+    if (!this.canUserCancelReservation(user, reservation)) {
+      return Result.fail(new ForbiddenError('User is not allowed to cancel this reservation'));
+    }
+
+    let deletedReservation: Reservation | null;
+    try {
+      deletedReservation = await this.reservationsRepository.deleteReservation(reservation.id);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+
+    if (!deletedReservation) {
+      return Result.fail(new ReservationNotFoundError());
+    }
+
+    const auditResult = await this.auditService.logAction({
+      action_type: 'RESERVATION_CANCEL',
+      target_id: deletedReservation.id,
+      details: {
+        userId: user.id,
+        rangeId: deletedReservation.range_id,
+        reservationId: deletedReservation.id,
+        eventDate: deletedReservation.event_date,
+        startTime: deletedReservation.start_time,
+        endTime: deletedReservation.end_time,
+        numParticipants: deletedReservation.num_participants,
+        tracksRequested: deletedReservation.tracks_requested,
+        coordinatorId: deletedReservation.coordinator_id,
+      },
+    });
+
+    if (!auditResult.isSuccess) {
+      const auditError = auditResult.getError();
+      console.error('Failed to log reservation cancellation', auditError);
+      return Result.fail(new ReservationCancellationError());
+    }
+
+    return Result.ok(undefined as void);
+  }
+
   private canUserCreateReservation(user: UserDto, rangeId: number): boolean {
     const globalRoleNames = new Set(user.roles.map((role) => role.name));
     if (
@@ -512,6 +574,32 @@ export class ReservationsService implements IReservationsService {
     if (
       rangeRoleNames.has(UserRole.ShootingRangeAdministrator) ||
       rangeRoleNames.has(UserRole.Coordinator)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private canUserCancelReservation(user: UserDto, reservation: Reservation): boolean {
+    const globalRoleNames = new Set(user.roles.map((role) => role.name));
+    if (
+      globalRoleNames.has(UserRole.ClubCommunityAdministrator) ||
+      globalRoleNames.has(UserRole.Coordinator)
+    ) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(reservation.range_id)] ?? [];
+    const rangeRoleNames = new Set(rangeRoles.map((role) => role.name));
+
+    if (rangeRoleNames.has(UserRole.ShootingRangeAdministrator)) {
+      return true;
+    }
+
+    if (
+      rangeRoleNames.has(UserRole.Coordinator) &&
+      reservation.coordinator_id === user.id
     ) {
       return true;
     }

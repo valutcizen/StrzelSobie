@@ -83,4 +83,6 @@ export interface IReservationsRepository {
   markPropositionConverted(propositionId: number): Promise<void>;
   getPropositionById(id: number): Promise<Proposition | null>;
   cancelProposition(id: number): Promise<Proposition | null>;
+  getReservationById(id: number): Promise<Reservation | null>;
+  deleteReservation(id: number): Promise<Reservation | null>;
 }

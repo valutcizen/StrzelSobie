@@ -2,6 +2,7 @@ import { Result } from '../result';
 import {
   CalendarEventsDto,
   CancelPropositionCommand,
+  CancelReservationCommand,
   CreatePropositionCommand,
   CreateReservationOptions,
   CreateReservationPayload,
@@ -25,4 +26,5 @@ export interface IReservationsService {
     user: UserDto
   ): Promise<Result<CreatedReservationDto>>;
   cancelProposition(command: CancelPropositionCommand, user: UserDto): Promise<Result<void>>;
+  cancelReservation(command: CancelReservationCommand, user: UserDto): Promise<Result<void>>;
 }

@@ -10,6 +10,8 @@ import {
   ReservationCreationError,
   ReservationConflictItem,
   UnauthorizedPropositionError,
+  ReservationNotFoundError,
+  ReservationCancellationError,
 } from '@strzel-sobie/common';
 
 type ErrorResponse = {
@@ -89,6 +91,20 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 500,
       body: { code: 'reservation_creation_failed', message: error.message },
+    };
+  }
+
+  if (error instanceof ReservationNotFoundError) {
+    return {
+      status: 404,
+      body: { code: 'reservation_not_found', message: error.message },
+    };
+  }
+
+  if (error instanceof ReservationCancellationError) {
+    return {
+      status: 500,
+      body: { code: 'reservation_cancellation_failed', message: error.message },
     };
   }
 

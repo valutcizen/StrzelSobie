@@ -38,6 +38,10 @@ export type CreateReservationOptions = {
   force: boolean;
 };
 
+export type CancelReservationCommand = {
+  reservationId: Reservation['id'];
+};
+
 /**
  * DTO for a newly created reservation.
  * Corresponds to the response payload for `POST /api/v1/ranges/{rangeSlug}/reservations`.

@@ -315,6 +315,38 @@ export class ReservationsDbRepository implements IReservationsRepository {
     return mapDbProposition(record);
   }
 
+  public async getReservationById(id: number): Promise<Reservation | null> {
+    const stmt = this.db.prepare(
+      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable
+       FROM reservations_reservations
+       WHERE id = ?`
+    );
+
+    const record = await stmt.bind(id).first<ReservationDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbReservation(record);
+  }
+
+  public async deleteReservation(id: number): Promise<Reservation | null> {
+    const stmt = this.db.prepare(
+      `DELETE FROM reservations_reservations
+       WHERE id = ?
+       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable`
+    );
+
+    const record = await stmt.bind(id).first<ReservationDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbReservation(record);
+  }
+
   private async insertReservation(record: CreateReservationRecord): Promise<Reservation> {
     const propositionId = record.proposition_id ?? null;
     const stmt = this.db.prepare(

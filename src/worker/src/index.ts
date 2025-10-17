@@ -15,6 +15,7 @@ import { GetEvents } from './endpoints/v1/ranges/get-events';
 import { CreateProposition } from './endpoints/v1/ranges/create-proposition';
 import { CreateReservation } from './endpoints/v1/ranges/create-reservation';
 import { DeleteProposition } from './endpoints/v1/propositions/delete-proposition';
+import { DeleteReservation } from './endpoints/v1/reservations/delete-reservation';
 import { Env, Variables } from './types';
 import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
 import {
@@ -81,5 +82,6 @@ openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
 openapi.delete('/api/v1/propositions/:propositionId', authMiddleware, DeleteProposition);
+openapi.delete('/api/v1/reservations/:reservationId', authMiddleware, DeleteReservation);
 
 export default app;
