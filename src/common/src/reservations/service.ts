@@ -3,7 +3,10 @@ import {
   CalendarEventsDto,
   CancelPropositionCommand,
   CreatePropositionCommand,
+  CreateReservationOptions,
+  CreateReservationPayload,
   CreatedPropositionDto,
+  CreatedReservationDto,
   GetCalendarEventsQuery,
 } from './dto';
 import { UserDto } from '../users/dto';
@@ -15,5 +18,11 @@ export interface IReservationsService {
     command: CreatePropositionCommand,
     user: UserDto
   ): Promise<Result<CreatedPropositionDto>>;
+  createReservation(
+    rangeSlug: string,
+    command: CreateReservationPayload,
+    options: CreateReservationOptions,
+    user: UserDto
+  ): Promise<Result<CreatedReservationDto>>;
   cancelProposition(command: CancelPropositionCommand, user: UserDto): Promise<Result<void>>;
 }

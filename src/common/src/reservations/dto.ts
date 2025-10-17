@@ -27,6 +27,18 @@ export type CreateReservationFromPropositionCommand = {
 };
 
 /**
+ * Union payload accepted by reservation creation workflow.
+ * `propositionId` discriminates proposition-based conversions.
+ */
+export type CreateReservationPayload =
+  | CreateReservationCommand
+  | CreateReservationFromPropositionCommand;
+
+export type CreateReservationOptions = {
+  force: boolean;
+};
+
+/**
  * DTO for a newly created reservation.
  * Corresponds to the response payload for `POST /api/v1/ranges/{rangeSlug}/reservations`.
  */

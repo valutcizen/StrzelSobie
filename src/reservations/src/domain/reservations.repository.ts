@@ -7,20 +7,21 @@ export type Proposition = {
   start_time: string;
   end_time: string;
   num_participants: number;
-  tracks: number;
+  tracks_requested: number;
 };
 
 export type Reservation = {
   id: number;
   range_id: number;
   coordinator_id: number;
+  proposition_id: number | null;
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks: number;
+  num_participants: number;
+  tracks_requested: number;
   is_public: boolean;
   is_joinable: boolean;
-  participants_count: number;
 };
 
 export type CreatePropositionRecord = {
@@ -38,6 +39,28 @@ export type OverlappingUsage = {
   reservations_tracks: number;
 };
 
+export type ReservationConflict = {
+  id: number;
+  type: 'reservation' | 'proposition';
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  tracks_requested: number;
+};
+
+export type CreateReservationRecord = {
+  range_id: number;
+  coordinator_id: number;
+  proposition_id: number | null;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  num_participants: number;
+  tracks_requested: number;
+  is_public: boolean;
+  is_joinable: boolean;
+};
+
 export interface IReservationsRepository {
   getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]>;
   getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]>;
@@ -47,7 +70,17 @@ export interface IReservationsRepository {
     startTime: string,
     endTime: string
   ): Promise<OverlappingUsage>;
+  getOverlappingReservationsDetails(
+    rangeId: number,
+    eventDate: string,
+    startTime: string,
+    endTime: string,
+    options?: { excludeReservationId?: number; excludePropositionId?: number }
+  ): Promise<ReservationConflict[]>;
   createProposition(record: CreatePropositionRecord): Promise<Proposition>;
+  createReservation(record: CreateReservationRecord): Promise<Reservation>;
+  createReservationFromProposition(record: CreateReservationRecord, propositionId: number): Promise<Reservation>;
+  markPropositionConverted(propositionId: number): Promise<void>;
   getPropositionById(id: number): Promise<Proposition | null>;
   cancelProposition(id: number): Promise<Proposition | null>;
 }

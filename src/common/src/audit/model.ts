@@ -1,5 +1,13 @@
+export type AuditActionType =
+  | 'USER_REGISTRATION'
+  | 'RANGE_UPDATE'
+  | 'PROPOSITION_CREATE'
+  | 'PROPOSITION_CANCEL'
+  | 'RESERVATION_CREATE'
+  | 'RESERVATION_CONVERT';
+
 export type AuditLogEntry = {
-    action_type: 'USER_REGISTRATION' | 'RANGE_UPDATE' | 'PROPOSITION_CREATE' | 'PROPOSITION_CANCEL';
-    target_id: number;
-    details: object;
-  };
+  action_type: AuditActionType;
+  target_id: number;
+  details: object;
+};

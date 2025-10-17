@@ -1,10 +1,12 @@
 import { IDatabase } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
+  CreateReservationRecord,
   IReservationsRepository,
   OverlappingUsage,
   Proposition,
   Reservation,
+  ReservationConflict,
 } from '../domain/reservations.repository';
 
 type PropositionDb = {
@@ -21,6 +23,7 @@ type PropositionDb = {
 
 type ReservationDb = {
   id: number;
+  proposition_id: number | null;
   range_id: number;
   coordinator_id: number;
   event_date: string;
@@ -32,6 +35,14 @@ type ReservationDb = {
   num_participants: number;
 };
 
+type ConflictRow = {
+  id: number;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  tracks_requested: number;
+};
+
 const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   id: dbProposition.id,
   user_id: dbProposition.user_id,
@@ -41,7 +52,21 @@ const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   start_time: dbProposition.start_time,
   end_time: dbProposition.end_time,
   num_participants: dbProposition.num_participants,
-  tracks: dbProposition.tracks_requested,
+  tracks_requested: dbProposition.tracks_requested,
+});
+
+const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
+  id: dbReservation.id,
+  proposition_id: dbReservation.proposition_id,
+  range_id: dbReservation.range_id,
+  coordinator_id: dbReservation.coordinator_id,
+  event_date: dbReservation.event_date,
+  start_time: dbReservation.start_time,
+  end_time: dbReservation.end_time,
+  num_participants: dbReservation.num_participants,
+  tracks_requested: dbReservation.tracks_requested,
+  is_public: Boolean(dbReservation.is_public),
+  is_joinable: Boolean(dbReservation.is_joinable),
 });
 
 export class ReservationsDbRepository implements IReservationsRepository {
@@ -60,24 +85,13 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]> {
     const stmt = this.db.prepare(
-      'SELECT id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested, is_public, is_joinable, num_participants FROM reservations_reservations WHERE range_id = ? AND event_date BETWEEN ? AND ?'
+      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested, is_public, is_joinable, num_participants
+       FROM reservations_reservations
+       WHERE range_id = ? AND event_date BETWEEN ? AND ?`
     );
     const { results } = await stmt.bind(rangeId, startDate, endDate).all<ReservationDb>();
 
-    const domainReservations = (results ?? []).map((dbReservation) => ({
-      id: dbReservation.id,
-      range_id: dbReservation.range_id,
-      coordinator_id: dbReservation.coordinator_id,
-      event_date: dbReservation.event_date,
-      start_time: dbReservation.start_time,
-      end_time: dbReservation.end_time,
-      tracks: dbReservation.tracks_requested,
-      is_public: !!dbReservation.is_public,
-      is_joinable: !!dbReservation.is_joinable,
-      participants_count: dbReservation.num_participants,
-    }));
-
-    return domainReservations;
+    return (results ?? []).map(mapDbReservation);
   }
 
   public async getOverlappingUsage(
@@ -117,6 +131,73 @@ export class ReservationsDbRepository implements IReservationsRepository {
     };
   }
 
+  public async getOverlappingReservationsDetails(
+    rangeId: number,
+    eventDate: string,
+    startTime: string,
+    endTime: string,
+    options?: { excludeReservationId?: number; excludePropositionId?: number }
+  ): Promise<ReservationConflict[]> {
+    const conflicts: ReservationConflict[] = [];
+    const excludeReservationId = options?.excludeReservationId;
+    const excludePropositionId = options?.excludePropositionId;
+
+    const reservationSql = `
+      SELECT id, event_date, start_time, end_time, tracks_requested
+      FROM reservations_reservations
+      WHERE range_id = ?
+        AND event_date = ?
+        AND start_time < ?
+        AND end_time > ?
+        ${excludeReservationId ? 'AND id != ?' : ''}
+    `;
+    const reservationBindings: Array<number | string> = [rangeId, eventDate, endTime, startTime];
+    if (excludeReservationId) {
+      reservationBindings.push(excludeReservationId);
+    }
+    const reservationStmt = this.db.prepare(reservationSql);
+    const reservationResults = await reservationStmt.bind(...reservationBindings).all<ConflictRow>();
+    conflicts.push(
+      ...((reservationResults.results ?? []).map((row) => ({
+        id: row.id,
+        type: 'reservation' as const,
+        event_date: row.event_date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        tracks_requested: row.tracks_requested,
+      })))
+    );
+
+    const propositionSql = `
+      SELECT id, event_date, start_time, end_time, tracks_requested
+      FROM reservations_propositions
+      WHERE range_id = ?
+        AND status = 'open'
+        AND event_date = ?
+        AND start_time < ?
+        AND end_time > ?
+        ${excludePropositionId ? 'AND id != ?' : ''}
+    `;
+    const propositionBindings: Array<number | string> = [rangeId, eventDate, endTime, startTime];
+    if (excludePropositionId) {
+      propositionBindings.push(excludePropositionId);
+    }
+    const propositionStmt = this.db.prepare(propositionSql);
+    const propositionResults = await propositionStmt.bind(...propositionBindings).all<ConflictRow>();
+    conflicts.push(
+      ...((propositionResults.results ?? []).map((row) => ({
+        id: row.id,
+        type: 'proposition' as const,
+        event_date: row.event_date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        tracks_requested: row.tracks_requested,
+      })))
+    );
+
+    return conflicts;
+  }
+
   public async createProposition(record: CreatePropositionRecord): Promise<Proposition> {
     const stmt = this.db.prepare(
       `INSERT INTO reservations_propositions
@@ -142,6 +223,63 @@ export class ReservationsDbRepository implements IReservationsRepository {
     }
 
     return mapDbProposition(result);
+  }
+
+  public async createReservation(record: CreateReservationRecord): Promise<Reservation> {
+    return this.insertReservation(record);
+  }
+
+  public async createReservationFromProposition(
+    record: CreateReservationRecord,
+    propositionId: number
+  ): Promise<Reservation> {
+    await this.db.prepare('BEGIN').run();
+    try {
+      const reservation = await this.insertReservation({
+        ...record,
+        proposition_id: propositionId,
+      });
+
+      const updateResult = await this.db
+        .prepare(
+          `UPDATE reservations_propositions
+           SET status = 'converted'
+           WHERE id = ?
+           RETURNING id`
+        )
+        .bind(propositionId)
+        .first<{ id: number }>();
+
+      if (!updateResult) {
+        throw new Error('Failed to mark proposition as converted');
+      }
+
+      await this.db.prepare('COMMIT').run();
+      return reservation;
+    } catch (error) {
+      try {
+        await this.db.prepare('ROLLBACK').run();
+      } catch (rollbackError) {
+        console.error('Failed to rollback reservation creation transaction', rollbackError);
+      }
+      throw error;
+    }
+  }
+
+  public async markPropositionConverted(propositionId: number): Promise<void> {
+    const updateResult = await this.db
+      .prepare(
+        `UPDATE reservations_propositions
+         SET status = 'converted'
+         WHERE id = ?
+         RETURNING id`
+      )
+      .bind(propositionId)
+      .first<{ id: number }>();
+
+    if (!updateResult) {
+      throw new Error('Failed to mark proposition as converted');
+    }
   }
 
   public async getPropositionById(id: number): Promise<Proposition | null> {
@@ -175,5 +313,36 @@ export class ReservationsDbRepository implements IReservationsRepository {
     }
 
     return mapDbProposition(record);
+  }
+
+  private async insertReservation(record: CreateReservationRecord): Promise<Reservation> {
+    const propositionId = record.proposition_id ?? null;
+    const stmt = this.db.prepare(
+      `INSERT INTO reservations_reservations
+        (proposition_id, coordinator_id, range_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable`
+    );
+
+    const created = await stmt
+      .bind(
+        propositionId,
+        record.coordinator_id,
+        record.range_id,
+        record.event_date,
+        record.start_time,
+        record.end_time,
+        record.num_participants,
+        record.tracks_requested,
+        record.is_public ? 1 : 0,
+        record.is_joinable ? 1 : 0
+      )
+      .first<ReservationDb>();
+
+    if (!created) {
+      throw new Error('Failed to create reservation');
+    }
+
+    return mapDbReservation(created);
   }
 }

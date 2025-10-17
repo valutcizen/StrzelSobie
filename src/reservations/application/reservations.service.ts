@@ -1,4 +1,11 @@
-import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService, RangeNotFoundError, getRangeRole } from '@strzel-sobie/common';
+import {
+  IReservationsService,
+  CalendarEventsDto,
+  GetCalendarEventsQuery,
+  Result,
+  IRangesService,
+  getRangeRole,
+} from '@strzel-sobie/common';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
@@ -10,15 +17,17 @@ export class ReservationsService implements IReservationsService {
   public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto, Error>> {
     const { rangeSlug, startDate, endDate, user } = query;
 
-    const rangeId = await this.rangesService.getRangeIdBySlug(rangeSlug);
-    if (!rangeId) {
-      return Result.fail(new RangeNotFoundError("Range not found"));
+    const rangeIdResult = await this.rangesService.getRangeIdBySlug(rangeSlug);
+    if (!rangeIdResult.isSuccess) {
+      return Result.fail(rangeIdResult.getError());
     }
+    const rangeId = rangeIdResult.getValue();
 
-    const [propositionsResult, reservationsResult] : [Result<Proposition[], Error>, Result<Reservation[], Error>] = await Promise.all([
-      this.reservationsRepository.getPropositions(rangeId, startDate, endDate),
-      this.reservationsRepository.getReservations(rangeId, startDate, endDate),
-    ]);
+    const [propositionsResult, reservationsResult]: [Result<Proposition[]>, Result<Reservation[]>] =
+      await Promise.all([
+        this.reservationsRepository.getPropositions(rangeId, startDate, endDate),
+        this.reservationsRepository.getReservations(rangeId, startDate, endDate),
+      ]);
 
     if (!propositionsResult.isSuccess) {
       return Result.fail(propositionsResult.getError());
@@ -49,13 +58,13 @@ export class ReservationsService implements IReservationsService {
           eventDate: r.event_date,
           startTime: r.start_time,
           endTime: r.end_time,
-          tracksRequested: r.tracks,
+          tracksRequested: r.tracks_requested,
           isPublic: r.is_public,
           isJoinable: r.is_joinable,
           details: showDetails
             ? {
                 coordinatorId: r.coordinator_id,
-                numParticipants: r.participants_count,
+                numParticipants: r.num_participants,
               }
             : null,
         };
@@ -69,7 +78,7 @@ export class ReservationsService implements IReservationsService {
         eventDate: p.event_date,
         startTime: p.start_time,
         endTime: p.end_time,
-        tracksRequested: p.tracks,
+        tracksRequested: p.tracks_requested,
       })),
       reservations: filteredReservations,
     };

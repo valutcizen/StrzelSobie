@@ -1,10 +1,14 @@
 import {
   ForbiddenError,
   InvalidPropositionTimeError,
+  InvalidReservationTimeError,
   PropositionAlreadyClosedError,
   PropositionConflictError,
   PropositionNotFoundError,
   RangeNotFoundError,
+  ReservationConflictError,
+  ReservationCreationError,
+  ReservationConflictItem,
   UnauthorizedPropositionError,
 } from '@strzel-sobie/common';
 
@@ -13,6 +17,8 @@ type ErrorResponse = {
   body: {
     code: string;
     message: string;
+    conflicts?: ReservationConflictItem[];
+    forceRequired?: boolean;
   };
 };
 
@@ -38,10 +44,30 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     };
   }
 
+  if (error instanceof InvalidReservationTimeError) {
+    return {
+      status: 400,
+      body: { code: 'invalid_reservation_time', message: error.message },
+    };
+  }
+
   if (error instanceof PropositionConflictError) {
     return {
       status: 400,
       body: { code: 'schedule_conflict', message: error.message },
+    };
+  }
+
+  if (error instanceof ReservationConflictError) {
+    const { conflicts, requiresForce } = error.details;
+    return {
+      status: 400,
+      body: {
+        code: requiresForce ? 'reservation_force_required' : 'reservation_conflict',
+        message: error.message,
+        conflicts,
+        forceRequired: requiresForce,
+      },
     };
   }
 
@@ -56,6 +82,13 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 404,
       body: { code: 'proposition_not_found', message: error.message },
+    };
+  }
+
+  if (error instanceof ReservationCreationError) {
+    return {
+      status: 500,
+      body: { code: 'reservation_creation_failed', message: error.message },
     };
   }
 

@@ -81,3 +81,41 @@ export class PropositionAlreadyClosedError extends Error {
     this.name = 'PropositionAlreadyClosedError';
   }
 }
+
+export class InvalidReservationTimeError extends Error {
+  constructor(message = 'Reservation time window is invalid') {
+    super(message);
+    this.name = 'InvalidReservationTimeError';
+  }
+}
+
+export type ReservationConflictItem = {
+  id: number;
+  type: 'reservation' | 'proposition';
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  tracksRequested: number;
+};
+
+export type ReservationConflictDetails = {
+  conflicts: ReservationConflictItem[];
+  requiresForce: boolean;
+};
+
+export class ReservationConflictError extends Error {
+  constructor(
+    public readonly details: ReservationConflictDetails,
+    message = 'Reservation conflicts with existing usage'
+  ) {
+    super(message);
+    this.name = 'ReservationConflictError';
+  }
+}
+
+export class ReservationCreationError extends Error {
+  constructor(message = 'Failed to create reservation') {
+    super(message);
+    this.name = 'ReservationCreationError';
+  }
+}

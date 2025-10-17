@@ -17,12 +17,24 @@ import {
   ForbiddenError,
   PropositionNotFoundError,
   PropositionAlreadyClosedError,
+  CreateReservationPayload,
+  CreateReservationOptions,
+  CreateReservationCommand,
+  CreateReservationFromPropositionCommand,
+  CreatedReservationDto,
+  ReservationConflictError,
+  InvalidReservationTimeError,
+  ReservationCreationError,
+  ReservationConflictItem,
+  RangeDetailsDto,
 } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
+  CreateReservationRecord,
   IReservationsRepository,
   Proposition,
   Reservation,
+  ReservationConflict,
 } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
@@ -68,13 +80,13 @@ export class ReservationsService implements IReservationsService {
             eventDate: r.event_date,
             startTime: r.start_time,
             endTime: r.end_time,
-            tracksRequested: r.tracks,
+            tracksRequested: r.tracks_requested,
             isPublic: r.is_public,
             isJoinable: r.is_joinable,
             details: showDetails
               ? {
                   coordinatorId: r.coordinator_id,
-                  numParticipants: r.participants_count,
+                  numParticipants: r.num_participants,
                 }
               : null,
           };
@@ -85,11 +97,11 @@ export class ReservationsService implements IReservationsService {
           id: p.id,
           userId: p.user_id,
           isMember: true, // Placeholder
-          eventDate: p.event_date,
-          startTime: p.start_time,
-          endTime: p.end_time,
-          tracksRequested: p.tracks,
-        })),
+        eventDate: p.event_date,
+        startTime: p.start_time,
+        endTime: p.end_time,
+        tracksRequested: p.tracks_requested,
+      })),
         reservations: filteredReservations,
       };
 
@@ -97,6 +109,41 @@ export class ReservationsService implements IReservationsService {
     } catch (error) {
       return Result.fail(error as Error);
     }
+  }
+
+  public async createReservation(
+    rangeSlug: string,
+    command: CreateReservationPayload,
+    options: CreateReservationOptions,
+    user: UserDto
+  ): Promise<Result<CreatedReservationDto>> {
+    if (user.isDeleted) {
+      return Result.fail(new ForbiddenError('Deleted users cannot create reservations'));
+    }
+
+    const rangeDetailsResult = await this.rangesService.getRangeDetails(rangeSlug);
+    if (!rangeDetailsResult.isSuccess) {
+      return Result.fail(rangeDetailsResult.getError());
+    }
+    const rangeDetails = rangeDetailsResult.getValue();
+    const rangeId = rangeDetails.id;
+
+    if (!this.canUserCreateReservation(user, rangeId)) {
+      return Result.fail(new ForbiddenError('User is not allowed to create reservations for this range'));
+    }
+
+    const force = Boolean(options.force);
+
+    if (this.isReservationConversion(command)) {
+      return this.createReservationFromPropositionCommand(
+        rangeDetails,
+        command,
+        force,
+        user
+      );
+    }
+
+    return this.createReservationDirectly(rangeDetails, command, force, user);
   }
 
   public async createProposition(
@@ -237,6 +284,335 @@ export class ReservationsService implements IReservationsService {
     } catch (error) {
       return Result.fail(error as Error);
     }
+  }
+
+  private async createReservationDirectly(
+    rangeDetails: RangeDetailsDto,
+    command: CreateReservationCommand,
+    force: boolean,
+    user: UserDto
+  ): Promise<Result<CreatedReservationDto>> {
+    const validationError = this.validateReservationCommand(command, rangeDetails.totalTracks);
+    if (validationError) {
+      return Result.fail(validationError);
+    }
+
+    let conflicts: ReservationConflict[];
+    try {
+      conflicts = await this.reservationsRepository.getOverlappingReservationsDetails(
+        rangeDetails.id,
+        command.eventDate,
+        command.startTime,
+        command.endTime
+      );
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+
+    if (conflicts.length > 0 && !force) {
+      return Result.fail(
+        new ReservationConflictError({
+          conflicts: this.mapReservationConflicts(conflicts),
+          requiresForce: true,
+        })
+      );
+    }
+
+    const record: CreateReservationRecord = {
+      range_id: rangeDetails.id,
+      coordinator_id: user.id,
+      proposition_id: null,
+      event_date: command.eventDate,
+      start_time: command.startTime,
+      end_time: command.endTime,
+      num_participants: command.numParticipants,
+      tracks_requested: command.tracksRequested,
+      is_public: command.isPublic,
+      is_joinable: command.isJoinable,
+    };
+
+    try {
+      const reservation = await this.reservationsRepository.createReservation(record);
+
+      const auditResult = await this.auditService.logAction({
+        action_type: 'RESERVATION_CREATE',
+        target_id: reservation.id,
+        details: {
+          userId: user.id,
+          rangeId: rangeDetails.id,
+          rangeSlug: rangeDetails.slug,
+          eventDate: reservation.event_date,
+          startTime: reservation.start_time,
+          endTime: reservation.end_time,
+          numParticipants: reservation.num_participants,
+          tracksRequested: reservation.tracks_requested,
+          forceApplied: force && conflicts.length > 0,
+        },
+      });
+
+      if (!auditResult.isSuccess) {
+        return Result.fail(auditResult.getError());
+      }
+
+      const dto: CreatedReservationDto = {
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      };
+
+      return Result.ok(dto);
+    } catch (error) {
+      console.error('Failed to create reservation directly', error);
+      return Result.fail(new ReservationCreationError());
+    }
+  }
+
+  private async createReservationFromPropositionCommand(
+    rangeDetails: RangeDetailsDto,
+    command: CreateReservationFromPropositionCommand,
+    force: boolean,
+    user: UserDto
+  ): Promise<Result<CreatedReservationDto>> {
+    let proposition: Proposition | null;
+    try {
+      proposition = await this.reservationsRepository.getPropositionById(command.propositionId);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+
+    if (!proposition) {
+      return Result.fail(new PropositionNotFoundError());
+    }
+
+    if (proposition.range_id !== rangeDetails.id) {
+      return Result.fail(new ForbiddenError('Proposition does not belong to this range'));
+    }
+
+    if (proposition.status !== 'open') {
+      return Result.fail(new PropositionAlreadyClosedError());
+    }
+
+    const startTime = command.startTime ?? proposition.start_time;
+    const endTime = command.endTime ?? proposition.end_time;
+    const tracksRequested = command.tracksRequested ?? proposition.tracks_requested;
+
+    const timeError = this.validateReservationTimeWindow(proposition.event_date, startTime, endTime);
+    if (timeError) {
+      return Result.fail(timeError);
+    }
+
+    const tracksError = this.validateReservationTracks(tracksRequested, rangeDetails.totalTracks);
+    if (tracksError) {
+      return Result.fail(tracksError);
+    }
+
+    let conflicts: ReservationConflict[];
+    try {
+      conflicts = await this.reservationsRepository.getOverlappingReservationsDetails(
+        rangeDetails.id,
+        proposition.event_date,
+        startTime,
+        endTime,
+        { excludePropositionId: proposition.id }
+      );
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+
+    if (conflicts.length > 0 && !force) {
+      return Result.fail(
+        new ReservationConflictError({
+          conflicts: this.mapReservationConflicts(conflicts),
+          requiresForce: true,
+        })
+      );
+    }
+
+    const record: CreateReservationRecord = {
+      range_id: rangeDetails.id,
+      coordinator_id: user.id,
+      proposition_id: proposition.id,
+      event_date: proposition.event_date,
+      start_time: startTime,
+      end_time: endTime,
+      num_participants: proposition.num_participants,
+      tracks_requested: tracksRequested,
+      is_public: false,
+      is_joinable: false,
+    };
+
+    try {
+      const reservation = await this.reservationsRepository.createReservationFromProposition(
+        record,
+        proposition.id
+      );
+
+      const auditResult = await this.auditService.logAction({
+        action_type: 'RESERVATION_CONVERT',
+        target_id: reservation.id,
+        details: {
+          userId: user.id,
+          rangeId: rangeDetails.id,
+          rangeSlug: rangeDetails.slug,
+          propositionId: proposition.id,
+          eventDate: reservation.event_date,
+          startTime: reservation.start_time,
+          endTime: reservation.end_time,
+          numParticipants: reservation.num_participants,
+          tracksRequested: reservation.tracks_requested,
+          forceApplied: force && conflicts.length > 0,
+          adjustments: {
+            startTimeChanged: reservation.start_time !== proposition.start_time,
+            endTimeChanged: reservation.end_time !== proposition.end_time,
+            tracksRequestedChanged: reservation.tracks_requested !== proposition.tracks_requested,
+          },
+        },
+      });
+
+      if (!auditResult.isSuccess) {
+        return Result.fail(auditResult.getError());
+      }
+
+      const dto: CreatedReservationDto = {
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      };
+
+      return Result.ok(dto);
+    } catch (error) {
+      console.error('Failed to convert proposition to reservation', error);
+      return Result.fail(new ReservationCreationError());
+    }
+  }
+
+  private mapReservationConflicts(conflicts: ReservationConflict[]): ReservationConflictItem[] {
+    return conflicts.map((conflict) => ({
+      id: conflict.id,
+      type: conflict.type,
+      eventDate: conflict.event_date,
+      startTime: conflict.start_time,
+      endTime: conflict.end_time,
+      tracksRequested: conflict.tracks_requested,
+    }));
+  }
+
+  private canUserCreateReservation(user: UserDto, rangeId: number): boolean {
+    const globalRoleNames = new Set(user.roles.map((role) => role.name));
+    if (
+      globalRoleNames.has(UserRole.ClubCommunityAdministrator) ||
+      globalRoleNames.has(UserRole.Coordinator)
+    ) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    const rangeRoleNames = new Set(rangeRoles.map((role) => role.name));
+
+    if (
+      rangeRoleNames.has(UserRole.ShootingRangeAdministrator) ||
+      rangeRoleNames.has(UserRole.Coordinator)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private isReservationConversion(
+    command: CreateReservationPayload
+  ): command is CreateReservationFromPropositionCommand {
+    return typeof (command as CreateReservationFromPropositionCommand).propositionId === 'number';
+  }
+
+  private validateReservationCommand(
+    command: CreateReservationCommand,
+    totalTracks: number
+  ): Error | null {
+    const timeError = this.validateReservationTimeWindow(
+      command.eventDate,
+      command.startTime,
+      command.endTime
+    );
+    if (timeError) {
+      return timeError;
+    }
+
+    if (
+      !Number.isInteger(command.numParticipants) ||
+      command.numParticipants < 1 ||
+      command.numParticipants > 50
+    ) {
+      return new InvalidReservationTimeError('Number of participants must be between 1 and 50');
+    }
+
+    const tracksError = this.validateReservationTracks(command.tracksRequested, totalTracks);
+    if (tracksError) {
+      return tracksError;
+    }
+
+    if (typeof command.isPublic !== 'boolean' || typeof command.isJoinable !== 'boolean') {
+      return new InvalidReservationTimeError('Visibility flags must be boolean values');
+    }
+
+    return null;
+  }
+
+  private validateReservationTracks(tracksRequested: number, totalTracks: number): Error | null {
+    if (!Number.isInteger(tracksRequested) || tracksRequested < 1) {
+      return new InvalidReservationTimeError('Tracks requested must be a positive integer');
+    }
+
+    if (tracksRequested > totalTracks) {
+      return new InvalidReservationTimeError('Tracks requested cannot exceed range capacity');
+    }
+
+    return null;
+  }
+
+  private validateReservationTimeWindow(
+    eventDate: string,
+    startTime: string,
+    endTime: string
+  ): Error | null {
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datePattern.test(eventDate) || Number.isNaN(new Date(eventDate).getTime())) {
+      return new InvalidReservationTimeError('Event date must be a valid YYYY-MM-DD value');
+    }
+
+    const timePattern = /^\d{2}:\d{2}$/;
+    if (!timePattern.test(startTime) || !timePattern.test(endTime)) {
+      return new InvalidReservationTimeError('Start and end times must be in HH:MM format');
+    }
+
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+    if (
+      [startHours, startMinutes, endHours, endMinutes].some((value) => Number.isNaN(value)) ||
+      startHours < 0 ||
+      startHours > 23 ||
+      endHours < 0 ||
+      endHours > 23 ||
+      startMinutes < 0 ||
+      startMinutes > 59 ||
+      endMinutes < 0 ||
+      endMinutes > 59
+    ) {
+      return new InvalidReservationTimeError('Start and end times must represent valid clock values');
+    }
+
+    if (startMinutes % 5 !== 0 || endMinutes % 5 !== 0) {
+      return new InvalidReservationTimeError('Times must be aligned to 5-minute increments');
+    }
+
+    const startsBeforeEnds =
+      startHours < endHours || (startHours === endHours && startMinutes < endMinutes);
+    if (!startsBeforeEnds) {
+      return new InvalidReservationTimeError('End time must be later than start time');
+    }
+
+    return null;
   }
 
   private canUserCreateProposition(user: UserDto, rangeId: number): boolean {
