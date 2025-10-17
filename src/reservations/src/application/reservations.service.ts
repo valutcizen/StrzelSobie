@@ -1,4 +1,4 @@
-import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService, RangeNotFoundError } from '@strzel-sobie/common';
+import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService, RangeNotFoundError, getRangeRole } from '@strzel-sobie/common';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
@@ -7,7 +7,7 @@ export class ReservationsService implements IReservationsService {
     private readonly reservationsRepository: IReservationsRepository
   ) {}
 
-  public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto, Error>> {
+  public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto>> {
     const { rangeSlug, startDate, endDate, user } = query;
 
     const rangeDetailsResult = await this.rangesService.getRangeDetails(rangeSlug);
@@ -24,12 +24,7 @@ export class ReservationsService implements IReservationsService {
         this.reservationsRepository.getReservations(rangeId, startDate, endDate),
       ]);
 
-      const isClubAdmin = user.roles.includes('Club/Community Administrator');
-      const rangeAdminRoles = user.rangeRoles[rangeId] || [];
-      const isRangeAdmin = rangeAdminRoles.includes('Range Admin');
-      const isAdmin = isClubAdmin || isRangeAdmin;
-      const isMember = user.roles.includes('Member');
-      const isGuest = !isMember && !isAdmin;
+      const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
 
       const filteredPropositions = isAdmin
         ? propositions

@@ -1,4 +1,4 @@
-import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService, RangeNotFoundError } from '@strzel-sobie/common';
+import { UserRole, IReservationsService, CalendarEventsDto, GetCalendarEventsQuery, Result, IRangesService, RangeNotFoundError, getRangeRole } from '@strzel-sobie/common';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {
@@ -30,12 +30,7 @@ export class ReservationsService implements IReservationsService {
     const propositions = propositionsResult.getValue();
     const reservations = reservationsResult.getValue();
 
-    const isClubAdmin = user.roles.includes(UserRole.ClubCommunityAdministrator);
-    const rangeAdminRoles = user.rangeRoles[rangeSlug] || [];
-    const isRangeAdmin = rangeAdminRoles.includes(UserRole.ShootingRangeAdministrator);
-    const isAdmin = isClubAdmin || isRangeAdmin;
-    const isMember = user.roles.includes(UserRole.Member);
-    const isGuest = !isMember && !isAdmin;
+    const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
 
     const filteredPropositions = isAdmin
       ? propositions

@@ -1,15 +1,15 @@
-export class Result<T, E extends Error> {
+export class Result<T> {
   private constructor(
     public readonly isSuccess: boolean,
-    private readonly value: T | undefined,
-    private readonly error: E | undefined = undefined
+    private readonly value: T | undefined = undefined,
+    private readonly error: Error | undefined = undefined
   ) {}
 
-  public static ok<T, E extends Error>(value: T): Result<T, E> {
+  public static ok<T>(value: T): Result<T> {
     return new Result(true, value);
   }
 
-  public static fail<T, E extends Error>(error: E): Result<T, E> {
+  public static fail<T>(error: Error): Result<T> {
     console.error(error);
     return new Result(false, undefined as T, error);
   }
@@ -21,7 +21,7 @@ export class Result<T, E extends Error> {
     return this.value!;
   }
 
-  public getError(): E {
+  public getError(): Error {
     if (this.isSuccess) {
       throw new Error("Cannot get the error of a successful result.");
     }

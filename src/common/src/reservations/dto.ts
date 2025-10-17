@@ -1,3 +1,4 @@
+import { UserProfile } from '../users/model';
 import { Reservation, Proposition, Record as RangeRecord } from './model';
 
 /**
@@ -64,11 +65,7 @@ export type GetCalendarEventsQuery = {
   rangeSlug: string;
   startDate: string;
   endDate: string;
-  user: {
-    id: string;
-    roles: string[];
-    rangeRoles: Record<string, string[]>;
-  };
+  user: UserProfile;
 };
 /**
  * Command model for creating a new proposition.

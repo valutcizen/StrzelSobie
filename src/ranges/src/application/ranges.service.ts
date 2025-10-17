@@ -16,7 +16,7 @@ import { ShootingRange } from '../domain/shooting-range.model';
 export class RangesService implements IRangesService {
   constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
-  public async getRanges(): Promise<Result<RangeSummaryDto[], Error>> {
+  public async getRanges(): Promise<Result<RangeSummaryDto[]>> {
     const result = await this.rangesRepository.findAll();
 
     const ranges = result.map((range: ShootingRange) => ({
@@ -28,7 +28,7 @@ export class RangesService implements IRangesService {
     return Result.ok(ranges);
   }
 
-  public async existsRangeById(rangeId: number): Promise<Result<boolean, Error>> {
+  public async existsRangeById(rangeId: number): Promise<Result<boolean>> {
     try {
       const range = await this.rangesRepository.existsRangeById(rangeId);
       return Result.ok(range);
@@ -37,7 +37,7 @@ export class RangesService implements IRangesService {
     }
   }
 
-  public async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto, Error>> {
+  public async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(slug);
 
     if (!range) {
@@ -59,7 +59,7 @@ export class RangesService implements IRangesService {
     rangeSlug: string,
     command: UpdateRangeCommand,
     user: UserDto
-  ): Promise<Result<void, Error>> {
+  ): Promise<Result<void>> {
     const range = await this.rangesRepository.findBySlug(rangeSlug);
 
     if (!range) {
@@ -97,5 +97,16 @@ export class RangesService implements IRangesService {
     await this.auditService.logAction(log);
 
     return Result.ok(undefined);
+  }
+
+  public async getRangeIdBySlug(rangeSlug: string): Promise<Result<number>> {
+    try {
+      const rangeId = await this.rangesRepository.getRangeIdBySlug(rangeSlug);
+      if (rangeId)
+        return Result.ok(rangeId);
+      return Result.fail(new RangeNotFoundError("Range not found"));
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
   }
 }

@@ -7,15 +7,17 @@ import { IUserRepository } from '../domain/user.repository';
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository, private readonly rangesService: IRangesService) {}
 
-  async findUserByEmail(email: string): Promise<Result<UserIdentifierDto | null, Error>> {
+  async findUserByEmail(email: string): Promise<Result<UserIdentifierDto>> {
     try {
       const user = await this.userRepository.findByEmail(email);
-      return Result.ok(user);
+      if (user)
+        return Result.ok(user);
+      return Result.fail(new UserNotFoundError("User not found"));
     } catch (error) {
       return Result.fail(error as Error);
     }
   }
-  async createUser(email: string): Promise<Result<UserIdentifierDto, Error>> {
+  async createUser(email: string): Promise<Result<UserIdentifierDto>> {
     try {
       const user = await this.userRepository.create(email);
       return Result.ok(user);
@@ -23,15 +25,17 @@ export class UserService implements IUserService {
       return Result.fail(error as Error);
     }
   }
-  async getFullUserProfile(userId: number): Promise<Result<MeDto | null, Error>> {
+  async getFullUserProfile(userId: number): Promise<Result<MeDto>> {
     try {
       const profile = await this.userRepository.getFullUserProfile(userId);
-      return Result.ok(profile);
+      if (profile)
+        return Result.ok(profile);
+      return Result.fail(new UserNotFoundError("User not found"));
     } catch (error) {
       return Result.fail(error as Error);
     }
   }
-  async getRoles(): Promise<Result<Role[], Error>> {
+  async getRoles(): Promise<Result<Role[]>> {
     try {
       const roles = await this.userRepository.getRoles();
       return Result.ok(roles.map(role => ({ id: role.id, name: role.name, scope: role.scope })));
@@ -39,10 +43,12 @@ export class UserService implements IUserService {
       return Result.fail(error as Error);
     }
   }
-  async getUserById(id: number): Promise<Result<User | null, Error>> {
+  async getUserById(id: number): Promise<Result<User>> {
     try {
       const user = await this.userRepository.getById(id);
-      return Result.ok(user);
+      if (user)
+        return Result.ok(user);
+      return Result.fail(new UserNotFoundError("User not found"));
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -50,7 +56,7 @@ export class UserService implements IUserService {
 
   public async getUsers(
     options: GetUsersOptions = {}
-  ): Promise<Result<PaginatedUsersDto, Error>> {
+  ): Promise<Result<PaginatedUsersDto>> {
     try {
       const { users, total } = await this.userRepository.findAndCount(options);
 
@@ -100,7 +106,7 @@ export class UserService implements IUserService {
     roleId: number;
     rangeId: number | null;
     requester: UserDto;
-  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>> {
+  }): Promise<Result<void>> {
     try {
       let { targetUserId, roleId, rangeId, requester } = command;
 
@@ -159,7 +165,7 @@ export class UserService implements IUserService {
     roleId: number;
     rangeId: number | null;
     requester: UserDto;
-  }): Promise<Result<void, UserNotFoundError | RoleNotFoundError | RoleScopeError | ForbiddenError | RangeNotFoundError>> {
+  }): Promise<Result<void>> {
     try {
       let { targetUserId, roleId, rangeId, requester } = command;
 

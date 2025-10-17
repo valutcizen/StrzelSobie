@@ -15,3 +15,4 @@ export * from './users/service';
 export * from './result';
 export * from './db';
 export * from './errors';
+export * from './helpers'

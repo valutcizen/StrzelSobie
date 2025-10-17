@@ -23,7 +23,7 @@ export class AuthService implements IAuthService {
     private readonly auditService: IAuditService
   ) {}
 
-  public async login(dto: LoginUserDto): Promise<Result<{ token: string, session: SessionData }, InvalidCredentialsError>> {
+  public async login(dto: LoginUserDto): Promise<Result<{ token: string, session: SessionData }>> {
     const userResult = await this.userService.findUserByEmail(dto.email);
 
     if (!userResult.isSuccess) {
@@ -74,7 +74,7 @@ export class AuthService implements IAuthService {
     return Result.ok({ token, session });
   }
 
-  public async validateSession(token: string): Promise<Result<SessionData, Error>> {
+  public async validateSession(token: string): Promise<Result<SessionData>> {
     const session = await this.sessionRepository.getSession(token);
 
     if (!session) {
@@ -88,7 +88,7 @@ export class AuthService implements IAuthService {
     dto: RegisterUserRequestDto,
     sourceIp: string,
     proxiedIp: string
-  ): Promise<Result<RegisteredUserDto, EmailAlreadyExistsError>> {
+  ): Promise<Result<RegisteredUserDto>> {
     const existingUserResult = await this.userService.findUserByEmail(dto.email);
 
     if (!existingUserResult.isSuccess) {
@@ -133,7 +133,7 @@ export class AuthService implements IAuthService {
     return Result.ok(registeredUser);
   }
 
-  public async logout(sessionToken: string): Promise<Result<void, Error>> {
+  public async logout(sessionToken: string): Promise<Result<void>> {
     try {
       await this.sessionRepository.deleteSession(sessionToken);
       return Result.ok(undefined);
