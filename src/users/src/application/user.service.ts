@@ -66,9 +66,10 @@ export class UserService implements IUserService {
             isDeleted: user.is_deleted as 0 | 1,
             createdAt: user.created_at,
             roles: profile?.roles.map((roleName) => roleMap.get(roleName)).filter((role) => role) as Role[] || [],
-            range_roles: profile?.rangeRoles
-              ? Object.entries(profile.rangeRoles).reduce(
-                  (acc, [rangeId, roleNames]) => {
+                        rangeRoles: profile?.rangeRoles
+                          ? Object.entries(profile.rangeRoles).reduce(
+                              (
+                                acc: Record<string, Role[]>, [rangeId, roleNames]) => {
                     acc[rangeId] = roleNames
                       .map((roleName) => roleMap.get(roleName))
                       .filter((role) => role) as Role[];

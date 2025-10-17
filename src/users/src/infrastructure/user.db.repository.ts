@@ -48,21 +48,21 @@ export class UserDbRepository implements IUserRepository {
 
     // 3. Get range roles
     const rangeRolesStmt = this.db.prepare(`
-      SELECT sr.slug, r.name
+      SELECT urr.range_id, r.name
       FROM users_user_range_roles urr
       JOIN users_roles r ON urr.role_id = r.id
-      JOIN ranges_shooting_ranges sr ON urr.range_id = sr.id
       WHERE urr.user_id = ?
     `);
-    const rangeRolesResult = await rangeRolesStmt.bind(userId).all<{ slug: string; name: string }>();
+    const rangeRolesResult = await rangeRolesStmt.bind(userId).all<{ range_id: number; name: string }>();
 
     const rangeRoles: Record<string, string[]> = {};
     if (rangeRolesResult.results) {
       for (const row of rangeRolesResult.results) {
-        if (!rangeRoles[row.slug]) {
-          rangeRoles[row.slug] = [];
+        const rangeId = row.range_id.toString();
+        if (!rangeRoles[rangeId]) {
+          rangeRoles[rangeId] = [];
         }
-        rangeRoles[row.slug].push(row.name);
+        rangeRoles[rangeId].push(row.name);
       }
     }
 

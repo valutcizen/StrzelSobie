@@ -1,5 +1,6 @@
 import {
   AuditLogEntry,
+  IAuditService,
   IRangesService,
   RangeDetailsDto,
   RangeSummaryDto,
@@ -13,7 +14,7 @@ import { IRangesRepository } from '../domain/ranges.repository';
 import { ShootingRange } from '../domain/shooting-range.model';
 
 export class RangesService implements IRangesService {
-  constructor(private readonly rangesRepository: IRangesRepository) {}
+  constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
   public async getRanges(): Promise<Result<RangeSummaryDto[], Error>> {
     const result = await this.rangesRepository.findAll();
@@ -43,12 +44,15 @@ export class RangesService implements IRangesService {
       return Result.fail(new RangeNotFoundError('Range not found'));
     }
 
-    const dto: RangeDetailsDto = {
-      ...range,
-      operatingHours: JSON.parse(range.operatingHours),
-    };
-
-    return Result.ok(dto);
+    try {
+      const dto: RangeDetailsDto = {
+        ...range,
+        operatingHours: JSON.parse(range.operatingHours),
+      };
+      return Result.ok(dto);
+    } catch (error) {
+        return Result.fail(new Error("Failed to parse operating hours"));
+    }
   }
 
   public async updateRangeDetails(
@@ -64,7 +68,7 @@ export class RangesService implements IRangesService {
 
     const isGlobalAdmin = user.roles.some((role) => role.name === 'Club/Community Administrator');
     const rangeId = range.id.toString();
-    const userRolesForRange = user.range_roles[rangeId] || [];
+    const userRolesForRange = user.rangeRoles[rangeId] || [];
     const isRangeAdmin = userRolesForRange.some((role) => role.name === 'Range Admin');
 
     if (!isGlobalAdmin && !isRangeAdmin) {
@@ -79,7 +83,19 @@ export class RangesService implements IRangesService {
       range.operatingHours = JSON.stringify(command.operatingHours);
     }
 
-    this.rangesRepository.update(range);
+    await this.rangesRepository.update(range);
+
+    const log: AuditLogEntry = {
+        action_type: 'RANGE_UPDATE',
+        target_id: range.id,
+        details: {
+            user: user,
+            command: command
+        }
+    };
+
+    await this.auditService.logAction(log);
+
     return Result.ok(undefined);
   }
 }

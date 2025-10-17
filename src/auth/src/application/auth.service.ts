@@ -1,6 +1,7 @@
 import {
   AuditLogEntry,
   IAuditService,
+  IAuthService,
   IUserService,
   LoginUserDto,
   RegisteredUserDto,
@@ -14,7 +15,7 @@ import { IAuthRepository } from '../domain/auth.repository';
 import * as bcrypt from 'bcryptjs';
 import { ISessionRepository } from '../domain/session.repository';
 
-export class AuthService {
+export class AuthService implements IAuthService {
   constructor(
     private readonly authRepository: IAuthRepository,
     private readonly sessionRepository: ISessionRepository,

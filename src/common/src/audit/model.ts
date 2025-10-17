@@ -1,9 +1,5 @@
 export type AuditLogEntry = {
-    action_type: 'USER_REGISTRATION';
+    action_type: 'USER_REGISTRATION' | 'RANGE_UPDATE';
     target_id: number;
-    details: {
-      email: string;
-      sourceIp: string;
-      proxiedIp: string;
-    };
+    details: object;
   };

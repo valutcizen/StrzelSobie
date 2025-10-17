@@ -8,6 +8,7 @@
 - Structure modules internally into `domain`, `application`, and `infrastructure` layers.
 - `domain` contain interface for domain objects, `application` uses `domain` by constructor, secyfic implementation for `domain` repositories is in `infrastructure`. This make code easy to mock for testing.
 - For `infrastructure` implementation of D1 use `IDatabase` from `src\common\src\db.ts`
+- Every database change SHOULD have own `audit_log` entry produced in service public method.
 - Return domain-specific results (`Result` objects, DTOs) from application services, not HTTP-specific responses. Don't use `Result` for database responses, only in service top level iplementation. The `worker` module is solely responsible for translating these results into HTTP status codes and payloads.
 
 ## INTER_MODULE_COMMUNICATION
@@ -25,6 +26,7 @@
 - Prefer string enums over numeric enums for clarity and debuggability.
 - Use ES Modules (`import`/`export`) for all module imports and exports.
 - Try to use common packages and not to add new ones.
+- Use roles Enum (`UserRole` from 'src/common/src/auth/model.ts') instead string literals for Roles.
 
 ## TESTING_STANDARDS
 

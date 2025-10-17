@@ -2,6 +2,7 @@ export * from './audit/model'
 export * from './audit/service'
 export * from './auth/dto';
 export * from './auth/model';
+export * from './auth/service';
 export * from './ranges/dto';
 export * from './ranges/model';
 export * from './ranges/service';

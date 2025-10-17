@@ -29,13 +29,6 @@ export class RangesDbRepository implements IRangesRepository {
     return domainRanges;
   }
 
-  public async logAction(log: AuditLogEntry): Promise<void> {
-    const { action_type, target_id, details } = log;
-    const stmt = this.db.prepare(
-      'INSERT INTO audit_logs (action_type, target_id, details) VALUES (?, ?, ?)'
-    );
-    await stmt.bind(action_type, target_id, JSON.stringify(details)).run();
-  }
 
   public async existsRangeById(rangeId: number): Promise<boolean> {
     const stmt = this.db.prepare('SELECT 1 FROM ranges_shooting_ranges WHERE id = ?');

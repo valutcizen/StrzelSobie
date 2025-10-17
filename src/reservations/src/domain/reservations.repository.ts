@@ -24,6 +24,6 @@ export type Reservation = {
 };
 
 export interface IReservationsRepository {
-  getPropositions(rangeId: string, startDate: string, endDate: string): Promise<Result<Proposition[], Error>>;
-  getReservations(rangeId: string, startDate: string, endDate: string): Promise<Result<Reservation[], Error>>;
+  getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]>;
+  getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]>;
 }

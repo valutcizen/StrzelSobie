@@ -17,7 +17,7 @@ export type UserDto = {
   isDeleted: User['is_deleted'];
   createdAt: User['created_at'];
   roles: Role[];
-  range_roles: Record<string, Role[]>;
+  rangeRoles: Record<string, Role[]>;
 };
 
 /**
