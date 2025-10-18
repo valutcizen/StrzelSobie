@@ -63,6 +63,7 @@ When editing files, please adhere to the following rulesets:
 **Client module** (`src/client`): Use the rules defined in `.ai/rules/client.md`.
 **Worker module** (`src/worker`): Use the rules defined in `.ai/rules/worker.md`.
 **Data Flow**: Use the rules defined in `.ai/rules/data-flow.md`.
+**Testing**: See the overview in `.ai/rules/tests.md` for guidance on mocking, Result handling, and Vitest usage.
 
 The project uses npm workspaces to manage the different modules. Each module has its own `package.json` file. The backend is designed to be a set of independent modules that are composed together in the Cloudflare Worker. The frontend is a standard Vue.js application.
 

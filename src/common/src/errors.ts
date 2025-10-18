@@ -38,6 +38,10 @@ export class EmailAlreadyExistsError extends Error {
     super(`User with email ${email} already exists`);
     this.name = 'EmailAlreadyExistsError';
   }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return instance instanceof Error && instance.name === 'EmailAlreadyExistsError';
+  }
 }
 
 export class InvalidCredentialsError extends Error {
