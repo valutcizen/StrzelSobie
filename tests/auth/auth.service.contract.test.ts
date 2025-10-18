@@ -12,9 +12,9 @@ import {
   type SessionData,
   type UserIdentifierDto,
 } from '@strzel-sobie/common';
-import { AuthService } from '../../src/auth/src/application/auth.service';
-import type { IAuthRepository } from '../../src/auth/src/domain/auth.repository';
-import type { ISessionRepository } from '../../src/auth/src/domain/session.repository';
+import { AuthService } from '@strzel-sobie/auth/src/application/auth.service';
+import type { IAuthRepository } from '@strzel-sobie/auth/src/domain/auth.repository';
+import type { ISessionRepository } from '@strzel-sobie/auth/src/domain/session.repository';
 import * as bcrypt from 'bcryptjs';
 
 const VALID_PASSWORD = 'Secret123';
