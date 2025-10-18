@@ -9,9 +9,11 @@ import {
 } from 'vitest';
 import {
   CreatePropositionCommand,
+  CancelPropositionCommand,
   CreateRecordCommand,
   CreateReservationCommand,
   CreateReservationFromPropositionCommand,
+  CancelReservationCommand,
   CreatedReservationDto,
   ForbiddenError,
   InvalidPropositionTimeError,
@@ -231,6 +233,10 @@ const createDirectReservationCommand = (overrides: Partial<CreateReservationComm
 
 const createCoordinatorUser = (): UserDto => createUserDto({ roles: [createRole(UserRole.Coordinator)] });
 
+type ReservationCommandOverrideFactory = (ctx: TestContext) => Partial<CreateReservationCommand>;
+type RecordCommandOverrideFactory = (ctx: TestContext) => Partial<CreateRecordCommand>;
+type PropositionCommandOverrideFactory = (ctx: TestContext) => Partial<CreatePropositionCommand>;
+
 describe('ReservationsService contract', () => {
   describe('getCalendarEvents', () => {
     it('returns failure when range details lookup fails', async () => {
@@ -407,13 +413,34 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBeInstanceOf(ForbiddenError);
     });
 
-    it('fails validation for invalid participant counts', async () => {
+    const invalidReservationCases: Array<[string, ReservationCommandOverrideFactory]> = [
+      ['event date uses invalid format', () => ({ eventDate: '20240110' })],
+      ['event date contains invalid calendar values', () => ({ eventDate: '2024-13-10' })],
+      ['start time uses invalid format', () => ({ startTime: '9am' })],
+      ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
+      ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
+      ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
+      ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
+      ['times are not aligned to five-minute increments', () => ({ startTime: '10:02', endTime: '11:01' })],
+      ['end time is not later than start time', () => ({ startTime: '11:00', endTime: '11:00' })],
+      ['participant count is not an integer', () => ({ numParticipants: 3.5 })],
+      ['participant count is below minimum', () => ({ numParticipants: 0 })],
+      ['participant count exceeds maximum', () => ({ numParticipants: 51 })],
+      ['tracks requested is not an integer', () => ({ tracksRequested: 1.5 })],
+      ['tracks requested is below minimum', () => ({ tracksRequested: 0 })],
+      ['tracks requested exceed capacity', (ctx) => ({ tracksRequested: ctx.rangeDetails.totalTracks + 1 })],
+      ['isPublic flag is not boolean', () => ({ isPublic: 'yes' as unknown as boolean })],
+      ['isJoinable flag is not boolean', () => ({ isJoinable: 'yes' as unknown as boolean })],
+    ];
+
+    it.each(invalidReservationCases)('returns InvalidReservationTimeError when %s', async (_, overrideFactory) => {
       const ctx = createTestContext();
       const user = createCoordinatorUser();
+      const command = createDirectReservationCommand(overrideFactory(ctx));
 
       const result = await ctx.service.createReservation(
         ctx.rangeDetails.slug,
-        createDirectReservationCommand({ numParticipants: 0 }),
+        command,
         { force: false },
         user
       );
@@ -492,6 +519,62 @@ describe('ReservationsService contract', () => {
         ctx.rangeDetails.slug,
         createDirectReservationCommand(),
         { force: true },
+        user
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toEqual<CreatedReservationDto>({
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      });
+    });
+
+    it('allows range administrators with scoped roles to create reservations', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id });
+      const user = createUserDto({
+        id: reservation.coordinator_id,
+        roles: [],
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
+        },
+      });
+      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
+      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createDirectReservationCommand(),
+        { force: false },
+        user
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toEqual<CreatedReservationDto>({
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      });
+    });
+
+    it('allows range coordinators with scoped roles to create reservations', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 77 });
+      const user = createUserDto({
+        id: reservation.coordinator_id,
+        roles: [],
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Coordinator, 'range')],
+        },
+      });
+      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
+      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createDirectReservationCommand(),
+        { force: false },
         user
       );
 
@@ -666,6 +749,34 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBeInstanceOf(ReservationConflictError);
     });
 
+    it('converts proposition with conflicts when force flag enabled', async () => {
+      const ctx = createTestContext();
+      const proposition = createPropositionEntity();
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
+      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([createConflict()]);
+      const user = createCoordinatorUser();
+      const reservation = createReservationEntity({
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: user.id,
+        proposition_id: proposition.id,
+      });
+      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createConversionPayload(),
+        { force: true },
+        user
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toEqual<CreatedReservationDto>({
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      });
+    });
+
     it('fails if audit logging fails after conversion', async () => {
       const ctx = createTestContext();
       const proposition = createPropositionEntity();
@@ -783,15 +894,24 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBeInstanceOf(ForbiddenError);
     });
 
-    it('returns validation error for invalid record window', async () => {
+    const invalidRecordCases: Array<[string, RecordCommandOverrideFactory]> = [
+      ['event date uses invalid format', () => ({ eventDate: '2024/03/01' })],
+      ['event date contains invalid calendar values', () => ({ eventDate: '2024-13-01' })],
+      ['start time uses invalid format', () => ({ startTime: '9am' })],
+      ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
+      ['times are not aligned to five-minute increments', () => ({ startTime: '09:02', endTime: '10:01' })],
+      ['end time is not later than start time', () => ({ startTime: '10:00', endTime: '09:00' })],
+      ['participant count is not finite', () => ({ numParticipants: Number.POSITIVE_INFINITY })],
+      ['participant count below minimum after truncation', () => ({ numParticipants: 0.2 })],
+      ['participant count exceeds maximum', () => ({ numParticipants: 1000 })],
+    ];
+
+    it.each(invalidRecordCases)('returns InvalidRecordTimeError when %s', async (_, overrideFactory) => {
       const ctx = createTestContext();
       const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+      const invalidCommand = { ...command, ...overrideFactory(ctx) };
 
-      const result = await ctx.service.createRecord(
-        ctx.rangeDetails.slug,
-        { ...command, startTime: '10:00', endTime: '09:00' },
-        user
-      );
+      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, invalidCommand, user);
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(InvalidRecordTimeError);
@@ -821,6 +941,48 @@ describe('ReservationsService contract', () => {
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(RecordCreationError);
       expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    it('allows range administrators with scoped roles to create records', async () => {
+      const ctx = createTestContext();
+      const record = createRecordEntity({ range_id: ctx.rangeDetails.id });
+      const user = createUserDto({
+        id: record.admin_id,
+        roles: [],
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
+        },
+      });
+      ctx.reservationsRepository.createRecord.mockResolvedValueOnce(record);
+
+      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().adminId).toBe(record.admin_id);
+    });
+
+    it('truncates participant counts before persisting records', async () => {
+      const ctx = createTestContext();
+      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+      const fractionalParticipants = 17.8;
+      const record = createRecordEntity({
+        range_id: ctx.rangeDetails.id,
+        admin_id: user.id,
+        num_participants: Math.trunc(fractionalParticipants),
+      });
+      ctx.reservationsRepository.createRecord.mockResolvedValueOnce(record);
+
+      const result = await ctx.service.createRecord(
+        ctx.rangeDetails.slug,
+        { ...command, numParticipants: fractionalParticipants },
+        user
+      );
+
+      expect(ctx.reservationsRepository.createRecord).toHaveBeenCalledWith(
+        expect.objectContaining({ num_participants: Math.trunc(fractionalParticipants) })
+      );
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().numParticipants).toBe(Math.trunc(fractionalParticipants));
     });
 
     it('returns created record DTO on success', async () => {
@@ -879,18 +1041,47 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBeInstanceOf(UnauthorizedPropositionError);
     });
 
-    it('returns validation error when proposition data invalid', async () => {
+    const invalidPropositionCases: Array<[string, PropositionCommandOverrideFactory]> = [
+      ['event date uses invalid format', () => ({ eventDate: '2024/04/01' })],
+      ['event date contains invalid calendar values', () => ({ eventDate: '2024-13-01' })],
+      ['start time uses invalid format', () => ({ startTime: '10am' })],
+      ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
+      ['times are not aligned to five-minute increments', () => ({ startTime: '10:02', endTime: '11:01' })],
+      ['end time is not later than start time', () => ({ startTime: '11:00', endTime: '10:30' })],
+      ['participant count is not an integer', () => ({ numParticipants: 3.5 })],
+      ['participant count is below minimum', () => ({ numParticipants: 0 })],
+      ['participant count exceeds maximum', () => ({ numParticipants: 51 })],
+      ['tracks requested is not an integer', () => ({ tracksRequested: 1.5 })],
+      ['tracks requested is below minimum', () => ({ tracksRequested: 0 })],
+      ['tracks requested exceeds capacity', (ctx) => ({ tracksRequested: ctx.rangeDetails.totalTracks + 1 })],
+    ];
+
+    it.each(invalidPropositionCases)('returns InvalidPropositionTimeError when %s', async (_, overrideFactory) => {
       const ctx = createTestContext();
       const user = createUserDto({ roles: [createRole(UserRole.Member)] });
+      const invalidCommand = { ...command, ...overrideFactory(ctx) };
 
-      const result = await ctx.service.createProposition(
-        ctx.rangeDetails.slug,
-        { ...command, endTime: '09:00' },
-        user
-      );
+      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, invalidCommand, user);
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(InvalidPropositionTimeError);
+    });
+
+    it('allows users with range member roles to create propositions', async () => {
+      const ctx = createTestContext();
+      const user = createUserDto({
+        roles: [],
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Member, 'range')],
+        },
+      });
+      const proposition = createPropositionEntity({ range_id: ctx.rangeDetails.id, user_id: user.id });
+      ctx.reservationsRepository.createProposition.mockResolvedValueOnce(proposition);
+
+      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().id).toBe(proposition.id);
     });
 
     it('detects track conflicts from overlapping usage', async () => {
@@ -911,6 +1102,18 @@ describe('ReservationsService contract', () => {
       const user = createUserDto({ roles: [createRole(UserRole.Member)] });
       const repoError = new Error('repository failed');
       ctx.reservationsRepository.getOverlappingUsage.mockRejectedValueOnce(repoError);
+
+      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBe(repoError);
+    });
+
+    it('propagates repository errors when proposition insert fails', async () => {
+      const ctx = createTestContext();
+      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
+      const repoError = new Error('insert failed');
+      ctx.reservationsRepository.createProposition.mockRejectedValueOnce(repoError);
 
       const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
 
@@ -1170,6 +1373,42 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(true);
       expect(result.getValue()).toBeUndefined();
+    });
+
+    it('allows range administrators with scoped roles to cancel reservations', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 99 });
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
+      const user = createUserDto({
+        id: 200,
+        roles: [],
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
+        },
+      });
+
+      const result = await ctx.service.cancelReservation(command, user);
+
+      expect(result.isSuccess).toBe(true);
+    });
+
+    it('allows range coordinators to cancel their own reservations', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 55 });
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
+      const user = createUserDto({
+        id: reservation.coordinator_id,
+        roles: [],
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Coordinator, 'range')],
+        },
+      });
+
+      const result = await ctx.service.cancelReservation(command, user);
+
+      expect(result.isSuccess).toBe(true);
     });
   });
 });
