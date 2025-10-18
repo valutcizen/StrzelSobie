@@ -3,9 +3,11 @@ import {
   CalendarEventsDto,
   CancelPropositionCommand,
   CancelReservationCommand,
+  CreateRecordCommand,
   CreatePropositionCommand,
   CreateReservationOptions,
   CreateReservationPayload,
+  CreateRecordResult,
   CreatedPropositionDto,
   CreatedReservationDto,
   GetCalendarEventsQuery,
@@ -25,6 +27,11 @@ export interface IReservationsService {
     options: CreateReservationOptions,
     user: UserDto
   ): Promise<Result<CreatedReservationDto>>;
+  createRecord(
+    rangeSlug: string,
+    command: CreateRecordCommand,
+    user: UserDto
+  ): Promise<CreateRecordResult>;
   cancelProposition(command: CancelPropositionCommand, user: UserDto): Promise<Result<void>>;
   cancelReservation(command: CancelReservationCommand, user: UserDto): Promise<Result<void>>;
 }

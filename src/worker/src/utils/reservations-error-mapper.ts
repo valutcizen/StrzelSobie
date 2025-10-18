@@ -12,6 +12,8 @@ import {
   UnauthorizedPropositionError,
   ReservationNotFoundError,
   ReservationCancellationError,
+  InvalidRecordTimeError,
+  RecordCreationError,
 } from '@strzel-sobie/common';
 
 type ErrorResponse = {
@@ -53,6 +55,13 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     };
   }
 
+  if (error instanceof InvalidRecordTimeError) {
+    return {
+      status: 400,
+      body: { code: 'invalid_record_time', message: error.message },
+    };
+  }
+
   if (error instanceof PropositionConflictError) {
     return {
       status: 400,
@@ -91,6 +100,13 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 500,
       body: { code: 'reservation_creation_failed', message: error.message },
+    };
+  }
+
+  if (error instanceof RecordCreationError) {
+    return {
+      status: 500,
+      body: { code: 'record_creation_failed', message: error.message },
     };
   }
 

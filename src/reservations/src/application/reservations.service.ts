@@ -22,6 +22,9 @@ import {
   CreateReservationOptions,
   CreateReservationCommand,
   CreateReservationFromPropositionCommand,
+  CreateRecordCommand,
+  CreateRecordResult,
+  CreatedRecordDto,
   CreatedReservationDto,
   ReservationConflictError,
   InvalidReservationTimeError,
@@ -30,12 +33,16 @@ import {
   RangeDetailsDto,
   ReservationNotFoundError,
   ReservationCancellationError,
+  InvalidRecordTimeError,
+  RecordCreationError,
 } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
+  CreateRecordData,
   CreateReservationRecord,
   IReservationsRepository,
   Proposition,
+  RecordEntity,
   Reservation,
   ReservationConflict,
 } from '../domain/reservations.repository';
@@ -147,6 +154,84 @@ export class ReservationsService implements IReservationsService {
     }
 
     return this.createReservationDirectly(rangeDetails, command, force, user);
+  }
+
+  public async createRecord(
+    rangeSlug: string,
+    command: CreateRecordCommand,
+    user: UserDto
+  ): Promise<CreateRecordResult> {
+    if (user.isDeleted) {
+      return Result.fail(new ForbiddenError('Deleted users cannot create records'));
+    }
+
+    const rangeDetailsResult = await this.rangesService.getRangeDetails(rangeSlug);
+    if (!rangeDetailsResult.isSuccess) {
+      return Result.fail(rangeDetailsResult.getError());
+    }
+
+    const rangeDetails = rangeDetailsResult.getValue();
+    const rangeId = rangeDetails.id;
+
+    if (!this.canUserCreateRecord(user, rangeId)) {
+      return Result.fail(new ForbiddenError('User is not allowed to create records for this range'));
+    }
+
+    const normalizedParticipants = Math.trunc(command.numParticipants);
+    const validationError = this.validateRecordCommand(command, normalizedParticipants);
+    if (validationError) {
+      return Result.fail(validationError);
+    }
+
+    const recordData: CreateRecordData = {
+      range_id: rangeId,
+      admin_id: user.id,
+      event_date: command.eventDate,
+      start_time: command.startTime,
+      end_time: command.endTime,
+      num_participants: normalizedParticipants,
+    };
+
+    let record: RecordEntity;
+    try {
+      record = await this.reservationsRepository.createRecord(recordData);
+    } catch (error) {
+      console.error('Failed to create manual record', error);
+      return Result.fail(new RecordCreationError());
+    }
+
+    const auditResult = await this.auditService.logAction({
+      action_type: 'RECORD_CREATE',
+      target_id: record.id,
+      details: {
+        adminId: user.id,
+        rangeId,
+        rangeSlug: rangeDetails.slug,
+        eventDate: record.event_date,
+        startTime: record.start_time,
+        endTime: record.end_time,
+        numParticipants: record.num_participants,
+      },
+    });
+
+    if (!auditResult.isSuccess) {
+      const auditError = auditResult.getError();
+      console.error('Failed to log record creation', auditError);
+      return Result.fail(new RecordCreationError());
+    }
+
+    const dto: CreatedRecordDto = {
+      id: record.id,
+      rangeId: record.range_id,
+      adminId: record.admin_id,
+      eventDate: record.event_date,
+      startTime: record.start_time,
+      endTime: record.end_time,
+      numParticipants: record.num_participants,
+      createdAt: record.created_at,
+    };
+
+    return Result.ok(dto);
   }
 
   public async createProposition(
@@ -607,6 +692,18 @@ export class ReservationsService implements IReservationsService {
     return false;
   }
 
+  private canUserCreateRecord(user: UserDto, rangeId: number): boolean {
+    const globalRoleNames = new Set(user.roles.map((role) => role.name));
+    if (globalRoleNames.has(UserRole.ClubCommunityAdministrator)) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    const rangeRoleNames = new Set(rangeRoles.map((role) => role.name));
+
+    return rangeRoleNames.has(UserRole.ShootingRangeAdministrator);
+  }
+
   private isReservationConversion(
     command: CreateReservationPayload
   ): command is CreateReservationFromPropositionCommand {
@@ -698,6 +795,75 @@ export class ReservationsService implements IReservationsService {
       startHours < endHours || (startHours === endHours && startMinutes < endMinutes);
     if (!startsBeforeEnds) {
       return new InvalidReservationTimeError('End time must be later than start time');
+    }
+
+    return null;
+  }
+
+  private validateRecordCommand(
+    command: CreateRecordCommand,
+    normalizedParticipants: number
+  ): Error | null {
+    const timeError = this.validateRecordTimeWindow(
+      command.eventDate,
+      command.startTime,
+      command.endTime
+    );
+    if (timeError) {
+      return timeError;
+    }
+
+    if (!Number.isFinite(command.numParticipants)) {
+      return new InvalidRecordTimeError('Number of participants must be between 1 and 500');
+    }
+
+    if (normalizedParticipants < 1 || normalizedParticipants > 500) {
+      return new InvalidRecordTimeError('Number of participants must be between 1 and 500');
+    }
+
+    return null;
+  }
+
+  private validateRecordTimeWindow(
+    eventDate: string,
+    startTime: string,
+    endTime: string
+  ): Error | null {
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datePattern.test(eventDate) || Number.isNaN(new Date(eventDate).getTime())) {
+      return new InvalidRecordTimeError('Event date must be a valid YYYY-MM-DD value');
+    }
+
+    const timePattern = /^\d{2}:\d{2}$/;
+    if (!timePattern.test(startTime) || !timePattern.test(endTime)) {
+      return new InvalidRecordTimeError('Start and end times must be in HH:MM format');
+    }
+
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+    if (
+      [startHours, startMinutes, endHours, endMinutes].some((value) => Number.isNaN(value)) ||
+      startHours < 0 ||
+      startHours > 23 ||
+      endHours < 0 ||
+      endHours > 23 ||
+      startMinutes < 0 ||
+      startMinutes > 59 ||
+      endMinutes < 0 ||
+      endMinutes > 59
+    ) {
+      return new InvalidRecordTimeError('Start and end times must represent valid clock values');
+    }
+
+    if (startMinutes % 5 !== 0 || endMinutes % 5 !== 0) {
+      return new InvalidRecordTimeError('Times must be aligned to 5-minute increments');
+    }
+
+    const startsBeforeEnds =
+      startHours < endHours || (startHours === endHours && startMinutes < endMinutes);
+    if (!startsBeforeEnds) {
+      return new InvalidRecordTimeError('End time must be later than start time');
     }
 
     return null;

@@ -1,3 +1,4 @@
+import { Result } from '../result';
 import { UserProfile } from '../users/model';
 import { Reservation, Proposition, Record as RangeRecord } from './model';
 
@@ -112,8 +113,21 @@ export type CreatedPropositionDto = Pick<Proposition, 'id' | 'user_id' | 'range_
  * Maps properties from the `Record` entity, expecting camelCase in the API.
  */
 export type CreateRecordCommand = {
-    eventDate: RangeRecord['event_date'];
-    startTime: RangeRecord['start_time'];
-    endTime: RangeRecord['end_time'];
-    numParticipants: RangeRecord['num_participants'];
+  eventDate: RangeRecord['event_date'];
+  startTime: RangeRecord['start_time'];
+  endTime: RangeRecord['end_time'];
+  numParticipants: RangeRecord['num_participants'];
 };
+
+export type CreatedRecordDto = {
+  id: RangeRecord['id'];
+  rangeId: RangeRecord['range_id'];
+  adminId: RangeRecord['admin_id'];
+  eventDate: RangeRecord['event_date'];
+  startTime: RangeRecord['start_time'];
+  endTime: RangeRecord['end_time'];
+  numParticipants: RangeRecord['num_participants'];
+  createdAt: RangeRecord['created_at'];
+};
+
+export type CreateRecordResult = Result<CreatedRecordDto>;

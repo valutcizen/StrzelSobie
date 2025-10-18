@@ -24,6 +24,26 @@ export type Reservation = {
   is_joinable: boolean;
 };
 
+export type RecordEntity = {
+  id: number;
+  admin_id: number;
+  range_id: number;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  num_participants: number;
+  created_at: string;
+};
+
+export type CreateRecordData = {
+  range_id: number;
+  admin_id: number;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  num_participants: number;
+};
+
 export type CreatePropositionRecord = {
   user_id: number;
   range_id: number;
@@ -80,6 +100,7 @@ export interface IReservationsRepository {
   createProposition(record: CreatePropositionRecord): Promise<Proposition>;
   createReservation(record: CreateReservationRecord): Promise<Reservation>;
   createReservationFromProposition(record: CreateReservationRecord, propositionId: number): Promise<Reservation>;
+  createRecord(data: CreateRecordData): Promise<RecordEntity>;
   markPropositionConverted(propositionId: number): Promise<void>;
   getPropositionById(id: number): Promise<Proposition | null>;
   cancelProposition(id: number): Promise<Proposition | null>;

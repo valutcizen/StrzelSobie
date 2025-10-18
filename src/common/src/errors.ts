@@ -89,6 +89,13 @@ export class InvalidReservationTimeError extends Error {
   }
 }
 
+export class InvalidRecordTimeError extends Error {
+  constructor(message = 'Record time window is invalid') {
+    super(message);
+    this.name = 'InvalidRecordTimeError';
+  }
+}
+
 export type ReservationConflictItem = {
   id: number;
   type: 'reservation' | 'proposition';
@@ -117,6 +124,13 @@ export class ReservationCreationError extends Error {
   constructor(message = 'Failed to create reservation') {
     super(message);
     this.name = 'ReservationCreationError';
+  }
+}
+
+export class RecordCreationError extends Error {
+  constructor(message = 'Failed to create record') {
+    super(message);
+    this.name = 'RecordCreationError';
   }
 }
 

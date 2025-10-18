@@ -5,7 +5,8 @@ export type AuditActionType =
   | 'PROPOSITION_CANCEL'
   | 'RESERVATION_CREATE'
   | 'RESERVATION_CONVERT'
-  | 'RESERVATION_CANCEL';
+  | 'RESERVATION_CANCEL'
+  | 'RECORD_CREATE';
 
 export type AuditLogEntry = {
   action_type: AuditActionType;

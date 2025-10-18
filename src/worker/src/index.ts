@@ -13,6 +13,7 @@ import { GetRange } from './endpoints/v1/ranges/get-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
 import { GetEvents } from './endpoints/v1/ranges/get-events';
 import { CreateProposition } from './endpoints/v1/ranges/create-proposition';
+import { CreateRecord } from './endpoints/v1/ranges/create-record';
 import { CreateReservation } from './endpoints/v1/ranges/create-reservation';
 import { DeleteProposition } from './endpoints/v1/propositions/delete-proposition';
 import { DeleteReservation } from './endpoints/v1/reservations/delete-reservation';
@@ -81,6 +82,7 @@ openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
 openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
+openapi.post('/api/v1/ranges/:rangeSlug/records', authMiddleware, CreateRecord);
 openapi.delete('/api/v1/propositions/:propositionId', authMiddleware, DeleteProposition);
 openapi.delete('/api/v1/reservations/:reservationId', authMiddleware, DeleteReservation);
 

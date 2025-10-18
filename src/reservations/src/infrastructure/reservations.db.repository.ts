@@ -1,10 +1,12 @@
 import { IDatabase } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
+  CreateRecordData,
   CreateReservationRecord,
   IReservationsRepository,
   OverlappingUsage,
   Proposition,
+  RecordEntity,
   Reservation,
   ReservationConflict,
 } from '../domain/reservations.repository';
@@ -33,6 +35,17 @@ type ReservationDb = {
   is_public: number;
   is_joinable: number;
   num_participants: number;
+};
+
+type RecordDb = {
+  id: number;
+  admin_id: number;
+  range_id: number;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  num_participants: number;
+  created_at: string;
 };
 
 type ConflictRow = {
@@ -67,6 +80,17 @@ const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   tracks_requested: dbReservation.tracks_requested,
   is_public: Boolean(dbReservation.is_public),
   is_joinable: Boolean(dbReservation.is_joinable),
+});
+
+const mapDbRecord = (dbRecord: RecordDb): RecordEntity => ({
+  id: dbRecord.id,
+  admin_id: dbRecord.admin_id,
+  range_id: dbRecord.range_id,
+  event_date: dbRecord.event_date,
+  start_time: dbRecord.start_time,
+  end_time: dbRecord.end_time,
+  num_participants: dbRecord.num_participants,
+  created_at: dbRecord.created_at,
 });
 
 export class ReservationsDbRepository implements IReservationsRepository {
@@ -345,6 +369,32 @@ export class ReservationsDbRepository implements IReservationsRepository {
     }
 
     return mapDbReservation(record);
+  }
+
+  public async createRecord(data: CreateRecordData): Promise<RecordEntity> {
+    const stmt = this.db.prepare(
+      `INSERT INTO reservations_records
+        (range_id, admin_id, event_date, start_time, end_time, num_participants)
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id, admin_id, range_id, event_date, start_time, end_time, num_participants, created_at`
+    );
+
+    const record = await stmt
+      .bind(
+        data.range_id,
+        data.admin_id,
+        data.event_date,
+        data.start_time,
+        data.end_time,
+        data.num_participants
+      )
+      .first<RecordDb>();
+
+    if (!record) {
+      throw new Error('Failed to create record');
+    }
+
+    return mapDbRecord(record);
   }
 
   private async insertReservation(record: CreateReservationRecord): Promise<Reservation> {
