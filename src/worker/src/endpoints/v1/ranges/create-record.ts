@@ -97,7 +97,7 @@ export class CreateRecord extends OpenAPIRoute {
     summary: 'Create a manual usage record for a range',
     description:
       'Allows range administrators to log off-system shooting activity so it contributes to reporting without creating a reservation.',
-    tags: ['Ranges'],
+    tags: ['Reservations'],
     request: {
       params: ParamsSchema,
       body: {

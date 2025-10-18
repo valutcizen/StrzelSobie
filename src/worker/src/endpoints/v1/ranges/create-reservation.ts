@@ -163,7 +163,7 @@ export class CreateReservation extends OpenAPIRoute {
     summary: 'Create a confirmed reservation for a range',
     description:
       'Allows coordinators and administrators to create a reservation directly or by converting an existing proposition.',
-    tags: ['Ranges'],
+    tags: ['Reservations'],
     request: {
       params: ParamsSchema,
       query: QuerySchema,

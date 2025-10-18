@@ -17,7 +17,7 @@ export class GetEvents extends OpenAPIRoute {
   schema: OpenAPIRouteSchema = {
     summary: 'Get Calendar Events for a Range',
     description: 'Retrieves all calendar events (propositions and reservations) for a specific shooting range within a given date range.',
-    tags: ['Ranges'],
+    tags: ['Reservations'],
     request: {
       params: ParamsSchema,
       query: QuerySchema,

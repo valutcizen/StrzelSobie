@@ -21,7 +21,7 @@ export class DeleteProposition extends OpenAPIRoute {
   public schema: OpenAPIRouteSchema = {
     summary: 'Cancel proposition',
     description: 'Allows the proposition owner to cancel an open proposition.',
-    tags: ['Propositions'],
+    tags: ['Reservations'],
     request: {
       params: ParamsSchema,
     },

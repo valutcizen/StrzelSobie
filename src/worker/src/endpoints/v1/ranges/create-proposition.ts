@@ -103,7 +103,7 @@ export class CreateProposition extends OpenAPIRoute {
     summary: 'Create a new proposition for a range',
     description:
       'Allows authenticated guests and members to propose a shooting session at a specific range.',
-    tags: ['Ranges'],
+    tags: ['Reservations'],
     request: {
       params: ParamsSchema,
       body: {
