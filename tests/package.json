@@ -1,0 +1,9 @@
+{
+  "name": "@strzel-sobie/tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest --config ../vitest.config.ts"
+  }
+}

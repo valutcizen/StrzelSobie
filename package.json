@@ -2,7 +2,8 @@
   "name": "strzel-sobie",
   "private": true,
   "workspaces": [
-    "src/*"
+    "src/*",
+    "tests"
   ],
   "scripts": {
     "build": "npm run build:backend && npm run build:frontend",
