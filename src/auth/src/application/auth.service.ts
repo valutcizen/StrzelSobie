@@ -8,8 +8,10 @@ import {
   RegisterUserRequestDto,
   Result,
   SessionData,
-  EmailAlreadyExistsError, 
-  InvalidCredentialsError
+  UserIdentifierDto,
+  EmailAlreadyExistsError,
+  InvalidCredentialsError,
+  UserNotFoundError
 } from '@strzel-sobie/common';
 import { IAuthRepository } from '../domain/auth.repository';
 import * as bcrypt from 'bcryptjs';
@@ -90,12 +92,16 @@ export class AuthService implements IAuthService {
     proxiedIp: string
   ): Promise<Result<RegisteredUserDto>> {
     const existingUserResult = await this.userService.findUserByEmail(dto.email);
+    let existingUser: UserIdentifierDto | undefined;
 
-    if (!existingUserResult.isSuccess) {
-      return Result.fail(existingUserResult.getError());
+    if (existingUserResult.isSuccess) {
+      existingUser = existingUserResult.getValue();
+    } else {
+      const lookupError = existingUserResult.getError();
+      if (!(lookupError instanceof UserNotFoundError)) {
+        return Result.fail(lookupError);
+      }
     }
-
-    const existingUser = existingUserResult.getValue();
 
     if (existingUser) {
       return Result.fail(new EmailAlreadyExistsError(dto.email));
