@@ -1,14 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logout } from '../../../src/worker/src/endpoints/v1/auth/logout';
-import { getCookie, setCookie } from 'hono/cookie';
-
-vi.mock('hono/cookie', () => ({
-  getCookie: vi.fn(),
-  setCookie: vi.fn(),
-}));
-
-const getCookieMock = vi.mocked(getCookie);
-const setCookieMock = vi.mocked(setCookie);
 
 type LogoutDependencies = {
   authService: {
@@ -28,10 +19,13 @@ const createContext = ({ dependencies }: TestContextOptions = {}) => {
     }
     return undefined;
   });
+  const headerSpy = vi.fn();
 
   const ctx = {
     json: jsonSpy,
     get: getSpy,
+    header: headerSpy,
+    req: {raw:{headers: new Headers()}},
   };
 
   return {
@@ -39,6 +33,7 @@ const createContext = ({ dependencies }: TestContextOptions = {}) => {
     spies: {
       json: jsonSpy,
       get: getSpy,
+      header: headerSpy,
     },
   };
 };
@@ -49,21 +44,30 @@ describe('Logout endpoint contract', () => {
   });
 
   it('returns a 401 response when the session cookie is missing', async () => {
-    const logoutEndpoint = new Logout();
+    const logoutEndpoint = new Logout({
+      router: {} as any,
+      raiseUnknownParameters: false,
+      route: '/logout',
+      urlParams: [],
+    });
     const { ctx, spies } = createContext();
-    getCookieMock.mockReturnValueOnce(undefined);
+    // No session cookie set in headers
 
     const response = await logoutEndpoint.handle(ctx as never);
 
-    expect(getCookieMock).toHaveBeenCalledWith(ctx, 'session_token');
     expect(spies.get).not.toHaveBeenCalled();
-    expect(setCookieMock).not.toHaveBeenCalled();
+    expect(spies.header).not.toHaveBeenCalled();
     expect(spies.json).toHaveBeenCalledWith({ error: 'Unauthorized' }, 401);
     expect(response).toEqual({ payload: { error: 'Unauthorized' }, status: 401 });
   });
 
   it('clears the session cookie and returns a 200 response when logout succeeds', async () => {
-    const logoutEndpoint = new Logout();
+    const logoutEndpoint = new Logout({
+      router: {} as any,
+      raiseUnknownParameters: false,
+      route: '/logout',
+      urlParams: [],
+    });
     const token = 'session-token';
     const logout = vi.fn().mockResolvedValue(undefined);
     const { ctx, spies } = createContext({
@@ -71,20 +75,14 @@ describe('Logout endpoint contract', () => {
         authService: { logout },
       },
     });
-    getCookieMock.mockReturnValueOnce(token);
+    // Set session cookie in headers
+    ctx.req.raw.headers.set('Cookie', `session_token=${token}`);
 
     const response = await logoutEndpoint.handle(ctx as never);
-
-    expect(getCookieMock).toHaveBeenCalledWith(ctx, 'session_token');
+    
     expect(spies.get).toHaveBeenCalledWith('authService');
     expect(logout).toHaveBeenCalledWith(token);
-    expect(setCookieMock).toHaveBeenCalledWith(ctx, 'session_token', '', {
-      path: '/',
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
-      maxAge: 0,
-    });
+    expect(spies.header).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('session_token=;'), { append: true });
     expect(spies.json).toHaveBeenCalledWith({ message: 'Logout successful.' }, 200);
     expect(response).toEqual({ payload: { message: 'Logout successful.' }, status: 200 });
   });
