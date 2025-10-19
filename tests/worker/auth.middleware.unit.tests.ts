@@ -1,13 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Result, type MeDto, type Role, type SessionData, type UserDto } from '@strzel-sobie/common';
 import { authMiddleware } from '../../src/worker/src/middleware/auth';
-import { getCookie } from 'hono/cookie';
-
-vi.mock('hono/cookie', () => ({
-  getCookie: vi.fn(),
-}));
-
-const getCookieMock = vi.mocked(getCookie);
 
 type AuthServiceMock = {
   validateSession: ReturnType<typeof vi.fn<[string], Promise<Result<SessionData>>>>;
@@ -52,6 +45,7 @@ const createContext = ({ authService = createAuthService(), userService = create
     get,
     set,
     json,
+    req: { raw: { headers: new Headers() } },
   };
 
   return {
@@ -68,7 +62,6 @@ describe('authMiddleware contract', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    getCookieMock.mockReset();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -79,11 +72,9 @@ describe('authMiddleware contract', () => {
   it('returns 401 when no session token cookie is present', async () => {
     const { ctx, spies, authService, userService } = createContext();
     const next = vi.fn();
-    getCookieMock.mockReturnValue(undefined);
 
     const response = await authMiddleware(ctx as never, next);
 
-    expect(getCookieMock).toHaveBeenCalledWith(ctx, 'session_token');
     expect(spies.get).toHaveBeenCalledWith('authService');
     expect(spies.json).toHaveBeenCalledWith({ message: 'Unauthorized' }, 401);
     expect(response).toEqual({ payload: { message: 'Unauthorized' }, status: 401 });
@@ -96,12 +87,11 @@ describe('authMiddleware contract', () => {
     const { ctx, spies, authService, userService } = createContext();
     const next = vi.fn();
     const validationError = new Error('invalid session');
-    getCookieMock.mockReturnValue('token-abc');
+    ctx.req.raw.headers.set('Cookie', 'session_token=token-abc');
     authService.validateSession.mockResolvedValue(Result.fail(validationError));
 
     const response = await authMiddleware(ctx as never, next);
 
-    expect(getCookieMock).toHaveBeenCalledWith(ctx, 'session_token');
     expect(authService.validateSession).toHaveBeenCalledWith('token-abc');
     expect(spies.json).toHaveBeenCalledWith({ message: 'Unauthorized' }, 401);
     expect(response).toEqual({ payload: { message: 'Unauthorized' }, status: 401 });
@@ -119,7 +109,7 @@ describe('authMiddleware contract', () => {
       roles: ['Member'],
       rangeRoles: {},
     };
-    getCookieMock.mockReturnValue('token-xyz');
+    ctx.req.raw.headers.set('Cookie', 'session_token=token-xyz');
     authService.validateSession.mockResolvedValue(Result.ok(session));
     userService.getFullUserProfile.mockResolvedValue(Result.fail(new Error('profile lookup failed')));
 
@@ -150,7 +140,7 @@ describe('authMiddleware contract', () => {
       roles: ['Member'],
       rangeRoles: {},
     };
-    getCookieMock.mockReturnValue('token-roles');
+    ctx.req.raw.headers.set('Cookie', 'session_token=token-roles');
     authService.validateSession.mockResolvedValue(Result.ok(session));
     userService.getFullUserProfile.mockResolvedValue(Result.ok(profile));
     userService.getRoles.mockResolvedValue(Result.fail(new Error('roles error')));
@@ -194,7 +184,7 @@ describe('authMiddleware contract', () => {
       const rangeOfficerRole: Role = { id: 2, name: 'Range Officer', scope: 'range' };
       const extraRole: Role = { id: 3, name: 'Spectator', scope: 'global' };
 
-      getCookieMock.mockReturnValue('token-valid');
+      ctx.req.raw.headers.set('Cookie', 'session_token=token-valid');
       authService.validateSession.mockResolvedValue(Result.ok(session));
       userService.getFullUserProfile.mockResolvedValue(Result.ok(profile));
       userService.getRoles.mockResolvedValue(Result.ok([memberRole, rangeOfficerRole, extraRole]));
