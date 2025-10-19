@@ -1,0 +1,153 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Login } from '../../../src/worker/src/endpoints/v1/auth/login';
+import { InvalidCredentialsError, Result } from '@strzel-sobie/common';
+import type { LoginUserDto } from '@strzel-sobie/common';
+import { setCookie } from 'hono/cookie';
+
+vi.mock('hono/cookie', () => ({
+  setCookie: vi.fn(),
+}));
+
+const setCookieMock = vi.mocked(setCookie);
+
+type LoginDependencies = {
+  authService: {
+    login: ReturnType<typeof vi.fn>;
+  };
+};
+
+type TestContextOptions = {
+  body: unknown;
+  dependencies?: LoginDependencies;
+};
+
+const createContext = ({ body, dependencies }: TestContextOptions) => {
+  const reqJson = vi.fn().mockResolvedValue(body);
+  const json = vi.fn((payload: unknown, status?: number) => ({ payload, status }));
+  const get = vi.fn((key: string) => {
+    if (key === 'authService') {
+      return dependencies?.authService;
+    }
+    return undefined;
+  });
+
+  const ctx = {
+    req: { json: reqJson },
+    json,
+    get,
+  };
+
+  return {
+    ctx,
+    spies: {
+      reqJson,
+      json,
+      get,
+    },
+  };
+};
+
+describe('Login endpoint contract', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('returns a 400 response when the request body fails validation', async () => {
+    const loginEndpoint = new Login();
+    const invalidRequest = { email: 'not-an-email', password: '' };
+
+    const { ctx, spies } = createContext({ body: invalidRequest });
+
+    const response = await loginEndpoint.handle(ctx as never);
+
+    expect(spies.reqJson).toHaveBeenCalledOnce();
+    expect(spies.get).not.toHaveBeenCalled();
+    expect(spies.json).toHaveBeenCalledWith({ message: 'Invalid request body' }, 400);
+    expect(response).toEqual({ payload: { message: 'Invalid request body' }, status: 400 });
+    expect(setCookieMock).not.toHaveBeenCalled();
+  });
+
+  it('sets the session cookie and returns the session roles when login succeeds', async () => {
+    const loginEndpoint = new Login();
+    const requestBody: LoginUserDto = {
+      email: 'user@example.com',
+      password: 'Sup3r$ecret',
+    };
+    const session = {
+      roles: ['Member', 'RO'],
+      rangeRoles: { '12': ['Range Officer'] },
+    };
+    const token = 'session-token';
+    const authService = {
+      login: vi.fn().mockResolvedValue(
+        Result.ok({
+          token,
+          session,
+        }),
+      ),
+    };
+
+    const { ctx, spies } = createContext({
+      body: requestBody,
+      dependencies: { authService },
+    });
+
+    const response = await loginEndpoint.handle(ctx as never);
+
+    expect(spies.reqJson).toHaveBeenCalledOnce();
+    expect(spies.get).toHaveBeenCalledWith('authService');
+    expect(authService.login).toHaveBeenCalledWith(requestBody);
+    expect(setCookieMock).toHaveBeenCalledWith(ctx, 'session_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict',
+      maxAge: 3600,
+    });
+    expect(spies.json).toHaveBeenCalledWith({
+      message: 'Login successful.',
+      roles: session.roles,
+      rangeRoles: session.rangeRoles,
+    });
+    expect(response).toEqual({
+      payload: {
+        message: 'Login successful.',
+        roles: session.roles,
+        rangeRoles: session.rangeRoles,
+      },
+      status: undefined,
+    });
+  });
+
+  it('returns a 401 response with the error message when login fails', async () => {
+    const loginEndpoint = new Login();
+    const requestBody: LoginUserDto = {
+      email: 'user@example.com',
+      password: 'wrong-pass',
+    };
+    const error = new InvalidCredentialsError();
+    const authService = {
+      login: vi.fn().mockResolvedValue(Result.fail(error)),
+    };
+
+    const { ctx, spies } = createContext({
+      body: requestBody,
+      dependencies: { authService },
+    });
+
+    const response = await loginEndpoint.handle(ctx as never);
+
+    expect(spies.reqJson).toHaveBeenCalledOnce();
+    expect(spies.get).toHaveBeenCalledWith('authService');
+    expect(authService.login).toHaveBeenCalledWith(requestBody);
+    expect(setCookieMock).not.toHaveBeenCalled();
+    expect(spies.json).toHaveBeenCalledWith({ message: error.message }, 401);
+    expect(response).toEqual({ payload: { message: error.message }, status: 401 });
+  });
+});

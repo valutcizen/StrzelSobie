@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest --config ../vitest.config.ts"
+    "test": "vitest --config ../vitest.config.mts",
+    "test:unit": "vitest run --config ../vitest.config.mts --passWithNoTests unit.tests.ts"
   }
 }

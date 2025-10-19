@@ -12,3 +12,7 @@ This document summarizes the rule sets that guide how we write tests across the 
 - **Keep Tests Close to Contracts**: Import shared DTOs, errors, and interfaces from `src/common/src` so assertions reflect the public service contracts.
 
 These practices stem from `.ai/rules/backend.md` (architecture, testing standards, and error handling) and ensure our tests remain stable, portable, and aligned with the modular design.
+
+## Codex CLI Agent Rule
+
+- Codex CLI must not execute `npm run` commands directly; always request that the user runs them when needed.

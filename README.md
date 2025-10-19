@@ -63,6 +63,7 @@ The following scripts are available to be run from the project's root directory:
 
 - `npm run build`: Builds all modules/workspaces.
 - `npm run test`: Runs the test suite for the entire project using Vitest.
+- `npm run test:unit`: Runs only unit tests that match the `*.unit.tests.ts` naming convention.
 
 ## Project Scope (MVP)
 

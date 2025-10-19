@@ -10,6 +10,7 @@
     "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/users -w src/reservations -w src/ranges -w src/notifications -w src/audit && npm run build -w src/worker",
     "build:frontend": "npm run build -w src/client",
     "test": "vitest",
+    "test:unit": "npm run test:unit -w tests --",
     "db:migrate": "node scripts/generate-db-mock.mjs",
     "db:reset": "node scripts/generate-db-mock.mjs --regenerate",
     "dev:backend": "npm run dev -w @strzel-sobie/worker"
