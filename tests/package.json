@@ -8,6 +8,7 @@
     "test:unit": "vitest run --config ../vitest.config.mts --passWithNoTests unit.tests.ts"
   },
   "devDependencies": {
+    "better-sqlite3": "^8.0.1",
     "hono": "^4.6.20"
   }
 }
