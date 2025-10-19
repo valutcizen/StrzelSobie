@@ -2,13 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Login } from '../../../src/worker/src/endpoints/v1/auth/login';
 import { InvalidCredentialsError, Result } from '@strzel-sobie/common';
 import type { LoginUserDto } from '@strzel-sobie/common';
-import { setCookie } from 'hono/cookie';
-
-vi.mock('hono/cookie', () => ({
-  setCookie: vi.fn(),
-}));
-
-const setCookieMock = vi.mocked(setCookie);
 
 type LoginDependencies = {
   authService: {
@@ -30,11 +23,13 @@ const createContext = ({ body, dependencies }: TestContextOptions) => {
     }
     return undefined;
   });
+  const header = vi.fn();
 
   const ctx = {
     req: { json: reqJson },
     json,
     get,
+    header,
   };
 
   return {
@@ -43,6 +38,7 @@ const createContext = ({ body, dependencies }: TestContextOptions) => {
       reqJson,
       json,
       get,
+      header,
     },
   };
 };
@@ -71,7 +67,7 @@ describe('Login endpoint contract', () => {
     expect(spies.get).not.toHaveBeenCalled();
     expect(spies.json).toHaveBeenCalledWith({ message: 'Invalid request body' }, 400);
     expect(response).toEqual({ payload: { message: 'Invalid request body' }, status: 400 });
-    expect(setCookieMock).not.toHaveBeenCalled();
+    expect(spies.header).not.toHaveBeenCalled();
   });
 
   it('sets the session cookie and returns the session roles when login succeeds', async () => {
@@ -104,12 +100,17 @@ describe('Login endpoint contract', () => {
     expect(spies.reqJson).toHaveBeenCalledOnce();
     expect(spies.get).toHaveBeenCalledWith('authService');
     expect(authService.login).toHaveBeenCalledWith(requestBody);
-    expect(setCookieMock).toHaveBeenCalledWith(ctx, 'session_token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
-      maxAge: 3600,
-    });
+    expect(spies.header).toHaveBeenCalledWith('Set-Cookie', expect.any(String), { append: true });
+
+    const headerCall = spies.header.mock.calls[0];
+    const cookieString = headerCall[1];
+
+    expect(cookieString).toContain(`session_token=${token}`);
+    expect(cookieString).toContain('HttpOnly');
+    expect(cookieString).toContain('Secure');
+    expect(cookieString).toContain('SameSite=Strict');
+    expect(cookieString).toContain('Max-Age=3600');
+
     expect(spies.json).toHaveBeenCalledWith({
       message: 'Login successful.',
       roles: session.roles,
@@ -146,7 +147,7 @@ describe('Login endpoint contract', () => {
     expect(spies.reqJson).toHaveBeenCalledOnce();
     expect(spies.get).toHaveBeenCalledWith('authService');
     expect(authService.login).toHaveBeenCalledWith(requestBody);
-    expect(setCookieMock).not.toHaveBeenCalled();
+    expect(spies.header).not.toHaveBeenCalled();
     expect(spies.json).toHaveBeenCalledWith({ message: error.message }, 401);
     expect(response).toEqual({ payload: { message: error.message }, status: 401 });
   });
