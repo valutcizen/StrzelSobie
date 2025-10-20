@@ -2,7 +2,7 @@ import { defineProject, defineConfig } from 'vitest/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const includePatterns = ['**/*.test.ts', '**/*.spec.ts', '**/*.unit.tests.ts'];
+const includePatterns = ['**/*.test.ts', '**/*.spec.ts', '**/*.tests.ts'];
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
