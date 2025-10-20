@@ -1,0 +1,119 @@
+.fc {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  color: #1f2933;
+  font-family: var(--v-font-family, 'Roboto', sans-serif);
+  font-size: 0.95rem;
+  overflow: hidden;
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 12px 0;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.fc .fc-button {
+  background-color: var(--v-theme-primary, #1976d2);
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 6px 12px;
+  transition: background-color 0.2s ease;
+}
+
+.fc .fc-button:hover,
+.fc .fc-button:focus {
+  background-color: var(--v-theme-primary-darken-1, #115293);
+}
+
+.fc .fc-button:disabled {
+  background-color: rgba(25, 118, 210, 0.4);
+  cursor: not-allowed;
+}
+
+.fc .fc-button-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.fc .fc-timegrid-slot,
+.fc .fc-timegrid-axis {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.fc .fc-timegrid-slot-lane {
+  min-height: 44px;
+}
+
+.fc .fc-timegrid-axis {
+  background-color: rgba(15, 23, 42, 0.04);
+  font-weight: 500;
+}
+
+.fc .fc-scrollgrid {
+  border: none;
+}
+
+.fc .fc-scrollgrid-section > * {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.fc .fc-day-today {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+.fc .fc-col-header-cell {
+  padding: 8px 0;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  background-color: rgba(15, 23, 42, 0.04);
+}
+
+.fc .fc-event {
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 6px;
+  transition: transform 0.1s ease;
+}
+
+.fc .fc-event:hover {
+  transform: translateY(-1px);
+}
+
+.fc .fc-event-main-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fc .fc-event-time {
+  font-weight: 500;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border: none;
+}
+
+.fc .fc-now-indicator-line {
+  border-color: var(--v-theme-error, #d32f2f);
+}
+
+.fc .fc-now-indicator-arrow {
+  border-top-color: var(--v-theme-error, #d32f2f);
+}

@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "Strzel Sobie",
+    "logout": "Wyloguj",
+    "privacyPolicy": "Polityka Prywatności"
+  },
+  "navigation": {
+    "calendar": "Kalendarz",
+    "profile": "Mój profil",
+    "userManagement": "Zarządzanie użytkownikami",
+    "userVerification": "Weryfikacja użytkowników",
+    "rangeSettings": "Ustawienia strzelnicy"
+  },
+  "auth": {
+    "loginTab": "Logowanie",
+    "registerTab": "Rejestracja",
+    "email": "Adres e-mail",
+    "password": "Hasło",
+    "login": "Zaloguj",
+    "register": "Zarejestruj",
+    "switchToLogin": "Masz już konto? Zaloguj się",
+    "switchToRegister": "Nie masz konta? Zarejestruj się"
+  },
+  "calendar": {
+    "emptyState": "Brak wydarzeń dla tego tygodnia.",
+    "propositionCta": "Zaproponuj termin",
+    "loading": "Ładujemy kalendarz..."
+  },
+  "profile": {
+    "title": "Mój profil",
+    "rolesHeading": "Role użytkownika"
+  },
+  "admin": {
+    "users": {
+      "title": "Zarządzanie użytkownikami"
+    },
+    "verification": {
+      "title": "Weryfikacja użytkowników"
+    },
+    "rangeSettings": {
+      "title": "Ustawienia strzelnicy"
+    }
+  }
+}

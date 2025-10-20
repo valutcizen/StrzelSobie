@@ -1,11 +1,24 @@
 <template>
-  <div>
-    <h1>Hello from Vue!</h1>
-  </div>
+  <v-app>
+    <component :is="layoutComponent">
+      <router-view />
+    </component>
+  </v-app>
 </template>
 
 <script setup lang="ts">
-</script>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import AppShell from './layouts/AppShell.vue'
+import AuthLayout from './layouts/AuthLayout.vue'
 
-<style scoped>
-</style>
+const route = useRoute()
+
+const layoutComponent = computed(() => {
+  if (route.meta.layout === 'auth') {
+    return AuthLayout
+  }
+
+  return AppShell
+})
+</script>
