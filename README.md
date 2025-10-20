@@ -61,6 +61,8 @@ To set up the project for local development, follow these steps:
 
 The following scripts are available to be run from the project's root directory:
 
+- `npm run dev:backend`: Starts the Cloudflare Worker development server.
+- `npm run dev:frontend`: Starts the Vite development server with API proxying to the backend dev server.
 - `npm run build`: Builds all modules/workspaces.
 - `npm run test`: Runs the test suite for the entire project using Vitest.
 - `npm run test:unit`: Runs only unit tests that match the `*.unit.tests.ts` naming convention.
