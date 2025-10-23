@@ -13,6 +13,11 @@ const router = createRouter({
       component: () => import('../views/AuthView.vue'),
       meta: { layout: 'auth' },
     },
+    {
+      path: '/:rangeSlug',
+      name: 'Calendar',
+      component: () => import('../views/CalendarView.vue'),
+    },
   ],
 });
 
