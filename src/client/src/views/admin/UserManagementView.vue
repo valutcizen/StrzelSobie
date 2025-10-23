@@ -58,8 +58,18 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="closeRoleDialog">Anuluj</v-btn>
-        <v-btn color="primary" @click="saveRoles">Zapisz</v-btn>
+        <v-btn
+          variant="text"
+          @click="closeRoleDialog"
+        >
+          Anuluj
+        </v-btn>
+        <v-btn
+          color="primary"
+          @click="saveRoles"
+        >
+          Zapisz
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

@@ -24,10 +24,13 @@
                   {{ rangeDisplayName || 'Strzelnica' }}
                 </div>
               </v-col>
-              <v-col cols="12" md="4">
+              <v-col
+                cols="12"
+                md="4"
+              >
                 <Field
-                  name="totalTracks"
                   v-slot="{ field, errorMessage }"
+                  name="totalTracks"
                 >
                   <v-text-field
                     v-bind="field"
@@ -38,10 +41,13 @@
                   />
                 </Field>
               </v-col>
-              <v-col cols="12" md="8">
+              <v-col
+                cols="12"
+                md="8"
+              >
                 <Field
-                  name="operatingHours"
                   v-slot="{ field, errorMessage }"
+                  name="operatingHours"
                 >
                   <v-textarea
                     v-bind="field"

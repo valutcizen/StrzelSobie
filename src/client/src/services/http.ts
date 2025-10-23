@@ -10,6 +10,14 @@ http.interceptors.response.use(
   async (error) => {
     const status = error.response?.status
 
+    if (status === 401 && error.config.url === '/auth/me') {
+      try {
+        await http.post('/auth/logout');
+      } catch (e) {
+        console.error('Failed to logout', e);
+      }
+    }
+
     if (status === 401 || status === 403) {
       const [{ useAuthStore }, { default: router }] = await Promise.all([
         import('../stores/auth'),

@@ -1,10 +1,19 @@
 <template>
   <v-container class="text-center py-16">
     <v-row justify="center">
-      <v-col cols="12" md="6">
-        <v-icon size="96">mdi-compass-off</v-icon>
-        <h1 class="text-h4 mt-4">404</h1>
-        <p class="text-subtitle-1">Nie znaleziono strony.</p>
+      <v-col
+        cols="12"
+        md="6"
+      >
+        <v-icon size="96">
+          mdi-compass-off
+        </v-icon>
+        <h1 class="text-h4 mt-4">
+          404
+        </h1>
+        <p class="text-subtitle-1">
+          Nie znaleziono strony.
+        </p>
         <v-btn
           class="mt-4"
           color="primary"

@@ -50,7 +50,12 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="emitUpdate(false)">Zamknij</v-btn>
+        <v-btn
+          variant="text"
+          @click="emitUpdate(false)"
+        >
+          Zamknij
+        </v-btn>
         <v-btn
           v-if="canJoin"
           color="primary"

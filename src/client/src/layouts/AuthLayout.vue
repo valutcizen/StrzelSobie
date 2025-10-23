@@ -1,15 +1,9 @@
 <template>
-  <v-container class="auth-layout" fluid>
-    <v-row class="fill-height" align="center" justify="center">
-      <v-col cols="12" sm="8" md="4">
-        <slot />
-      </v-col>
-    </v-row>
-  </v-container>
+  <v-main>
+    <router-view />
+  </v-main>
 </template>
 
-<style scoped>
-.auth-layout {
-  min-height: 100vh;
-}
-</style>
+<script lang="ts" setup>
+// No script needed for this simple layout
+</script>

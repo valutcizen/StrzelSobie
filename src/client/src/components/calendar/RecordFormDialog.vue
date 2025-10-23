@@ -14,8 +14,8 @@
         <template #default="{ isSubmitting, meta }">
           <v-card-text>
             <Field
-              name="start"
               v-slot="{ field, errorMessage }"
+              name="start"
             >
               <v-text-field
                 v-bind="field"
@@ -25,8 +25,8 @@
               />
             </Field>
             <Field
-              name="end"
               v-slot="{ field, errorMessage }"
+              name="end"
             >
               <v-text-field
                 v-bind="field"
@@ -36,8 +36,8 @@
               />
             </Field>
             <Field
-              name="participants"
               v-slot="{ field, errorMessage }"
+              name="participants"
             >
               <v-text-field
                 v-bind="field"
@@ -50,7 +50,12 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog">Anuluj</v-btn>
+            <v-btn
+              variant="text"
+              @click="closeDialog"
+            >
+              Anuluj
+            </v-btn>
             <v-btn
               :disabled="!meta.valid"
               :loading="isSubmitting"

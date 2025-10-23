@@ -7,16 +7,16 @@
     <v-card>
       <v-card-title>Nowa rezerwacja</v-card-title>
       <Form
-        :initial-values="initialValues"
         :key="formKey"
+        :initial-values="initialValues"
         :validation-schema="schema"
         @submit="submitReservation"
       >
         <template #default="{ isSubmitting, meta, values, setFieldValue }">
           <v-card-text>
             <Field
-              name="start"
               v-slot="{ field, errorMessage }"
+              name="start"
             >
               <v-text-field
                 v-bind="field"
@@ -26,8 +26,8 @@
               />
             </Field>
             <Field
-              name="end"
               v-slot="{ field, errorMessage }"
+              name="end"
             >
               <v-text-field
                 v-bind="field"
@@ -37,8 +37,8 @@
               />
             </Field>
             <Field
-              name="tracks"
               v-slot="{ field, errorMessage }"
+              name="tracks"
             >
               <v-text-field
                 v-bind="field"
@@ -50,8 +50,8 @@
             </Field>
             <Field
               v-if="!isConversion"
-              name="participants"
               v-slot="{ field, errorMessage }"
+              name="participants"
             >
               <v-text-field
                 v-bind="field"
@@ -80,7 +80,12 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="closeDialog">Anuluj</v-btn>
+            <v-btn
+              variant="text"
+              @click="closeDialog"
+            >
+              Anuluj
+            </v-btn>
             <v-btn
               :disabled="!meta.valid"
               :loading="isSubmitting"

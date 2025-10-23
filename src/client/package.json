@@ -10,12 +10,13 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
   },
   "dependencies": {
-    "@mdi/font": "^7.4.47",
-    "@vee-validate/yup": "^4.13.3",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
+    "@mdi/font": "^7.4.47",
+    "@vee-validate/rules": "^4.15.1",
+    "@vee-validate/yup": "^4.13.3",
     "axios": "^1.7.7",
     "date-fns": "^3.6.0",
     "pinia": "^2.2.6",
@@ -27,6 +28,7 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
     "@vitejs/plugin-vue": "^4.1.0",
     "@vue/eslint-config-typescript": "^14.6.0",
     "eslint": "^9.37.0",

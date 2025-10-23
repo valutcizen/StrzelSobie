@@ -1,21 +1,22 @@
-import { configure } from 'vee-validate'
-import { setLocale } from 'yup'
+import { defineRule, configure } from 'vee-validate';
+import { required, email, min, confirmed } from '@vee-validate/rules';
 
-export const setupValidation = () => {
+export function setupValidation() {
+  defineRule('required', required);
+  defineRule('email', email);
+  defineRule('min', min);
+  defineRule('confirmed', confirmed);
+
   configure({
-    validateOnBlur: true,
-    validateOnChange: true,
-    validateOnInput: false,
-    validateOnModelUpdate: true,
-  })
-
-  setLocale({
-    mixed: {
-      required: 'To pole jest wymagane.',
+    generateMessage: (context) => {
+      const messages: Record<string, string> = {
+        required: `Pole jest wymagane`,
+        email: `Niepoprawny format emaila`,
+        min: `Pole musi mieć przynajmniej 0:{min} znaków`,
+        confirmed: `Pola muszą się zgadzać`,
+      };
+      const message = messages[context.rule?.name ?? ''] || `Pole jest nieprawidłowe`;
+      return message;
     },
-    string: {
-      email: 'Podaj poprawny adres e-mail.',
-      min: 'To pole musi mieć co najmniej ${min} znaków.',
-    },
-  })
+  });
 }

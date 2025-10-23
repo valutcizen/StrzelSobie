@@ -16,8 +16,12 @@
       v-else-if="!calendarStore.hasEvents"
       class="calendar-empty"
     >
-      <v-icon size="64">mdi-calendar-clock</v-icon>
-      <p class="text-subtitle-1 mt-4">{{ t('calendar.emptyState') }}</p>
+      <v-icon size="64">
+        mdi-calendar-clock
+      </v-icon>
+      <p class="text-subtitle-1 mt-4">
+        {{ t('calendar.emptyState') }}
+      </p>
       <v-btn
         class="mt-4"
         color="primary"
