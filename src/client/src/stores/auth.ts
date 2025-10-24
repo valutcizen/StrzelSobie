@@ -1,90 +1,83 @@
 import { defineStore } from 'pinia'
-import type { AxiosError } from 'axios'
-import { http } from '../services/http'
+import { computed, ref } from 'vue'
 import type { AuthenticatedUser, UserRole } from '../types/auth'
+import { http } from '../services/http'
 
-interface CredentialsPayload {
+interface LoginPayload {
   email: string
   password: string
 }
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null as AuthenticatedUser | null,
-    isInitialized: false,
-    isLoading: false,
-    lastError: null as string | null,
-  }),
-  getters: {
-    isAuthenticated: (state) => state.user !== null,
-    roles: (state) => state.user?.roles ?? [],
-    defaultRangeSlug: (state) => state.user?.defaultRangeSlug ?? null,
-  },
-  actions: {
-    async bootstrap() {
-      if (this.isInitialized) {
-        return
-      }
+interface RegisterPayload {
+  email: string
+  password: string
+}
 
-      try {
-        this.isLoading = true
-        const { data } = await http.get<AuthenticatedUser>('/auth/me')
-        this.user = data
-      } catch (error) {
-        if ((error as AxiosError).response?.status === 401) {
-          this.user = null
-        }
-      } finally {
-        this.isLoading = false
-        this.isInitialized = true
-      }
-    },
-    async login(payload: CredentialsPayload) {
-      this.lastError = null
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<AuthenticatedUser | null>(null)
+  const isLoading = ref(false)
+  const hasAttemptedFetch = ref(false)
 
-      try {
-        this.isLoading = true
-        await http.post('/auth/login', payload)
-        await this.bootstrap()
-      } catch (error) {
-        this.lastError = (error as Error).message
-        throw error
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async register(payload: CredentialsPayload) {
-      this.lastError = null
+  const isAuthenticated = computed(() => user.value !== null)
+  const defaultRangeSlug = computed(() => user.value?.defaultRangeSlug ?? 'dobczyce')
 
-      try {
-        this.isLoading = true
-        await http.post('/auth/register', payload)
-        await this.bootstrap()
-      } catch (error) {
-        this.lastError = (error as Error).message
-        throw error
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async logout() {
-      try {
-        await http.post('/auth/logout')
-      } finally {
-        this.reset()
-      }
-    },
-    hasAnyRole(required: UserRole[]) {
-      return required.some((role) => this.roles.includes(role))
-    },
-    setUser(user: AuthenticatedUser | null) {
-      this.user = user
-    },
-    reset() {
-      this.user = null
-      this.isInitialized = false
-      this.isLoading = false
-      this.lastError = null
-    },
-  },
+  const hasRole = (role: UserRole) => user.value?.roles.includes(role) ?? false
+  const hasAnyRole = (roles: UserRole[]) => roles.some((role) => hasRole(role))
+
+  const reset = () => {
+    user.value = null
+    hasAttemptedFetch.value = false
+  }
+
+  const fetchUser = async (force = false) => {
+    if (!force && (user.value || hasAttemptedFetch.value)) {
+      return user.value
+    }
+
+    isLoading.value = true
+    hasAttemptedFetch.value = true
+
+    try {
+      const { data } = await http.get<AuthenticatedUser>('/auth/me')
+      user.value = data
+      return data
+    } catch (error) {
+      reset()
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const login = async (payload: LoginPayload) => {
+    await http.post('/auth/login', payload)
+    return fetchUser(true)
+  }
+
+  const register = async (payload: RegisterPayload) => {
+    await http.post('/auth/register', payload)
+    return fetchUser(true)
+  }
+
+  const logout = async () => {
+    try {
+      await http.post('/auth/logout')
+    } finally {
+      reset()
+    }
+  }
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated,
+    defaultRangeSlug,
+    fetchUser,
+    login,
+    register,
+    logout,
+    reset,
+    hasRole,
+    hasAnyRole,
+  }
 })

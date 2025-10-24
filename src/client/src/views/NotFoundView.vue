@@ -34,6 +34,6 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const goHome = () => {
-  router.push({ name: 'calendar', params: { rangeSlug: authStore.defaultRangeSlug ?? 'dobczyce' } })
+  router.push({ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug ?? 'dobczyce' } })
 }
 </script>

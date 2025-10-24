@@ -8,6 +8,10 @@
     "strict": true,
     "sourceMap": true,
     "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "isolatedModules": true,
     "esModuleInterop": true,
     "noEmit": true,
