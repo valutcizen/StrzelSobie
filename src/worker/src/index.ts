@@ -42,15 +42,15 @@ app.use('*', async (c, next) => {
   const auditRepository = new AuditDbRepository(c.env.DB);
 
   // Services
+  const auditService = new AuditService(auditRepository);
   const rangesService = new RangesService(rangesRepository);
   const userService = new UserService(userRepository, rangesService);
   const authService = new AuthService(
     authRepository,
     sessionRepository,
     userService,
-    rangesService
+    auditService
   );
-  const auditService = new AuditService(auditRepository);
   const reservationsService = new ReservationsService(rangesService, reservationsRepository, auditService);
 
   c.set('authService', authService);

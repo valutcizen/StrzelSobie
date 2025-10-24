@@ -58,7 +58,7 @@ export class Register extends OpenAPIRoute {
     const sourceIp = c.req.header('cf-connecting-ip') || 'unknown';
     const proxiedIp = c.req.header('x-forwarded-for') || 'unknown';
 
-    const result = await authService.register(data, sourceIp, proxiedIp);
+    const result = await authService.register(data.body, sourceIp, proxiedIp);
 
     if (result.isSuccess) {
       return c.json(result.getValue(), 201);

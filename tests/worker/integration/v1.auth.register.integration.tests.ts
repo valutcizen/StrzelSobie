@@ -40,10 +40,8 @@ describe('POST /api/v1/auth/register', () => {
     expect(call[1]).toBe('203.0.113.1');
     expect(call[2]).toBe('198.51.100.2');
     expect(call[0]).toEqual({
-      body: {
-        email: 'new.user@example.com',
-        password: '#Sup3rSecret!',
-      },
+      email: 'new.user@example.com',
+      password: '#Sup3rSecret!',
     });
 
     expect(response.status).toBe(201);

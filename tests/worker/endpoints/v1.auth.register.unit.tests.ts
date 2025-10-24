@@ -66,7 +66,7 @@ describe('Register endpoint contract', () => {
 
   it('returns the registered user payload with a 201 status code', async () => {
     const registerEndpoint = new Register();
-    const requestBody = { email: 'new-user@example.com', password: 'Secret123' };
+    const requestBody = { body: {email: 'new-user@example.com', password: 'Secret123' }};
     const registeredUser: RegisteredUserResponse = {
       id: 42,
       email: requestBody.email,
@@ -92,7 +92,7 @@ describe('Register endpoint contract', () => {
 
     expect(getValidatedData).toHaveBeenCalledOnce();
     expect(authService.register).toHaveBeenCalledWith(
-      requestBody,
+      requestBody.body,
       '203.0.113.10',
       '198.51.100.7'
     );
@@ -101,8 +101,8 @@ describe('Register endpoint contract', () => {
 
   it('maps EmailAlreadyExistsError to a 409 conflict response', async () => {
     const registerEndpoint = new Register();
-    const requestBody = { email: 'taken@example.com', password: 'Secret123' };
-    const error = new EmailAlreadyExistsError(requestBody.email);
+    const requestBody = { body: { email: 'taken@example.com', password: 'Secret123' }};
+    const error = new EmailAlreadyExistsError(requestBody.body.email);
 
     const authService = {
       register: vi.fn().mockResolvedValue(Result.fail<RegisteredUserResponse>(error)),
@@ -117,13 +117,13 @@ describe('Register endpoint contract', () => {
 
     const response = await registerEndpoint.handle(ctx as never);
 
-    expect(authService.register).toHaveBeenCalledWith(requestBody, 'unknown', 'unknown');
+    expect(authService.register).toHaveBeenCalledWith(requestBody.body, 'unknown', 'unknown');
     expect(spies.json).toHaveBeenCalledWith({ message: error.message }, 409);
   });
 
   it('returns a 500 error when registration fails with an unexpected error', async () => {
     const registerEndpoint = new Register();
-    const requestBody = { email: 'user@example.com', password: 'Secret123' };
+    const requestBody = { body: {email: 'user@example.com', password: 'Secret123'} };
     const error = new Error('Database offline');
 
     const authService = {
@@ -139,7 +139,7 @@ describe('Register endpoint contract', () => {
 
     const response = await registerEndpoint.handle(ctx as never);
 
-    expect(authService.register).toHaveBeenCalledWith(requestBody, 'unknown', 'unknown');
+    expect(authService.register).toHaveBeenCalledWith(requestBody.body, 'unknown', 'unknown');
     expect(spies.json).toHaveBeenCalledWith({ message: 'Internal Server Error' }, 500);
   });
 });
