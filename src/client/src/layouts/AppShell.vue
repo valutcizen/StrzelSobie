@@ -1,5 +1,5 @@
 <template>
-  <v-layout class="min-h-100">
+  <div class="d-flex flex-column" style="height: 100vh;">
     <v-navigation-drawer
       v-model="drawer"
       :rail="isRail"
@@ -96,23 +96,12 @@
       </v-menu>
     </v-app-bar>
 
-    <v-main class="bg-grey-lighten-5">
+    <v-main class="bg-grey-lighten-5 flex-grow-1">
       <slot />
     </v-main>
 
-    <v-footer class="bg-grey-lighten-4">
-      <v-container class="d-flex flex-column flex-sm-row align-center justify-space-between py-4">
-        <span>Strzel Sobie</span>
-        <v-btn
-          variant="text"
-          size="small"
-          :to="{ name: 'PrivacyPolicy' }"
-        >
-          Polityka prywatności
-        </v-btn>
-      </v-container>
-    </v-footer>
-  </v-layout>
+    <AppFooter />
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -120,6 +109,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
+import AppFooter from '@/components/common/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -190,4 +180,5 @@ const toggleRail = () => {
   justify-content: center;
   padding: 12px 8px;
 }
+
 </style>
