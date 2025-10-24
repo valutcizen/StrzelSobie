@@ -61,18 +61,15 @@ export class Register extends OpenAPIRoute {
     const result = await authService.register(data, sourceIp, proxiedIp);
 
     if (result.isSuccess) {
-      c.status(201);
-      return result.getValue();
+      return c.json(result.getValue(), 201);
+    }
+    
+    const error = result.getError();
+    console.error(error);
+    if (error instanceof EmailAlreadyExistsError) {
+      return c.json({ message: error.message }, 409);
     } else {
-      const error = result.getError();
-      console.error(error);
-      if (error instanceof EmailAlreadyExistsError) {
-        c.status(409);
-        return { message: error.message };
-      } else {
-        c.status(500);
-        return { message: 'Internal Server Error' };
-      }
+      return c.json({ message: 'Internal Server Error' }, 500);
     }
   }
 }

@@ -26,7 +26,7 @@ const createContext = ({ headers = {}, dependencies }: TestContextOptions) => {
   });
 
   const headerSpy = vi.fn((name: string) => normalizedHeaders.get(name.toLowerCase()));
-  const statusSpy = vi.fn();
+  const jsonSpy = vi.fn();
   const getSpy = vi.fn((key: string) => {
     if (key === 'authService') {
       return dependencies.authService;
@@ -38,7 +38,7 @@ const createContext = ({ headers = {}, dependencies }: TestContextOptions) => {
     req: {
       header: headerSpy,
     },
-    status: statusSpy,
+    json: jsonSpy,
     get: getSpy,
   };
 
@@ -46,7 +46,7 @@ const createContext = ({ headers = {}, dependencies }: TestContextOptions) => {
     ctx,
     spies: {
       header: headerSpy,
-      status: statusSpy,
+      json: jsonSpy,
       get: getSpy,
     },
   };
@@ -96,8 +96,7 @@ describe('Register endpoint contract', () => {
       '203.0.113.10',
       '198.51.100.7'
     );
-    expect(spies.status).toHaveBeenCalledWith(201);
-    expect(response).toEqual(registeredUser);
+    expect(spies.json).toHaveBeenCalledWith(registeredUser, 201);
   });
 
   it('maps EmailAlreadyExistsError to a 409 conflict response', async () => {
@@ -119,8 +118,7 @@ describe('Register endpoint contract', () => {
     const response = await registerEndpoint.handle(ctx as never);
 
     expect(authService.register).toHaveBeenCalledWith(requestBody, 'unknown', 'unknown');
-    expect(spies.status).toHaveBeenCalledWith(409);
-    expect(response).toEqual({ message: error.message });
+    expect(spies.json).toHaveBeenCalledWith({ message: error.message }, 409);
   });
 
   it('returns a 500 error when registration fails with an unexpected error', async () => {
@@ -142,8 +140,7 @@ describe('Register endpoint contract', () => {
     const response = await registerEndpoint.handle(ctx as never);
 
     expect(authService.register).toHaveBeenCalledWith(requestBody, 'unknown', 'unknown');
-    expect(spies.status).toHaveBeenCalledWith(500);
-    expect(response).toEqual({ message: 'Internal Server Error' });
+    expect(spies.json).toHaveBeenCalledWith({ message: 'Internal Server Error' }, 500);
   });
 });
 

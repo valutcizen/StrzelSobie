@@ -46,7 +46,7 @@ describe('POST /api/v1/auth/register', () => {
       },
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(await response.json()).toEqual({
       id: 5,
       email: 'new.user@example.com',
@@ -75,7 +75,7 @@ describe('POST /api/v1/auth/register', () => {
       },
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(409);
     expect(await response.json()).toEqual({
       message: 'User with email taken@example.com already exists',
     });
