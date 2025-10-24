@@ -56,6 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const register = async (payload: RegisterPayload) => {
     await http.post('/auth/register', payload)
+    await http.post('/auth/login', payload)
     return fetchUser(true)
   }
 
