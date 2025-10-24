@@ -65,6 +65,7 @@ export class Register extends OpenAPIRoute {
       return result.getValue();
     } else {
       const error = result.getError();
+      console.error(error);
       if (error instanceof EmailAlreadyExistsError) {
         c.status(409);
         return { message: error.message };

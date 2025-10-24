@@ -10,18 +10,23 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const sessionToken = getCookie(c, 'session_token');
 
   if (!sessionToken) {
+    if (!['/api/v1/auth/me', '/api/v1/auth/logout'].includes(c.req.path)) {
+      console.error('Unauthorized request to protected endpoint', c.req.raw);
+    }
     return c.json({ message: 'Unauthorized' }, 401);
   }
 
   const sessionResult = await authService.validateSession(sessionToken);
 
   if (!sessionResult.isSuccess) {
+    console.error('Invalid session token', sessionResult.getError());
     return c.json({ message: 'Unauthorized' }, 401);
   }
 
   const session = sessionResult.getValue();
 
   if (!session) {
+    console.error('Invalid session', session);
     return c.json({ message: 'Unauthorized' }, 401);
   }
 
@@ -30,17 +35,20 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const userResult = await userService.getFullUserProfile(session.userId);
 
   if (!userResult.isSuccess) {
+    console.error('Error while fetching user profile', userResult.getError());
     return c.json({ message: 'Unauthorized' }, 401);
   }
 
   const userProfile = userResult.getValue();
 
   if (!userProfile) {
+    console.error('User profile not found', userProfile);
     return c.json({ message: 'Unauthorized' }, 401);
   }
 
   const allRolesResult = await userService.getRoles();
   if (!allRolesResult.isSuccess) {
+    console.error('Error while fetching roles', allRolesResult.getError());
     return c.json({ message: 'Internal server error' }, 500);
   }
   const allRoles = allRolesResult.getValue();

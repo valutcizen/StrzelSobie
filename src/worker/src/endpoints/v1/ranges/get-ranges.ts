@@ -39,6 +39,7 @@ export class GetRangesRoute extends OpenAPIRoute {
     if (result.isSuccess) {
       return c.json(result.getValue(), 200);
     }
+    console.error('Error while fetching ranges', result.getError());
     return c.json({ error: 'Internal Server Error' }, 500);
   }
 }

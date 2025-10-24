@@ -51,6 +51,7 @@ export class Login extends OpenAPIRoute {
     const validationResult = LoginUserDtoSchema.safeParse(body);
 
     if (!validationResult.success) {
+      console.error(validationResult.error);
       return c.json({ message: 'Invalid request body' }, 400);
     }
 
@@ -74,6 +75,7 @@ export class Login extends OpenAPIRoute {
         rangeRoles: session.rangeRoles,
       });
     } else {
+      console.error(result.getError());
       return c.json(
         {
           message: result.getError().message,

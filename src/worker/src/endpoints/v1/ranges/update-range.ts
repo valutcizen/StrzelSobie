@@ -86,7 +86,7 @@ export class UpdateRange extends OpenAPIRoute {
     }
 
     const error = result.getError();
-
+    console.error('Error while updating range', error);
     if (error instanceof RangeNotFoundError) {
       return c.json({ error: error.message }, 404);
     }

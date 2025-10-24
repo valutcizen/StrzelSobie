@@ -61,12 +61,8 @@ export class DeleteReservation extends OpenAPIRoute {
     }
 
     const error = result.getError();
+    console.error('Error during reservation cancellation', error);
     const { status, body } = mapReservationsError(error);
-
-    if (status === 500) {
-      console.error('Unexpected error during reservation cancellation', error);
-    }
-
     return c.json(body, status);
   }
 }

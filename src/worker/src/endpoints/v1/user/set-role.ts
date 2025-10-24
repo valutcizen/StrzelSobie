@@ -66,6 +66,7 @@ export class SetUserRoleRoute extends OpenAPIRoute {
     }
 
     const error = result.error;
+    console.error('Error while assigning role to user', error);
     if (error instanceof UserNotFoundError) {
       return c.json({ error: error.message }, 404);
     }

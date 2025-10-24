@@ -180,12 +180,8 @@ export class CreateProposition extends OpenAPIRoute {
     }
 
     const error = result.getError();
+    console.error('Error during proposition creation', error);
     const { status, body } = mapReservationsError(error);
-
-    if (status === 500) {
-      console.error('Unexpected error during proposition creation', error);
-    }
-
     return c.json(body, status);
   }
 }

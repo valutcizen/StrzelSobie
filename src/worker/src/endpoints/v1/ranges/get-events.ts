@@ -67,12 +67,8 @@ export class GetEvents extends OpenAPIRoute {
     }
 
     const error = result.getError();
+    console.error('Error while fetching range events', error);
     const { status, body } = mapReservationsError(error);
-
-    if (status === 500) {
-      console.error('Unexpected error while fetching range events', error);
-    }
-
     return c.json(body, status);
   }
 }

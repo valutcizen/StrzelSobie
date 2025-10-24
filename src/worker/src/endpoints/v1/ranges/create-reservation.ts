@@ -259,12 +259,8 @@ export class CreateReservation extends OpenAPIRoute {
     }
 
     const error = result.getError();
+    console.error('Error during reservation creation', error);
     const { status, body } = mapReservationsError(error);
-
-    if (status === 500) {
-      console.error('Unexpected error during reservation creation', error);
-    }
-
     return c.json(body, status);
   }
 }

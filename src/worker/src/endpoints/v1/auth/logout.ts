@@ -36,6 +36,7 @@ export class Logout extends OpenAPIRoute {
     const sessionToken = getCookie(c, 'session_token');
 
     if (!sessionToken) {
+      console.error('No session token found');
       return c.json({ error: 'Unauthorized' }, 401);
     }
 

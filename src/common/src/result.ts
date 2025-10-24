@@ -10,7 +10,6 @@ export class Result<T> {
   }
 
   public static fail<T>(error: Error): Result<T> {
-    console.error(error);
     return new Result(false, undefined as T, error);
   }
 

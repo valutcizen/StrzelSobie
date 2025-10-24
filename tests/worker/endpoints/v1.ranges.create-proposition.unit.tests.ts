@@ -163,7 +163,7 @@ describe('CreateProposition endpoint contract', () => {
       status: 404,
     });
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during proposition creation', error);
   });
 
   it('logs unexpected failures and returns a 500 response for unknown errors', async () => {
@@ -210,10 +210,6 @@ describe('CreateProposition endpoint contract', () => {
       payload: { code: 'internal_error', message: 'Unexpected error occurred' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(unexpectedError);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Unexpected error during proposition creation',
-      unexpectedError
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during proposition creation', unexpectedError);
   });
 });

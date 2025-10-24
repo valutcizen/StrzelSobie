@@ -80,6 +80,7 @@ describe('GetRoles endpoint contract', () => {
       payload: { message: 'Failed to retrieve roles' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while fetching roles', error);
   });
 });

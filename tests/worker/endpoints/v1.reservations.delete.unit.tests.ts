@@ -119,7 +119,7 @@ describe('DeleteReservation endpoint contract', () => {
       status: 404,
     });
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation cancellation', error);
   });
 
   it('logs unexpected failures and returns a 500 response when cancellation fails with an unknown error', async () => {
@@ -150,13 +150,8 @@ describe('DeleteReservation endpoint contract', () => {
       payload: { code: 'internal_error', message: 'Unexpected error occurred' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
-    expect(consoleErrorSpy).toHaveBeenNthCalledWith(1, unexpectedError);
-    expect(consoleErrorSpy).toHaveBeenNthCalledWith(
-      2,
-      'Unexpected error during reservation cancellation',
-      unexpectedError,
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation cancellation', unexpectedError);
   });
 
   it('logs server errors produced by reservation cancellation failures', async () => {
@@ -193,12 +188,7 @@ describe('DeleteReservation endpoint contract', () => {
       },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
-    expect(consoleErrorSpy).toHaveBeenNthCalledWith(1, cancellationError);
-    expect(consoleErrorSpy).toHaveBeenNthCalledWith(
-      2,
-      'Unexpected error during reservation cancellation',
-      cancellationError,
-    );
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation cancellation', cancellationError);
   });
 });

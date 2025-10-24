@@ -63,12 +63,8 @@ export class DeleteProposition extends OpenAPIRoute {
     }
 
     const error = result.getError();
+    console.error('Error during proposition cancellation', error);
     const { status, body } = mapReservationsError(error);
-
-    if (status === 500) {
-      console.error('Unexpected error during proposition cancellation', error);
-    }
-
     return c.json(body, status);
   }
 }

@@ -28,6 +28,7 @@ export class GetRange extends OpenAPIRoute {
     const result = await rangesService.getRangeDetails(params.rangeSlug);
 
     if (!result.isSuccess) {
+      console.error('Error while fetching range details', result.getError());
       return c.json(
         {
           success: false,

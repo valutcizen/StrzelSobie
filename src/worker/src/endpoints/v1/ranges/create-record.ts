@@ -178,12 +178,8 @@ export class CreateRecord extends OpenAPIRoute {
     }
 
     const error = result.getError();
+    console.error('Error during record creation', error);
     const { status, body } = mapReservationsError(error);
-
-    if (status === 500) {
-      console.error('Unexpected error during record creation', error);
-    }
-
     return c.json(body, status);
   }
 }

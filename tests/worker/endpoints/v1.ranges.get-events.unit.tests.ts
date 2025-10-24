@@ -172,7 +172,7 @@ describe('GetEvents endpoint contract', () => {
       status: 404,
     });
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while fetching range events', error);
   });
 
   it('logs unexpected failures and returns a 500 response for unknown errors', async () => {
@@ -213,10 +213,7 @@ describe('GetEvents endpoint contract', () => {
       payload: { code: 'internal_error', message: 'Unexpected error occurred' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(unexpectedError);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Unexpected error while fetching range events',
-      unexpectedError,
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while fetching range events', unexpectedError);
   });
 });

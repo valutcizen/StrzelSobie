@@ -66,6 +66,7 @@ export class GetUsers extends OpenAPIRoute {
     const result = await userService.getUsers(query);
 
     if (!result.isSuccess) {
+        console.error('Error while fetching users', result.getError());
         return c.json({ error: result.getError().message }, 500);
     }
 

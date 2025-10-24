@@ -93,7 +93,6 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(false);
     expect(result.getError()).toBe(failure);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(failure);
   });
 
   it('returns range details with parsed operating hours', async () => {
@@ -127,7 +126,6 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(false);
     expect(result.getError()).toEqual(new Error('Failed to parse operating hours'));
-    expect(consoleErrorSpy).toHaveBeenCalled();
   });
 
   it('refuses updates for non-admin users', async () => {
@@ -229,6 +227,5 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(false);
     expect(result.getError()).toBe(failure);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(failure);
   });
 });

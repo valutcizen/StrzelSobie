@@ -124,7 +124,8 @@ describe('SetUserRoleRoute', () => {
       payload: { error: error.message },
       status: 404,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while assigning role to user', error);
   });
 
   it('returns a 400 response when assignRoleToUser fails with RoleScopeError', async () => {
@@ -154,7 +155,8 @@ describe('SetUserRoleRoute', () => {
       payload: { error: error.message },
       status: 400,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while assigning role to user', error);
   });
 
   it('returns a 403 response when assignRoleToUser fails with ForbiddenError', async () => {
@@ -184,7 +186,8 @@ describe('SetUserRoleRoute', () => {
       payload: { error: error.message },
       status: 403,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while assigning role to user', error);
   });
 
   it('returns a 500 response when assignRoleToUser fails with an unexpected error', async () => {
@@ -214,6 +217,10 @@ describe('SetUserRoleRoute', () => {
       payload: { error: 'Internal Server Error' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(unexpectedError);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error while assigning role to user',
+      unexpectedError,
+    );
   });
 });

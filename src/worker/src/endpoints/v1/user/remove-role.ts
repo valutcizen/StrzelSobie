@@ -59,6 +59,7 @@ export class RemoveUserRoleRoute extends OpenAPIRoute {
     }
 
     const error = result.error;
+    console.error('Error while removing role from user', error);
     if (error instanceof UserNotFoundError) {
       return c.json({ error: error.message }, 404);
     }

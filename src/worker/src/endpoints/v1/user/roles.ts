@@ -36,6 +36,7 @@ export class GetRoles extends OpenAPIRoute {
     if (result.isSuccess) {
       return c.json(result.getValue());
     } else {
+      console.error('Error while fetching roles', result.getError());
       return c.json({ message: 'Failed to retrieve roles' }, 500);
     }
   }

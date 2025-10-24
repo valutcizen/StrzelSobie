@@ -144,7 +144,7 @@ describe('UpdateRange endpoint contract', () => {
       payload: { error: error.message },
       status: 404,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while updating range', error);
   });
 
   it('maps a ForbiddenError to a 403 response', async () => {
@@ -183,7 +183,7 @@ describe('UpdateRange endpoint contract', () => {
       payload: { error: error.message },
       status: 403,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while updating range', error);
   });
 
   it('returns a 500 response for unexpected errors', async () => {
@@ -219,6 +219,6 @@ describe('UpdateRange endpoint contract', () => {
       payload: { error: 'An unexpected error occurred' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(unexpectedError);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error while updating range', unexpectedError);
   });
 });
