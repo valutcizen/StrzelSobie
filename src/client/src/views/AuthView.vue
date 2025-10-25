@@ -10,10 +10,10 @@
     >
       <v-card class="elevation-10">
         <v-card-title class="text-h5 text-center">
-          Strzel Sobie
+          {{ t('auth.title') }}
         </v-card-title>
         <v-card-subtitle class="text-center">
-          Zaloguj się lub utwórz konto, aby zarządzać rezerwacjami
+          {{ t('auth.subtitle') }}
         </v-card-subtitle>
         <v-tabs
           v-model="activeTab"
@@ -21,10 +21,10 @@
           grow
         >
           <v-tab value="login">
-            Logowanie
+            {{ t('auth.login') }}
           </v-tab>
           <v-tab value="register">
-            Rejestracja
+            {{ t('auth.register') }}
           </v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
@@ -55,6 +55,7 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import LoginForm from '@/components/LoginForm.vue'
 import RegisterForm from '@/components/RegisterForm.vue'
@@ -62,6 +63,7 @@ import { useAuthStore } from '@/stores/auth'
 
 type ActiveTab = 'login' | 'register'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -78,12 +80,12 @@ const redirectTarget = computed(() => {
 const extractErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { message?: string } | undefined
-    return data?.message ?? error.response?.statusText ?? 'Nie udało się ukończyć operacji.'
+    return data?.message ?? error.response?.statusText ?? t('auth.operationFailed')
   }
   if (error instanceof Error) {
     return error.message
   }
-  return 'Nie udało się ukończyć operacji.'
+  return t('auth.operationFailed')
 }
 
 const redirectAfterSuccess = async () => {

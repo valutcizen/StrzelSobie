@@ -15,41 +15,28 @@
       >
         <RoleBasedLink
           icon="mdi-calendar"
-          label="Kalendarz"
+          :label="t('navigation.calendar')"
           :to="{ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }"
         />
         <RoleBasedLink
           icon="mdi-account-group"
-          label="Zarządzanie użytkownikami"
+          :label="t('navigation.userManagement')"
           :to="{ name: 'UserManagement' }"
           :roles="['Club/Community Administrator']"
         />
         <RoleBasedLink
           icon="mdi-account-check"
-          label="Weryfikacja użytkowników"
+          :label="t('navigation.userVerification')"
           :to="{ name: 'UserVerification' }"
           :roles="['Confirmator']"
         />
         <RoleBasedLink
           icon="mdi-target-account"
-          label="Ustawienia strzelnicy"
+          :label="t('navigation.rangeSettings')"
           :to="{ name: 'RangeSettings' }"
           :roles="['Shooting Range Administrator']"
         />
       </v-list>
-      <template #append>
-        <div class="app-shell-navigation__controls">
-          <v-btn
-            v-if="!isSmallScreen"
-            variant="text"
-            color="white"
-            size="small"
-            :icon="isRail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left'"
-            :aria-label="isRail ? 'Rozwiń menu' : 'Zwiń menu'"
-            @click="toggleRail"
-          />
-        </div>
-      </template>
     </v-navigation-drawer>
 
     <v-app-bar
@@ -57,11 +44,10 @@
       density="comfortable"
     >
       <v-app-bar-nav-icon
-        class="d-inline-flex d-sm-none"
         variant="text"
-        @click.stop="drawer = !drawer"
+        @click.stop="toggleNav"
       />
-      <v-toolbar-title>Strzel Sobie</v-toolbar-title>
+      <v-toolbar-title>{{ t('app.title') }}</v-toolbar-title>
       <v-spacer />
       <span
         v-if="authStore.user"
@@ -75,7 +61,7 @@
             icon="mdi-account-circle"
             variant="text"
             v-bind="props"
-            aria-label="Menu użytkownika"
+            :aria-label="t('userMenu.label')"
           />
         </template>
         <v-list density="compact">
@@ -83,14 +69,14 @@
             :to="{ name: 'Profile' }"
             prepend-icon="mdi-account"
           >
-            <v-list-item-title>Mój profil</v-list-item-title>
+            <v-list-item-title>{{ t('userMenu.profile') }}</v-list-item-title>
           </v-list-item>
           <v-divider class="my-1" />
           <v-list-item
             prepend-icon="mdi-logout"
             @click="handleLogout"
           >
-            <v-list-item-title>Wyloguj</v-list-item-title>
+            <v-list-item-title>{{ t('userMenu.logout') }}</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -106,22 +92,24 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const router = useRouter()
 const display = useDisplay()
 const isSmallScreen = computed(() => display.smAndDown.value)
 const drawer = ref(!isSmallScreen.value)
-const isRail = ref(!isSmallScreen.value)
+const isRail = ref(isSmallScreen.value)
 
 watch(isSmallScreen, (isSmall) => {
   drawer.value = !isSmall
-  isRail.value = !isSmall
+  isRail.value = isSmall
 }, { immediate: true })
 
 const handleLogout = async () => {
@@ -129,11 +117,12 @@ const handleLogout = async () => {
   await router.push({ name: 'Auth' })
 }
 
-const toggleRail = () => {
+const toggleNav = () => {
   if (isSmallScreen.value) {
-    return
+    drawer.value = !drawer.value
+  } else {
+    isRail.value = !isRail.value
   }
-  isRail.value = !isRail.value
 }
 </script>
 
@@ -171,14 +160,6 @@ const toggleRail = () => {
 }
 
 .app-shell-navigation.v-navigation-drawer--rail :deep(.v-list-item) {
-  justify-content: center;
   padding-inline: 0;
 }
-
-.app-shell-navigation__controls {
-  display: flex;
-  justify-content: center;
-  padding: 12px 8px;
-}
-
 </style>

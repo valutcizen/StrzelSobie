@@ -9,20 +9,25 @@
         class="text-decoration-none"
         prepend-icon="mdi-github"
       >
-        Strzel Sobie
+        {{ t('app.title') }}
       </v-btn>
+      <LanguageSwitcher />
       <v-btn
         variant="text"
         :to="{ name: 'PrivacyPolicy' }"
         prepend-icon="mdi-shield-account"
       >
-        Polityka Prywatności
+        {{ t('footer.privacyPolicy') }}
       </v-btn>
     </v-container>
   </v-footer>
 </template>
 
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
+
+const { t } = useI18n()
 </script>
 
 <style scoped>
