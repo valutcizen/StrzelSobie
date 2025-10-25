@@ -108,6 +108,22 @@ const handleDatesSet = async (info: DatesSetArg) => {
 }
 
 const handleSlotSelect = (selectionInfo: DateSelectArg) => {
+  const { start, end } = selectionInfo
+
+  const isSameDay = start.toDateString() === end.toDateString()
+
+  // Special case: selection ends at midnight of the next day.
+  const endIsMidnight =
+    end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0 && end.getMilliseconds() === 0
+  const startPlusOneDay = new Date(start)
+  startPlusOneDay.setDate(start.getDate() + 1)
+  const endIsNextDay = startPlusOneDay.toDateString() === end.toDateString()
+
+  if (!isSameDay && !(endIsNextDay && endIsMidnight)) {
+    calendarRef.value?.getApi().unselect()
+    return
+  }
+
   selectedSlot.value = {
     start: selectionInfo.startStr,
     end: selectionInfo.endStr,
@@ -150,12 +166,11 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
-    right: 'timeGridWeek,dayGridMonth',
+    right: 'timeGridWeek',
   },
   buttonText: {
     today: 'Dzisiaj',
     week: 'Tydzień',
-    month: 'Miesiąc',
   },
   select: handleSlotSelect,
   eventClick: handleEventClick,
@@ -361,40 +376,6 @@ onMounted(async () => {
               {{ calendarStore.lastError }}
             </v-alert>
 
-            <v-skeleton-loader
-              v-if="calendarStore.isLoading && !calendarStore.hasEvents"
-              type="image"
-              class="my-8"
-              height="420"
-            />
-
-            <v-sheet
-              v-if="!calendarStore.isLoading && !calendarStore.hasEvents"
-              class="text-center py-10 mb-4"
-              color="transparent"
-            >
-              <v-icon
-                size="64"
-                color="grey"
-              >
-                mdi-calendar-blank
-              </v-icon>
-              <div class="text-subtitle-1 mt-3">
-                Brak wydarzeń w wybranym tygodniu.
-              </div>
-              <div class="text-body-2 mt-1 text-medium-emphasis">
-                Skorzystaj z przycisku powyżej lub zaznacz fragment kalendarza, aby dodać propozycję.
-              </div>
-              <v-btn
-                class="mt-4"
-                color="primary"
-                prepend-icon="mdi-target"
-                @click="openPropositionDialog"
-              >
-                Zaproponuj termin
-              </v-btn>
-            </v-sheet>
-
             <FullCalendar
               ref="calendarRef"
               :options="calendarOptions"
@@ -478,5 +459,16 @@ onMounted(async () => {
 
 .event-joinable {
   box-shadow: inset 0 0 0 2px #2e7d32;
+}
+
+:deep(.fc-button) {
+  color: rgba(0, 0, 0, 0.87);
+  background-color: #f5f5f5;
+}
+
+:deep(.fc-button-primary:not(:disabled).fc-button-active),
+:deep(.fc-button-primary:not(:disabled):active) {
+  background-color: #1976d2;
+  color: white;
 }
 </style>

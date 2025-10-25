@@ -89,7 +89,6 @@ Standard booking and reservation applications available on the market do not add
   - A public-facing registration page exists.
   - I must provide a valid email address and a password.
   - Upon successful registration, I am assigned the "Guest" role.
-  - I receive a confirmation email.
   - I am automatically logged in after registration.
 
 - ID: US-002
@@ -99,7 +98,6 @@ Standard booking and reservation applications available on the market do not add
   - A login page exists with fields for email and password.
   - If I enter correct credentials, I am granted access to the application.
   - If I enter incorrect credentials, I am shown an error message.
-  - The system provides a "forgot password" mechanism.
   - My role (Guest, Member, Coordinator, etc.) determines what features I can access after logging in.
 
 - ID: US-003
