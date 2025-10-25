@@ -32,7 +32,7 @@
             <v-card-text>
               <LoginForm
                 :loading="loginState.loading"
-                :error="loginState.error"
+                :error="loginError"
                 @submit="handleLogin"
               />
             </v-card-text>
@@ -41,7 +41,7 @@
             <v-card-text>
               <RegisterForm
                 :loading="registerState.loading"
-                :error="registerState.error"
+                :error="registerError"
                 @submit="handleRegister"
               />
             </v-card-text>
@@ -69,23 +69,33 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const activeTab = ref<ActiveTab>('login')
-const loginState = reactive({ loading: false, error: null as string | null })
-const registerState = reactive({ loading: false, error: null as string | null })
+const loginState = reactive({ loading: false, errorKey: null as string | null })
+const registerState = reactive({ loading: false, errorKey: null as string | null })
+
+const loginError = computed(() => (loginState.errorKey ? t(loginState.errorKey) : null))
+const registerError = computed(() => (registerState.errorKey ? t(registerState.errorKey) : null))
 
 const redirectTarget = computed(() => {
   const redirectParam = route.query.redirect
   return typeof redirectParam === 'string' ? redirectParam : null
 })
 
-const extractErrorMessage = (error: unknown) => {
+const extractErrorKey = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
+    const status = error.response?.status
+    if (status === 401) {
+      return 'auth.invalidCredentials'
+    }
+    if (status === 400) {
+      return 'auth.invalidBody'
+    }
     const data = error.response?.data as { message?: string } | undefined
-    return data?.message ?? error.response?.statusText ?? t('auth.operationFailed')
+    return data?.message ?? error.response?.statusText ?? 'auth.operationFailed'
   }
   if (error instanceof Error) {
     return error.message
   }
-  return t('auth.operationFailed')
+  return 'auth.operationFailed'
 }
 
 const redirectAfterSuccess = async () => {
@@ -99,12 +109,12 @@ const redirectAfterSuccess = async () => {
 
 const handleLogin = async (payload: { email: string; password: string }) => {
   loginState.loading = true
-  loginState.error = null
+  loginState.errorKey = null
   try {
     await authStore.login(payload)
     await redirectAfterSuccess()
   } catch (error) {
-    loginState.error = extractErrorMessage(error)
+    loginState.errorKey = extractErrorKey(error)
   } finally {
     loginState.loading = false
   }
@@ -112,7 +122,7 @@ const handleLogin = async (payload: { email: string; password: string }) => {
 
 const handleRegister = async (payload: { email: string; password: string; passwordConfirmation: string }) => {
   registerState.loading = true
-  registerState.error = null
+  registerState.errorKey = null
   try {
     await authStore.register({
       email: payload.email,
@@ -120,7 +130,7 @@ const handleRegister = async (payload: { email: string; password: string; passwo
     })
     await redirectAfterSuccess()
   } catch (error) {
-    registerState.error = extractErrorMessage(error)
+    registerState.errorKey = extractErrorKey(error)
   } finally {
     registerState.loading = false
   }

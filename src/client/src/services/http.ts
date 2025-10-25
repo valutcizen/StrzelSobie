@@ -27,8 +27,8 @@ http.interceptors.response.use(
       const authStore = useAuthStore()
       authStore.reset()
 
-      if (router.currentRoute.value.name !== 'auth') {
-        await router.push({ name: 'auth' })
+      if (router.currentRoute.value.name !== 'Auth') {
+        await router.push({ name: 'Auth' })
       }
     }
 

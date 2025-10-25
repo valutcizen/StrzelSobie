@@ -23,6 +23,8 @@ const messages = {
       login: 'Login',
       register: 'Register',
       operationFailed: 'Operation failed.',
+      invalidCredentials: 'Invalid email or password.',
+      invalidBody: 'Invalid input data.',
     },
     footer: {
       privacyPolicy: 'Privacy Policy',
@@ -50,6 +52,8 @@ const messages = {
       login: 'Logowanie',
       register: 'Rejestracja',
       operationFailed: 'Nie udało się ukończyć operacji.',
+      invalidCredentials: 'Nieprawidłowy email lub hasło.',
+      invalidBody: 'Błędne dane wejściowe.',
     },
     footer: {
       privacyPolicy: 'Polityka Prywatności',

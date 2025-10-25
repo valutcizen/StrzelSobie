@@ -98,7 +98,7 @@ router.beforeEach(async (to) => {
   }
 
   const requiredRoles = to.meta?.requiredRoles
-  if (requiredRoles && requiredRoles.length > 0 && !authStore.hasAnyRole(requiredRoles)) {
+  if (Array.isArray(requiredRoles) && requiredRoles.length > 0 && !authStore.hasAnyRole(requiredRoles)) {
     return { name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }
   }
 
