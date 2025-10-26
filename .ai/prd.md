@@ -117,9 +117,7 @@ Standard booking and reservation applications available on the market do not add
 - Acceptance Criteria:
   - I can select an available time slot on the calendar to initiate a proposition.
   - I must fill in required details: number of participants, requested number of tracks.
-  - I cannot create a proposition for a time slot that is already fully booked.
   - Upon submission, my proposition appears on the calendar for coordinators to see.
-  - All coordinators receive an email notification about the new proposition.
 
 - ID: US-005
 - Title: Member Proposition Highlighting

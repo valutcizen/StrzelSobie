@@ -131,3 +131,42 @@ export type CreatedRecordDto = {
 };
 
 export type CreateRecordResult = Result<CreatedRecordDto>;
+
+export type PersonSummaryDto = {
+  id: number;
+  email: string | null;
+  phoneNumber: string | null;
+  displayName?: string | null;
+};
+
+export type PropositionDetailDto = {
+  id: Proposition['id'];
+  rangeId: Proposition['range_id'];
+  userId: Proposition['user_id'];
+  status: Proposition['status'];
+  eventDate: Proposition['event_date'];
+  startTime: Proposition['start_time'];
+  endTime: Proposition['end_time'];
+  numParticipants: Proposition['num_participants'];
+  tracksRequested: Proposition['tracks_requested'];
+  createdAt: string | null;
+  requester: PersonSummaryDto | null;
+  notes?: string | null;
+};
+
+export type ReservationDetailDto = {
+  id: Reservation['id'];
+  rangeId: Reservation['range_id'];
+  coordinatorId: Reservation['coordinator_id'];
+  propositionId: Reservation['proposition_id'];
+  eventDate: Reservation['event_date'];
+  startTime: Reservation['start_time'];
+  endTime: Reservation['end_time'];
+  numParticipants: Reservation['num_participants'];
+  tracksRequested: Reservation['tracks_requested'];
+  isPublic: boolean;
+  isJoinable: boolean;
+  createdAt: string | null;
+  coordinator: PersonSummaryDto | null;
+  notes?: string | null;
+};

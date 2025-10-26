@@ -25,6 +25,18 @@ export type Reservation = {
   is_joinable: boolean;
 };
 
+export type PropositionDetail = Proposition & {
+  created_at: string | null;
+  requester_email: string | null;
+  requester_phone_number: string | null;
+};
+
+export type ReservationDetail = Reservation & {
+  created_at: string | null;
+  coordinator_email: string | null;
+  coordinator_phone_number: string | null;
+};
+
 export type RecordEntity = {
   id: number;
   admin_id: number;
@@ -104,7 +116,9 @@ export interface IReservationsRepository {
   createRecord(data: CreateRecordData): Promise<RecordEntity>;
   markPropositionConverted(propositionId: number): Promise<void>;
   getPropositionById(id: number): Promise<Proposition | null>;
+  getPropositionDetailById(id: number): Promise<PropositionDetail | null>;
   cancelProposition(id: number): Promise<Proposition | null>;
   getReservationById(id: number): Promise<Reservation | null>;
+  getReservationDetailById(id: number): Promise<ReservationDetail | null>;
   deleteReservation(id: number): Promise<Reservation | null>;
 }

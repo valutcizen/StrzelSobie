@@ -11,6 +11,8 @@ import {
   CreatedPropositionDto,
   CreatedReservationDto,
   GetCalendarEventsQuery,
+  PropositionDetailDto,
+  ReservationDetailDto,
 } from './dto';
 import { UserDto } from '../users/dto';
 
@@ -34,4 +36,12 @@ export interface IReservationsService {
   ): Promise<CreateRecordResult>;
   cancelProposition(command: CancelPropositionCommand, user: UserDto): Promise<Result<void>>;
   cancelReservation(command: CancelReservationCommand, user: UserDto): Promise<Result<void>>;
+  getPropositionDetails(
+    propositionId: number,
+    user: UserDto
+  ): Promise<Result<PropositionDetailDto>>;
+  getReservationDetails(
+    reservationId: number,
+    user: UserDto
+  ): Promise<Result<ReservationDetailDto>>;
 }

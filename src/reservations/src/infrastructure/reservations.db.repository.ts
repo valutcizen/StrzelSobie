@@ -6,8 +6,10 @@ import {
   IReservationsRepository,
   OverlappingUsage,
   Proposition,
+  PropositionDetail,
   RecordEntity,
   Reservation,
+  ReservationDetail,
   ReservationConflict,
 } from '../domain/reservations.repository';
 
@@ -24,6 +26,12 @@ type PropositionDb = {
   is_member: number;
 };
 
+type PropositionDetailDb = PropositionDb & {
+  created_at: string | null;
+  requester_email: string | null;
+  requester_phone_number: string | null;
+};
+
 type ReservationDb = {
   id: number;
   proposition_id: number | null;
@@ -36,6 +44,12 @@ type ReservationDb = {
   is_public: number;
   is_joinable: number;
   num_participants: number;
+};
+
+type ReservationDetailDb = ReservationDb & {
+  created_at: string | null;
+  coordinator_email: string | null;
+  coordinator_phone_number: string | null;
 };
 
 type RecordDb = {
@@ -70,6 +84,13 @@ const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   is_member: Boolean(dbProposition.is_member),
 });
 
+const mapDbPropositionDetail = (dbProposition: PropositionDetailDb): PropositionDetail => ({
+  ...mapDbProposition(dbProposition),
+  created_at: dbProposition.created_at ?? null,
+  requester_email: dbProposition.requester_email ?? null,
+  requester_phone_number: dbProposition.requester_phone_number ?? null,
+});
+
 const normalizeFlag = (value: number | string | boolean): boolean => {
   if (typeof value === 'boolean') {
     return value;
@@ -96,6 +117,13 @@ const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   tracks_requested: dbReservation.tracks_requested,
   is_public: normalizeFlag(dbReservation.is_public),
   is_joinable: normalizeFlag(dbReservation.is_joinable),
+});
+
+const mapDbReservationDetail = (dbReservation: ReservationDetailDb): ReservationDetail => ({
+  ...mapDbReservation(dbReservation),
+  created_at: dbReservation.created_at ?? null,
+  coordinator_email: dbReservation.coordinator_email ?? null,
+  coordinator_phone_number: dbReservation.coordinator_phone_number ?? null,
 });
 
 const mapDbRecord = (dbRecord: RecordDb): RecordEntity => ({
@@ -386,6 +414,42 @@ export class ReservationsDbRepository implements IReservationsRepository {
     return mapDbProposition(record);
   }
 
+  public async getPropositionDetailById(id: number): Promise<PropositionDetail | null> {
+    const stmt = this.db.prepare(
+      `SELECT
+          rp.id,
+          rp.user_id,
+          rp.range_id,
+          rp.status,
+          rp.event_date,
+          rp.start_time,
+          rp.end_time,
+          rp.num_participants,
+          rp.tracks_requested,
+          rp.created_at,
+          EXISTS (
+            SELECT 1
+            FROM users_user_global_roles ugr
+            JOIN users_roles ur ON ur.id = ugr.role_id
+            WHERE ugr.user_id = rp.user_id
+              AND ur.name = 'Member'
+          ) AS is_member,
+          uu.email AS requester_email,
+          uu.phone_number AS requester_phone_number
+       FROM reservations_propositions rp
+       LEFT JOIN users_users uu ON uu.id = rp.user_id
+       WHERE rp.id = ?`
+    );
+
+    const record = await stmt.bind(id).first<PropositionDetailDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbPropositionDetail(record);
+  }
+
   public async cancelProposition(id: number): Promise<Proposition | null> {
     const stmt = this.db.prepare(
       `UPDATE reservations_propositions
@@ -433,6 +497,37 @@ export class ReservationsDbRepository implements IReservationsRepository {
     }
 
     return mapDbReservation(record);
+  }
+
+  public async getReservationDetailById(id: number): Promise<ReservationDetail | null> {
+    const stmt = this.db.prepare(
+      `SELECT
+         rr.id,
+         rr.proposition_id,
+         rr.range_id,
+         rr.coordinator_id,
+         rr.event_date,
+         rr.start_time,
+         rr.end_time,
+         rr.num_participants,
+         rr.tracks_requested,
+         rr.is_public,
+         rr.is_joinable,
+         rr.created_at,
+         uu.email AS coordinator_email,
+         uu.phone_number AS coordinator_phone_number
+       FROM reservations_reservations rr
+       LEFT JOIN users_users uu ON uu.id = rr.coordinator_id
+       WHERE rr.id = ?`
+    );
+
+    const record = await stmt.bind(id).first<ReservationDetailDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbReservationDetail(record);
   }
 
   public async deleteReservation(id: number): Promise<Reservation | null> {

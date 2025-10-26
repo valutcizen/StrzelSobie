@@ -21,3 +21,36 @@ export interface RangeEvent {
   allDay?: boolean
   meta?: RangeEventMeta
 }
+
+export interface PersonSummary {
+  id: number | null
+  email?: string | null
+  phoneNumber?: string | null
+  displayName?: string | null
+}
+
+export interface PropositionEventDetail {
+  type: 'proposition'
+  propositionId: number
+  numParticipants: number | null
+  tracksRequested: number | null
+  status: 'open' | 'converted' | 'cancelled' | null
+  createdAt: string | null
+  requester: PersonSummary | null
+  notes?: string | null
+}
+
+export interface ReservationEventDetail {
+  type: 'reservation'
+  reservationId: number
+  propositionId: number | null
+  numParticipants: number | null
+  tracksRequested: number | null
+  isPublic: boolean | null
+  isJoinable: boolean | null
+  createdAt: string | null
+  coordinator: PersonSummary | null
+  notes?: string | null
+}
+
+export type RangeEventDetail = PropositionEventDetail | ReservationEventDetail

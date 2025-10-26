@@ -35,6 +35,9 @@ import {
   ReservationCancellationError,
   InvalidRecordTimeError,
   RecordCreationError,
+  PropositionDetailDto,
+  ReservationDetailDto,
+  PersonSummaryDto,
 } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
@@ -42,8 +45,10 @@ import {
   CreateReservationRecord,
   IReservationsRepository,
   Proposition,
+  PropositionDetail,
   RecordEntity,
   Reservation,
+  ReservationDetail,
   ReservationConflict,
 } from '../domain/reservations.repository';
 
@@ -137,6 +142,98 @@ export class ReservationsService implements IReservationsService {
       };
 
       return Result.ok(calendarEvents);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async getPropositionDetails(
+    propositionId: number,
+    user: UserDto
+  ): Promise<Result<PropositionDetailDto>> {
+    if (user.isDeleted) {
+      return Result.fail(new ForbiddenError('Deleted users cannot view propositions'));
+    }
+
+    try {
+      const proposition = await this.reservationsRepository.getPropositionDetailById(propositionId);
+
+      if (!proposition) {
+        return Result.fail(new PropositionNotFoundError());
+      }
+
+      if (!this.canUserViewProposition(user, proposition)) {
+        return Result.fail(new ForbiddenError('User is not allowed to view this proposition'));
+      }
+
+      const requester = this.buildPersonSummary(
+        proposition.user_id,
+        proposition.requester_email,
+        proposition.requester_phone_number
+      );
+
+      const dto: PropositionDetailDto = {
+        id: proposition.id,
+        rangeId: proposition.range_id,
+        userId: proposition.user_id,
+        status: proposition.status,
+        eventDate: proposition.event_date,
+        startTime: proposition.start_time,
+        endTime: proposition.end_time,
+        numParticipants: proposition.num_participants,
+        tracksRequested: proposition.tracks_requested,
+        createdAt: proposition.created_at ?? null,
+        requester,
+      };
+
+      return Result.ok(dto);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async getReservationDetails(
+    reservationId: number,
+    user: UserDto
+  ): Promise<Result<ReservationDetailDto>> {
+    if (user.isDeleted) {
+      return Result.fail(new ForbiddenError('Deleted users cannot view reservations'));
+    }
+
+    try {
+      const reservation = await this.reservationsRepository.getReservationDetailById(reservationId);
+
+      if (!reservation) {
+        return Result.fail(new ReservationNotFoundError());
+      }
+
+      if (!this.canUserViewReservation(user, reservation)) {
+        return Result.fail(new ForbiddenError('User is not allowed to view this reservation'));
+      }
+
+      const coordinator = this.buildPersonSummary(
+        reservation.coordinator_id,
+        reservation.coordinator_email,
+        reservation.coordinator_phone_number
+      );
+
+      const dto: ReservationDetailDto = {
+        id: reservation.id,
+        rangeId: reservation.range_id,
+        coordinatorId: reservation.coordinator_id,
+        propositionId: reservation.proposition_id,
+        eventDate: reservation.event_date,
+        startTime: reservation.start_time,
+        endTime: reservation.end_time,
+        numParticipants: reservation.num_participants,
+        tracksRequested: reservation.tracks_requested,
+        isPublic: Boolean(reservation.is_public),
+        isJoinable: Boolean(reservation.is_joinable),
+        createdAt: reservation.created_at ?? null,
+        coordinator,
+      };
+
+      return Result.ok(dto);
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -604,6 +701,80 @@ export class ReservationsService implements IReservationsService {
       endTime: conflict.end_time,
       tracksRequested: conflict.tracks_requested,
     }));
+  }
+
+  private buildPersonSummary(
+    id: number,
+    email?: string | null,
+    phoneNumber?: string | null
+  ): PersonSummaryDto {
+    return {
+      id,
+      email: email ?? null,
+      phoneNumber: phoneNumber ?? null,
+      displayName: null,
+    };
+  }
+
+  private getGlobalRoleNames(user: UserDto): Set<string> {
+    return new Set(user.roles.map((role) => role.name));
+  }
+
+  private getRangeRoleNames(user: UserDto, rangeId: number): Set<string> {
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    return new Set(rangeRoles.map((role) => role.name));
+  }
+
+  private canUserViewProposition(user: UserDto, proposition: PropositionDetail): boolean {
+    if (proposition.user_id === user.id) {
+      return true;
+    }
+
+    const globalRoleNames = this.getGlobalRoleNames(user);
+    const rangeRoleNames = this.getRangeRoleNames(user, proposition.range_id);
+
+    if (
+      globalRoleNames.has(UserRole.ClubCommunityAdministrator) ||
+      globalRoleNames.has(UserRole.Coordinator) ||
+      globalRoleNames.has(UserRole.Member)
+    ) {
+      return true;
+    }
+
+    if (
+      rangeRoleNames.has(UserRole.ShootingRangeAdministrator) ||
+      rangeRoleNames.has(UserRole.Coordinator)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private canUserViewReservation(user: UserDto, reservation: ReservationDetail): boolean {
+    if (reservation.is_public) {
+      return true;
+    }
+
+    const globalRoleNames = this.getGlobalRoleNames(user);
+    const rangeRoleNames = this.getRangeRoleNames(user, reservation.range_id);
+
+    if (
+      globalRoleNames.has(UserRole.ClubCommunityAdministrator) ||
+      globalRoleNames.has(UserRole.Coordinator) ||
+      globalRoleNames.has(UserRole.Member)
+    ) {
+      return true;
+    }
+
+    if (
+      rangeRoleNames.has(UserRole.ShootingRangeAdministrator) ||
+      rangeRoleNames.has(UserRole.Coordinator)
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   public async cancelReservation(

@@ -8,7 +8,7 @@ import { GetRoles } from './endpoints/v1/user/roles';
 import { GetUsers } from './endpoints/v1/user/get-users';
 import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
-import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges'
+import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges';
 import { GetRange } from './endpoints/v1/ranges/get-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
 import { GetEvents } from './endpoints/v1/ranges/get-events';
@@ -17,6 +17,8 @@ import { CreateRecord } from './endpoints/v1/ranges/create-record';
 import { CreateReservation } from './endpoints/v1/ranges/create-reservation';
 import { DeleteProposition } from './endpoints/v1/propositions/delete-proposition';
 import { DeleteReservation } from './endpoints/v1/reservations/delete-reservation';
+import { GetPropositionDetail } from './endpoints/v1/propositions/get-proposition';
+import { GetReservationDetail } from './endpoints/v1/reservations/get-reservation';
 import { Env, Variables } from './types';
 import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
 import {
@@ -83,7 +85,9 @@ openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
 openapi.post('/api/v1/ranges/:rangeSlug/records', authMiddleware, CreateRecord);
+openapi.get('/api/v1/propositions/:propositionId', authMiddleware, GetPropositionDetail);
 openapi.delete('/api/v1/propositions/:propositionId', authMiddleware, DeleteProposition);
+openapi.get('/api/v1/reservations/:reservationId', authMiddleware, GetReservationDetail);
 openapi.delete('/api/v1/reservations/:reservationId', authMiddleware, DeleteReservation);
 
 export default app;
