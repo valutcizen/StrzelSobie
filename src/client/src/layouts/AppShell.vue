@@ -1,44 +1,5 @@
 <template>
   <div class="d-flex flex-column" style="height: 100vh;">
-    <v-navigation-drawer
-      v-model="drawer"
-      :rail="isRail"
-      :permanent="!isSmallScreen"
-      :temporary="isSmallScreen"
-      color="primary"
-      class="app-shell-navigation"
-      theme="dark"
-    >
-      <v-list
-        density="compact"
-        nav
-      >
-        <RoleBasedLink
-          icon="mdi-calendar"
-          :label="t('navigation.calendar')"
-          :to="{ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }"
-        />
-        <RoleBasedLink
-          icon="mdi-account-group"
-          :label="t('navigation.userManagement')"
-          :to="{ name: 'UserManagement' }"
-          :roles="['Club/Community Administrator']"
-        />
-        <RoleBasedLink
-          icon="mdi-account-check"
-          :label="t('navigation.userVerification')"
-          :to="{ name: 'UserVerification' }"
-          :roles="['Confirmator']"
-        />
-        <RoleBasedLink
-          icon="mdi-target-account"
-          :label="t('navigation.rangeSettings')"
-          :to="{ name: 'RangeSettings' }"
-          :roles="['Shooting Range Administrator']"
-        />
-      </v-list>
-    </v-navigation-drawer>
-
     <v-app-bar
       color="primary"
       density="comfortable"
@@ -81,6 +42,45 @@
         </v-list>
       </v-menu>
     </v-app-bar>
+
+    <v-navigation-drawer
+      v-model="drawer"
+      :rail="isRail"
+      :permanent="!isSmallScreen"
+      :temporary="isSmallScreen"
+      color="primary"
+      class="app-shell-navigation"
+      theme="dark"
+    >
+      <v-list
+        density="compact"
+        nav
+      >
+        <RoleBasedLink
+          icon="mdi-calendar"
+          :label="t('navigation.calendar')"
+          :to="{ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }"
+        />
+        <RoleBasedLink
+          icon="mdi-account-group"
+          :label="t('navigation.userManagement')"
+          :to="{ name: 'UserManagement' }"
+          :roles="['Club/Community Administrator']"
+        />
+        <RoleBasedLink
+          icon="mdi-account-check"
+          :label="t('navigation.userVerification')"
+          :to="{ name: 'UserVerification' }"
+          :roles="['Confirmator']"
+        />
+        <RoleBasedLink
+          icon="mdi-target-account"
+          :label="t('navigation.rangeSettings')"
+          :to="{ name: 'RangeSettings' }"
+          :roles="['Shooting Range Administrator']"
+        />
+      </v-list>
+    </v-navigation-drawer>
 
     <v-main class="bg-grey-lighten-5 flex-grow-1">
       <slot />
