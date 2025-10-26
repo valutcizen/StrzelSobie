@@ -515,7 +515,9 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(error as Error);
     }
 
-    if (conflicts.length > 0 && !force) {
+    const blockingConflicts = conflicts.filter((conflict) => conflict.type === 'reservation');
+
+    if (blockingConflicts.length > 0 && !force) {
       return Result.fail(
         new ReservationConflictError({
           conflicts: this.mapReservationConflicts(conflicts),
@@ -552,7 +554,7 @@ export class ReservationsService implements IReservationsService {
           endTime: reservation.end_time,
           numParticipants: reservation.num_participants,
           tracksRequested: reservation.tracks_requested,
-          forceApplied: force && conflicts.length > 0,
+          forceApplied: force && blockingConflicts.length > 0,
         },
       });
 
@@ -625,7 +627,9 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(error as Error);
     }
 
-    if (conflicts.length > 0 && !force) {
+    const blockingConflicts = conflicts.filter((conflict) => conflict.type === 'reservation');
+
+    if (blockingConflicts.length > 0 && !force) {
       return Result.fail(
         new ReservationConflictError({
           conflicts: this.mapReservationConflicts(conflicts),
@@ -666,7 +670,7 @@ export class ReservationsService implements IReservationsService {
           endTime: reservation.end_time,
           numParticipants: reservation.num_participants,
           tracksRequested: reservation.tracks_requested,
-          forceApplied: force && conflicts.length > 0,
+          forceApplied: force && blockingConflicts.length > 0,
           adjustments: {
             startTimeChanged: reservation.start_time !== proposition.start_time,
             endTimeChanged: reservation.end_time !== proposition.end_time,

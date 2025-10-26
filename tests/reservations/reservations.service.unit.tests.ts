@@ -536,6 +536,30 @@ describe('ReservationsService contract', () => {
       }
     });
 
+    it('allows reservation creation when conflicts only include propositions', async () => {
+      const ctx = createTestContext();
+      const user = createCoordinatorUser();
+      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: user.id });
+      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([
+        createConflict({ type: 'proposition' }),
+      ]);
+      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createDirectReservationCommand(),
+        { force: false },
+        user
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toEqual<CreatedReservationDto>({
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      });
+    });
+
     it('propagates overlap lookup errors', async () => {
       const ctx = createTestContext();
       const user = createCoordinatorUser();
@@ -813,6 +837,36 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(ReservationConflictError);
+    });
+
+    it('converts proposition when conflicts only include other propositions', async () => {
+      const ctx = createTestContext();
+      const proposition = createPropositionEntity();
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
+      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([
+        createConflict({ type: 'proposition' }),
+      ]);
+      const user = createCoordinatorUser();
+      const reservation = createReservationEntity({
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: user.id,
+        proposition_id: proposition.id,
+      });
+      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createConversionPayload(),
+        { force: false },
+        user
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toEqual<CreatedReservationDto>({
+        id: reservation.id,
+        range_id: reservation.range_id,
+        coordinator_id: reservation.coordinator_id,
+      });
     });
 
     it('converts proposition with conflicts when force flag enabled', async () => {

@@ -333,37 +333,45 @@ export class ReservationsDbRepository implements IReservationsRepository {
     record: CreateReservationRecord,
     propositionId: number
   ): Promise<Reservation> {
-    await this.db.prepare('BEGIN').run();
-    try {
-      const reservation = await this.insertReservation({
-        ...record,
-        proposition_id: propositionId,
-      });
+    const reservation = await this.insertReservation({
+      ...record,
+      proposition_id: propositionId,
+    });
 
-      const updateResult = await this.db
+    let updateResult: { id: number } | null;
+    try {
+      updateResult = await this.db
         .prepare(
           `UPDATE reservations_propositions
            SET status = 'converted'
            WHERE id = ?
+             AND status = 'open'
            RETURNING id`
         )
         .bind(propositionId)
         .first<{ id: number }>();
-
-      if (!updateResult) {
-        throw new Error('Failed to mark proposition as converted');
-      }
-
-      await this.db.prepare('COMMIT').run();
-      return reservation;
     } catch (error) {
       try {
-        await this.db.prepare('ROLLBACK').run();
-      } catch (rollbackError) {
-        console.error('Failed to rollback reservation creation transaction', rollbackError);
+        await this.deleteReservation(reservation.id);
+      } catch (cleanupError) {
+        console.error('Failed to rollback reservation creation after update error', cleanupError);
       }
       throw error;
     }
+
+    if (!updateResult) {
+      try {
+        await this.deleteReservation(reservation.id);
+      } catch (cleanupError) {
+        console.error(
+          'Failed to rollback reservation creation after proposition conversion failure',
+          cleanupError
+        );
+      }
+      throw new Error('Failed to mark proposition as converted');
+    }
+
+    return reservation;
   }
 
   public async markPropositionConverted(propositionId: number): Promise<void> {
