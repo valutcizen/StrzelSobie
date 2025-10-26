@@ -3,6 +3,7 @@
     <v-app-bar
       color="primary"
       density="comfortable"
+      app
     >
       <v-app-bar-nav-icon
         variant="text"
@@ -51,6 +52,7 @@
       color="primary"
       class="app-shell-navigation"
       theme="dark"
+      app
     >
       <v-list
         density="compact"
