@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import FullCalendar from '@fullcalendar/vue3'
 import type {
@@ -31,6 +31,8 @@ const route = useRoute()
 const rangeSlug = computed(() => String(route.params.rangeSlug ?? authStore.defaultRangeSlug))
 
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
+const calendarContainerRef = ref<HTMLElement | null>(null)
+let resizeObserver: ResizeObserver | null = null
 const currentViewRange = ref<{ start: Date; end: Date } | null>(null)
 const selectedEvent = ref<RangeEvent | null>(null)
 const eventDetailOpen = ref(false)
@@ -183,6 +185,26 @@ const refreshEvents = async () => {
   }
 }
 
+const updateCalendarSize = () => {
+  const calendarApi = calendarRef.value?.getApi()
+  if (calendarApi) {
+    calendarApi.updateSize()
+  }
+}
+
+watch(calendarContainerRef, (newEl, oldEl) => {
+  if (!resizeObserver) {
+    return
+  }
+
+  if (oldEl) {
+    resizeObserver.unobserve(oldEl)
+  }
+  if (newEl) {
+    resizeObserver.observe(newEl)
+  }
+})
+
 const openPropositionDialog = () => {
   const now = new Date()
   now.setMinutes(0, 0, 0)
@@ -319,6 +341,15 @@ watch(
 )
 
 onMounted(async () => {
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateCalendarSize)
+    })
+    if (calendarContainerRef.value) {
+      resizeObserver.observe(calendarContainerRef.value)
+    }
+  }
+
   // Ensure initial events load even before calendar emits datesSet
   if (!currentViewRange.value) {
     const start = new Date()
@@ -328,6 +359,11 @@ onMounted(async () => {
   }
 
   await loadEventsForRange(currentViewRange.value, true)
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
 })
 </script>
 
@@ -376,10 +412,12 @@ onMounted(async () => {
               {{ calendarStore.lastError }}
             </v-alert>
 
-            <FullCalendar
-              ref="calendarRef"
-              :options="calendarOptions"
-            />
+            <div ref="calendarContainerRef">
+              <FullCalendar
+                ref="calendarRef"
+                :options="calendarOptions"
+              />
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
