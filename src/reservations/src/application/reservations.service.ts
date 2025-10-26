@@ -94,7 +94,8 @@ export class ReservationsService implements IReservationsService {
       const filteredReservations = reservations.map((r: Reservation) => {
         const isPublic = normalizeReservationFlag(r.is_public);
         const isJoinable = normalizeReservationFlag(r.is_joinable);
-        const canViewDetails = isAdmin || isMember;
+        const canViewPrivateDetails = isAdmin || isMember;
+        const canViewDetails = canViewPrivateDetails || isPublic;
 
         const tracksRequested = canViewDetails ? r.tracks_requested : null;
         const isJoinableForUser = canViewDetails ? isJoinable : null;

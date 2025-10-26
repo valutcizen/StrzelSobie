@@ -336,7 +336,7 @@ describe('ReservationsService contract', () => {
       expect(ownReservationEvent?.details?.coordinatorId).toBe(ownReservation.coordinator_id);
     });
 
-    it('limits guests to public reservations and hides details', async () => {
+    it('exposes public reservation details to guests while hiding private reservations', async () => {
       const ctx = createTestContext();
       const guestReservation = createReservationEntity({ id: 30, is_public: true, coordinator_id: 50, is_joinable: true });
       const privateReservation = createReservationEntity({ id: 31, is_public: false, coordinator_id: 51 });
@@ -361,10 +361,10 @@ describe('ReservationsService contract', () => {
       const publicEvent = events.reservations.find((event) => event.id === guestReservation.id);
       const privateEvent = events.reservations.find((event) => event.id === privateReservation.id);
 
-      expect(publicEvent?.details).toBeNull();
-      expect(publicEvent?.tracksRequested).toBeNull();
+      expect(publicEvent?.details).toEqual({ coordinatorId: guestReservation.coordinator_id, numParticipants: guestReservation.num_participants });
+      expect(publicEvent?.tracksRequested).toBe(guestReservation.tracks_requested);
       expect(publicEvent?.isPublic).toBe(true);
-      expect(publicEvent?.isJoinable).toBeNull();
+      expect(publicEvent?.isJoinable).toBe(guestReservation.is_joinable);
       expect(privateEvent?.details).toBeNull();
       expect(privateEvent?.tracksRequested).toBeNull();
       expect(privateEvent?.isPublic).toBe(false);
