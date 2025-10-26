@@ -71,7 +71,6 @@ describe('mapCalendarEvents', () => {
           eventDate: '2024-06-03',
           startTime: '06:00',
           endTime: '07:20',
-          tracksRequested: 1,
           isPublic: false,
           isJoinable: false,
           details: null,
@@ -82,6 +81,10 @@ describe('mapCalendarEvents', () => {
     const events = mapCalendarEvents(response)
 
     expect(events[0].type).toBe('reservation')
+    expect(events[0].meta?.tracksRequested).toBeUndefined()
+    expect(events[0].meta?.isPublic).toBe(false)
+    expect(events[0].meta?.isOpenForJoining).toBe(false)
+    expect(events[0].meta?.coordinatorId).toBeNull()
     expect(events[1].type).toBe('proposition')
   })
 })

@@ -68,6 +68,20 @@ const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   tracks_requested: dbProposition.tracks_requested,
 });
 
+const normalizeFlag = (value: number | string | boolean): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  const numeric = Number(value);
+  if (!Number.isNaN(numeric)) {
+    return numeric === 1;
+  }
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return false;
+};
+
 const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   id: dbReservation.id,
   proposition_id: dbReservation.proposition_id,
@@ -78,8 +92,8 @@ const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   end_time: dbReservation.end_time,
   num_participants: dbReservation.num_participants,
   tracks_requested: dbReservation.tracks_requested,
-  is_public: Boolean(dbReservation.is_public),
-  is_joinable: Boolean(dbReservation.is_joinable),
+  is_public: normalizeFlag(dbReservation.is_public),
+  is_joinable: normalizeFlag(dbReservation.is_joinable),
 });
 
 const mapDbRecord = (dbRecord: RecordDb): RecordEntity => ({

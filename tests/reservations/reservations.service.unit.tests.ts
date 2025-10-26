@@ -304,7 +304,7 @@ describe('ReservationsService contract', () => {
       expect(events.reservations.every((event) => event.details !== null)).toBe(true);
     });
 
-    it('filters propositions to the owner and hides other reservation details for members', async () => {
+    it('filters propositions to the owner while exposing reservation details to members', async () => {
       const ctx = createTestContext();
       const ownProposition = createPropositionEntity({ id: 1, user_id: 10 });
       const otherProposition = createPropositionEntity({ id: 2, user_id: 11 });
@@ -331,7 +331,7 @@ describe('ReservationsService contract', () => {
       expect(events.propositions).toHaveLength(1);
       expect(events.propositions[0].id).toBe(ownProposition.id);
       const reservationDetails = events.reservations.find((event) => event.id === otherReservation.id);
-      expect(reservationDetails?.details).toBeNull();
+      expect(reservationDetails?.details?.coordinatorId).toBe(otherReservation.coordinator_id);
       const ownReservationEvent = events.reservations.find((event) => event.id === ownReservation.id);
       expect(ownReservationEvent?.details?.coordinatorId).toBe(ownReservation.coordinator_id);
     });
@@ -356,9 +356,51 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(true);
       const events = result.getValue();
+      expect(events.reservations).toHaveLength(2);
+
+      const publicEvent = events.reservations.find((event) => event.id === guestReservation.id);
+      const privateEvent = events.reservations.find((event) => event.id === privateReservation.id);
+
+      expect(publicEvent?.details).toBeNull();
+      expect(publicEvent?.tracksRequested).toBeNull();
+      expect(publicEvent?.isPublic).toBe(true);
+      expect(publicEvent?.isJoinable).toBeNull();
+      expect(privateEvent?.details).toBeNull();
+      expect(privateEvent?.tracksRequested).toBeNull();
+      expect(privateEvent?.isPublic).toBe(false);
+      expect(privateEvent?.isJoinable).toBeNull();
+    });
+
+    it('does not leak private details when guest shares coordinator id without privileges', async () => {
+      const ctx = createTestContext();
+      const privateReservation = createReservationEntity({
+        id: 32,
+        coordinator_id: 88,
+        is_public: false,
+        num_participants: 5,
+      });
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([privateReservation]);
+
+      const guestProfile = createUserProfile({
+        id: 88,
+        roles: [createRole(UserRole.Guest)],
+      });
+
+      const result = await ctx.service.getCalendarEvents({
+        rangeSlug: ctx.rangeDetails.slug,
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        user: guestProfile,
+      });
+
+      expect(result.isSuccess).toBe(true);
+      const events = result.getValue();
       expect(events.reservations).toHaveLength(1);
-      expect(events.reservations[0].id).toBe(guestReservation.id);
-      expect(events.reservations[0].details).toBeNull();
+      const reservationDetails = events.reservations[0];
+      expect(reservationDetails.details).toBeNull();
+      expect(reservationDetails.tracksRequested).toBeNull();
+      expect(reservationDetails.isPublic).toBe(false);
+      expect(reservationDetails.isJoinable).toBeNull();
     });
   });
 

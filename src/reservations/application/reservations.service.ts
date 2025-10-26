@@ -41,36 +41,34 @@ export class ReservationsService implements IReservationsService {
     const propositions = propositionsResult.getValue();
     const reservations = reservationsResult.getValue();
 
-    const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
+    const { isAdmin, isMember } = getRangeRole(user, rangeId);
 
     const filteredPropositions = isAdmin
       ? propositions
       : propositions.filter((p) => p.user_id.toString() === user.id);
 
-    const filteredReservations = reservations
-      .filter((r) => {
-        if (isAdmin) return true;
-        if (isGuest) return r.is_public;
-        return true; // Members can see all for now, details are filtered next
-      })
-      .map((r) => {
-        const showDetails = isAdmin || r.coordinator_id.toString() === user.id;
-        return {
-          id: r.id,
-          eventDate: r.event_date,
-          startTime: r.start_time,
-          endTime: r.end_time,
-          tracksRequested: r.tracks_requested,
-          isPublic: r.is_public,
-          isJoinable: r.is_joinable,
-          details: showDetails
-            ? {
-                coordinatorId: r.coordinator_id,
-                numParticipants: r.num_participants,
-              }
-            : null,
-        };
-      });
+    const filteredReservations = reservations.map((r) => {
+      const canViewDetails = isAdmin || isMember;
+      const tracksRequested = canViewDetails ? r.tracks_requested : null;
+      const isJoinable = canViewDetails ? r.is_joinable : null;
+      const details = canViewDetails
+        ? {
+            coordinatorId: r.coordinator_id,
+            numParticipants: r.num_participants,
+          }
+        : null;
+
+      return {
+        id: r.id,
+        eventDate: r.event_date,
+        startTime: r.start_time,
+        endTime: r.end_time,
+        tracksRequested,
+        isPublic: r.is_public,
+        isJoinable,
+        details,
+      };
+    });
 
     const calendarEvents: CalendarEventsDto = {
       propositions: filteredPropositions.map((p) => ({

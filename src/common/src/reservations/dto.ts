@@ -64,14 +64,14 @@ export type ReservationEventDto = {
   eventDate: string;
   startTime: string;
   endTime: string;
-  tracksRequested: number;
+  tracksRequested: number | null;
   isPublic: boolean;
-  isJoinable: boolean;
+  isJoinable: boolean | null;
   details: {
     coordinatorId: number;
     numParticipants: number;
   } | null;
-};
+}
 
 export type CalendarEventsDto = {
   propositions: PropositionEventDto[];

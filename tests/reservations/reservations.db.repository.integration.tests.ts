@@ -178,6 +178,25 @@ describe('ReservationsDbRepository integration', () => {
     });
   });
 
+  it('getReservations normalizes numeric and string flags', async () => {
+    const record = await insertReservation({ event_date: '2024-08-15', is_public: 0, is_joinable: 0 });
+
+    await dbHandle.d1
+      .prepare(
+        `UPDATE reservations_reservations
+         SET is_public = '0', is_joinable = '1'
+         WHERE id = ?`
+      )
+      .bind(record.id)
+      .run();
+
+    const reservations = await repository.getReservations(1, '2024-08-01', '2024-08-31');
+
+    expect(reservations).toHaveLength(1);
+    expect(reservations[0].is_public).toBe(false);
+    expect(reservations[0].is_joinable).toBe(true);
+  });
+
   it('getOverlappingUsage sums tracks for overlapping entries', async () => {
     await insertProposition({
       event_date: '2024-04-10',

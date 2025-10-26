@@ -12,19 +12,27 @@ export interface PropositionEventDto {
   tracksRequested: number
 }
 
-export interface ReservationEventDto {
-  id: number
-  eventDate: string
-  startTime: string
-  endTime: string
-  tracksRequested: number
-  isPublic: boolean
-  isJoinable: boolean
-  details: {
-    coordinatorId: number
-    numParticipants: number
-  } | null
-}
+export type ReservationEventDto =
+  | {
+      id: number
+      eventDate: string
+      startTime: string
+      endTime: string
+      tracksRequested: number
+      isPublic: boolean
+      isJoinable: boolean
+      details: {
+        coordinatorId: number
+        numParticipants: number
+      }
+    }
+  | {
+    id: number
+    eventDate: string
+    startTime: string
+    endTime: string
+    details: null
+  }
 
 export interface CalendarEventsResponse {
   propositions: PropositionEventDto[]
@@ -65,23 +73,33 @@ export const mapCalendarEvents = (dto: CalendarEventsResponse): RangeEvent[] => 
     },
   }))
 
-  const reservationEvents: RangeEvent[] = (dto.reservations ?? []).map((event) => ({
-    id: `reservation-${event.id}`,
-    sourceId: event.id,
-    title: buildTitle('reservation', { isPublic: event.isPublic, isJoinable: event.isJoinable }),
-    type: 'reservation',
-    start: combineDateAndTime(event.eventDate, event.startTime),
-    end: combineDateAndTime(event.eventDate, event.endTime),
-    allDay: false,
-    meta: {
-      reservationId: event.id,
-      tracksRequested: event.tracksRequested,
-      isPublic: event.isPublic,
-      isOpenForJoining: event.isJoinable,
-      coordinatorId: event.details?.coordinatorId ?? null,
-      numParticipants: event.details?.numParticipants ?? null,
-    },
-  }))
+  const reservationEvents: RangeEvent[] = (dto.reservations ?? []).map((event) => {
+    const hasDetails = event.details !== null
+    const tracksRequested = hasDetails && 'tracksRequested' in event ? event.tracksRequested : undefined
+    const coordinatorId = hasDetails ? event.details.coordinatorId : null
+    const numParticipants = hasDetails ? event.details.numParticipants : null
+
+    const isPublic = 'isPublic' in event ? event.isPublic : false
+    const isJoinable = 'isJoinable' in event ? event.isJoinable : false
+
+    return {
+      id: `reservation-${event.id}`,
+      sourceId: event.id,
+      title: buildTitle('reservation', { isPublic, isJoinable }),
+      type: 'reservation',
+      start: combineDateAndTime(event.eventDate, event.startTime),
+      end: combineDateAndTime(event.eventDate, event.endTime),
+      allDay: false,
+      meta: {
+        reservationId: event.id,
+        tracksRequested,
+        isPublic,
+        isOpenForJoining: isJoinable,
+        coordinatorId,
+        numParticipants,
+      },
+    }
+  })
 
   return [...propositionEvents, ...reservationEvents].sort((a, b) =>
     compareAsc(new Date(a.start), new Date(b.start)),

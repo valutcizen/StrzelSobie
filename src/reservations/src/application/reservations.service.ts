@@ -47,6 +47,20 @@ import {
   ReservationConflict,
 } from '../domain/reservations.repository';
 
+const normalizeReservationFlag = (value: unknown): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true';
+  }
+  return false;
+};
+
 export class ReservationsService implements IReservationsService {
   constructor(
     private readonly rangesService: IRangesService,
@@ -71,47 +85,48 @@ export class ReservationsService implements IReservationsService {
         this.reservationsRepository.getReservations(rangeId, startDate, endDate),
       ]);
 
-      const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
+      const { isAdmin, isMember } = getRangeRole(user, rangeId);
 
       const filteredPropositions = isAdmin
         ? propositions
         : propositions.filter((p: Proposition) => p.user_id.toString() === user.id.toString());
 
-      const filteredReservations = reservations
-        .filter((r: Reservation) => {
-          if (isAdmin) return true;
-          if (isGuest) return r.is_public;
-          return true; // Members can see all for now, details are filtered next
-        })
-        .map((r: Reservation) => {
-          const showDetails = isAdmin || r.coordinator_id.toString() === user.id.toString();
-          return {
-            id: r.id,
-            eventDate: r.event_date,
-            startTime: r.start_time,
-            endTime: r.end_time,
-            tracksRequested: r.tracks_requested,
-            isPublic: r.is_public,
-            isJoinable: r.is_joinable,
-            details: showDetails
-              ? {
-                  coordinatorId: r.coordinator_id,
-                  numParticipants: r.num_participants,
-                }
-              : null,
-          };
-        });
+      const filteredReservations = reservations.map((r: Reservation) => {
+        const isPublic = normalizeReservationFlag(r.is_public);
+        const isJoinable = normalizeReservationFlag(r.is_joinable);
+        const canViewDetails = isAdmin || isMember;
+
+        const tracksRequested = canViewDetails ? r.tracks_requested : null;
+        const isJoinableForUser = canViewDetails ? isJoinable : null;
+        const details = canViewDetails
+          ? {
+              coordinatorId: r.coordinator_id,
+              numParticipants: r.num_participants,
+            }
+          : null;
+
+        return {
+          id: r.id,
+          eventDate: r.event_date,
+          startTime: r.start_time,
+          endTime: r.end_time,
+          tracksRequested,
+          isPublic,
+          isJoinable: isJoinableForUser,
+          details,
+        };
+      });
 
       const calendarEvents: CalendarEventsDto = {
         propositions: filteredPropositions.map((p: Proposition) => ({
           id: p.id,
           userId: p.user_id,
           isMember: true, // Placeholder
-        eventDate: p.event_date,
-        startTime: p.start_time,
-        endTime: p.end_time,
-        tracksRequested: p.tracks_requested,
-      })),
+          eventDate: p.event_date,
+          startTime: p.start_time,
+          endTime: p.end_time,
+          tracksRequested: p.tracks_requested,
+        })),
         reservations: filteredReservations,
       };
 
