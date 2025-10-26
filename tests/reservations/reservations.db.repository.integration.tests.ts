@@ -12,6 +12,7 @@ type PropositionRow = {
   end_time: string;
   num_participants: number;
   tracks_requested: number;
+  is_member: number;
 };
 
 type ReservationRow = {
@@ -80,7 +81,23 @@ describe('ReservationsDbRepository integration', () => {
       `INSERT INTO reservations_propositions
         (user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       RETURNING id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested`
+       RETURNING
+         id,
+         user_id,
+         range_id,
+         status,
+         event_date,
+         start_time,
+         end_time,
+         num_participants,
+         tracks_requested,
+         EXISTS (
+           SELECT 1
+           FROM users_user_global_roles ugr
+           JOIN users_roles ur ON ur.id = ugr.role_id
+           WHERE ugr.user_id = reservations_propositions.user_id
+             AND ur.name = 'Member'
+         ) AS is_member`
     );
     const record = await statement
       .bind(
@@ -159,6 +176,20 @@ describe('ReservationsDbRepository integration', () => {
       status: 'open',
       event_date: '2024-03-10',
     });
+    expect(result[0].is_member).toBe(true);
+  });
+
+  it('getPropositions marks membership flag based on user roles', async () => {
+    await insertProposition({ user_id: 3, event_date: '2024-03-12' });
+    await insertProposition({ user_id: 4, event_date: '2024-03-13' });
+
+    const results = await repository.getPropositions(1, '2024-03-01', '2024-03-31');
+
+    const memberProposition = results.find((row) => row.user_id === 3);
+    const guestProposition = results.find((row) => row.user_id === 4);
+
+    expect(memberProposition?.is_member).toBe(true);
+    expect(guestProposition?.is_member).toBe(false);
   });
 
   it('getReservations returns reservations for range and window', async () => {

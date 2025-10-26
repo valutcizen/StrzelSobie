@@ -10,6 +10,7 @@ export type Proposition = {
   end_time: string;
   num_participants: number;
   tracks_requested: number;
+  is_member: boolean;
 };
 
 export type Reservation = {

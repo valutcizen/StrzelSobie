@@ -77,3 +77,53 @@ INSERT INTO reservations_reservations (
   0,
   0
 );
+
+-- Guest proposition waiting for review.
+INSERT INTO reservations_propositions (
+  id,
+  user_id,
+  range_id,
+  status,
+  event_date,
+  start_time,
+  end_time,
+  num_participants,
+  tracks_requested
+) VALUES (
+  102,
+  4,
+  1,
+  'open',
+  '2025-10-12',
+  '15:00',
+  '16:30',
+  2,
+  1
+);
+
+-- Private reservation that still allows members to join.
+INSERT INTO reservations_reservations (
+  id,
+  proposition_id,
+  coordinator_id,
+  range_id,
+  event_date,
+  start_time,
+  end_time,
+  num_participants,
+  tracks_requested,
+  is_public,
+  is_joinable
+) VALUES (
+  203,
+  NULL,
+  2,
+  1,
+  '2025-10-12',
+  '17:00',
+  '18:30',
+  3,
+  2,
+  0,
+  1
+);

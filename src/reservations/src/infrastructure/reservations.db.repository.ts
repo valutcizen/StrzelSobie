@@ -21,6 +21,7 @@ type PropositionDb = {
   end_time: string;
   num_participants: number;
   tracks_requested: number;
+  is_member: number;
 };
 
 type ReservationDb = {
@@ -66,6 +67,7 @@ const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   end_time: dbProposition.end_time,
   num_participants: dbProposition.num_participants,
   tracks_requested: dbProposition.tracks_requested,
+  is_member: Boolean(dbProposition.is_member),
 });
 
 const normalizeFlag = (value: number | string | boolean): boolean => {
@@ -112,8 +114,24 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]> {
     const stmt = this.db.prepare(
-      `SELECT id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested
-       FROM reservations_propositions
+      `SELECT
+          rp.id,
+          rp.user_id,
+          rp.range_id,
+          rp.status,
+          rp.event_date,
+          rp.start_time,
+          rp.end_time,
+          rp.num_participants,
+          rp.tracks_requested,
+          EXISTS (
+            SELECT 1
+            FROM users_user_global_roles ugr
+            JOIN users_roles ur ON ur.id = ugr.role_id
+            WHERE ugr.user_id = rp.user_id
+              AND ur.name = 'Member'
+          ) AS is_member
+       FROM reservations_propositions rp
        WHERE range_id = ? AND event_date BETWEEN ? AND ?`
     );
     const { results } = await stmt.bind(rangeId, startDate, endDate).all<PropositionDb>();
@@ -241,7 +259,23 @@ export class ReservationsDbRepository implements IReservationsRepository {
       `INSERT INTO reservations_propositions
         (user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
        VALUES (?, ?, 'open', ?, ?, ?, ?, ?)
-       RETURNING id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested`
+       RETURNING
+         id,
+         user_id,
+         range_id,
+         status,
+         event_date,
+         start_time,
+         end_time,
+         num_participants,
+         tracks_requested,
+         EXISTS (
+           SELECT 1
+           FROM users_user_global_roles ugr
+           JOIN users_roles ur ON ur.id = ugr.role_id
+           WHERE ugr.user_id = reservations_propositions.user_id
+             AND ur.name = 'Member'
+         ) AS is_member`
     );
 
     const result = await stmt
@@ -322,8 +356,24 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getPropositionById(id: number): Promise<Proposition | null> {
     const stmt = this.db.prepare(
-      `SELECT id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested
-       FROM reservations_propositions
+      `SELECT
+          rp.id,
+          rp.user_id,
+          rp.range_id,
+          rp.status,
+          rp.event_date,
+          rp.start_time,
+          rp.end_time,
+          rp.num_participants,
+          rp.tracks_requested,
+          EXISTS (
+            SELECT 1
+            FROM users_user_global_roles ugr
+            JOIN users_roles ur ON ur.id = ugr.role_id
+            WHERE ugr.user_id = rp.user_id
+              AND ur.name = 'Member'
+          ) AS is_member
+       FROM reservations_propositions rp
        WHERE id = ?`
     );
 
@@ -341,7 +391,23 @@ export class ReservationsDbRepository implements IReservationsRepository {
       `UPDATE reservations_propositions
        SET status = 'cancelled'
        WHERE id = ? AND status = 'open'
-       RETURNING id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested`
+       RETURNING
+         id,
+         user_id,
+         range_id,
+         status,
+         event_date,
+         start_time,
+         end_time,
+         num_participants,
+         tracks_requested,
+         EXISTS (
+           SELECT 1
+           FROM users_user_global_roles ugr
+           JOIN users_roles ur ON ur.id = ugr.role_id
+           WHERE ugr.user_id = reservations_propositions.user_id
+             AND ur.name = 'Member'
+         ) AS is_member`
     );
 
     const record = await stmt.bind(id).first<PropositionDb>();

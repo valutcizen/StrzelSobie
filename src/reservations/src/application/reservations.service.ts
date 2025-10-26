@@ -85,16 +85,21 @@ export class ReservationsService implements IReservationsService {
         this.reservationsRepository.getReservations(rangeId, startDate, endDate),
       ]);
 
-      const { isAdmin, isMember } = getRangeRole(user, rangeId);
+      const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
+      const roleNames = (user.roles ?? [])
+        .map((role) => (typeof role === 'string' ? role : role?.name ?? ''))
+        .filter((roleName) => roleName.length > 0);
+      const isCoordinator = roleNames.includes(UserRole.Coordinator);
 
-      const filteredPropositions = isAdmin
-        ? propositions
-        : propositions.filter((p: Proposition) => p.user_id.toString() === user.id.toString());
+      const shouldFilterPropositions = isGuest && !isCoordinator;
+      const filteredPropositions = shouldFilterPropositions
+        ? propositions.filter((p: Proposition) => p.user_id.toString() === user.id.toString())
+        : propositions;
 
       const filteredReservations = reservations.map((r: Reservation) => {
         const isPublic = normalizeReservationFlag(r.is_public);
         const isJoinable = normalizeReservationFlag(r.is_joinable);
-        const canViewPrivateDetails = isAdmin || isMember;
+        const canViewPrivateDetails = isAdmin || isMember || isCoordinator;
         const canViewDetails = canViewPrivateDetails || isPublic;
 
         const tracksRequested = canViewDetails ? r.tracks_requested : null;
@@ -122,7 +127,7 @@ export class ReservationsService implements IReservationsService {
         propositions: filteredPropositions.map((p: Proposition) => ({
           id: p.id,
           userId: p.user_id,
-          isMember: true, // Placeholder
+          isMember: p.is_member,
           eventDate: p.event_date,
           startTime: p.start_time,
           endTime: p.end_time,

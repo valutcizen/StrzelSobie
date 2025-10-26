@@ -68,21 +68,60 @@ const isJoinableIndicatorVisible = computed(() =>
 )
 
 const calendarEvents = computed(() =>
-  calendarStore.events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    start: event.start,
-    end: event.end,
-    allDay: event.allDay ?? false,
-    extendedProps: {
-      rangeEvent: event,
-    },
-    classNames: [
-      `event-${event.type}`,
-      event.meta?.isMember ? 'event-member' : '',
-      event.meta?.isOpenForJoining && isJoinableIndicatorVisible.value ? 'event-joinable' : '',
-    ].filter(Boolean),
-  })),
+  calendarStore.events.map((event) => {
+    const classNames = [`event-${event.type}`]
+    let backgroundColor = '#4a5568'
+    let borderColor = '#2d3748'
+    let textColor = '#ffffff'
+
+    if (event.type === 'proposition') {
+      const isMember = Boolean(event.meta?.isMember)
+      classNames.push(isMember ? 'event-proposition-member' : 'event-proposition-guest')
+      backgroundColor = isMember ? '#2746b9' : '#3a6bff'
+      borderColor = isMember ? '#1d3391' : '#2651d6'
+    } else if (event.type === 'reservation') {
+      const isPublic = Boolean(event.meta?.isPublic)
+      const isJoinable = Boolean(event.meta?.isOpenForJoining)
+
+      if (isPublic) {
+        classNames.push('event-reservation-public')
+        backgroundColor = '#f59e0b'
+        borderColor = '#c27802'
+        textColor = '#2f1b00'
+      } else {
+        classNames.push(isJoinable ? 'event-reservation-joinable' : 'event-reservation-private')
+        backgroundColor = '#2f9e44'
+        borderColor = isJoinable ? '#c27802' : '#1f7d3f'
+      }
+    } else if (event.type === 'record') {
+      classNames.push('event-record')
+      backgroundColor = '#6d4c41'
+      borderColor = '#4e342e'
+    }
+
+    if (event.meta?.isMember) {
+      classNames.push('event-member')
+    }
+
+    if (event.meta?.isOpenForJoining && isJoinableIndicatorVisible.value) {
+      classNames.push('event-joinable')
+    }
+
+    return {
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      allDay: event.allDay ?? false,
+      backgroundColor,
+      borderColor,
+      textColor,
+      extendedProps: {
+        rangeEvent: event,
+      },
+      classNames,
+    }
+  }),
 )
 
 const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
@@ -473,30 +512,17 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.event-proposition {
-  background-color: rgba(33, 150, 243, 0.2);
-  border-left: 4px solid #1976d2;
-  color: #0d47a1;
-}
-
-.event-reservation {
-  background-color: rgba(46, 125, 50, 0.2);
-  border-left: 4px solid #2e7d32;
-  color: #1b5e20;
-}
-
-.event-record {
-  background-color: rgba(121, 85, 72, 0.25);
-  border-left: 4px solid #6d4c41;
-  color: #4e342e;
-}
-
-.event-member {
+:deep(.event-member) {
   border-style: dashed;
+  border-width: 2px;
 }
 
-.event-joinable {
-  box-shadow: inset 0 0 0 2px #2e7d32;
+:deep(.event-joinable) {
+  box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.75);
+}
+
+:deep(.event-reservation-public) {
+  font-weight: 600;
 }
 
 :deep(.fc-button) {

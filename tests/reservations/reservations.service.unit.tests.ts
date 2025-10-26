@@ -132,6 +132,7 @@ const createPropositionEntity = (overrides: Partial<Proposition> = {}): Proposit
   end_time: '11:00',
   num_participants: 4,
   tracks_requested: 2,
+  is_member: true,
   ...overrides,
 });
 
@@ -304,7 +305,7 @@ describe('ReservationsService contract', () => {
       expect(events.reservations.every((event) => event.details !== null)).toBe(true);
     });
 
-    it('filters propositions to the owner while exposing reservation details to members', async () => {
+    it('keeps all propositions visible to members while exposing reservation details', async () => {
       const ctx = createTestContext();
       const ownProposition = createPropositionEntity({ id: 1, user_id: 10 });
       const otherProposition = createPropositionEntity({ id: 2, user_id: 11 });
@@ -328,12 +329,35 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(true);
       const events = result.getValue();
-      expect(events.propositions).toHaveLength(1);
-      expect(events.propositions[0].id).toBe(ownProposition.id);
+      expect(events.propositions).toHaveLength(2);
       const reservationDetails = events.reservations.find((event) => event.id === otherReservation.id);
       expect(reservationDetails?.details?.coordinatorId).toBe(otherReservation.coordinator_id);
       const ownReservationEvent = events.reservations.find((event) => event.id === ownReservation.id);
       expect(ownReservationEvent?.details?.coordinatorId).toBe(ownReservation.coordinator_id);
+    });
+
+    it('filters propositions to the owner when the requester is a guest', async () => {
+      const ctx = createTestContext();
+      const ownProposition = createPropositionEntity({ id: 1, user_id: 77 });
+      const otherProposition = createPropositionEntity({ id: 2, user_id: 11 });
+      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([ownProposition, otherProposition]);
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({ id: 40, coordinator_id: 12, is_public: true }),
+      ]);
+
+      const guestProfile = createUserProfile({ id: 77, roles: [createRole(UserRole.Guest)] });
+
+      const result = await ctx.service.getCalendarEvents({
+        rangeSlug: ctx.rangeDetails.slug,
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        user: guestProfile,
+      });
+
+      expect(result.isSuccess).toBe(true);
+      const events = result.getValue();
+      expect(events.propositions).toHaveLength(1);
+      expect(events.propositions[0].id).toBe(ownProposition.id);
     });
 
     it('exposes public reservation details to guests while hiding private reservations', async () => {

@@ -46,6 +46,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       end_time: '12:00',
       num_participants: 5,
       tracks_requested: 2,
+      is_member: true,
     };
 
     const reservation: Reservation = {

@@ -10,10 +10,13 @@ export class ReservationsDbRepository implements IReservationsRepository {
         id: 1,
         user_id: 2,
         range_id: parseInt(rangeId),
+        status: 'open',
         event_date: '2025-10-15',
         start_time: '14:00',
         end_time: '15:00',
-        tracks: 2,
+        num_participants: 4,
+        tracks_requested: 2,
+        is_member: true,
       },
     ];
     return Result.ok(mockPropositions.filter(p => p.range_id === parseInt(rangeId)));
@@ -27,13 +30,14 @@ export class ReservationsDbRepository implements IReservationsRepository {
         id: 1,
         range_id: parseInt(rangeId),
         coordinator_id: 5,
+        proposition_id: null,
         event_date: '2025-10-16',
         start_time: '10:00',
         end_time: '12:00',
-        tracks: 5,
+        num_participants: 8,
+        tracks_requested: 5,
         is_public: true,
         is_joinable: false,
-        participants_count: 10,
       },
     ];
     return Result.ok(mockReservations.filter(r => r.range_id === parseInt(rangeId)));

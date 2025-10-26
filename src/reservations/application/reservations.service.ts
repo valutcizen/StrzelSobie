@@ -74,7 +74,7 @@ export class ReservationsService implements IReservationsService {
       propositions: filteredPropositions.map((p) => ({
         id: p.id,
         userId: p.user_id,
-        isMember: true, // Placeholder
+        isMember: p.is_member,
         eventDate: p.event_date,
         startTime: p.start_time,
         endTime: p.end_time,
