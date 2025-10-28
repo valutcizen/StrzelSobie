@@ -239,7 +239,7 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
   const reservationId =
     typeof data.id === 'number' ? data.id : event.meta?.reservationId ?? event.sourceId
 
-  const propositionId = toNullableNumber(data.propositionId ?? data.proposition_id)
+  let propositionId = toNullableNumber(data.propositionId ?? data.proposition_id)
 
   const numParticipants =
     toNullableNumber(data.numParticipants ?? data.num_participants) ??
@@ -268,11 +268,20 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
   const createdAt = toNullableString(data.createdAt ?? data.created_at)
   const coordinator = toPersonSummary(data.coordinator ?? data.owner ?? data.manager)
   const notes = toNullableString(data.notes ?? data.additionalNotes ?? data.comment)
+  const rawPropositionDetail =
+    data.proposition ?? data.linkedProposition ?? data.originalProposition ?? null
+  const proposition =
+    rawPropositionDetail !== null ? mapPropositionDetail(rawPropositionDetail, event) : null
+
+  if (proposition && propositionId === null) {
+    propositionId = proposition.propositionId
+  }
 
   return {
     type: 'reservation',
     reservationId,
     propositionId,
+    proposition,
     numParticipants,
     tracksRequested,
     isPublic,
@@ -419,8 +428,13 @@ const handleEventClick = (clickInfo: EventClickArg) => {
 
   eventDetailState.detail = cachedDetail
   eventDetailState.error = null
-
-  if (cachedDetail) {
+  const needsRefresh =
+    cachedDetail &&
+    rangeEvent.type === 'reservation' &&
+    cachedDetail.type === 'reservation' &&
+    cachedDetail.propositionId !== null &&
+    !cachedDetail.proposition
+  if (cachedDetail && !needsRefresh) {
     eventDetailState.loading = false
     return
   }

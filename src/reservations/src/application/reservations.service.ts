@@ -66,6 +66,15 @@ const normalizeReservationFlag = (value: unknown): boolean => {
   return false;
 };
 
+type RoleLike = { name?: string | null } | string | null | undefined;
+type RangeRolesRecord = Record<string, RoleLike[] | undefined>;
+type UserRoleContext = {
+  id: number | string;
+  roles?: RoleLike[];
+  rangeRoles?: RangeRolesRecord;
+  range_roles?: RangeRolesRecord;
+};
+
 export class ReservationsService implements IReservationsService {
   constructor(
     private readonly rangesService: IRangesService,
@@ -96,6 +105,29 @@ export class ReservationsService implements IReservationsService {
         .filter((roleName) => roleName.length > 0);
       const isCoordinator = roleNames.includes(UserRole.Coordinator);
 
+      const uniquePropositionIds = Array.from(
+        new Set(
+          reservations
+            .map((reservation: Reservation) => reservation.proposition_id)
+            .filter((id): id is number => id !== null)
+        )
+      );
+
+      const linkedPropositionDetails = new Map<number, PropositionDetailDto | null>();
+
+      if (uniquePropositionIds.length > 0) {
+        try {
+          await Promise.all(
+            uniquePropositionIds.map(async (propositionId) => {
+              const detail = await this.getSanitizedPropositionDetail(propositionId, user);
+              linkedPropositionDetails.set(propositionId, detail);
+            })
+          );
+        } catch (error) {
+          return Result.fail(error as Error);
+        }
+      }
+
       const shouldFilterPropositions = isGuest && !isCoordinator;
       const filteredPropositions = shouldFilterPropositions
         ? propositions.filter((p: Proposition) => p.user_id.toString() === user.id.toString())
@@ -116,8 +148,12 @@ export class ReservationsService implements IReservationsService {
             }
           : null;
 
+        const propositionDetail =
+          r.proposition_id !== null ? linkedPropositionDetails.get(r.proposition_id) ?? null : null;
+
         return {
           id: r.id,
+          propositionId: r.proposition_id,
           eventDate: r.event_date,
           startTime: r.start_time,
           endTime: r.end_time,
@@ -125,6 +161,7 @@ export class ReservationsService implements IReservationsService {
           isPublic,
           isJoinable: isJoinableForUser,
           details,
+          proposition: propositionDetail,
         };
       });
 
@@ -166,27 +203,7 @@ export class ReservationsService implements IReservationsService {
         return Result.fail(new ForbiddenError('User is not allowed to view this proposition'));
       }
 
-      const requester = this.buildPersonSummary(
-        proposition.user_id,
-        proposition.requester_email,
-        proposition.requester_phone_number
-      );
-
-      const dto: PropositionDetailDto = {
-        id: proposition.id,
-        rangeId: proposition.range_id,
-        userId: proposition.user_id,
-        status: proposition.status,
-        eventDate: proposition.event_date,
-        startTime: proposition.start_time,
-        endTime: proposition.end_time,
-        numParticipants: proposition.num_participants,
-        tracksRequested: proposition.tracks_requested,
-        createdAt: proposition.created_at ?? null,
-        requester,
-      };
-
-      return Result.ok(dto);
+      return Result.ok(this.buildPropositionDetailDto(proposition));
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -211,6 +228,11 @@ export class ReservationsService implements IReservationsService {
         return Result.fail(new ForbiddenError('User is not allowed to view this reservation'));
       }
 
+      const propositionDetailDto = await this.resolveLinkedPropositionDetail(
+        reservation,
+        user
+      );
+
       const coordinator = this.buildPersonSummary(
         reservation.coordinator_id,
         reservation.coordinator_email,
@@ -222,6 +244,7 @@ export class ReservationsService implements IReservationsService {
         rangeId: reservation.range_id,
         coordinatorId: reservation.coordinator_id,
         propositionId: reservation.proposition_id,
+        proposition: propositionDetailDto,
         eventDate: reservation.event_date,
         startTime: reservation.start_time,
         endTime: reservation.end_time,
@@ -706,6 +729,60 @@ export class ReservationsService implements IReservationsService {
       tracksRequested: conflict.tracks_requested,
     }));
   }
+  private async resolveLinkedPropositionDetail(
+    reservation: ReservationDetail,
+    user: UserRoleContext
+  ): Promise<PropositionDetailDto | null> {
+    if (reservation.proposition_id === null) {
+      return null;
+    }
+
+    return this.getSanitizedPropositionDetail(reservation.proposition_id, user);
+  }
+
+  private async getSanitizedPropositionDetail(
+    propositionId: number,
+    user: UserRoleContext
+  ): Promise<PropositionDetailDto | null> {
+    const proposition = await this.reservationsRepository.getPropositionDetailById(propositionId);
+
+    if (!proposition) {
+      return null;
+    }
+
+    const detail = this.buildPropositionDetailDto(proposition);
+
+    if (this.canUserViewProposition(user, proposition)) {
+      return detail;
+    }
+
+    return {
+      ...detail,
+      requester: null,
+    };
+  }
+
+  private buildPropositionDetailDto(proposition: PropositionDetail): PropositionDetailDto {
+    const requester = this.buildPersonSummary(
+      proposition.user_id,
+      proposition.requester_email,
+      proposition.requester_phone_number
+    );
+
+    return {
+      id: proposition.id,
+      rangeId: proposition.range_id,
+      userId: proposition.user_id,
+      status: proposition.status,
+      eventDate: proposition.event_date,
+      startTime: proposition.start_time,
+      endTime: proposition.end_time,
+      numParticipants: proposition.num_participants,
+      tracksRequested: proposition.tracks_requested,
+      createdAt: proposition.created_at ?? null,
+      requester,
+    };
+  }
 
   private buildPersonSummary(
     id: number,
@@ -720,17 +797,35 @@ export class ReservationsService implements IReservationsService {
     };
   }
 
-  private getGlobalRoleNames(user: UserDto): Set<string> {
-    return new Set(user.roles.map((role) => role.name));
+  private extractRoleName(role: RoleLike): string {
+    if (typeof role === 'string') {
+      return role;
+    }
+    if (role && typeof role === 'object' && 'name' in role && typeof role.name === 'string') {
+      return role.name;
+    }
+    return '';
   }
 
-  private getRangeRoleNames(user: UserDto, rangeId: number): Set<string> {
-    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
-    return new Set(rangeRoles.map((role) => role.name));
+  private getGlobalRoleNames(user: UserRoleContext): Set<string> {
+    const roles = user.roles ?? [];
+    const roleNames = roles
+      .map((role) => this.extractRoleName(role ?? ''))
+      .filter((roleName): roleName is string => roleName.length > 0);
+    return new Set(roleNames);
   }
 
-  private canUserViewProposition(user: UserDto, proposition: PropositionDetail): boolean {
-    if (proposition.user_id === user.id) {
+  private getRangeRoleNames(user: UserRoleContext, rangeId: number): Set<string> {
+    const rangeRolesSource = user.rangeRoles ?? user.range_roles ?? {};
+    const roles = rangeRolesSource[String(rangeId)] ?? [];
+    const roleNames = (roles ?? [])
+      .map((role) => this.extractRoleName(role ?? ''))
+      .filter((roleName): roleName is string => roleName.length > 0);
+    return new Set(roleNames);
+  }
+
+  private canUserViewProposition(user: UserRoleContext, proposition: PropositionDetail): boolean {
+    if (proposition.user_id.toString() === String(user.id)) {
       return true;
     }
 
@@ -755,7 +850,7 @@ export class ReservationsService implements IReservationsService {
     return false;
   }
 
-  private canUserViewReservation(user: UserDto, reservation: ReservationDetail): boolean {
+  private canUserViewReservation(user: UserRoleContext, reservation: ReservationDetail): boolean {
     if (reservation.is_public) {
       return true;
     }

@@ -18,6 +18,7 @@ describe('mapCalendarEvents', () => {
       reservations: [
         {
           id: 9,
+          propositionId: 17,
           eventDate: '2024-05-02',
           startTime: '08:00',
           endTime: '09:15',
@@ -27,6 +28,24 @@ describe('mapCalendarEvents', () => {
           details: {
             coordinatorId: 44,
             numParticipants: 3,
+          },
+          proposition: {
+            id: 17,
+            rangeId: 2,
+            userId: 88,
+            status: 'converted',
+            eventDate: '2024-05-02',
+            startTime: '07:00',
+            endTime: '08:30',
+            numParticipants: 3,
+            tracksRequested: 2,
+            createdAt: '2024-05-01T10:00:00Z',
+            requester: {
+              id: 88,
+              email: 'requester@example.com',
+              phoneNumber: null,
+              displayName: 'Requester',
+            },
           },
         },
       ],
@@ -50,6 +69,9 @@ describe('mapCalendarEvents', () => {
     expect(second.meta?.isPublic).toBe(true)
     expect(second.meta?.isOpenForJoining).toBe(true)
     expect(second.meta?.numParticipants).toBe(3)
+    expect(second.meta?.propositionId).toBe(17)
+    expect(second.meta?.linkedProposition?.propositionId).toBe(17)
+    expect(second.meta?.linkedProposition?.requester?.email).toBe('requester@example.com')
   })
 
   it('sorts events chronologically by start time', () => {
@@ -68,12 +90,15 @@ describe('mapCalendarEvents', () => {
       reservations: [
         {
           id: 1,
+          propositionId: null,
           eventDate: '2024-06-03',
           startTime: '06:00',
           endTime: '07:20',
+          tracksRequested: null,
           isPublic: false,
           isJoinable: false,
           details: null,
+          proposition: null,
         },
       ],
     }

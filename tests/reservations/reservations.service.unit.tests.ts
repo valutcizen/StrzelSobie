@@ -40,8 +40,10 @@ import type {
   IReservationsRepository,
   OverlappingUsage,
   Proposition,
+  PropositionDetail,
   RecordEntity,
   Reservation,
+  ReservationDetail,
   ReservationConflict,
 } from '../../src/reservations/src/domain/reservations.repository';
 
@@ -61,8 +63,10 @@ type TestContext = {
     createRecord: ReturnType<typeof vi.fn>;
     markPropositionConverted: ReturnType<typeof vi.fn>;
     getPropositionById: ReturnType<typeof vi.fn>;
+    getPropositionDetailById: ReturnType<typeof vi.fn>;
     cancelProposition: ReturnType<typeof vi.fn>;
     getReservationById: ReturnType<typeof vi.fn>;
+    getReservationDetailById: ReturnType<typeof vi.fn>;
     deleteReservation: ReturnType<typeof vi.fn>;
   };
   auditService: {
@@ -136,6 +140,16 @@ const createPropositionEntity = (overrides: Partial<Proposition> = {}): Proposit
   ...overrides,
 });
 
+const createPropositionDetailEntity = (
+  overrides: Partial<PropositionDetail> = {}
+): PropositionDetail => ({
+  ...createPropositionEntity(overrides as Partial<Proposition>),
+  created_at: '2024-01-05T10:00:00Z',
+  requester_email: 'requester@example.com',
+  requester_phone_number: null,
+  ...overrides,
+});
+
 const createReservationEntity = (overrides: Partial<Reservation> = {}): Reservation => ({
   id: 42,
   range_id: 1,
@@ -148,6 +162,16 @@ const createReservationEntity = (overrides: Partial<Reservation> = {}): Reservat
   tracks_requested: 3,
   is_public: true,
   is_joinable: false,
+  ...overrides,
+});
+
+const createReservationDetailEntity = (
+  overrides: Partial<ReservationDetail> = {}
+): ReservationDetail => ({
+  ...createReservationEntity(overrides as Partial<Reservation>),
+  created_at: '2024-01-06T09:00:00Z',
+  coordinator_email: 'coordinator@example.com',
+  coordinator_phone_number: null,
   ...overrides,
 });
 
@@ -197,8 +221,10 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
     createRecord: vi.fn(),
     markPropositionConverted: vi.fn().mockResolvedValue(undefined),
     getPropositionById: vi.fn(),
+    getPropositionDetailById: vi.fn(),
     cancelProposition: vi.fn(),
     getReservationById: vi.fn(),
+    getReservationDetailById: vi.fn(),
     deleteReservation: vi.fn(),
   };
 
@@ -358,6 +384,82 @@ describe('ReservationsService contract', () => {
       const events = result.getValue();
       expect(events.propositions).toHaveLength(1);
       expect(events.propositions[0].id).toBe(ownProposition.id);
+    });
+
+    it('attaches linked proposition details to reservation events when viewer has access', async () => {
+      const ctx = createTestContext();
+      const propositionDetail = createPropositionDetailEntity({
+        id: 55,
+        user_id: 200,
+        status: 'converted',
+      });
+      const reservation = createReservationEntity({
+        id: 90,
+        proposition_id: propositionDetail.id,
+        range_id: ctx.rangeDetails.id,
+      });
+
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
+      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([]);
+      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(propositionDetail);
+
+      const coordinatorProfile = createUserProfile({
+        id: propositionDetail.user_id,
+        roles: [createRole(UserRole.Coordinator)],
+      });
+
+      const result = await ctx.service.getCalendarEvents({
+        rangeSlug: ctx.rangeDetails.slug,
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        user: coordinatorProfile,
+      });
+
+      expect(result.isSuccess).toBe(true);
+      const events = result.getValue();
+      expect(events.reservations).toHaveLength(1);
+      const reservationEvent = events.reservations[0];
+      expect(reservationEvent.propositionId).toBe(propositionDetail.id);
+      expect(reservationEvent.proposition?.id).toBe(propositionDetail.id);
+      expect(reservationEvent.proposition?.requester?.email).toBe(propositionDetail.requester_email);
+      expect(ctx.reservationsRepository.getPropositionDetailById).toHaveBeenCalledWith(propositionDetail.id);
+    });
+
+    it('redacts requester information when viewer cannot access linked proposition', async () => {
+      const ctx = createTestContext();
+      const propositionDetail = createPropositionDetailEntity({
+        id: 56,
+        status: 'converted',
+        user_id: 400,
+        requester_email: 'hidden@example.com',
+      });
+      const reservation = createReservationEntity({
+        id: 91,
+        proposition_id: propositionDetail.id,
+        range_id: ctx.rangeDetails.id,
+        is_public: true,
+      });
+
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
+      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([]);
+      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(propositionDetail);
+
+      const guestProfile = createUserProfile({
+        id: 1,
+        roles: [createRole(UserRole.Guest)],
+      });
+
+      const result = await ctx.service.getCalendarEvents({
+        rangeSlug: ctx.rangeDetails.slug,
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        user: guestProfile,
+      });
+
+      expect(result.isSuccess).toBe(true);
+      const reservationEvent = result.getValue().reservations[0];
+      expect(reservationEvent.propositionId).toBe(propositionDetail.id);
+      expect(reservationEvent.proposition?.requester).toBeNull();
     });
 
     it('exposes public reservation details to guests while hiding private reservations', async () => {
@@ -941,7 +1043,7 @@ describe('ReservationsService contract', () => {
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(ReservationCreationError);
       expect(consoleErrorSpy).toHaveBeenCalled();
-    });
+  });
 
     it('converts proposition when validation passes and conflicts resolved', async () => {
       const ctx = createTestContext();
@@ -971,6 +1073,77 @@ describe('ReservationsService contract', () => {
         range_id: reservation.range_id,
         coordinator_id: reservation.coordinator_id,
       });
+    });
+  });
+
+  describe('getReservationDetails', () => {
+    it('includes proposition detail when viewer has access', async () => {
+      const ctx = createTestContext();
+      const user = createCoordinatorUser();
+      const proposition = createPropositionDetailEntity({ id: 77, status: 'converted', user_id: 99 });
+      const reservation = createReservationDetailEntity({
+        id: 120,
+        proposition_id: proposition.id,
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: user.id,
+      });
+
+      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(proposition);
+
+      const result = await ctx.service.getReservationDetails(reservation.id, user);
+
+      expect(result.isSuccess).toBe(true);
+      expect(ctx.reservationsRepository.getPropositionDetailById).toHaveBeenCalledWith(proposition.id);
+      const detail = result.getValue();
+      expect(detail.propositionId).toBe(proposition.id);
+      expect(detail.proposition).not.toBeNull();
+      expect(detail.proposition?.id).toBe(proposition.id);
+      expect(detail.proposition?.status).toBe('converted');
+      expect(detail.proposition?.requester?.id).toBe(proposition.user_id);
+    });
+
+    it('omits proposition detail when viewer lacks permission', async () => {
+      const ctx = createTestContext();
+      const user = createUserDto(); // guest without roles
+      const proposition = createPropositionDetailEntity({ id: 81, user_id: 404 });
+      const reservation = createReservationDetailEntity({
+        id: 121,
+        proposition_id: proposition.id,
+        range_id: ctx.rangeDetails.id,
+        is_public: true,
+      });
+
+    ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
+    ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(proposition);
+
+    const result = await ctx.service.getReservationDetails(reservation.id, user);
+
+    expect(result.isSuccess).toBe(true);
+    const detail = result.getValue();
+    expect(detail.propositionId).toBe(proposition.id);
+    expect(detail.proposition).not.toBeNull();
+    expect(detail.proposition?.status).toBe(proposition.status);
+    expect(detail.proposition?.requester).toBeNull();
+  });
+
+  it('propagates repository failures when loading linked proposition', async () => {
+      const ctx = createTestContext();
+      const user = createCoordinatorUser();
+      const reservation = createReservationDetailEntity({
+        id: 122,
+        proposition_id: 91,
+        range_id: ctx.rangeDetails.id,
+      });
+      const loadError = new Error('lookup failed');
+
+      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.getPropositionDetailById.mockRejectedValueOnce(loadError);
+
+      const result = await ctx.service.getReservationDetails(reservation.id, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBe(loadError);
     });
   });
 

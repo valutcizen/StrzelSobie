@@ -61,6 +61,7 @@ export type PropositionEventDto = {
 
 export type ReservationEventDto = {
   id: number;
+  propositionId: number | null;
   eventDate: string;
   startTime: string;
   endTime: string;
@@ -71,6 +72,7 @@ export type ReservationEventDto = {
     coordinatorId: number;
     numParticipants: number;
   } | null;
+  proposition: PropositionDetailDto | null;
 }
 
 export type CalendarEventsDto = {
@@ -159,6 +161,7 @@ export type ReservationDetailDto = {
   rangeId: Reservation['range_id'];
   coordinatorId: Reservation['coordinator_id'];
   propositionId: Reservation['proposition_id'];
+  proposition: PropositionDetailDto | null;
   eventDate: Reservation['event_date'];
   startTime: Reservation['start_time'];
   endTime: Reservation['end_time'];

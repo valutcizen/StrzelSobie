@@ -1,7 +1,7 @@
 export type RangeEventType = 'proposition' | 'reservation' | 'record'
 
 export interface RangeEventMeta {
-  propositionId?: number
+  propositionId?: number | null
   reservationId?: number
   tracksRequested?: number
   isMember?: boolean
@@ -9,6 +9,7 @@ export interface RangeEventMeta {
   isPublic?: boolean
   coordinatorId?: number | null
   numParticipants?: number | null
+  linkedProposition?: PropositionEventDetail | null
 }
 
 export interface RangeEvent {
@@ -44,6 +45,7 @@ export interface ReservationEventDetail {
   type: 'reservation'
   reservationId: number
   propositionId: number | null
+  proposition: PropositionEventDetail | null
   numParticipants: number | null
   tracksRequested: number | null
   isPublic: boolean | null

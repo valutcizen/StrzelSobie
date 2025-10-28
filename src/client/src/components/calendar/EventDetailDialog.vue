@@ -83,37 +83,8 @@
           >
             <v-divider class="mb-3" />
             <v-list density="compact">
-              <template v-if="detailsAsProposition">
-                <v-list-item v-if="requesterDisplay">
-                  <template #prepend>
-                    <v-icon>mdi-account</v-icon>
-                  </template>
-                  <v-list-item-title>{{ requesterDisplay.title }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="requesterDisplay.subtitle">
-                    {{ requesterDisplay.subtitle }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="propositionStatusLabel">
-                  <template #prepend>
-                    <v-icon>mdi-information-outline</v-icon>
-                  </template>
-                  <v-list-item-title>{{ propositionStatusLabel }}</v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="detailCreatedAt">
-                  <template #prepend>
-                    <v-icon>mdi-calendar-clock</v-icon>
-                  </template>
-                  <v-list-item-title>{{ detailCreatedAt }}</v-list-item-title>
-                  <v-list-item-subtitle>Data zgłoszenia</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="detailNotes">
-                  <template #prepend>
-                    <v-icon>mdi-note-text</v-icon>
-                  </template>
-                  <v-list-item-title>{{ detailNotes }}</v-list-item-title>
-                </v-list-item>
-              </template>
-              <template v-else-if="detailsAsReservation">
+              <template v-if="hasReservationSection">
+                <v-list-subheader>Rezerwacja</v-list-subheader>
                 <v-list-item v-if="coordinatorDisplay">
                   <template #prepend>
                     <v-icon>mdi-account-tie</v-icon>
@@ -135,13 +106,16 @@
                   </template>
                   <v-list-item-title>{{ reservationJoinableLabel }}</v-list-item-title>
                 </v-list-item>
-                <v-list-item v-if="reservationPropositionId !== null">
+                <v-list-item v-if="linkedPropositionId !== null">
                   <template #prepend>
                     <v-icon>mdi-link-variant</v-icon>
                   </template>
                   <v-list-item-title>
-                    Powiązana propozycja #{{ reservationPropositionId }}
+                    Powiązana propozycja #{{ linkedPropositionId }}
                   </v-list-item-title>
+                  <v-list-item-subtitle v-if="propositionSectionStatusLabel">
+                    {{ propositionSectionStatusLabel }}
+                  </v-list-item-subtitle>
                 </v-list-item>
                 <v-list-item v-if="detailCreatedAt">
                   <template #prepend>
@@ -155,6 +129,72 @@
                     <v-icon>mdi-note-text</v-icon>
                   </template>
                   <v-list-item-title>{{ detailNotes }}</v-list-item-title>
+                </v-list-item>
+              </template>
+
+              <v-divider
+                v-if="hasReservationSection && hasPropositionSection"
+                class="my-2"
+              />
+
+              <template v-if="hasPropositionSection">
+                <v-list-subheader>Propozycja</v-list-subheader>
+                <v-list-item v-if="!hasReservationSection && linkedPropositionId !== null">
+                  <template #prepend>
+                    <v-icon>mdi-link-variant</v-icon>
+                  </template>
+                  <v-list-item-title>
+                    Propozycja #{{ linkedPropositionId }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="propositionSectionStatusLabel">
+                    {{ propositionSectionStatusLabel }}
+                  </v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item
+                  v-else-if="hasReservationSection && propositionSectionStatusLabel"
+                >
+                  <template #prepend>
+                    <v-icon>mdi-information-outline</v-icon>
+                  </template>
+                  <v-list-item-title>{{ propositionSectionStatusLabel }}</v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="propositionSectionRequesterDisplay">
+                  <template #prepend>
+                    <v-icon>mdi-account</v-icon>
+                  </template>
+                  <v-list-item-title>{{ propositionSectionRequesterDisplay.title }}</v-list-item-title>
+                  <v-list-item-subtitle v-if="propositionSectionRequesterDisplay.subtitle">
+                    {{ propositionSectionRequesterDisplay.subtitle }}
+                  </v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item v-if="propositionSectionTracksRequested !== null">
+                  <template #prepend>
+                    <v-icon>mdi-target</v-icon>
+                  </template>
+                  <v-list-item-title>
+                    Zapotrzebowanie: {{ propositionSectionTracksRequested }} torów
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="propositionSectionParticipants !== null">
+                  <template #prepend>
+                    <v-icon>mdi-account-group</v-icon>
+                  </template>
+                  <v-list-item-title>
+                    Uczestnicy: {{ propositionSectionParticipants }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="propositionSectionCreatedAt">
+                  <template #prepend>
+                    <v-icon>mdi-calendar-clock</v-icon>
+                  </template>
+                  <v-list-item-title>{{ propositionSectionCreatedAt }}</v-list-item-title>
+                  <v-list-item-subtitle>Data zgłoszenia</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item v-if="propositionSectionNotes">
+                  <template #prepend>
+                    <v-icon>mdi-note-text</v-icon>
+                  </template>
+                  <v-list-item-title>{{ propositionSectionNotes }}</v-list-item-title>
                 </v-list-item>
               </template>
             </v-list>
@@ -202,7 +242,12 @@ import { computed } from 'vue'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { useAuthStore } from '../../stores/auth'
-import type { PersonSummary, RangeEvent, RangeEventDetail } from '../../types/calendar'
+import type {
+  PersonSummary,
+  PropositionEventDetail,
+  RangeEvent,
+  RangeEventDetail,
+} from '../../types/calendar'
 
 interface EventDetailDialogProps {
   open: boolean
@@ -282,23 +327,44 @@ const formattedEnd = computed(() => {
   return format(parseISO(event.value.end), 'PPpp', { locale: pl })
 })
 
-const detailCreatedAt = computed(() => {
-  const value = details.value?.createdAt
-  if (!value) return null
+const formatDateTime = (value: string | null | undefined): string | null => {
+  if (!value) {
+    return null
+  }
   try {
     return format(parseISO(value), 'PPpp', { locale: pl })
   } catch {
     return null
   }
-})
+}
 
-const detailNotes = computed(() => {
-  const value = details.value?.notes
+const normalizeNotes = (value: unknown): string | null => {
   if (typeof value !== 'string') {
     return null
   }
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
+}
+
+const buildPropositionStatusLabel = (detail: PropositionEventDetail | null): string | null => {
+  switch (detail?.status) {
+    case 'open':
+      return 'Status: oczekuje na akceptację'
+    case 'converted':
+      return 'Status: przekształcona w rezerwację'
+    case 'cancelled':
+      return 'Status: wycofana'
+    default:
+      return null
+  }
+}
+
+const detailCreatedAt = computed(() => {
+  return formatDateTime(details.value?.createdAt)
+})
+
+const detailNotes = computed(() => {
+  return normalizeNotes(details.value?.notes)
 })
 
 const formatPerson = (person: PersonSummary | null): PersonDisplay | null => {
@@ -335,25 +401,88 @@ const formatPerson = (person: PersonSummary | null): PersonDisplay | null => {
   }
 }
 
-const requesterDisplay = computed(() =>
-  formatPerson(detailsAsProposition.value?.requester ?? null),
-)
 const coordinatorDisplay = computed(() =>
   formatPerson(detailsAsReservation.value?.coordinator ?? null),
 )
 
-const propositionStatusLabel = computed(() => {
-  const detail = detailsAsProposition.value
-  switch (detail?.status) {
-    case 'open':
-      return 'Status: oczekuje na akceptację'
-    case 'converted':
-      return 'Status: przekształcona w rezerwację'
-    case 'cancelled':
-      return 'Status: wycofana'
-    default:
-      return null
+const reservationLinkedProposition = computed(() => {
+  const detailProposition = detailsAsReservation.value?.proposition ?? null
+  if (detailProposition) {
+    return detailProposition
   }
+  return event.value?.meta?.linkedProposition ?? null
+})
+
+const hasReservationSection = computed(() => detailsAsReservation.value !== null)
+
+const propositionSectionDetail = computed(() => {
+  if (isReservation.value) {
+    return reservationLinkedProposition.value
+  }
+  return detailsAsProposition.value
+})
+
+const propositionSectionId = computed(() => {
+  if (propositionSectionDetail.value) {
+    return propositionSectionDetail.value.propositionId
+  }
+  if (isReservation.value) {
+    const reservationDetailId = detailsAsReservation.value?.propositionId
+    if (typeof reservationDetailId === 'number') {
+      return reservationDetailId
+    }
+    const metaId = event.value?.meta?.propositionId
+    return typeof metaId === 'number' ? metaId : null
+  }
+  const metaId = event.value?.meta?.propositionId
+  return typeof metaId === 'number' ? metaId : null
+})
+
+const hasPropositionSection = computed(() => {
+  if (isReservation.value) {
+    return propositionSectionDetail.value !== null || propositionSectionId.value !== null
+  }
+  return propositionSectionDetail.value !== null
+})
+
+const propositionSectionStatusLabel = computed(() =>
+  buildPropositionStatusLabel(propositionSectionDetail.value),
+)
+
+const propositionSectionRequesterDisplay = computed(() =>
+  formatPerson(propositionSectionDetail.value?.requester ?? null),
+)
+
+const propositionSectionCreatedAt = computed(() =>
+  formatDateTime(propositionSectionDetail.value?.createdAt),
+)
+
+const propositionSectionNotes = computed(() =>
+  normalizeNotes(propositionSectionDetail.value?.notes),
+)
+
+const propositionSectionTracksRequested = computed(() => {
+  const value = propositionSectionDetail.value?.tracksRequested
+  return typeof value === 'number' ? value : null
+})
+
+const propositionSectionParticipants = computed(() => {
+  const value = propositionSectionDetail.value?.numParticipants
+  return typeof value === 'number' ? value : null
+})
+
+const linkedPropositionId = computed(() => {
+  if (propositionSectionId.value !== null) {
+    return propositionSectionId.value
+  }
+  if (isReservation.value) {
+    const reservationDetailId = detailsAsReservation.value?.propositionId
+    if (typeof reservationDetailId === 'number') {
+      return reservationDetailId
+    }
+  }
+  const metaId = event.value?.meta?.propositionId
+  return typeof metaId === 'number' ? metaId : null
 })
 
 const reservationVisibilityLabel = computed(() => {
@@ -371,10 +500,6 @@ const reservationJoinableLabel = computed(() => {
   }
   return detail.isJoinable ? 'Otwarta na dołączenie' : 'Tylko dla zapisanych'
 })
-
-const reservationPropositionId = computed(
-  () => detailsAsReservation.value?.propositionId ?? null,
-)
 
 const canAccept = computed(() =>
   isProposition.value && Boolean(event.value?.meta?.propositionId) && authStore.hasAnyRole(['Coordinator']),
