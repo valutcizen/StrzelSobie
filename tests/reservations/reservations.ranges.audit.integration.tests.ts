@@ -225,6 +225,7 @@ function createReservationsContext(): {
     cancelProposition: vi.fn(),
     getReservationById: vi.fn(),
     deleteReservation: vi.fn(),
+    reopenProposition: vi.fn(),
   };
 
   const rangesService: Mocked<IRangesService> = {

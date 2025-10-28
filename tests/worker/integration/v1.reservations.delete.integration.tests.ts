@@ -67,3 +67,27 @@ describe('DELETE /api/v1/reservations/:reservationId', () => {
     expect(await response.json()).toEqual(body);
   });
 });
+
+describe('DELETE /api/v1/ranges/:rangeSlug/reservations/:reservationId', () => {
+  it('routes to the reservations service using the range-aware path', async () => {
+    const reservationsService = {
+      cancelReservation: vi.fn().mockResolvedValue(Result.ok(undefined)),
+    };
+
+    const { client } = createWorkerTestClient({
+      register: (router) => {
+        router.delete('/api/v1/ranges/:rangeSlug/reservations/:reservationId', DeleteReservation);
+      },
+      dependencies: { reservationsService, user: coordinator },
+    });
+
+    const response = await client.delete('/api/v1/ranges/dobczyce/reservations/204');
+
+    expect(reservationsService.cancelReservation).toHaveBeenCalledWith(
+      { reservationId: 204 },
+      coordinator,
+    );
+    expect(response.status).toBe(204);
+    expect(await response.text()).toBe('');
+  });
+});

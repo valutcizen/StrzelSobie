@@ -450,6 +450,26 @@ describe('ReservationsDbRepository integration', () => {
     expect(exists).toBeNull();
   });
 
+  it('reopenProposition transitions converted proposition back to open', async () => {
+    const proposition = await insertProposition({ status: 'converted' });
+
+    const reopened = await repository.reopenProposition(proposition.id);
+
+    expect(reopened?.id).toBe(proposition.id);
+    expect(reopened?.status).toBe('open');
+
+    const persisted = await repository.getPropositionById(proposition.id);
+    expect(persisted?.status).toBe('open');
+  });
+
+  it('reopenProposition returns null when proposition is not converted', async () => {
+    const proposition = await insertProposition({ status: 'cancelled' });
+
+    const reopened = await repository.reopenProposition(proposition.id);
+
+    expect(reopened).toBeNull();
+  });
+
   it('createRecord inserts manual record entry', async () => {
     const record = await repository.createRecord({
       range_id: 1,

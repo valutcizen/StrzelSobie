@@ -89,5 +89,10 @@ openapi.get('/api/v1/propositions/:propositionId', authMiddleware, GetPropositio
 openapi.delete('/api/v1/propositions/:propositionId', authMiddleware, DeleteProposition);
 openapi.get('/api/v1/reservations/:reservationId', authMiddleware, GetReservationDetail);
 openapi.delete('/api/v1/reservations/:reservationId', authMiddleware, DeleteReservation);
+openapi.delete(
+  '/api/v1/ranges/:rangeSlug/reservations/:reservationId',
+  authMiddleware,
+  DeleteReservation
+);
 
 export default app;

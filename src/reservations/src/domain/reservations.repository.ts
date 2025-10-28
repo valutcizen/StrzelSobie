@@ -121,4 +121,5 @@ export interface IReservationsRepository {
   getReservationById(id: number): Promise<Reservation | null>;
   getReservationDetailById(id: number): Promise<ReservationDetail | null>;
   deleteReservation(id: number): Promise<Reservation | null>;
+  reopenProposition(id: number): Promise<Proposition | null>;
 }

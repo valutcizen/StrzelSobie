@@ -925,6 +925,24 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(new ReservationNotFoundError());
     }
 
+    if (deletedReservation.proposition_id !== null) {
+      try {
+        const reopenedProposition = await this.reservationsRepository.reopenProposition(
+          deletedReservation.proposition_id
+        );
+        if (!reopenedProposition) {
+          console.error(
+            'Failed to reopen proposition after reservation cancellation',
+            deletedReservation.proposition_id
+          );
+          return Result.fail(new ReservationCancellationError());
+        }
+      } catch (error) {
+        console.error('Failed to reopen proposition after reservation cancellation', error);
+        return Result.fail(new ReservationCancellationError());
+      }
+    }
+
     const auditResult = await this.auditService.logAction({
       action_type: 'RESERVATION_CANCEL',
       target_id: deletedReservation.id,

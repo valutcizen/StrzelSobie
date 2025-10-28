@@ -68,6 +68,7 @@ type TestContext = {
     getReservationById: ReturnType<typeof vi.fn>;
     getReservationDetailById: ReturnType<typeof vi.fn>;
     deleteReservation: ReturnType<typeof vi.fn>;
+    reopenProposition: ReturnType<typeof vi.fn>;
   };
   auditService: {
     logAction: ReturnType<typeof vi.fn>;
@@ -226,6 +227,7 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
     getReservationById: vi.fn(),
     getReservationDetailById: vi.fn(),
     deleteReservation: vi.fn(),
+    reopenProposition: vi.fn(),
   };
 
   const auditService = {
@@ -1739,6 +1741,79 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(true);
       expect(result.getValue()).toBeUndefined();
+    });
+
+    it('reopens linked propositions when cancelling converted reservations', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: 10,
+        proposition_id: 71,
+      });
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
+      const reopenedProposition = createPropositionEntity({ id: 71, status: 'open' });
+      ctx.reservationsRepository.reopenProposition.mockResolvedValueOnce(reopenedProposition);
+      const user = createUserDto({
+        id: reservation.coordinator_id,
+        roles: [createRole(UserRole.Coordinator)],
+      });
+
+      const result = await ctx.service.cancelReservation(command, user);
+
+      expect(result.isSuccess).toBe(true);
+      expect(ctx.reservationsRepository.reopenProposition).toHaveBeenCalledWith(71);
+    });
+
+    it('fails cancellation when reopening the linked proposition throws', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: 10,
+        proposition_id: 88,
+      });
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
+      const reopenError = new Error('reopen failed');
+      ctx.reservationsRepository.reopenProposition.mockRejectedValueOnce(reopenError);
+      const user = createUserDto({
+        id: reservation.coordinator_id,
+        roles: [createRole(UserRole.Coordinator)],
+      });
+
+      const result = await ctx.service.cancelReservation(command, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ReservationCancellationError);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to reopen proposition after reservation cancellation',
+        reopenError,
+      );
+    });
+
+    it('fails cancellation when reopening the linked proposition returns null', async () => {
+      const ctx = createTestContext();
+      const reservation = createReservationEntity({
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: 10,
+        proposition_id: 99,
+      });
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.reopenProposition.mockResolvedValueOnce(null);
+      const user = createUserDto({
+        id: reservation.coordinator_id,
+        roles: [createRole(UserRole.Coordinator)],
+      });
+
+      const result = await ctx.service.cancelReservation(command, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ReservationCancellationError);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to reopen proposition after reservation cancellation',
+        99,
+      );
     });
 
     it('allows range administrators with scoped roles to cancel reservations', async () => {

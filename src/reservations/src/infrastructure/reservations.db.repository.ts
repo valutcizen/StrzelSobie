@@ -556,6 +556,39 @@ export class ReservationsDbRepository implements IReservationsRepository {
     return mapDbReservation(record);
   }
 
+  public async reopenProposition(id: number): Promise<Proposition | null> {
+    const stmt = this.db.prepare(
+      `UPDATE reservations_propositions
+       SET status = 'open'
+       WHERE id = ? AND status = 'converted'
+       RETURNING
+         id,
+         user_id,
+         range_id,
+         status,
+         event_date,
+         start_time,
+         end_time,
+         num_participants,
+         tracks_requested,
+         EXISTS (
+           SELECT 1
+           FROM users_user_global_roles ugr
+           JOIN users_roles ur ON ur.id = ugr.role_id
+           WHERE ugr.user_id = reservations_propositions.user_id
+             AND ur.name = 'Member'
+         ) AS is_member`
+    );
+
+    const record = await stmt.bind(id).first<PropositionDb>();
+
+    if (!record) {
+      return null;
+    }
+
+    return mapDbProposition(record);
+  }
+
   public async createRecord(data: CreateRecordData): Promise<RecordEntity> {
     const stmt = this.db.prepare(
       `INSERT INTO reservations_records
