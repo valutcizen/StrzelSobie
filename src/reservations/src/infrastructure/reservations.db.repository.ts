@@ -160,7 +160,9 @@ export class ReservationsDbRepository implements IReservationsRepository {
               AND ur.name = 'Member'
           ) AS is_member
        FROM reservations_propositions rp
-       WHERE range_id = ? AND event_date BETWEEN ? AND ?`
+       WHERE range_id = ?
+         AND event_date BETWEEN ? AND ?
+         AND status = 'open'`
     );
     const { results } = await stmt.bind(rangeId, startDate, endDate).all<PropositionDb>();
 

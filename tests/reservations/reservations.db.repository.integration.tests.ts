@@ -192,6 +192,18 @@ describe('ReservationsDbRepository integration', () => {
     expect(guestProposition?.is_member).toBe(false);
   });
 
+  it('getPropositions excludes non-open statuses', async () => {
+    await insertProposition({ status: 'converted', event_date: '2024-03-20' });
+    await insertProposition({ status: 'cancelled', event_date: '2024-03-21' });
+    const openProposition = await insertProposition({ status: 'open', event_date: '2024-03-22' });
+
+    const results = await repository.getPropositions(1, '2024-03-01', '2024-03-31');
+
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe(openProposition.id);
+    expect(results[0].status).toBe('open');
+  });
+
   it('getReservations returns reservations for range and window', async () => {
     const expected = await insertReservation({ event_date: '2024-05-10', is_public: 1, is_joinable: 1 });
     await insertReservation({ event_date: '2024-06-01' });
