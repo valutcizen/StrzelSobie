@@ -906,6 +906,22 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
     });
 
+    it('validates overridden participant count during conversion', async () => {
+      const ctx = createTestContext();
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
+      const user = createCoordinatorUser();
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createConversionPayload({ numParticipants: 0 }),
+        { force: false },
+        user
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
+    });
+
     it('propagates overlap errors during conversion', async () => {
       const ctx = createTestContext();
       ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
@@ -1025,6 +1041,63 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBe(auditError);
     });
 
+    it('allows overriding reservation details during conversion', async () => {
+      const ctx = createTestContext();
+      const proposition = createPropositionEntity();
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
+      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
+      const user = createCoordinatorUser();
+      const reservation = createReservationEntity({
+        range_id: ctx.rangeDetails.id,
+        coordinator_id: user.id,
+        proposition_id: proposition.id,
+        event_date: '2024-02-01',
+        start_time: '13:00',
+        end_time: '14:00',
+        num_participants: 8,
+        tracks_requested: 3,
+        is_public: true,
+        is_joinable: true,
+      });
+      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        createConversionPayload({
+          eventDate: '2024-02-01',
+          startTime: '13:00',
+          endTime: '14:00',
+          tracksRequested: 3,
+          numParticipants: 8,
+          isPublic: true,
+          isJoinable: true,
+        }),
+        { force: false },
+        user
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(ctx.reservationsRepository.getOverlappingReservationsDetails).toHaveBeenCalledWith(
+        ctx.rangeDetails.id,
+        '2024-02-01',
+        '13:00',
+        '14:00',
+        { excludePropositionId: proposition.id }
+      );
+      expect(ctx.reservationsRepository.createReservationFromProposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event_date: '2024-02-01',
+          start_time: '13:00',
+          end_time: '14:00',
+          num_participants: 8,
+          tracks_requested: 3,
+          is_public: true,
+          is_joinable: true,
+        }),
+        proposition.id
+      );
+    });
+
     it('returns ReservationCreationError when conversion repository rejects', async () => {
       const ctx = createTestContext();
       const proposition = createPropositionEntity();
@@ -1043,7 +1116,7 @@ describe('ReservationsService contract', () => {
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(ReservationCreationError);
       expect(consoleErrorSpy).toHaveBeenCalled();
-  });
+    });
 
     it('converts proposition when validation passes and conflicts resolved', async () => {
       const ctx = createTestContext();

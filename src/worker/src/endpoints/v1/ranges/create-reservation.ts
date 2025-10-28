@@ -119,6 +119,15 @@ const FromPropositionBodySchema = z
       })
       .int('propositionId must be an integer')
       .min(1, 'propositionId must be positive'),
+    eventDate: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Event date must match YYYY-MM-DD format')
+      .refine(
+        (value) => !Number.isNaN(new Date(value).getTime()),
+        'Event date must be a valid calendar date'
+      )
+      .optional(),
     startTime: TimeSchema.optional(),
     endTime: TimeSchema.optional(),
     tracksRequested: z
@@ -129,6 +138,17 @@ const FromPropositionBodySchema = z
       .int('tracksRequested must be an integer')
       .min(1, 'At least one track must be requested')
       .optional(),
+    numParticipants: z
+      .coerce
+      .number({
+        invalid_type_error: 'Number of participants must be a number',
+      })
+      .int('Number of participants must be an integer')
+      .min(1, 'At least one participant is required')
+      .max(50, 'Number of participants cannot exceed 50')
+      .optional(),
+    isPublic: z.boolean().optional(),
+    isJoinable: z.boolean().optional(),
   })
   .strict()
   .refine(
@@ -224,9 +244,13 @@ export class CreateReservation extends OpenAPIRoute {
     if ('propositionId' in requestBody) {
       const propositionCommand: CreateReservationFromPropositionCommand = {
         propositionId: requestBody.propositionId,
+        eventDate: requestBody.eventDate,
         startTime: requestBody.startTime,
         endTime: requestBody.endTime,
         tracksRequested: requestBody.tracksRequested,
+        numParticipants: requestBody.numParticipants,
+        isPublic: requestBody.isPublic,
+        isJoinable: requestBody.isJoinable,
       };
       command = propositionCommand;
     } else {

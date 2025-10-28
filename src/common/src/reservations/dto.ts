@@ -22,9 +22,13 @@ export type CreateReservationCommand = {
  */
 export type CreateReservationFromPropositionCommand = {
   propositionId: Proposition['id'];
+  eventDate?: Reservation['event_date'];
   startTime?: Reservation['start_time'];
   endTime?: Reservation['end_time'];
   tracksRequested?: Reservation['tracks_requested'];
+  numParticipants?: Reservation['num_participants'];
+  isPublic?: boolean;
+  isJoinable?: boolean;
 };
 
 /**

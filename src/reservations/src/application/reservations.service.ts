@@ -623,25 +623,35 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(new PropositionAlreadyClosedError());
     }
 
+    const eventDate = command.eventDate ?? proposition.event_date;
     const startTime = command.startTime ?? proposition.start_time;
     const endTime = command.endTime ?? proposition.end_time;
     const tracksRequested = command.tracksRequested ?? proposition.tracks_requested;
+    const numParticipants = command.numParticipants ?? proposition.num_participants;
+    const isPublic = typeof command.isPublic === 'boolean' ? command.isPublic : false;
+    const isJoinable = typeof command.isJoinable === 'boolean' ? command.isJoinable : false;
 
-    const timeError = this.validateReservationTimeWindow(proposition.event_date, startTime, endTime);
-    if (timeError) {
-      return Result.fail(timeError);
-    }
-
-    const tracksError = this.validateReservationTracks(tracksRequested, rangeDetails.totalTracks);
-    if (tracksError) {
-      return Result.fail(tracksError);
+    const validationError = this.validateReservationCommand(
+      {
+        eventDate,
+        startTime,
+        endTime,
+        numParticipants,
+        tracksRequested,
+        isPublic,
+        isJoinable,
+      },
+      rangeDetails.totalTracks
+    );
+    if (validationError) {
+      return Result.fail(validationError);
     }
 
     let conflicts: ReservationConflict[];
     try {
       conflicts = await this.reservationsRepository.getOverlappingReservationsDetails(
         rangeDetails.id,
-        proposition.event_date,
+        eventDate,
         startTime,
         endTime,
         { excludePropositionId: proposition.id }
@@ -665,13 +675,13 @@ export class ReservationsService implements IReservationsService {
       range_id: rangeDetails.id,
       coordinator_id: user.id,
       proposition_id: proposition.id,
-      event_date: proposition.event_date,
+      event_date: eventDate,
       start_time: startTime,
       end_time: endTime,
-      num_participants: proposition.num_participants,
+      num_participants: numParticipants,
       tracks_requested: tracksRequested,
-      is_public: false,
-      is_joinable: false,
+      is_public: isPublic,
+      is_joinable: isJoinable,
     };
 
     try {
@@ -693,11 +703,16 @@ export class ReservationsService implements IReservationsService {
           endTime: reservation.end_time,
           numParticipants: reservation.num_participants,
           tracksRequested: reservation.tracks_requested,
+          isPublic,
+          isJoinable,
           forceApplied: force && blockingConflicts.length > 0,
           adjustments: {
-            startTimeChanged: reservation.start_time !== proposition.start_time,
-            endTimeChanged: reservation.end_time !== proposition.end_time,
-            tracksRequestedChanged: reservation.tracks_requested !== proposition.tracks_requested,
+            eventDateChanged: eventDate !== proposition.event_date,
+            startTimeChanged: startTime !== proposition.start_time,
+            endTimeChanged: endTime !== proposition.end_time,
+            tracksRequestedChanged: tracksRequested !== proposition.tracks_requested,
+            numParticipantsChanged: numParticipants !== proposition.num_participants,
+            visibilityChanged: isPublic !== false || isJoinable !== false,
           },
         },
       });

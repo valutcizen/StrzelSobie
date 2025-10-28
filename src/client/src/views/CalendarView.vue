@@ -18,7 +18,9 @@ import EventDetailDialog from '@/components/calendar/EventDetailDialog.vue'
 import PropositionFormDialog, {
   type SelectedSlot,
 } from '@/components/calendar/PropositionFormDialog.vue'
-import ReservationFormDialog from '@/components/calendar/ReservationFormDialog.vue'
+import ReservationFormDialog, {
+  type ReservationSubmissionError,
+} from '@/components/calendar/ReservationFormDialog.vue'
 import ConfirmationDialog from '@/components/common/ConfirmationDialog.vue'
 import type {
   PersonSummary,
@@ -35,6 +37,13 @@ const authStore = useAuthStore()
 const route = useRoute()
 
 const rangeSlug = computed(() => String(route.params.rangeSlug ?? authStore.defaultRangeSlug))
+const canForceReservations = computed(() =>
+  authStore.hasAnyRole([
+    'Coordinator',
+    'Shooting Range Administrator',
+    'Club/Community Administrator',
+  ]),
+)
 
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
 const calendarContainerRef = ref<HTMLElement | null>(null)
@@ -65,6 +74,10 @@ const reservationDialog = reactive({
   propositionId: null as number | null,
   defaultStart: null as string | null,
   defaultEnd: null as string | null,
+  defaultTracks: null as number | null,
+  defaultParticipants: null as number | null,
+  defaultIsPublic: null as boolean | null,
+  defaultIsOpenForJoining: null as boolean | null,
 })
 const confirmationState = reactive({
   open: false,
@@ -542,6 +555,10 @@ const openReservationDialog = (options: {
   propositionId?: number | null
   defaultStart?: string | null
   defaultEnd?: string | null
+  defaultTracks?: number | null
+  defaultParticipants?: number | null
+  defaultIsPublic?: boolean | null
+  defaultIsOpenForJoining?: boolean | null
 }) => {
   const defaultStart = options.defaultStart
   const defaultEnd = options.defaultEnd
@@ -561,14 +578,46 @@ const openReservationDialog = (options: {
 
   reservationDialog.open = true
   reservationDialog.propositionId = options.propositionId ?? null
+  reservationDialog.defaultTracks =
+    typeof options.defaultTracks === 'number' ? options.defaultTracks : null
+  reservationDialog.defaultParticipants =
+    typeof options.defaultParticipants === 'number' ? options.defaultParticipants : null
+
+  const isPublicDefault =
+    typeof options.defaultIsPublic === 'boolean' ? options.defaultIsPublic : true
+  reservationDialog.defaultIsPublic = isPublicDefault
+
+  const isOpenForJoiningDefault =
+    typeof options.defaultIsOpenForJoining === 'boolean'
+      ? options.defaultIsOpenForJoining && isPublicDefault
+      : false
+  reservationDialog.defaultIsOpenForJoining = isOpenForJoiningDefault
 }
 
 const handleAcceptEvent = (event: RangeEvent) => {
   eventDetailOpen.value = false
+  let defaultTracks: number | null =
+    typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null
+  let defaultParticipants: number | null = null
+
+  const detail = eventDetailState.detail
+  if (detail && detail.type === 'proposition') {
+    if (typeof detail.tracksRequested === 'number') {
+      defaultTracks = detail.tracksRequested
+    }
+    if (typeof detail.numParticipants === 'number') {
+      defaultParticipants = detail.numParticipants
+    }
+  }
+
   openReservationDialog({
     propositionId: event.meta?.propositionId ?? null,
     defaultStart: event.start,
     defaultEnd: event.end,
+    defaultTracks,
+    defaultParticipants,
+    defaultIsPublic: false,
+    defaultIsOpenForJoining: false,
   })
 }
 
@@ -648,6 +697,13 @@ const handleReservationSubmitted = async () => {
   reservationDialog.open = false
   await refreshEvents()
   showSnackbar('Rezerwacja została zapisana.')
+}
+
+const handleReservationError = (error: ReservationSubmissionError) => {
+  const message = error.forceRequired
+    ? `${error.message} Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.`
+    : error.message
+  showSnackbar(message, 'error')
 }
 
 watch(
@@ -771,8 +827,14 @@ onBeforeUnmount(() => {
       :proposition-id="reservationDialog.propositionId"
       :default-start="reservationDialog.defaultStart"
       :default-end="reservationDialog.defaultEnd"
+      :default-tracks="reservationDialog.defaultTracks"
+      :default-participants="reservationDialog.defaultParticipants"
+      :default-is-public="reservationDialog.defaultIsPublic"
+      :default-is-open-for-joining="reservationDialog.defaultIsOpenForJoining"
+      :can-use-force="canForceReservations"
       @update:open="reservationDialog.open = $event"
       @submitted="handleReservationSubmitted"
+      @submit-error="handleReservationError"
     />
 
     <ConfirmationDialog
