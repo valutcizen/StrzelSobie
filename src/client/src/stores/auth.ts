@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { AuthenticatedUser, UserRole } from '../types/auth'
+import type { AuthenticatedUser, RangeRolesMap, UserRole } from '../types/auth'
 import { http } from '../services/http'
+import { isUserRole, normalizeUserRoles } from '../utils/roles'
 
 interface LoginPayload {
   email: string
@@ -11,6 +12,26 @@ interface LoginPayload {
 interface RegisterPayload {
   email: string
   password: string
+}
+
+interface MeResponse {
+  id: number
+  email: string
+  phoneNumber: string | null
+  roles: string[]
+  rangeRoles: Record<string, string[]>
+}
+
+const dedupeRoles = (roles: string[]): UserRole[] => {
+  const unique = new Set<UserRole>()
+
+  for (const role of roles) {
+    if (isUserRole(role)) {
+      unique.add(role)
+    }
+  }
+
+  return Array.from(unique)
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -23,6 +44,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const hasRole = (role: UserRole) => user.value?.roles.includes(role) ?? false
   const hasAnyRole = (roles: UserRole[]) => roles.some((role) => hasRole(role))
+  const hasRangeRole = (role: UserRole) =>
+    Object.values(user.value?.rangeRoles ?? {}).some((roles) => roles.includes(role))
+  const hasAnyRangeRole = (roles: UserRole[]) => roles.some((role) => hasRangeRole(role))
 
   const reset = () => {
     user.value = null
@@ -38,9 +62,26 @@ export const useAuthStore = defineStore('auth', () => {
     hasAttemptedFetch.value = true
 
     try {
-      const { data } = await http.get<AuthenticatedUser>('/auth/me')
-      user.value = data
-      return data
+      const { data } = await http.get<MeResponse>('/auth/me')
+
+      const rangeRoles: RangeRolesMap = Object.entries(data.rangeRoles ?? {}).reduce(
+        (acc, [rangeId, roles]) => {
+          acc[rangeId] = dedupeRoles(roles)
+          return acc
+        },
+        {} as RangeRolesMap,
+      )
+
+      const normalizedUser: AuthenticatedUser = {
+        id: String(data.id),
+        email: data.email,
+        roles: normalizeUserRoles(data.roles),
+        rangeRoles,
+        defaultRangeSlug: user.value?.defaultRangeSlug ?? 'dobczyce',
+      }
+
+      user.value = normalizedUser
+      return normalizedUser
     } catch (error) {
       reset()
       throw error
@@ -80,5 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
     reset,
     hasRole,
     hasAnyRole,
+    hasRangeRole,
+    hasAnyRangeRole,
   }
 })

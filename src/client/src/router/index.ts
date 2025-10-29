@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 interface AppRouteMeta {
   requiresAuth?: boolean
   requiredRoles?: UserRole[]
+  requiredRangeRoles?: UserRole[]
   layout?: 'auth' | 'app'
 }
 
@@ -39,6 +40,16 @@ const routes: AppRouteRecordRaw[] = [
     name: 'UserManagement',
     component: () => import('@/views/admin/UserManagementView.vue'),
     meta: { requiresAuth: true, requiredRoles: ['Club/Community Administrator'] },
+  },
+  {
+    path: '/admin/range-users',
+    name: 'RangeUserManagement',
+    component: () => import('@/views/admin/RangeUserManagementView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiredRoles: ['Club/Community Administrator'],
+      requiredRangeRoles: ['Shooting Range Administrator'],
+    },
   },
   {
     path: '/admin/verify-users',
@@ -98,7 +109,29 @@ router.beforeEach(async (to) => {
   }
 
   const requiredRoles = to.meta?.requiredRoles
-  if (Array.isArray(requiredRoles) && requiredRoles.length > 0 && !authStore.hasAnyRole(requiredRoles)) {
+  const requiredRangeRoles = to.meta?.requiredRangeRoles
+
+  const hasRequiredRoles =
+    Array.isArray(requiredRoles) && requiredRoles.length > 0
+      ? authStore.hasAnyRole(requiredRoles)
+      : null
+
+  const hasRequiredRangeRoles =
+    Array.isArray(requiredRangeRoles) && requiredRangeRoles.length > 0
+      ? authStore.hasAnyRangeRole(requiredRangeRoles)
+      : null
+
+  let isAuthorized = true
+
+  if (hasRequiredRoles !== null && hasRequiredRangeRoles !== null) {
+    isAuthorized = hasRequiredRoles || hasRequiredRangeRoles
+  } else if (hasRequiredRoles !== null) {
+    isAuthorized = hasRequiredRoles
+  } else if (hasRequiredRangeRoles !== null) {
+    isAuthorized = hasRequiredRangeRoles
+  }
+
+  if (!isAuthorized) {
     return { name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }
   }
 

@@ -70,6 +70,13 @@
           :roles="['Club/Community Administrator']"
         />
         <RoleBasedLink
+          icon="mdi-account-cog"
+          :label="t('navigation.rangeUserManagement')"
+          :to="{ name: 'RangeUserManagement' }"
+          :roles="['Club/Community Administrator']"
+          :range-roles="['Shooting Range Administrator']"
+        />
+        <RoleBasedLink
           icon="mdi-account-check"
           :label="t('navigation.userVerification')"
           :to="{ name: 'UserVerification' }"
@@ -79,7 +86,8 @@
           icon="mdi-target-account"
           :label="t('navigation.rangeSettings')"
           :to="{ name: 'RangeSettings' }"
-          :roles="['Shooting Range Administrator']"
+          :roles="['Club/Community Administrator']"
+          :range-roles="['Shooting Range Administrator']"
         />
       </v-list>
     </v-navigation-drawer>

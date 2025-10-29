@@ -10,9 +10,15 @@ const props = withDefaults(
     open: boolean
     user: UserRow | null
     loading?: boolean
+    assignedRoles?: UserRole[]
+    availableRoles?: UserRole[]
+    fixedRoles?: UserRole[]
   }>(),
   {
     loading: false,
+    assignedRoles: () => [],
+    availableRoles: () => EDITABLE_USER_ROLES.slice(),
+    fixedRoles: () => ['Guest'],
   },
 )
 
@@ -30,32 +36,38 @@ const dialogModel = computed({
 
 const editedRoles = ref<UserRole[]>([])
 
-const guestLabel = computed(() => t(getRoleTranslationKey('Guest')))
+const fixedRoles = computed<UserRole[]>(() => props.fixedRoles)
 
 const roleOptions = computed(() =>
-  EDITABLE_USER_ROLES.map((role) => ({
+  props.availableRoles.map((role) => ({
     value: role,
     title: t(getRoleTranslationKey(role)),
   })),
 )
 
-const assignedRoles = computed<UserRole[]>(() => [
-  'Guest',
-  ...editedRoles.value,
-])
+const assignedRoles = computed<UserRole[]>(() => {
+  const unique = new Set<UserRole>([...fixedRoles.value, ...editedRoles.value])
+  return Array.from(unique)
+})
 
 const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 
+const fixedRoleLabel = computed(() =>
+  fixedRoles.value.length > 0 ? translateRole(fixedRoles.value[0]) : null,
+)
+
 watch(
-  () => props.user,
-  (user) => {
-    editedRoles.value = user ? user.roles.filter((role) => role !== 'Guest') : []
+  () => [props.user, props.assignedRoles],
+  () => {
+    const immutable = new Set(fixedRoles.value)
+    const selectableRoles = (props.assignedRoles ?? []).filter((role) => !immutable.has(role))
+    editedRoles.value = selectableRoles
   },
   { immediate: true },
 )
 
 const handleSave = () => {
-  const uniqueRoles = Array.from(new Set<UserRole>(['Guest', ...editedRoles.value]))
+  const uniqueRoles = Array.from(new Set<UserRole>([...fixedRoles.value, ...editedRoles.value]))
   emit('save', uniqueRoles)
 }
 
@@ -79,13 +91,14 @@ const handleCancel = () => {
       </v-card-subtitle>
       <v-card-text>
         <v-alert
+          v-if="fixedRoleLabel"
           border="start"
           density="compact"
           type="info"
           variant="tonal"
           class="mb-4"
         >
-          {{ t('admin.userRoles.guestImmutableHint', { role: guestLabel }) }}
+          {{ t('admin.userRoles.guestImmutableHint', { role: fixedRoleLabel }) }}
         </v-alert>
         <v-select
           v-model="editedRoles"

@@ -29,6 +29,7 @@ interface RoleBasedLinkProps {
   label: string
   to: RouteLocationRaw
   roles?: UserRole[]
+  rangeRoles?: UserRole[]
 }
 
 const props = defineProps<RoleBasedLinkProps>()
@@ -36,11 +37,21 @@ const props = defineProps<RoleBasedLinkProps>()
 const authStore = useAuthStore()
 
 const isVisible = computed(() => {
-  if (!props.roles || props.roles.length === 0) {
+  const requiresGlobal = Array.isArray(props.roles) && props.roles.length > 0
+  const requiresRange = Array.isArray(props.rangeRoles) && props.rangeRoles.length > 0
+
+  if (!requiresGlobal && !requiresRange) {
     return true
   }
 
-  return authStore.hasAnyRole(props.roles)
+  const hasGlobalAccess = requiresGlobal ? authStore.hasAnyRole(props.roles ?? []) : false
+  const hasRangeAccess = requiresRange ? authStore.hasAnyRangeRole(props.rangeRoles ?? []) : false
+
+  if (requiresGlobal && requiresRange) {
+    return hasGlobalAccess || hasRangeAccess
+  }
+
+  return requiresGlobal ? hasGlobalAccess : hasRangeAccess
 })
 </script>
 

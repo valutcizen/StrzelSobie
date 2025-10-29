@@ -16,6 +16,7 @@ const messages = {
     navigation: {
       calendar: 'Calendar',
       userManagement: 'User Management',
+      rangeUserManagement: 'Range Role Management',
       userVerification: 'User Verification',
       rangeSettings: 'Range Settings',
     },
@@ -63,6 +64,7 @@ const messages = {
     navigation: {
       calendar: 'Kalendarz',
       userManagement: 'Zarządzanie użytkownikami',
+      rangeUserManagement: 'Zarządzanie rolami strzelnicy',
       userVerification: 'Weryfikacja użytkowników',
       rangeSettings: 'Ustawienia strzelnicy',
     },
