@@ -210,14 +210,6 @@
           Zamknij
         </v-btn>
         <v-btn
-          v-if="canJoin"
-          color="primary"
-          variant="tonal"
-          @click="emitJoin"
-        >
-          Dołącz
-        </v-btn>
-        <v-btn
           v-if="canAccept"
           color="primary"
           @click="emitAccept"
@@ -268,7 +260,6 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
   accept: [event: RangeEvent]
   cancel: [event: RangeEvent]
-  join: [event: RangeEvent]
   'reload-details': [event: RangeEvent]
 }>()
 
@@ -504,7 +495,6 @@ const reservationJoinableLabel = computed(() => {
 const canAccept = computed(() =>
   isProposition.value && Boolean(event.value?.meta?.propositionId) && authStore.hasAnyRole(['Coordinator']),
 )
-const canJoin = computed(() => isReservation.value && (event.value?.meta?.isOpenForJoining ?? false))
 const canCancel = computed(() =>
   Boolean(event.value && event.value.type !== 'record' && authStore.hasAnyRole(['Coordinator', 'Shooting Range Administrator'])),
 )
@@ -522,12 +512,6 @@ const emitAccept = () => {
 const emitCancel = () => {
   if (event.value) {
     emit('cancel', event.value)
-  }
-}
-
-const emitJoin = () => {
-  if (event.value) {
-    emit('join', event.value)
   }
 }
 

@@ -671,22 +671,6 @@ const handleConfirmationConfirm = async () => {
   }
 }
 
-const handleJoinEvent = async (event: RangeEvent) => {
-  if (!rangeSlug.value || !event.meta?.reservationId) {
-    return
-  }
-
-  try {
-    await http.post(`/ranges/${rangeSlug.value}/reservations/${event.meta.reservationId}/join`)
-    showSnackbar('Dołączyłeś do rezerwacji.')
-  } catch (error) {
-    showSnackbar(
-      error instanceof Error ? error.message : 'Nie udało się dołączyć do rezerwacji.',
-      'error',
-    )
-  }
-}
-
 const handlePropositionSubmitted = async () => {
   propositionDialogOpen.value = false
   await refreshEvents()
@@ -809,7 +793,6 @@ onBeforeUnmount(() => {
       @update:open="eventDetailOpen = $event"
       @accept="handleAcceptEvent"
       @cancel="openCancellationConfirmation"
-      @join="handleJoinEvent"
       @reload-details="handleDetailReload"
     />
 
