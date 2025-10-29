@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { UserRow } from '@/types/admin'
 import type { UserRole } from '@/types/auth'
+import { EDITABLE_USER_ROLES, getRoleTranslationKey } from '@/utils/roles'
 
 const props = withDefaults(
   defineProps<{
@@ -19,14 +21,7 @@ const emit = defineEmits<{
   save: [roles: UserRole[]]
 }>()
 
-const allRoles: UserRole[] = [
-  'Guest',
-  'Member',
-  'Coordinator',
-  'Confirmator',
-  'Shooting Range Administrator',
-  'Club/Community Administrator',
-]
+const { t } = useI18n()
 
 const dialogModel = computed({
   get: () => props.open,
@@ -35,16 +30,33 @@ const dialogModel = computed({
 
 const editedRoles = ref<UserRole[]>([])
 
+const guestLabel = computed(() => t(getRoleTranslationKey('Guest')))
+
+const roleOptions = computed(() =>
+  EDITABLE_USER_ROLES.map((role) => ({
+    value: role,
+    title: t(getRoleTranslationKey(role)),
+  })),
+)
+
+const assignedRoles = computed<UserRole[]>(() => [
+  'Guest',
+  ...editedRoles.value,
+])
+
+const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
+
 watch(
   () => props.user,
   (user) => {
-    editedRoles.value = user ? [...user.roles] : []
+    editedRoles.value = user ? user.roles.filter((role) => role !== 'Guest') : []
   },
   { immediate: true },
 )
 
 const handleSave = () => {
-  emit('save', [...editedRoles.value])
+  const uniqueRoles = Array.from(new Set<UserRole>(['Guest', ...editedRoles.value]))
+  emit('save', uniqueRoles)
 }
 
 const handleCancel = () => {
@@ -66,15 +78,45 @@ const handleCancel = () => {
         {{ user.email }}
       </v-card-subtitle>
       <v-card-text>
+        <v-alert
+          border="start"
+          density="compact"
+          type="info"
+          variant="tonal"
+          class="mb-4"
+        >
+          {{ t('admin.userRoles.guestImmutableHint', { role: guestLabel }) }}
+        </v-alert>
         <v-select
           v-model="editedRoles"
-          :items="allRoles"
+          :items="roleOptions"
+          item-title="title"
+          item-value="value"
           label="Role"
           multiple
           chips
           closable-chips
           :disabled="loading"
         />
+        <div class="mt-4">
+          <span class="text-subtitle-2 text-medium-emphasis">
+            {{ t('admin.userRoles.currentRolesLabel') }}
+          </span>
+          <v-chip-group
+            class="mt-2"
+            selected-class="text-white"
+          >
+            <v-chip
+              v-for="role in assignedRoles"
+              :key="role"
+              color="primary"
+              size="small"
+              variant="tonal"
+            >
+              {{ translateRole(role) }}
+            </v-chip>
+          </v-chip-group>
+        </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />

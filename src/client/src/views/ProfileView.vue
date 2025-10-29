@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
-import { onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth'
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getRoleTranslationKey } from '@/utils/roles'
+import type { UserRole } from '@/types/auth'
 
-const authStore = useAuthStore();
+const authStore = useAuthStore()
+const { t } = useI18n()
+const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 
 onMounted(() => {
   if (!authStore.user) {
-    authStore.fetchUser();
+    authStore.fetchUser()
   }
-});
+})
 </script>
 
 <template>
@@ -34,7 +39,7 @@ onMounted(() => {
                   v-for="role in authStore.user.roles"
                   :key="role"
                 >
-                  {{ role }}
+                  {{ translateRole(role) }}
                 </v-chip>
               </v-chip-group>
             </div>

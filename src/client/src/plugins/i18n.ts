@@ -5,6 +5,14 @@ const messages = {
     app: {
       title: 'Strzel Sobie',
     },
+    roles: {
+      guest: 'Guest',
+      member: 'Member',
+      coordinator: 'Coordinator',
+      confirmator: 'Confirmator',
+      shootingRangeAdmin: 'Shooting Range Administrator',
+      clubCommunityAdmin: 'Club/Community Administrator',
+    },
     navigation: {
       calendar: 'Calendar',
       userManagement: 'User Management',
@@ -29,10 +37,28 @@ const messages = {
     footer: {
       privacyPolicy: 'Privacy Policy',
     },
+    admin: {
+      userRoles: {
+        guestImmutableHint: 'The {role} role is always assigned.',
+        currentRolesLabel: 'Assigned roles',
+        assignRole: 'Assign the {role} role',
+        suggestedRole: 'Suggested role: {role}',
+        noSuggestedRole: 'No suggested role.',
+        roleAssigned: 'User {email} received the {role} role.',
+      },
+    },
   },
   pl: {
     app: {
       title: 'Strzel Sobie',
+    },
+    roles: {
+      guest: 'Gość',
+      member: 'Członek',
+      coordinator: 'Koordynator',
+      confirmator: 'Potwierdzający',
+      shootingRangeAdmin: 'Administrator strzelnicy',
+      clubCommunityAdmin: 'Administrator klubu/społeczności',
     },
     navigation: {
       calendar: 'Kalendarz',
@@ -57,6 +83,16 @@ const messages = {
     },
     footer: {
       privacyPolicy: 'Polityka Prywatności',
+    },
+    admin: {
+      userRoles: {
+        guestImmutableHint: 'Rola {role} jest przypisana każdemu użytkownikowi.',
+        currentRolesLabel: 'Przypisane role',
+        assignRole: 'Nadaj rolę {role}',
+        suggestedRole: 'Sugerowana rola: {role}',
+        noSuggestedRole: 'Brak proponowanej roli.',
+        roleAssigned: 'Użytkownik {email} otrzymał rolę {role}.',
+      },
     },
   },
 };

@@ -2,9 +2,11 @@
 import { formatDistanceToNow } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAdminStore } from '@/stores/admin'
 import type { PendingUser } from '@/types/admin'
 import type { UserRole } from '@/types/auth'
+import { getRoleTranslationKey } from '@/utils/roles'
 
 const adminStore = useAdminStore()
 const loadingUserId = ref<string | null>(null)
@@ -14,6 +16,10 @@ const snackbar = reactive({
   message: '',
   color: 'success' as 'success' | 'error',
 })
+
+const { t } = useI18n()
+
+const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 
 const fetchPendingUsers = async () => {
   errorMessage.value = null
@@ -31,7 +37,10 @@ const promoteUser = async (user: PendingUser, role: UserRole) => {
   try {
     await adminStore.promotePendingUser(user.id, role)
     snackbar.open = true
-    snackbar.message = `Użytkownik ${user.email} otrzymał rolę ${role}.`
+    snackbar.message = t('admin.userRoles.roleAssigned', {
+      email: user.email,
+      role: translateRole(role),
+    })
     snackbar.color = 'success'
   } catch (error) {
     errorMessage.value =
@@ -119,9 +128,9 @@ onMounted(() => {
             </template>
             <template #subtitle>
               <span v-if="user.requestedRole">
-                Sugerowana rola: {{ user.requestedRole }}
+                {{ t('admin.userRoles.suggestedRole', { role: translateRole(user.requestedRole) }) }}
               </span>
-              <span v-else>Brak proponowanej roli.</span>
+              <span v-else>{{ t('admin.userRoles.noSuggestedRole') }}</span>
             </template>
             <template #append>
               <div class="d-flex gap-2">
@@ -131,7 +140,7 @@ onMounted(() => {
                   :loading="loadingUserId === user.id"
                   @click="promoteUser(user, 'Member')"
                 >
-                  Nadaj rolę Member
+                  {{ t('admin.userRoles.assignRole', { role: translateRole('Member') }) }}
                 </v-btn>
                 <v-btn
                   size="small"
@@ -139,7 +148,7 @@ onMounted(() => {
                   :loading="loadingUserId === user.id"
                   @click="promoteUser(user, 'Coordinator')"
                 >
-                  Nadaj rolę Coordinator
+                  {{ t('admin.userRoles.assignRole', { role: translateRole('Coordinator') }) }}
                 </v-btn>
               </div>
             </template>

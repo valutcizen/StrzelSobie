@@ -2,10 +2,12 @@
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { onMounted, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import EditUserRolesDialog from '@/components/admin/EditUserRolesDialog.vue'
 import { useAdminStore } from '@/stores/admin'
 import type { UserRow } from '@/types/admin'
 import type { UserRole } from '@/types/auth'
+import { getRoleTranslationKey } from '@/utils/roles'
 
 const adminStore = useAdminStore()
 const selectedUser = ref<UserRow | null>(null)
@@ -17,6 +19,8 @@ const snackbarState = reactive({
   color: 'success' as 'success' | 'error',
 })
 const lastError = ref<string | null>(null)
+
+const { t } = useI18n()
 
 const headers = [
   { title: 'Email', key: 'email' },
@@ -105,6 +109,8 @@ const formatDate = (value: string) => {
     return value
   }
 }
+
+const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 </script>
 
 <template>
@@ -157,7 +163,7 @@ const formatDate = (value: string) => {
               variant="tonal"
               size="small"
             >
-              {{ role }}
+              {{ translateRole(role) }}
             </v-chip>
           </v-chip-group>
         </template>
