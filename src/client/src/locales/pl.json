@@ -5,6 +5,7 @@
     "privacyPolicy": "Polityka Prywatności"
   },
   "navigation": {
+    "rangeInfo": "Strzelnica",
     "calendar": "Kalendarz",
     "profile": "Mój profil",
     "userManagement": "Zarządzanie użytkownikami",
@@ -26,6 +27,29 @@
     "propositionCta": "Zaproponuj termin",
     "loading": "Ładujemy kalendarz..."
   },
+  "rangeLanding": {
+    "loadingTitle": "Ładujemy dane strzelnicy...",
+    "description": "Poznaj podstawowe informacje o strzelnicy i dostępnych torach.",
+    "totalTracks": "Łączna liczba torów: {count}",
+    "emptyState": "Brak danych o strzelnicy.",
+    "actions": {
+      "refresh": "Odśwież dane strzelnicy",
+      "openCalendar": "Przejdź do kalendarza"
+    },
+    "operatingHours": {
+      "title": "Godziny otwarcia",
+      "closed": "Zamknięte"
+    },
+    "days": {
+      "monday": "Poniedziałek",
+      "tuesday": "Wtorek",
+      "wednesday": "Środa",
+      "thursday": "Czwartek",
+      "friday": "Piątek",
+      "saturday": "Sobota",
+      "sunday": "Niedziela"
+    }
+  },
   "profile": {
     "title": "Mój profil",
     "rolesHeading": "Role użytkownika"
@@ -38,7 +62,18 @@
       "title": "Weryfikacja użytkowników"
     },
     "rangeSettings": {
-      "title": "Ustawienia strzelnicy"
+      "title": "Ustawienia strzelnicy",
+      "totalTracksLabel": "Łączna liczba torów",
+      "operatingHoursHeading": "Godziny otwarcia",
+      "openLabel": "Otwarte",
+      "closedLabel": "Zamknięte",
+      "openTimeLabel": "Godzina otwarcia",
+      "closeTimeLabel": "Godzina zamknięcia",
+      "recordAction": "Zapisz bez rezerwacji",
+      "submitAction": "Zapisz zmiany",
+      "refreshAction": "Odśwież",
+      "successMessage": "Ustawienia strzelnicy zostały zapisane.",
+      "errorMessage": "Nie udało się zapisać ustawień strzelnicy."
     }
   }
 }

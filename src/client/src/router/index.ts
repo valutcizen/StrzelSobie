@@ -13,7 +13,7 @@ type AppRouteRecordRaw = RouteRecordRaw & { meta?: AppRouteMeta }
 const routes: AppRouteRecordRaw[] = [
   {
     path: '/',
-    redirect: () => ({ name: 'Calendar', params: { rangeSlug: 'dobczyce' } }),
+    redirect: () => ({ name: 'RangeLanding', params: { rangeSlug: 'dobczyce' } }),
   },
   {
     path: '/auth',
@@ -22,9 +22,16 @@ const routes: AppRouteRecordRaw[] = [
     meta: { layout: 'auth', requiresAuth: false },
   },
   {
-    path: '/:rangeSlug',
+    path: '/:rangeSlug/reservations',
     name: 'Calendar',
     component: () => import('@/views/CalendarView.vue'),
+    meta: { requiresAuth: true },
+    props: true,
+  },
+  {
+    path: '/:rangeSlug',
+    name: 'RangeLanding',
+    component: () => import('@/views/RangeLandingView.vue'),
     meta: { requiresAuth: true },
     props: true,
   },

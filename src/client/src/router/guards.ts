@@ -10,7 +10,7 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
     const requiresAuth = to.matched.some((record) => (record.meta as AppRouteMeta | undefined)?.requiresAuth)
 
     if (to.name === 'Auth' && authStore.isAuthenticated) {
-      return { name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }
+      return { name: 'RangeLanding', params: { rangeSlug: authStore.defaultRangeSlug } }
     }
 
     if (!requiresAuth) {
@@ -54,7 +54,7 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
     }
 
     if (!isAuthorized) {
-      return { name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }
+      return { name: 'RangeLanding', params: { rangeSlug: authStore.defaultRangeSlug } }
     }
 
     return true

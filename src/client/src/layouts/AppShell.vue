@@ -59,6 +59,11 @@
         nav
       >
         <RoleBasedLink
+          icon="mdi-target"
+          :label="t('navigation.rangeInfo')"
+          :to="{ name: 'RangeLanding', params: { rangeSlug: authStore.defaultRangeSlug } }"
+        />
+        <RoleBasedLink
           icon="mdi-calendar"
           :label="t('navigation.calendar')"
           :to="{ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }"

@@ -1,54 +1,127 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Field, Form, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
-import { useAuthStore } from '@/stores/auth'
-import { http } from '@/services/http'
 import RecordFormDialog from '@/components/calendar/RecordFormDialog.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRangeStore } from '@/stores/range'
+import type { OperatingHours, RangeDetails } from '@/types/range'
 
-interface RangeSettingsResponse {
-  slug: string
-  name: string
-  totalTracks: number
-  operatingHours: {
-    openTime: string
-    closeTime: string
-  }
-}
-
-interface UpdateRangeSettingsPayload {
-  totalTracks: number
-  operatingHours: {
-    openTime: string
-    closeTime: string
-  }
-}
-
+const { t } = useI18n()
 const authStore = useAuthStore()
-const rangeSlug = computed(() => authStore.defaultRangeSlug)
+const rangeStore = useRangeStore()
 
+const rangeSlug = computed(() => authStore.defaultRangeSlug)
+const defaultOpenTime = '08:00'
+const defaultCloseTime = '20:00'
+const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+
+type DayKey = (typeof dayOrder)[number]
+
+interface DayFormValue {
+  isOpen: boolean
+  open: string
+  close: string
+}
+
+type FormOperatingHours = Record<DayKey, DayFormValue>
+
+const createDefaultOperatingHours = (): FormOperatingHours =>
+  dayOrder.reduce((acc, day) => {
+    acc[day] = {
+      isOpen: day !== 'sunday',
+      open: defaultOpenTime,
+      close: defaultCloseTime,
+    }
+    return acc
+  }, {} as FormOperatingHours)
+
+type RangeSettingsFormValues = {
+  totalTracks: number
+  operatingHours: FormOperatingHours
+}
+
+const formKey = ref(0)
 const isLoading = ref(false)
 const isSaving = ref(false)
 const lastError = ref<string | null>(null)
+const recordDialogOpen = ref(false)
 const snackbar = reactive({
   open: false,
   message: '',
   color: 'success' as 'success' | 'error',
 })
-const recordDialogOpen = ref(false)
+
+const initialValues = ref<RangeSettingsFormValues>({
+  totalTracks: 1,
+  operatingHours: createDefaultOperatingHours(),
+})
+
+const timeRegex = /^([0-1]\d|2[0-3]):[0-5]\d$/
+
+const isClosingAfterOpening = (open: string, close: string) => {
+  const [openHours, openMinutes] = open.split(':').map(Number)
+  const [closeHours, closeMinutes] = close.split(':').map(Number)
+  const openTotal = openHours * 60 + openMinutes
+  const closeTotal = closeHours * 60 + closeMinutes
+  return closeTotal > openTotal
+}
+
+const daySchema = (dayLabel: string) =>
+  yup
+    .object({
+      isOpen: yup.boolean().required(),
+      open: yup
+        .string()
+        .when('isOpen', {
+          is: true,
+          then: (schema) =>
+            schema
+              .required('Pole jest wymagane')
+              .matches(timeRegex, 'Niepoprawny format godziny (HH:MM)'),
+          otherwise: (schema) => schema.default(defaultOpenTime),
+        }),
+      close: yup
+        .string()
+        .when('isOpen', {
+          is: true,
+          then: (schema) =>
+            schema
+              .required('Pole jest wymagane')
+              .matches(timeRegex, 'Niepoprawny format godziny (HH:MM)'),
+          otherwise: (schema) => schema.default(defaultCloseTime),
+        }),
+    })
+    .test(
+      'valid-range',
+      `Godzina zamknięcia musi być późniejsza niż godzina otwarcia (${dayLabel}).`,
+      (value) => {
+        if (!value?.isOpen) {
+          return true
+        }
+
+        if (!value.open || !value.close) {
+          return false
+        }
+
+        return isClosingAfterOpening(value.open, value.close)
+      },
+    )
 
 const schema = yup.object({
-  totalTracks: yup.number().min(1, 'Minimalna liczba torów to 1').required('Pole jest wymagane'),
-  openTime: yup.string().required('Pole jest wymagane'),
-  closeTime: yup.string().required('Pole jest wymagane'),
+  totalTracks: yup
+    .number()
+    .typeError('Pole jest wymagane')
+    .min(1, 'Minimalna liczba torów to 1')
+    .required('Pole jest wymagane'),
+  operatingHours: yup.object(
+    dayOrder.reduce((acc, day) => {
+      acc[day] = daySchema(t(`rangeLanding.days.${day}`))
+      return acc
+    }, {} as Record<DayKey, ReturnType<typeof daySchema>>),
+  ),
 })
-
-const initialValues = ref({
-  totalTracks: 1,
-  openTime: '08:00',
-  closeTime: '20:00',
-})
-const formKey = ref(0)
 
 const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
   snackbar.open = true
@@ -56,7 +129,28 @@ const showSnackbar = (message: string, color: 'success' | 'error' = 'success') =
   snackbar.color = color
 }
 
-const loadRangeSettings = async () => {
+const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => ({
+  totalTracks: range.totalTracks,
+  operatingHours: dayOrder.reduce((acc, day) => {
+    const entry = range.operatingHours?.[day] ?? null
+    acc[day] = {
+      isOpen: entry !== null,
+      open: entry?.open ?? defaultOpenTime,
+      close: entry?.close ?? defaultCloseTime,
+    }
+    return acc
+  }, {} as FormOperatingHours),
+})
+
+const mapFormToOperatingHours = (values: RangeSettingsFormValues): OperatingHours =>
+  Object.entries(values.operatingHours).reduce((acc, [day, value]) => {
+    acc[day] = value.isOpen
+      ? { open: value.open ?? defaultOpenTime, close: value.close ?? defaultCloseTime }
+      : null
+    return acc
+  }, {} as OperatingHours)
+
+const loadRangeSettings = async (force = false) => {
   if (!rangeSlug.value) {
     return
   }
@@ -65,12 +159,8 @@ const loadRangeSettings = async () => {
   lastError.value = null
 
   try {
-    const { data } = await http.get<RangeSettingsResponse>(`/ranges/${rangeSlug.value}`)
-    initialValues.value = {
-      totalTracks: data.totalTracks,
-      openTime: data.operatingHours.openTime,
-      closeTime: data.operatingHours.closeTime,
-    }
+    const range = await rangeStore.fetchRangeDetails(rangeSlug.value, { force })
+    initialValues.value = mapRangeToFormValues(range)
     formKey.value += 1
   } catch (error) {
     lastError.value =
@@ -80,7 +170,8 @@ const loadRangeSettings = async () => {
   }
 }
 
-const submitSettings: SubmissionHandler = async (values) => {
+const submitSettings: SubmissionHandler = async (rawValues) => {
+  const values = rawValues as RangeSettingsFormValues
   if (!rangeSlug.value) {
     return
   }
@@ -88,29 +179,27 @@ const submitSettings: SubmissionHandler = async (values) => {
   isSaving.value = true
   lastError.value = null
 
-  const payload = values as yup.InferType<typeof schema>
-
   try {
-    const requestBody: UpdateRangeSettingsPayload = {
-      totalTracks: Number(payload.totalTracks),
-      operatingHours: {
-        openTime: payload.openTime,
-        closeTime: payload.closeTime,
-      },
+    const payload = {
+      totalTracks: Number(values.totalTracks),
+      operatingHours: mapFormToOperatingHours(values),
     }
 
-    await http.patch(`/ranges/${rangeSlug.value}`, requestBody)
-    showSnackbar('Ustawienia strzelnicy zostały zapisane.')
+    await rangeStore.updateRange(rangeSlug.value, payload)
+    const updated = await rangeStore.fetchRangeDetails(rangeSlug.value, { force: true })
+    initialValues.value = mapRangeToFormValues(updated)
+    formKey.value += 1
+    showSnackbar(t('admin.rangeSettings.successMessage'))
   } catch (error) {
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się zapisać ustawień strzelnicy.'
-    showSnackbar('Nie udało się zapisać ustawień.', 'error')
+      error instanceof Error ? error.message : t('admin.rangeSettings.errorMessage')
+    showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
   } finally {
     isSaving.value = false
   }
 }
 
-const handleRecordSubmitted = async () => {
+const handleRecordSubmitted = () => {
   showSnackbar('Zapisano termin bez rezerwacji.')
   recordDialogOpen.value = false
 }
@@ -124,13 +213,15 @@ onMounted(() => {
   <v-container fluid>
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
-        <span>Ustawienia strzelnicy</span>
+        <span>{{ t('admin.rangeSettings.title') }}</span>
         <v-btn
           color="primary"
+          variant="tonal"
           prepend-icon="mdi-refresh"
-          @click="loadRangeSettings"
+          :disabled="isLoading"
+          @click="loadRangeSettings(true)"
         >
-          Odśwież
+          {{ t('admin.rangeSettings.refreshAction') }}
         </v-btn>
       </v-card-title>
 
@@ -156,7 +247,7 @@ onMounted(() => {
         :validation-schema="schema"
         @submit="submitSettings"
       >
-        <template #default="{ submitForm }">
+        <template #default="{ submitForm, values }">
           <v-card-text>
             <v-row>
               <v-col
@@ -164,66 +255,120 @@ onMounted(() => {
                 md="4"
               >
                 <Field
-                  v-slot="{ field, errorMessage }"
                   name="totalTracks"
+                  v-slot="{ field, errorMessage }"
                 >
                   <v-text-field
-                    v-bind="field"
-                    :error-messages="errorMessage"
-                    label="Łączna liczba torów"
+                    :label="t('admin.rangeSettings.totalTracksLabel')"
                     type="number"
                     min="1"
-                  />
-                </Field>
-              </v-col>
-              <v-col
-                cols="12"
-                md="4"
-              >
-                <Field
-                  v-slot="{ field, errorMessage }"
-                  name="openTime"
-                >
-                  <v-text-field
-                    v-bind="field"
+                    :model-value="field.value"
                     :error-messages="errorMessage"
-                    label="Godzina otwarcia"
-                    type="time"
-                  />
-                </Field>
-              </v-col>
-              <v-col
-                cols="12"
-                md="4"
-              >
-                <Field
-                  v-slot="{ field, errorMessage }"
-                  name="closeTime"
-                >
-                  <v-text-field
-                    v-bind="field"
-                    :error-messages="errorMessage"
-                    label="Godzina zamknięcia"
-                    type="time"
+                    @update:model-value="field.onChange"
+                    @blur="field.onBlur"
                   />
                 </Field>
               </v-col>
             </v-row>
+
+            <v-divider class="my-6" />
+
+            <v-row>
+              <v-col cols="12">
+                <h3 class="text-subtitle-1 font-weight-medium">
+                  {{ t('admin.rangeSettings.operatingHoursHeading') }}
+                </h3>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col
+                v-for="day in dayOrder"
+                :key="day"
+                cols="12"
+                md="6"
+              >
+                <v-sheet
+                  rounded="lg"
+                  class="pa-4"
+                  color="grey-lighten-4"
+                >
+                  <div class="d-flex align-center justify-space-between mb-2">
+                    <span class="text-subtitle-2">
+                      {{ t(`rangeLanding.days.${day}`) }}
+                    </span>
+                    <Field
+                      :name="`operatingHours.${day}.isOpen`"
+                      v-slot="{ field }"
+                    >
+                      <v-switch
+                        density="compact"
+                        inset
+                        color="primary"
+                        hide-details
+                        :model-value="field.value"
+                        :label="
+                          field.value
+                            ? t('admin.rangeSettings.openLabel')
+                            : t('admin.rangeSettings.closedLabel')
+                        "
+                        @update:model-value="field.onChange"
+                        @blur="field.onBlur"
+                      />
+                    </Field>
+                  </div>
+                  <v-row class="mt-2" dense>
+                    <v-col cols="6">
+                      <Field
+                        :name="`operatingHours.${day}.open`"
+                        v-slot="{ field, errorMessage }"
+                      >
+                        <v-text-field
+                          type="time"
+                          :label="t('admin.rangeSettings.openTimeLabel')"
+                          :model-value="field.value"
+                          :disabled="!values.operatingHours[day].isOpen"
+                          :error-messages="errorMessage"
+                          @update:model-value="field.onChange"
+                          @blur="field.onBlur"
+                        />
+                      </Field>
+                    </v-col>
+                    <v-col cols="6">
+                      <Field
+                        :name="`operatingHours.${day}.close`"
+                        v-slot="{ field, errorMessage }"
+                      >
+                        <v-text-field
+                          type="time"
+                          :label="t('admin.rangeSettings.closeTimeLabel')"
+                          :model-value="field.value"
+                          :disabled="!values.operatingHours[day].isOpen"
+                          :error-messages="errorMessage"
+                          @update:model-value="field.onChange"
+                          @blur="field.onBlur"
+                        />
+                      </Field>
+                    </v-col>
+                  </v-row>
+                </v-sheet>
+              </v-col>
+            </v-row>
           </v-card-text>
-          <v-card-actions class="justify-space-between">
+          <v-card-actions class="justify-space-between flex-wrap">
             <v-btn
               variant="text"
               prepend-icon="mdi-clipboard-plus"
               @click="recordDialogOpen = true"
             >
-              Zapisz bez rezerwacji
+              {{ t('admin.rangeSettings.recordAction') }}
             </v-btn>
             <v-btn
               color="primary"
               :loading="isSaving"
               @click="submitForm"
             >
-              Zapisz zmiany
+              {{ t('admin.rangeSettings.submitAction') }}
             </v-btn>
           </v-card-actions>
         </template>

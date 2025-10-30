@@ -14,6 +14,7 @@ const messages = {
       clubCommunityAdmin: 'Club/Community Administrator',
     },
     navigation: {
+      rangeInfo: 'Range info',
       calendar: 'Calendar',
       userManagement: 'User Management',
       rangeUserManagement: 'Range Role Management',
@@ -37,6 +38,29 @@ const messages = {
     },
     footer: {
       privacyPolicy: 'Privacy Policy',
+    },
+    rangeLanding: {
+      loadingTitle: 'Loading range data...',
+      description: 'Learn the essentials about the range and available lanes.',
+      totalTracks: 'Total lanes: {count}',
+      emptyState: 'No range data available.',
+      actions: {
+        refresh: 'Refresh range data',
+        openCalendar: 'Open calendar',
+      },
+      operatingHours: {
+        title: 'Operating hours',
+        closed: 'Closed',
+      },
+      days: {
+        monday: 'Monday',
+        tuesday: 'Tuesday',
+        wednesday: 'Wednesday',
+        thursday: 'Thursday',
+        friday: 'Friday',
+        saturday: 'Saturday',
+        sunday: 'Sunday',
+      },
     },
     admin: {
       userRoles: {
@@ -64,6 +88,7 @@ const messages = {
       clubCommunityAdmin: 'Administrator klubu/społeczności',
     },
     navigation: {
+      rangeInfo: 'Strzelnica',
       calendar: 'Kalendarz',
       userManagement: 'Zarządzanie użytkownikami',
       rangeUserManagement: 'Zarządzanie rolami strzelnicy',
@@ -87,6 +112,29 @@ const messages = {
     },
     footer: {
       privacyPolicy: 'Polityka Prywatności',
+    },
+    rangeLanding: {
+      loadingTitle: 'Ładujemy dane strzelnicy...',
+      description: 'Poznaj podstawowe informacje o strzelnicy i dostępnych torach.',
+      totalTracks: 'Łączna liczba torów: {count}',
+      emptyState: 'Brak danych o strzelnicy.',
+      actions: {
+        refresh: 'Odśwież dane strzelnicy',
+        openCalendar: 'Przejdź do kalendarza',
+      },
+      operatingHours: {
+        title: 'Godziny otwarcia',
+        closed: 'Zamknięte',
+      },
+      days: {
+        monday: 'Poniedziałek',
+        tuesday: 'Wtorek',
+        wednesday: 'Środa',
+        thursday: 'Czwartek',
+        friday: 'Piątek',
+        saturday: 'Sobota',
+        sunday: 'Niedziela',
+      },
     },
     admin: {
       userRoles: {
