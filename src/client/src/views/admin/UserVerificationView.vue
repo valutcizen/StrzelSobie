@@ -20,6 +20,8 @@ const snackbar = reactive({
 const { t } = useI18n()
 
 const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
+const userHasRole = (user: PendingUser, role: UserRole) => user.currentRoles?.includes(role) ?? false
+const visibleRoles = (user: PendingUser) => (user.currentRoles ?? []).filter((role) => role !== 'Guest')
 
 const fetchPendingUsers = async () => {
   errorMessage.value = null
@@ -34,13 +36,19 @@ const fetchPendingUsers = async () => {
 const promoteUser = async (user: PendingUser, role: UserRole) => {
   loadingUserId.value = user.id
   errorMessage.value = null
+  const shouldAssign = !userHasRole(user, role)
   try {
     await adminStore.promotePendingUser(user.id, role)
     snackbar.open = true
-    snackbar.message = t('admin.userRoles.roleAssigned', {
-      email: user.email,
-      role: translateRole(role),
-    })
+    snackbar.message = shouldAssign
+      ? t('admin.userRoles.roleAssigned', {
+          email: user.email,
+          role: translateRole(role),
+        })
+      : t('admin.userRoles.roleRemoved', {
+          email: user.email,
+          role: translateRole(role),
+        })
     snackbar.color = 'success'
   } catch (error) {
     errorMessage.value =
@@ -127,28 +135,53 @@ onMounted(() => {
               </div>
             </template>
             <template #subtitle>
-              <span v-if="user.requestedRole">
-                {{ t('admin.userRoles.suggestedRole', { role: translateRole(user.requestedRole) }) }}
-              </span>
-              <span v-else>{{ t('admin.userRoles.noSuggestedRole') }}</span>
+              <div class="d-flex flex-column gap-1">
+                <span v-if="user.requestedRole">
+                  {{ t('admin.userRoles.suggestedRole', { role: translateRole(user.requestedRole) }) }}
+                </span>
+                <span v-else>{{ t('admin.userRoles.noSuggestedRole') }}</span>
+                <v-chip-group
+                  v-if="visibleRoles(user).length > 0"
+                  selected-class="text-white"
+                  density="compact"
+                >
+                  <v-chip
+                    v-for="role in visibleRoles(user)"
+                    :key="role"
+                    color="primary"
+                    variant="tonal"
+                    size="small"
+                  >
+                    {{ translateRole(role) }}
+                  </v-chip>
+                </v-chip-group>
+              </div>
             </template>
             <template #append>
               <div class="d-flex gap-2">
                 <v-btn
                   size="small"
-                  color="success"
+                  :color="userHasRole(user, 'Member') ? 'error' : 'success'"
                   :loading="loadingUserId === user.id"
                   @click="promoteUser(user, 'Member')"
                 >
-                  {{ t('admin.userRoles.assignRole', { role: translateRole('Member') }) }}
+                  {{
+                    userHasRole(user, 'Member')
+                      ? t('admin.userRoles.removeRole', { role: translateRole('Member') })
+                      : t('admin.userRoles.assignRole', { role: translateRole('Member') })
+                  }}
                 </v-btn>
                 <v-btn
                   size="small"
-                  color="primary"
+                  :color="userHasRole(user, 'Coordinator') ? 'error' : 'primary'"
                   :loading="loadingUserId === user.id"
                   @click="promoteUser(user, 'Coordinator')"
                 >
-                  {{ t('admin.userRoles.assignRole', { role: translateRole('Coordinator') }) }}
+                  {{
+                    userHasRole(user, 'Coordinator')
+                      ? t('admin.userRoles.removeRole', { role: translateRole('Coordinator') })
+                      : t('admin.userRoles.assignRole', { role: translateRole('Coordinator') })
+                  }}
                 </v-btn>
               </div>
             </template>

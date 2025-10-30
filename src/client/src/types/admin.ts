@@ -26,4 +26,5 @@ export interface PendingUser {
   email: string
   requestedRole?: UserRole
   submittedAt: string
+  currentRoles?: UserRole[]
 }

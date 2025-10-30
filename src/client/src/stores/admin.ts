@@ -70,6 +70,31 @@ const mapWorkerUserToRow = (user: WorkerUserDto): UserRow => {
   }
 }
 
+const extractRoleNames = (roles: unknown): UserRole[] => {
+  if (!Array.isArray(roles)) {
+    return []
+  }
+
+  const roleNames = roles
+    .map((role) => {
+      if (typeof role === 'string' && isUserRole(role)) {
+        return role
+      }
+
+      if (role && typeof role === 'object' && 'name' in role) {
+        const name = (role as { name: unknown }).name
+        if (typeof name === 'string' && isUserRole(name)) {
+          return name
+        }
+      }
+
+      return null
+    })
+    .filter((role): role is UserRole => role !== null)
+
+  return normalizeUserRoles(roleNames)
+}
+
 export const useAdminStore = defineStore('admin', {
   state: () => ({
     users: [] as UserRow[],
@@ -125,8 +150,39 @@ export const useAdminStore = defineStore('admin', {
       this.isLoadingPending = true
 
       try {
-        const { data } = await http.get<{ users: PendingUser[] }>('/users?status=pending-verification')
-        this.pendingUsers = data.users
+        const { data } = await http.get<{ users?: PendingUser[] } & Partial<PaginatedUsersResponse>>(
+          '/users?status=pending-verification',
+        )
+
+        if (Array.isArray(data.users)) {
+          this.pendingUsers = data.users.map((user) => {
+            const currentRoles = extractRoleNames(
+              (user as Partial<PendingUser> & { roles?: unknown }).currentRoles ??
+                (user as { roles?: unknown }).roles,
+            )
+
+            return {
+              ...user,
+              id: String((user as { id: string | number }).id),
+              currentRoles,
+            }
+          })
+          return this.pendingUsers
+        }
+
+        if (Array.isArray(data.data)) {
+          this.pendingUsers = data.data.map((user) => ({
+            id: String(user.id),
+            email: user.email,
+            submittedAt: user.createdAt,
+            requestedRole: undefined,
+            currentRoles: extractRoleNames(user.roles ?? []),
+          }))
+          return this.pendingUsers
+        }
+
+        this.pendingUsers = []
+        return this.pendingUsers
       } finally {
         this.isLoadingPending = false
       }
@@ -146,8 +202,33 @@ export const useAdminStore = defineStore('admin', {
         throw new Error(`Role ${role} is not available for promotion`)
       }
 
-      await this.assignRole(userId, roleDefinition.id, null)
-      this.pendingUsers = this.pendingUsers.filter((user) => user.id !== userId)
+      const targetUser = this.pendingUsers.find((user) => user.id === userId)
+      const isRoleAssigned = targetUser?.currentRoles?.includes(role) ?? false
+
+      if (isRoleAssigned) {
+        await this.revokeRole(userId, roleDefinition.id, null)
+      } else {
+        await this.assignRole(userId, roleDefinition.id, null)
+      }
+
+      this.pendingUsers = this.pendingUsers.map((user) => {
+        if (user.id !== userId) {
+          return user
+        }
+
+        const updatedRoles = new Set(user.currentRoles ?? [])
+
+        if (isRoleAssigned) {
+          updatedRoles.delete(role)
+        } else {
+          updatedRoles.add(role)
+        }
+
+        return {
+          ...user,
+          currentRoles: normalizeUserRoles(Array.from(updatedRoles)),
+        }
+      })
     },
     clear() {
       this.users = []
