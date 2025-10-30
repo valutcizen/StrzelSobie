@@ -115,15 +115,26 @@ export class UserService implements IUserService {
       }
 
       const requesterProfile = await this.userRepository.getFullUserProfile(requester.id);
-      const roles = await this.userRepository.getRoles();
-      const roleToAssign = roles.find(role => role.id === roleId);
+      const requesterRoles = requesterProfile?.roles ?? [];
+      const isAdmin = requesterRoles.includes('Club/Community Administrator');
+      const isConfirmator = requesterRoles.includes('Confirmator');
+
+      if (!isAdmin && !isConfirmator) {
+        return Result.fail(new ForbiddenError('Forbidden'));
+      }
+
+      const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
+      if (!targetUser) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+
+      const roles = (await this.userRepository.getRoles()) ?? [];
+      const roleToAssign = roles.find((role) => role.id === roleId);
 
       if (!roleToAssign) {
         return Result.fail(new RoleNotFoundError(`Role with id ${roleId} not found`));
       }
 
-      const isAdmin = requesterProfile?.roles.includes('Club/Community Administrator');
-      const isConfirmator = requesterProfile?.roles.includes('Confirmator');
       const canConfirmatorAssign =
         isConfirmator &&
         roleToAssign.scope === 'global' &&
@@ -132,11 +143,6 @@ export class UserService implements IUserService {
 
       if (!isAdmin && !canConfirmatorAssign) {
         return Result.fail(new ForbiddenError('Forbidden'));
-      }
-
-      const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
-      if (!targetUser) {
-        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
       }
 
       if (roleToAssign.scope === 'global' && rangeId !== null) {
@@ -180,15 +186,26 @@ export class UserService implements IUserService {
       }
 
       const requesterProfile = await this.userRepository.getFullUserProfile(requester.id);
-      const roles = await this.userRepository.getRoles();
-      const roleToRemove = roles.find(role => role.id === roleId);
+      const requesterRoles = requesterProfile?.roles ?? [];
+      const isAdmin = requesterRoles.includes('Club/Community Administrator');
+      const isConfirmator = requesterRoles.includes('Confirmator');
+
+      if (!isAdmin && !isConfirmator) {
+        return Result.fail(new ForbiddenError('Forbidden'));
+      }
+
+      const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
+      if (!targetUser) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+
+      const roles = (await this.userRepository.getRoles()) ?? [];
+      const roleToRemove = roles.find((role) => role.id === roleId);
 
       if (!roleToRemove) {
         return Result.fail(new RoleNotFoundError(`Role with id ${roleId} not found`));
       }
 
-      const isAdmin = requesterProfile?.roles.includes('Club/Community Administrator');
-      const isConfirmator = requesterProfile?.roles.includes('Confirmator');
       const canConfirmatorRemove =
         isConfirmator &&
         roleToRemove.scope === 'global' &&
@@ -197,11 +214,6 @@ export class UserService implements IUserService {
 
       if (!isAdmin && !canConfirmatorRemove) {
         return Result.fail(new ForbiddenError('Forbidden'));
-      }
-
-      const targetUser = await this.userRepository.getFullUserProfile(targetUserId);
-      if (!targetUser) {
-        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
       }
 
       if (roleToRemove.scope === 'global' && rangeId !== null) {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Result } from '@strzel-sobie/common';
+import { RangeNotFoundError, Result } from '@strzel-sobie/common';
 import { GetRange } from '../../../src/worker/src/endpoints/v1/ranges/get-range';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';
@@ -31,19 +31,18 @@ describe('GET /api/v1/ranges/:rangeSlug', () => {
     expect(rangesService.getRangeDetails).toHaveBeenCalledWith('forest-hills');
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      success: true,
-      result: {
-        id: 7,
-        slug: 'forest-hills',
-        displayName: 'Forest Hills',
-        totalTracks: 10,
-      },
+      id: 7,
+      slug: 'forest-hills',
+      displayName: 'Forest Hills',
+      totalTracks: 10,
     });
   });
 
   it('returns a not-found response when the range does not exist', async () => {
     const rangesService = {
-      getRangeDetails: vi.fn().mockResolvedValue(Result.fail(new Error('missing range'))),
+      getRangeDetails: vi
+        .fn()
+        .mockResolvedValue(Result.fail(new RangeNotFoundError('Range not found'))),
     };
 
     const { client } = createWorkerTestClient({
@@ -57,8 +56,7 @@ describe('GET /api/v1/ranges/:rangeSlug', () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({
-      success: false,
-      error: {},
+      error: 'Range not found',
     });
   });
 });

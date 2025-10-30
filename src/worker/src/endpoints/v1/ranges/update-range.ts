@@ -49,7 +49,7 @@ export class UpdateRange extends OpenAPIRoute {
         content: {
           'application/json': {
             schema: z.object({
-              success: z.boolean().openapi({ example: true }),
+              success: z.boolean().default(true),
             }),
           },
         },
@@ -80,9 +80,7 @@ export class UpdateRange extends OpenAPIRoute {
     const result = await rangesService.updateRangeDetails(rangeSlug, command, user);
 
     if (result.isSuccess) {
-      return {
-        success: true,
-      };
+      return c.json({ success: true }, 200);
     }
 
     const error = result.getError();

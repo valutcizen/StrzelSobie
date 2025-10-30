@@ -214,6 +214,7 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
   const reservationsRepository = {
     getPropositions: vi.fn().mockResolvedValue([] as Proposition[]),
     getReservations: vi.fn().mockResolvedValue([] as Reservation[]),
+    getRecords: vi.fn().mockResolvedValue([] as RecordEntity[]),
     getOverlappingUsage: vi.fn().mockResolvedValue(createUsage()),
     getOverlappingReservationsDetails: vi.fn().mockResolvedValue([] as ReservationConflict[]),
     createProposition: vi.fn(),

@@ -109,8 +109,11 @@ describe('UpdateRange endpoint contract', () => {
       },
       user
     );
-    expect(spies.json).not.toHaveBeenCalled();
-    expect(response).toEqual({ success: true });
+    expect(spies.json).toHaveBeenCalledWith({ success: true }, 200);
+    expect(response).toEqual({
+      payload: { success: true },
+      status: 200,
+    });
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
