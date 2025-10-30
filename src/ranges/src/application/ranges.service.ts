@@ -69,7 +69,9 @@ export class RangesService implements IRangesService {
     const isGlobalAdmin = user.roles.some((role) => role.name === 'Club/Community Administrator');
     const rangeId = range.id.toString();
     const userRolesForRange = user.rangeRoles[rangeId] || [];
-    const isRangeAdmin = userRolesForRange.some((role) => role.name === 'Range Admin');
+    const isRangeAdmin = userRolesForRange.some((role) =>
+      ['Range Admin', 'Shooting Range Administrator'].includes(role.name)
+    );
 
     if (!isGlobalAdmin && !isRangeAdmin) {
       return Result.fail(new ForbiddenError('User is not an admin for this range'));

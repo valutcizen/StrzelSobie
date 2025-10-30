@@ -67,7 +67,11 @@ const routes: AppRouteRecordRaw[] = [
     path: '/admin/range-settings',
     name: 'RangeSettings',
     component: () => import('@/views/admin/RangeSettingsView.vue'),
-    meta: { requiresAuth: true, requiredRoles: ['Shooting Range Administrator'] },
+    meta: {
+      requiresAuth: true,
+      requiredRoles: ['Club/Community Administrator'],
+      requiredRangeRoles: ['Shooting Range Administrator'],
+    },
   },
   {
     path: '/privacy',

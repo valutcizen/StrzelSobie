@@ -45,7 +45,7 @@ app.use('*', async (c, next) => {
 
   // Services
   const auditService = new AuditService(auditRepository);
-  const rangesService = new RangesService(rangesRepository);
+  const rangesService = new RangesService(rangesRepository, auditService);
   const userService = new UserService(userRepository, rangesService);
   const authService = new AuthService(
     authRepository,

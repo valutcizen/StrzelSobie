@@ -247,7 +247,7 @@ onMounted(() => {
         :validation-schema="schema"
         @submit="submitSettings"
       >
-        <template #default="{ submitForm, values }">
+        <template #default="{ values }">
           <v-card-text>
             <v-row>
               <v-col
@@ -366,7 +366,7 @@ onMounted(() => {
             <v-btn
               color="primary"
               :loading="isSaving"
-              @click="submitForm"
+              type="submit"
             >
               {{ t('admin.rangeSettings.submitAction') }}
             </v-btn>
