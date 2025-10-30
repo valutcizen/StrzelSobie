@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "vue-tsc --incremental && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
   },
@@ -34,8 +34,8 @@
     "@vue/eslint-config-typescript": "^14.6.0",
     "eslint": "^9.37.0",
     "eslint-plugin-vue": "^10.5.0",
-    "typescript": "^4.9.3",
+    "typescript": "^5.6.3",
     "vite": "^4.2.0",
-    "vue-tsc": "^1.2.0"
+    "vue-tsc": "^2.0.29"
   }
 }

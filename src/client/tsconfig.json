@@ -13,6 +13,8 @@
       "@/*": ["src/*"]
     },
     "isolatedModules": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/vue-tsc/tsconfig.tsbuildinfo",
     "esModuleInterop": true,
     "noEmit": true,
     "noUnusedLocals": true,

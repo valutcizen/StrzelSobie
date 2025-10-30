@@ -246,8 +246,8 @@ interface ReservationErrorResponse {
 const submissionError = ref<ReservationSubmissionError | null>(null)
 const force = ref(false)
 const defaultErrorMessage = 'Nie udało się zapisać rezerwacji. Spróbuj ponownie.'
-const setForce = (value: boolean) => {
-  force.value = props.canUseForce ? value : false
+const setForce = (value: boolean | null) => {
+  force.value = props.canUseForce ? Boolean(value) : false
 }
 
 watch(
