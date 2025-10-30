@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns'
 
 const DATE_ONLY_FORMAT = 'yyyy-MM-dd'
+const TIME_ONLY_FORMAT = 'HH:mm'
 const DATETIME_LOCAL_FORMAT = "yyyy-MM-dd'T'HH:mm"
 
 export const toDateOnly = (value: Date | string) => {
@@ -33,3 +34,26 @@ export const combineDateAndTime = (date: string, time: string) => {
 }
 
 export const ensureTimePrecision = (time: string) => (time.length === 5 ? time : time.slice(0, 5))
+
+export const toDateInputValue = (isoValue: string | null | undefined) => {
+  if (!isoValue) {
+    return ''
+  }
+  try {
+    return format(parseISO(isoValue), DATE_ONLY_FORMAT)
+  } catch {
+    return ''
+  }
+}
+
+export const toTimeInputValue = (isoValue: string | null | undefined) => {
+  if (!isoValue) {
+    return ''
+  }
+  try {
+    return format(parseISO(isoValue), TIME_ONLY_FORMAT)
+  } catch {
+    const [, timePart] = isoValue.split('T')
+    return ensureTimePrecision(timePart ?? isoValue)
+  }
+}

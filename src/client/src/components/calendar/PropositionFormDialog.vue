@@ -16,24 +16,35 @@
           <v-card-text>
             <Field
               v-slot="{ field, errorMessage }"
-              name="start"
+              name="date"
+            >
+              <v-text-field
+                v-bind="field"
+                :error-messages="errorMessage"
+                label="Data"
+                type="date"
+              />
+            </Field>
+            <Field
+              v-slot="{ field, errorMessage }"
+              name="startTime"
             >
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
                 label="Początek"
-                type="datetime-local"
+                type="time"
               />
             </Field>
             <Field
               v-slot="{ field, errorMessage }"
-              name="end"
+              name="endTime"
             >
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
                 label="Koniec"
-                type="datetime-local"
+                type="time"
               />
             </Field>
             <Field
@@ -90,7 +101,7 @@ import { Form, Field } from 'vee-validate'
 import type { SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
 import { http } from '../../services/http'
-import { splitDateTimeLocalValue, toDateTimeLocalInput } from '../../utils/datetime'
+import { ensureTimePrecision, toDateInputValue, toTimeInputValue } from '../../utils/datetime'
 
 export interface SelectedSlot {
   start: string
@@ -111,15 +122,17 @@ const emit = defineEmits<{
 }>()
 
 const schema = yup.object({
-  start: yup.string().required(),
-  end: yup.string().required(),
+  date: yup.string().required(),
+  startTime: yup.string().required(),
+  endTime: yup.string().required(),
   participants: yup.number().min(1).required(),
   tracks: yup.number().min(1).required(),
 })
 
 interface PropositionFormValues {
-  start: string
-  end: string
+  date: string
+  startTime: string
+  endTime: string
   participants: number
   tracks: number
 }
@@ -132,12 +145,40 @@ interface CreatePropositionPayload {
   tracksRequested: number
 }
 
-const initialValues = computed(() => ({
-  start: toDateTimeLocalInput(props.selectedSlot?.start ?? null),
-  end: toDateTimeLocalInput(props.selectedSlot?.end ?? null),
-  participants: 1,
-  tracks: 1,
-}))
+const defaultTimeValues = () => {
+  const start = new Date()
+  start.setMinutes(0, 0, 0)
+
+  const end = new Date(start)
+  end.setHours(end.getHours() + 1)
+
+  const startIso = start.toISOString()
+  const endIso = end.toISOString()
+
+  return {
+    date: toDateInputValue(startIso),
+    startTime: ensureTimePrecision(toTimeInputValue(startIso)),
+    endTime: ensureTimePrecision(toTimeInputValue(endIso)),
+  }
+}
+
+const initialValues = computed(() => {
+  const fallback = defaultTimeValues()
+  const selectedStart = props.selectedSlot?.start ?? null
+  const selectedEnd = props.selectedSlot?.end ?? null
+
+  const date = toDateInputValue(selectedStart) || fallback.date
+  const startTime = ensureTimePrecision(toTimeInputValue(selectedStart) || fallback.startTime)
+  const endTime = ensureTimePrecision(toTimeInputValue(selectedEnd) || fallback.endTime)
+
+  return {
+    date,
+    startTime,
+    endTime,
+    participants: 1,
+    tracks: 1,
+  }
+})
 
 const formKey = computed(() => (props.selectedSlot ? `${props.selectedSlot.start}-${props.selectedSlot.end}` : 'default'))
 
@@ -150,18 +191,15 @@ const closeDialog = () => {
 }
 
 const submitProposition: SubmissionHandler = async (values, _ctx) => {
-  const { start, end, participants, tracks } = values as PropositionFormValues
+  const { date, startTime, endTime, participants, tracks } = values as PropositionFormValues
   if (!props.rangeSlug) {
     return
   }
 
-  const startParts = splitDateTimeLocalValue(start)
-  const endParts = splitDateTimeLocalValue(end)
-
   const payload: CreatePropositionPayload = {
-    eventDate: startParts.date,
-    startTime: startParts.time,
-    endTime: endParts.time,
+    eventDate: date,
+    startTime: ensureTimePrecision(startTime),
+    endTime: ensureTimePrecision(endTime),
     numParticipants: Number(participants),
     tracksRequested: Number(tracks),
   }
