@@ -125,3 +125,5 @@ export const useAuthStore = defineStore('auth', () => {
     hasAnyRangeRole,
   }
 })
+
+export type AuthStore = ReturnType<typeof useAuthStore>

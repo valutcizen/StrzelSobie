@@ -1,37 +1,43 @@
 import axios from 'axios'
+import type { Router } from 'vue-router'
+import type { AuthStore } from '../stores/auth'
 
 export const http = axios.create({
   baseURL: '/api/v1',
   withCredentials: true,
 })
 
-http.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const status = error.response?.status
+let interceptorsConfigured = false
 
-    if (status === 401 && error.config.url === '/auth/me') {
-      try {
-        await http.post('/auth/logout');
-      } catch (e) {
-        console.error('Failed to logout', e);
+export const setupHttpInterceptors = (router: Router, authStore: AuthStore) => {
+  if (interceptorsConfigured) {
+    return
+  }
+
+  interceptorsConfigured = true
+
+  http.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const status = error.response?.status
+
+      if (status === 401 && error.config?.url === '/auth/me') {
+        try {
+          await http.post('/auth/logout')
+        } catch (e) {
+          console.error('Failed to logout', e)
+        }
       }
-    }
 
-    if (status === 401 || status === 403) {
-      const [{ useAuthStore }, { default: router }] = await Promise.all([
-        import('../stores/auth'),
-        import('../router'),
-      ])
+      if (status === 401 || status === 403) {
+        authStore.reset()
 
-      const authStore = useAuthStore()
-      authStore.reset()
-
-      if (router.currentRoute.value.name !== 'Auth') {
-        await router.push({ name: 'Auth' })
+        if (router.currentRoute.value.name !== 'Auth') {
+          await router.push({ name: 'Auth' })
+        }
       }
-    }
 
-    return Promise.reject(error)
-  },
-)
+      return Promise.reject(error)
+    },
+  )
+}
