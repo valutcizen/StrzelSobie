@@ -79,9 +79,20 @@ export type ReservationEventDto = {
   proposition: PropositionDetailDto | null;
 }
 
+export type RecordEventDto = {
+  id: RangeRecord['id'];
+  adminId: RangeRecord['admin_id'];
+  eventDate: RangeRecord['event_date'];
+  startTime: RangeRecord['start_time'];
+  endTime: RangeRecord['end_time'];
+  numParticipants: RangeRecord['num_participants'];
+  createdAt: RangeRecord['created_at'];
+};
+
 export type CalendarEventsDto = {
   propositions: PropositionEventDto[];
   reservations: ReservationEventDto[];
+  records: RecordEventDto[];
 };
 
 export type GetCalendarEventsQuery = {

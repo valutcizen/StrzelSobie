@@ -180,6 +180,17 @@ export class ReservationsDbRepository implements IReservationsRepository {
     return (results ?? []).map(mapDbReservation);
   }
 
+  public async getRecords(rangeId: number, startDate: string, endDate: string): Promise<RecordEntity[]> {
+    const stmt = this.db.prepare(
+      `SELECT id, admin_id, range_id, event_date, start_time, end_time, num_participants, created_at
+       FROM reservations_records
+       WHERE range_id = ? AND event_date BETWEEN ? AND ?`
+    );
+    const { results } = await stmt.bind(rangeId, startDate, endDate).all<RecordDb>();
+
+    return (results ?? []).map(mapDbRecord);
+  }
+
   public async getOverlappingUsage(
     rangeId: number,
     eventDate: string,

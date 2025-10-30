@@ -105,6 +105,11 @@ export class ReservationsService implements IReservationsService {
         .filter((roleName) => roleName.length > 0);
       const isCoordinator = roleNames.includes(UserRole.Coordinator);
 
+      let records: RecordEntity[] = [];
+      if (isAdmin) {
+        records = await this.reservationsRepository.getRecords(rangeId, startDate, endDate);
+      }
+
       const uniquePropositionIds = Array.from(
         new Set(
           reservations
@@ -176,6 +181,15 @@ export class ReservationsService implements IReservationsService {
           tracksRequested: p.tracks_requested,
         })),
         reservations: filteredReservations,
+        records: records.map((record) => ({
+          id: record.id,
+          adminId: record.admin_id,
+          eventDate: record.event_date,
+          startTime: record.start_time,
+          endTime: record.end_time,
+          numParticipants: record.num_participants,
+          createdAt: record.created_at,
+        })),
       };
 
       return Result.ok(calendarEvents);

@@ -10,6 +10,8 @@ export interface RangeEventMeta {
   coordinatorId?: number | null
   numParticipants?: number | null
   linkedProposition?: PropositionEventDetail | null
+  adminId?: number | null
+  createdAt?: string | null
 }
 
 export interface RangeEvent {

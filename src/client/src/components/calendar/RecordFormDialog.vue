@@ -5,8 +5,9 @@
     @update:model-value="onDialogToggle"
   >
     <v-card>
-      <v-card-title>Dodaj rezerwację zewnętrzną</v-card-title>
+      <v-card-title>Zapisz bez rezerwacji</v-card-title>
       <Form
+        :key="formKey"
         :initial-values="initialValues"
         :validation-schema="schema"
         @submit="submitRecord"
@@ -15,24 +16,35 @@
           <v-card-text>
             <Field
               v-slot="{ field, errorMessage }"
-              name="start"
+              name="date"
+            >
+              <v-text-field
+                v-bind="field"
+                :error-messages="errorMessage"
+                label="Data"
+                type="date"
+              />
+            </Field>
+            <Field
+              v-slot="{ field, errorMessage }"
+              name="startTime"
             >
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
                 label="Początek"
-                type="datetime-local"
+                type="time"
               />
             </Field>
             <Field
               v-slot="{ field, errorMessage }"
-              name="end"
+              name="endTime"
             >
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
                 label="Koniec"
-                type="datetime-local"
+                type="time"
               />
             </Field>
             <Field
@@ -72,12 +84,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Form, Field } from 'vee-validate'
 import type { SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
 import { http } from '../../services/http'
-import { splitDateTimeLocalValue, toDateTimeLocalInput } from '../../utils/datetime'
+import { ensureTimePrecision } from '../../utils/datetime'
+import { format } from 'date-fns'
 
 interface RecordFormDialogProps {
   open: boolean
@@ -92,14 +105,16 @@ const emit = defineEmits<{
 }>()
 
 const schema = yup.object({
-  start: yup.string().required(),
-  end: yup.string().required(),
+  date: yup.string().required(),
+  startTime: yup.string().required(),
+  endTime: yup.string().required(),
   participants: yup.number().min(1).required(),
 })
 
 interface RecordFormValues {
-  start: string
-  end: string
+  date: string
+  startTime: string
+  endTime: string
   participants: number
 }
 
@@ -110,11 +125,37 @@ interface CreateRecordPayload {
   numParticipants: number
 }
 
-const initialValues = computed(() => ({
-  start: toDateTimeLocalInput(null),
-  end: toDateTimeLocalInput(null),
-  participants: 1,
-}))
+const formKey = ref(0)
+
+const defaultTimeValues = () => {
+  const start = new Date()
+  start.setMinutes(0, 0, 0)
+  const end = new Date(start)
+  end.setHours(end.getHours() + 1)
+
+  return {
+    date: format(start, 'yyyy-MM-dd'),
+    startTime: format(start, 'HH:mm'),
+    endTime: format(end, 'HH:mm'),
+  }
+}
+
+const initialValues = computed(() => {
+  void formKey.value
+  return {
+    ...defaultTimeValues(),
+    participants: 1,
+  }
+})
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) {
+      formKey.value += 1
+    }
+  },
+)
 
 const onDialogToggle = (value: boolean) => {
   emit('update:open', value)
@@ -130,13 +171,10 @@ const submitRecord: SubmissionHandler = async (values, _ctx) => {
     return
   }
 
-  const startParts = splitDateTimeLocalValue(payload.start)
-  const endParts = splitDateTimeLocalValue(payload.end)
-
   const recordPayload: CreateRecordPayload = {
-    eventDate: startParts.date,
-    startTime: startParts.time,
-    endTime: endParts.time,
+    eventDate: payload.date,
+    startTime: ensureTimePrecision(payload.startTime),
+    endTime: ensureTimePrecision(payload.endTime),
     numParticipants: Number(payload.participants),
   }
 

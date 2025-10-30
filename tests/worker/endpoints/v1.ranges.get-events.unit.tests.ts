@@ -96,6 +96,7 @@ describe('GetEvents endpoint contract', () => {
           },
         },
       ],
+      records: [],
     };
     const reservationsService = {
       getCalendarEvents: vi.fn().mockResolvedValue(Result.ok(calendarEvents)),

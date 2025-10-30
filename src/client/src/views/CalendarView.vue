@@ -22,6 +22,7 @@ import ReservationFormDialog, {
   type ReservationSubmissionError,
 } from '@/components/calendar/ReservationFormDialog.vue'
 import ConfirmationDialog from '@/components/common/ConfirmationDialog.vue'
+import RecordFormDialog from '@/components/calendar/RecordFormDialog.vue'
 import type {
   PersonSummary,
   RangeEvent,
@@ -43,6 +44,17 @@ const canForceReservations = computed(() =>
     'Shooting Range Administrator',
     'Club/Community Administrator',
   ]),
+)
+const canManageRecords = computed(
+  () =>
+    authStore.hasAnyRole([
+      'Shooting Range Administrator',
+      'Club/Community Administrator',
+    ]) ||
+    authStore.hasAnyRangeRole([
+      'Shooting Range Administrator',
+      'Club/Community Administrator',
+    ]),
 )
 
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
@@ -79,6 +91,7 @@ const reservationDialog = reactive({
   defaultIsPublic: null as boolean | null,
   defaultIsOpenForJoining: null as boolean | null,
 })
+const recordDialogOpen = ref(false)
 const confirmationState = reactive({
   open: false,
   loading: false,
@@ -690,6 +703,12 @@ const handleReservationError = (error: ReservationSubmissionError) => {
   showSnackbar(message, 'error')
 }
 
+const handleRecordSubmitted = async () => {
+  recordDialogOpen.value = false
+  await refreshEvents()
+  showSnackbar('Zapisano termin bez rezerwacji.')
+}
+
 watch(
   () => rangeSlug.value,
   async () => {
@@ -759,6 +778,15 @@ onBeforeUnmount(() => {
               >
                 Nowa rezerwacja
               </v-btn>
+              <v-btn
+                v-if="canManageRecords"
+                color="primary"
+                variant="tonal"
+                prepend-icon="mdi-clipboard-plus"
+                @click="recordDialogOpen = true"
+              >
+                Zapisz bez rezerwacji
+              </v-btn>
             </div>
           </v-card-title>
           <v-divider />
@@ -818,6 +846,13 @@ onBeforeUnmount(() => {
       @update:open="reservationDialog.open = $event"
       @submitted="handleReservationSubmitted"
       @submit-error="handleReservationError"
+    />
+
+    <RecordFormDialog
+      :open="recordDialogOpen"
+      :range-slug="rangeSlug"
+      @update:open="recordDialogOpen = $event"
+      @submitted="handleRecordSubmitted"
     />
 
     <ConfirmationDialog

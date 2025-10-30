@@ -97,6 +97,7 @@ export type CreateReservationRecord = {
 export interface IReservationsRepository {
   getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]>;
   getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]>;
+  getRecords(rangeId: number, startDate: string, endDate: string): Promise<RecordEntity[]>;
   getOverlappingUsage(
     rangeId: number,
     eventDate: string,

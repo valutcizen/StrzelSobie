@@ -33,9 +33,20 @@ export interface ReservationEventDto {
   proposition: unknown
 }
 
+export interface RecordEventDto {
+  id: number
+  adminId: number
+  eventDate: string
+  startTime: string
+  endTime: string
+  numParticipants: number
+  createdAt: string
+}
+
 export interface CalendarEventsResponse {
   propositions: PropositionEventDto[]
   reservations: ReservationEventDto[]
+  records?: RecordEventDto[]
 }
 
 const PROPOSITION_STATUSES = new Set<Exclude<PropositionEventDetail['status'], null>>([
@@ -116,7 +127,7 @@ const buildTitle = (type: RangeEventType, meta: { isMember?: boolean; isPublic?:
     return 'Rezerwacja'
   }
 
-  return 'Wydarzenie'
+  return 'Zapis bez rezerwacji'
 }
 
 export const mapCalendarEvents = (dto: CalendarEventsResponse): RangeEvent[] => {
@@ -167,7 +178,22 @@ export const mapCalendarEvents = (dto: CalendarEventsResponse): RangeEvent[] => 
     }
   })
 
-  return [...propositionEvents, ...reservationEvents].sort((a, b) =>
+  const recordEvents: RangeEvent[] = (dto.records ?? []).map((event) => ({
+    id: `record-${event.id}`,
+    sourceId: event.id,
+    title: buildTitle('record', {}),
+    type: 'record',
+    start: combineDateAndTime(event.eventDate, event.startTime),
+    end: combineDateAndTime(event.eventDate, event.endTime),
+    allDay: false,
+    meta: {
+      numParticipants: event.numParticipants,
+      adminId: event.adminId,
+      createdAt: event.createdAt,
+    },
+  }))
+
+  return [...propositionEvents, ...reservationEvents, ...recordEvents].sort((a, b) =>
     compareAsc(new Date(a.start), new Date(b.start)),
   )
 }

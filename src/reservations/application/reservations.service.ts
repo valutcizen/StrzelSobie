@@ -81,6 +81,7 @@ export class ReservationsService implements IReservationsService {
         tracksRequested: p.tracks_requested,
       })),
       reservations: filteredReservations,
+      records: [],
     };
 
     return Result.ok(calendarEvents);

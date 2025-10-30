@@ -111,7 +111,7 @@ const submitSettings: SubmissionHandler = async (values) => {
 }
 
 const handleRecordSubmitted = async () => {
-  showSnackbar('Dodano rezerwację zewnętrzną.')
+  showSnackbar('Zapisano termin bez rezerwacji.')
   recordDialogOpen.value = false
 }
 
@@ -216,7 +216,7 @@ onMounted(() => {
               prepend-icon="mdi-clipboard-plus"
               @click="recordDialogOpen = true"
             >
-              Dodaj rezerwację zewnętrzną
+              Zapisz bez rezerwacji
             </v-btn>
             <v-btn
               color="primary"
