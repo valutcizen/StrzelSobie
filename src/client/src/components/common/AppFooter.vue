@@ -14,7 +14,6 @@
       >
         {{ t('app.title') }}
       </v-btn>
-      <LanguageSwitcher />
       <v-btn
         variant="text"
         :to="{ name: 'PrivacyPolicy' }"
@@ -28,7 +27,6 @@
 
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
-import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 
 const { t } = useI18n()
 </script>

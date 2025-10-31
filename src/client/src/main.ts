@@ -9,6 +9,7 @@ import { setupValidation } from './plugins/vee-validate'
 import { setupHttpInterceptors } from './services/http'
 import { useAuthStore } from './stores/auth'
 import './style.css'
+import './assets/flag-icons.css'
 
 const app = createApp(App)
 const pinia = createPinia()

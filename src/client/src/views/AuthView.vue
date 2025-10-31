@@ -9,6 +9,9 @@
       lg="5"
     >
       <v-card class="elevation-10">
+        <div class="d-flex justify-end pt-3 pr-3">
+          <LanguageSwitcher />
+        </div>
         <v-card-title class="text-h5 text-center">
           {{ t('auth.title') }}
         </v-card-title>
@@ -59,6 +62,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import LoginForm from '@/components/LoginForm.vue'
 import RegisterForm from '@/components/RegisterForm.vue'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
 
 type ActiveTab = 'login' | 'register'

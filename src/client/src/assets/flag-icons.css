@@ -1,0 +1,22 @@
+.flag-icon {
+  display: inline-block;
+  width: 24px;
+  height: 18px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.flag-icon.flag-icon-gb {
+  background-image: url('./flags/gb.svg');
+}
+
+.flag-icon.flag-icon-pl {
+  background-image: url('./flags/pl.svg');
+}
+
+.flag-icon.flag-icon-un {
+  background-image: url('./flags/un.svg');
+}

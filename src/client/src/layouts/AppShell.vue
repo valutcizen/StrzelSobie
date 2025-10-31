@@ -11,6 +11,7 @@
       />
       <v-toolbar-title>{{ t('app.title') }}</v-toolbar-title>
       <v-spacer />
+      <LanguageSwitcher class="mr-2" />
       <span
         v-if="authStore.user"
         class="mr-4 d-none d-md-inline-flex"
@@ -112,6 +113,7 @@ import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
 import { UserRoleEnum } from '@/types/auth'
 
