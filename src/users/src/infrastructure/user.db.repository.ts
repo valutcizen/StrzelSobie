@@ -1,5 +1,6 @@
 import { IUserRepository } from '../domain/user.repository';
-import { IDatabase, MeDto, Role, UserIdentifierDto, GetUsersOptions, User } from '@strzel-sobie/common';
+import { IDatabase, User, Role } from '@strzel-sobie/common/models';
+import { MeDto, UserIdentifierDto, GetUsersOptions } from '@strzel-sobie/common';
 
 export class UserDbRepository implements IUserRepository {
   constructor(private readonly db: IDatabase) {}

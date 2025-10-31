@@ -1,4 +1,5 @@
 import { Result } from '@strzel-sobie/common';
+import { Reservation, ReservationId, Proposition, PropositionId, Record, RecordId } from './reservation';
 
 export type Proposition = {
   id: number;

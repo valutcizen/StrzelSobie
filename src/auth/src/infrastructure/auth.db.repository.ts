@@ -1,4 +1,4 @@
-import { AuthCredentials, IDatabase } from '@strzel-sobie/common';
+import { AuthCredentials, IDatabase } from '@strzel-sobie/common/models';
 import { IAuthRepository } from '../domain/auth.repository';
 
 export class AuthDbRepository implements IAuthRepository {

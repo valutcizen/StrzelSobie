@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Me } from '../../../src/worker/src/endpoints/v1/auth/me';
-import type { SessionData } from '@strzel-sobie/common';
+import type { SessionData } from '@strzel-sobie/common/models';
 
 type TestContextOptions = {
   session?: SessionData;

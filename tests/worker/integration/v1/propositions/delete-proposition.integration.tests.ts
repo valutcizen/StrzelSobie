@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  PropositionNotFoundError,
   Result,
+  PropositionNotFoundError,
+  CantDeletePropositionError,
   UnauthorizedPropositionError,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { DeleteProposition } from '../../../../../src/worker/src/endpoints/v1/propositions/delete-proposition';
 import { createWorkerTestClient } from '../../../utils/app';
 import { mockConsoleError } from '../../../utils/console';

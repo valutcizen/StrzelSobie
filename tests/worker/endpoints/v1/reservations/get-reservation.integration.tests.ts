@@ -2,12 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetReservationDetail } from '../../../../../src/worker/src/endpoints/v1/reservations/get-reservation';
 import {
-  ForbiddenError,
-  IReservationsService,
   Result,
   ReservationNotFoundError,
   ReservationDetailDto,
-} from '@strzel-sobie/common';
+  ForbiddenError,
+  IReservationsService,
+} from '@strzel-sobie/common/models';
 
 const reservationsServiceMock: IReservationsService = {
   cancelReservation: vi.fn(),

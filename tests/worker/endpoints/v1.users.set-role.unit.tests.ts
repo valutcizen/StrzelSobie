@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SetUserRoleRoute } from '../../../src/worker/src/endpoints/v1/user/set-role';
 import {
-  ForbiddenError,
-  RangeNotFoundError,
   Result,
-  RoleNotFoundError,
-  RoleScopeError,
   UserNotFoundError,
-  type UserDto,
-} from '@strzel-sobie/common';
+  UserDoesNotHaveRoleError,
+  Role,
+  UserIdentifierDto,
+  RoleNotFoundError,
+  RangeNotFoundError,
+  RoleScopeError,
+  ForbiddenError,
+  UserDto,
+} from '@strzel-sobie/common/models';
 
 type SetRoleDependencies = {
   userService: {

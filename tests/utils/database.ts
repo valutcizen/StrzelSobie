@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
-import type { IDatabase, IDbStatement } from '@strzel-sobie/common';
+import type { IDatabase, IDbStatement } from '@strzel-sobie/common/models';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

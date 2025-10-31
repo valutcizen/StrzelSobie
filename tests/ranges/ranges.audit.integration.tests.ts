@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, type Mocked } from 'vitest';
 import {
   Result,
+  CreateRangeDto,
+  UpdateRangeDto,
+  RangeDto,
+  IRangesRepository,
+  IAuditService,
+  User,
+  Role,
+  UpdateRangeCommand,
+  UserDto,
   UserRole,
-  type IAuditService,
-  type UpdateRangeCommand,
-  type UserDto,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { RangesService } from '@strzel-sobie/ranges/src/application/ranges.service';
 import type { IRangesRepository } from '@strzel-sobie/ranges/src/domain/ranges.repository';
 import type { ShootingRange } from '@strzel-sobie/ranges/src/domain/shooting-range.model';

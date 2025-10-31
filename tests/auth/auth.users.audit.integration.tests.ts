@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, type Mocked } from 'vitest';
 import {
   Result,
+  IAuthService,
+  IUserService,
+  IAuditService,
+  User,
+  Role,
+  LoginUserDto,
+  RegisterUserDto,
+  RegisterUserRequestDto,
+  UserIdentifierDto,
+  MeDto,
   UserNotFoundError,
-  type IUserService,
-  type IAuditService,
-  type LoginUserDto,
-  type RegisterUserRequestDto,
-  type MeDto,
-  type UserIdentifierDto,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { AuthService } from '@strzel-sobie/auth/src/application/auth.service';
 import type { IAuthRepository } from '@strzel-sobie/auth/src/domain/auth.repository';
 import type { ISessionRepository } from '@strzel-sobie/auth/src/domain/session.repository';

@@ -2,7 +2,7 @@
 import { getCookie } from 'hono/cookie';
 import { AuthService } from '@strzel-sobie/auth';
 import { MiddlewareHandler } from 'hono';
-import { IUserService, Role, UserDto } from '@strzel-sobie/common';
+import { IUserService, Role, UserDto } from '@strzel-sobie/common/models';
 
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {

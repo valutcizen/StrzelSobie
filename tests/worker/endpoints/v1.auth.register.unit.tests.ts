@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Register } from '../../../src/worker/src/endpoints/v1/auth/register';
-import { EmailAlreadyExistsError, Result } from '@strzel-sobie/common';
+import { EmailAlreadyExistsError, Result } from '@strzel-sobie/common/models';
 
 type RegisteredUserResponse = {
   id: number;

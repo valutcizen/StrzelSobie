@@ -1,4 +1,4 @@
-import { IDatabase, AuditLogEntry } from '@strzel-sobie/common';
+import { AuditLogEntry, IDatabase } from '@strzel-sobie/common/models';
 import { AuditRepository } from '../domain/audit.repository';
 
 export class AuditDbRepository implements AuditRepository {

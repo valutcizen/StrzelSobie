@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  PropositionNotFoundError,
   Result,
-  type PropositionDetailDto,
-  type UserDto,
-} from '@strzel-sobie/common';
+  PropositionNotFoundError,
+  PropositionDetailDto,
+} from '@strzel-sobie/common/models';
 import { GetPropositionDetail } from '../../../../../src/worker/src/endpoints/v1/propositions/get-proposition';
 
 type GetPropositionDetailDependencies = {

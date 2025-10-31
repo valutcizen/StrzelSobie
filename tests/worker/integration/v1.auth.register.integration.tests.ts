@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EmailAlreadyExistsError, Result } from '@strzel-sobie/common';
+import { EmailAlreadyExistsError, Result } from '@strzel-sobie/common/models';
 import { Register } from '../../../src/worker/src/endpoints/v1/auth/register';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

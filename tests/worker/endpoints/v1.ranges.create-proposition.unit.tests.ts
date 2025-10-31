@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreateProposition } from '../../../src/worker/src/endpoints/v1/ranges/create-proposition';
 import {
-  RangeNotFoundError,
   Result,
-  type CreatedPropositionDto,
-  type UserDto,
-} from '@strzel-sobie/common';
+  InvalidTimeRangeError,
+  UserDoesNotHavePermissionError,
+  CreatePropositionCommand,
+  RangeNotFoundError,
+} from '@strzel-sobie/common/models';
+import type { CreatedPropositionDto, UserDto } from '@strzel-sobie/common/models';
 
 type CreatePropositionDependencies = {
   reservationsService: {

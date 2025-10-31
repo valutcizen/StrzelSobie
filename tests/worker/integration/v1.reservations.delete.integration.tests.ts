@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  ReservationCancellationError,
-  ReservationNotFoundError,
   Result,
-} from '@strzel-sobie/common';
+  ReservationNotFoundError,
+  CantDeleteReservationError,
+  CancelReservationCommand,
+  ReservationCancellationError,
+} from '@strzel-sobie/common/models';
 import { DeleteReservation } from '../../../src/worker/src/endpoints/v1/reservations/delete-reservation';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

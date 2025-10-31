@@ -1,6 +1,5 @@
-import { GetUsersOptions, MeDto, Role, UserIdentifierDto } from '@strzel-sobie/common';
-import { Result } from '@strzel-sobie/common';
-import { User } from './user.model';
+import { GetUsersOptions, MeDto, UserIdentifierDto } from '@strzel-sobie/common';
+import { User, Role } from '@strzel-sobie/common/models';
 
 export interface IUserRepository {
   getById(id: number): Promise<User | null>;

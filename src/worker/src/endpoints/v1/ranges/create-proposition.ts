@@ -1,10 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import {
-  CreatePropositionCommand,
-  CreatedPropositionDto,
-  IReservationsService,
-} from '@strzel-sobie/common';
+import { CreatePropositionCommand, CreatedPropositionDto } from '@strzel-sobie/common';
+import { IReservationsService } from '@strzel-sobie/common/models';
 import { AppContext } from '../../../types';
 import { mapReservationsError } from '../../../utils/reservations-error-mapper';
 

@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreateRecord } from '../../../src/worker/src/endpoints/v1/ranges/create-record';
 import {
-  RangeNotFoundError,
   Result,
-  type CreatedRecordDto,
-  type UserDto,
-} from '@strzel-sobie/common';
+  InvalidTimeRangeError,
+  NoAvailableSpotsError,
+  ReservationInPastError,
+  UserDoesNotHavePermissionError,
+  CreateRecordCommand,
+  CreatedRecordDto,
+  RangeNotFoundError,
+  UserDto,
+} from '@strzel-sobie/common/models';
 
 type CreateRecordDependencies = {
   reservationsService: {

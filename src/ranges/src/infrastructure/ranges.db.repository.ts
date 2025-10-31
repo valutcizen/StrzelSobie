@@ -1,4 +1,4 @@
-import { IDatabase, Result, AuditLogEntry } from '@strzel-sobie/common';
+import { IDatabase } from '@strzel-sobie/common/models';
 import { IRangesRepository } from '../domain/ranges.repository';
 import { ShootingRange } from '../domain/shooting-range.model';
 

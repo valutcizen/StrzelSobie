@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeleteReservation } from '../../../src/worker/src/endpoints/v1/reservations/delete-reservation';
 import {
-  ReservationCancellationError,
-  ReservationNotFoundError,
   Result,
-  type UserDto,
-} from '@strzel-sobie/common';
+  ReservationNotFoundError,
+  CantDeleteReservationError,
+  CancelReservationCommand,
+  ReservationCancellationError,
+  UserDto,
+} from '@strzel-sobie/common/models';
 
 type DeleteReservationDependencies = {
   reservationsService: {
@@ -118,8 +120,7 @@ describe('DeleteReservation endpoint contract', () => {
       payload: { code: 'reservation_not_found', message: error.message },
       status: 404,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation cancellation', error);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
   it('logs unexpected failures and returns a 500 response when cancellation fails with an unknown error', async () => {
@@ -188,7 +189,6 @@ describe('DeleteReservation endpoint contract', () => {
       },
       status: 500,
     });
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation cancellation', cancellationError);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });

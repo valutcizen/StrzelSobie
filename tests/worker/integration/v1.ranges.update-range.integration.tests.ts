@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ForbiddenError, RangeNotFoundError, Result } from '@strzel-sobie/common';
+import { ForbiddenError, RangeNotFoundError, Result } from '@strzel-sobie/common/models';
 import { UpdateRange } from '../../../src/worker/src/endpoints/v1/ranges/update-range';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

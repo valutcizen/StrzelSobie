@@ -1,17 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import {
-  EmailAlreadyExistsError,
-  InvalidCredentialsError,
   Result,
+  IAuthRepository,
+  ISessionRepository,
+  IUserService,
+  User,
+  Role,
+  LoginUserDto,
+  RegisterUserDto,
+  SessionData,
+  AuthCredentials,
+  UserDto,
+  UserIdentifierDto,
+  MeDto,
+  InvalidCredentialsError,
   UserNotFoundError,
-  type AuthCredentials,
-  type IAuditService,
-  type IUserService,
-  type LoginUserDto,
-  type MeDto,
-  type SessionData,
-  type UserIdentifierDto,
-} from '@strzel-sobie/common';
+  EmailAlreadyExistsError,
+} from '@strzel-sobie/common/models';
 import { AuthService } from '@strzel-sobie/auth/src/application/auth.service';
 import type { IAuthRepository } from '@strzel-sobie/auth/src/domain/auth.repository';
 import type { ISessionRepository } from '@strzel-sobie/auth/src/domain/session.repository';

@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserService } from '@strzel-sobie/users/src/application/user.service';
 import type { IUserRepository } from '@strzel-sobie/users/src/domain/user.repository';
-import type { IRangesService, MeDto, Role, UserDto, User as UserModel } from '@strzel-sobie/common';
+import type { IRangesService, MeDto, Role, UserDto, User as UserModel } from '@strzel-sobie/common/models';
 import {
-  ForbiddenError,
-  RangeNotFoundError,
   Result,
+  UserNotFoundError,
+  GetUsersOptions,
+  IUserRepository,
+  IAuditService,
+  ForbiddenError,
   RoleNotFoundError,
   RoleScopeError,
-  UserNotFoundError,
-} from '@strzel-sobie/common';
+  RangeNotFoundError,
+} from '@strzel-sobie/common/models';
 
 type MockedRepository = {
   [K in keyof IUserRepository]: ReturnType<typeof vi.fn<IUserRepository[K]>>;

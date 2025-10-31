@@ -4,11 +4,12 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "strict": true,
-    "skipLibCheck": true,
     "esModuleInterop": true,
-    "composite": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "composite": true,
+    "incremental": true
   }
 }

@@ -1,6 +1,6 @@
-import { SessionData } from '@strzel-sobie/common';
-import { ISessionRepository } from '../domain/session.repository';
 import { KVNamespace } from '@cloudflare/workers-types';
+import { SessionData } from '@strzel-sobie/common/models';
+import { ISessionRepository } from '../domain/session.repository';
 
 export class SessionKvRepository implements ISessionRepository {
   constructor(private readonly kv: KVNamespace) {}

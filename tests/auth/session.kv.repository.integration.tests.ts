@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { SessionData } from '@strzel-sobie/common';
+import type { SessionData } from '@strzel-sobie/common/models';
 import { SessionKvRepository } from '../../src/auth/src/infrastructure/session.kv.repository';
 import type { KVNamespace, KVNamespaceListResult, KVListOptions, KVValueAndMetadata } from '@cloudflare/workers-types';
 

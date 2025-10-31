@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Result, type MeDto, type Role, type SessionData, type UserDto } from '@strzel-sobie/common';
+import { Result, type MeDto, type Role, type UserDto } from '@strzel-sobie/common';
+import type { SessionData } from '@strzel-sobie/common/models';
 import { authMiddleware } from '../../src/worker/src/middleware/auth';
 
 type AuthServiceMock = {

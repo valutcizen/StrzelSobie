@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  ForbiddenError,
-  RangeNotFoundError,
   Result,
+  UserNotFoundError,
+  UserDoesNotHaveRoleError,
+  Role,
+  UserIdentifierDto,
   RoleNotFoundError,
+  RangeNotFoundError,
   RoleScopeError,
-} from '@strzel-sobie/common';
+  ForbiddenError,
+} from '@strzel-sobie/common/models';
 import { RemoveUserRoleRoute } from '../../../src/worker/src/endpoints/v1/user/remove-role';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

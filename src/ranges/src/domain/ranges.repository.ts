@@ -1,4 +1,3 @@
-import { Result } from '@strzel-sobie/common';
 import { ShootingRange } from './shooting-range.model';
 
 export interface IRangesRepository {

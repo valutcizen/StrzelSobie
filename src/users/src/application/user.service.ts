@@ -1,7 +1,15 @@
-import { IUserService, Result, PaginatedUsersDto, GetUsersOptions, UserDto, UserIdentifierDto, 
-  MeDto, User, RoleScopeError, UserNotFoundError, RoleNotFoundError, IRangesService, 
-  RangeNotFoundError, ForbiddenError, Role 
-} from '@strzel-sobie/common';
+import {
+  IUserService,
+  UserNotFoundError,
+  User,
+  Role,
+  IRangesService,
+  ForbiddenError,
+  RoleNotFoundError,
+  RoleScopeError,
+  RangeNotFoundError,
+} from '@strzel-sobie/common/models';
+import { Result, GetUsersOptions, MeDto, UserDto, UserIdentifierDto, PaginatedUsersDto } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
@@ -37,8 +45,8 @@ export class UserService implements IUserService {
   }
   async getRoles(): Promise<Result<Role[]>> {
     try {
-      const roles = await this.userRepository.getRoles();
-      return Result.ok(roles.map(role => ({ id: role.id, name: role.name, scope: role.scope })));
+      const roles: Role[] = await this.userRepository.getRoles();
+      return Result.ok(roles.map((role: Role) => ({ id: role.id, name: role.name, scope: role.scope })));
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -59,31 +67,35 @@ export class UserService implements IUserService {
   ): Promise<Result<PaginatedUsersDto>> {
     try {
       const { users, total } = await this.userRepository.findAndCount(options);
-
       const userDtos: UserDto[] = await Promise.all(
-        users.map(async (user) => {
+        users.map(async (user: User) => {
           const profile = await this.userRepository.getFullUserProfile(user.id);
-          const allRoles = await this.userRepository.getRoles();
-          const roleMap = new Map(allRoles.map((role) => [role.name, role]));
+          const allRoles: Role[] = await this.userRepository.getRoles();
+          const roleMap = new Map<string, Role>(allRoles.map((role: Role) => [role.name, role]));
+
+          const rolesForUser = (profile?.roles ?? [])
+            .map((roleName: string) => roleMap.get(roleName))
+            .filter((role): role is Role => Boolean(role));
+
+          const rangeRolesForUser = profile?.rangeRoles
+            ? (Object.entries(profile.rangeRoles) as Array<[string, string[]]>).reduce<Record<string, Role[]>>(
+                (acc, [rangeId, roleNames]) => {
+                  acc[rangeId] = roleNames
+                    .map((roleName: string) => roleMap.get(roleName))
+                    .filter((role): role is Role => Boolean(role));
+                  return acc;
+                },
+                {}
+              )
+            : {};
 
           return {
             id: user.id,
             email: user.email,
             isDeleted: user.is_deleted as 0 | 1,
             createdAt: user.created_at,
-            roles: profile?.roles.map((roleName) => roleMap.get(roleName)).filter((role) => role) as Role[] || [],
-                        rangeRoles: profile?.rangeRoles
-                          ? Object.entries(profile.rangeRoles).reduce(
-                              (
-                                acc: Record<string, Role[]>, [rangeId, roleNames]) => {
-                    acc[rangeId] = roleNames
-                      .map((roleName) => roleMap.get(roleName))
-                      .filter((role) => role) as Role[];
-                    return acc;
-                  },
-                  {} as Record<string, Role[]>
-                )
-              : {},
+            roles: rolesForUser,
+            rangeRoles: rangeRolesForUser,
           };
         })
       );
@@ -128,8 +140,8 @@ export class UserService implements IUserService {
         return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
       }
 
-      const roles = (await this.userRepository.getRoles()) ?? [];
-      const roleToAssign = roles.find((role) => role.id === roleId);
+      const roles: Role[] = await this.userRepository.getRoles();
+      const roleToAssign = roles.find((role: Role) => role.id === roleId);
 
       if (!roleToAssign) {
         return Result.fail(new RoleNotFoundError(`Role with id ${roleId} not found`));
@@ -199,8 +211,8 @@ export class UserService implements IUserService {
         return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
       }
 
-      const roles = (await this.userRepository.getRoles()) ?? [];
-      const roleToRemove = roles.find((role) => role.id === roleId);
+      const roles: Role[] = await this.userRepository.getRoles();
+      const roleToRemove = roles.find((role: Role) => role.id === roleId);
 
       if (!roleToRemove) {
         return Result.fail(new RoleNotFoundError(`Role with id ${roleId} not found`));

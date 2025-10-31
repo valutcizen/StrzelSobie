@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, type Mocked } from 'vitest';
 import {
   Result,
+  UserNotFoundError,
+  GetUsersOptions,
+  IUserRepository,
+  IAuditService,
+  Role,
+  User,
   UserRole,
-  type IRangesService,
-  type MeDto,
-  type Role,
-  type UserDto,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { UserService } from '@strzel-sobie/users/src/application/user.service';
 import type { IUserRepository } from '@strzel-sobie/users/src/domain/user.repository';
 

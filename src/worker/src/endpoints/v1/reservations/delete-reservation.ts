@@ -1,6 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { CancelReservationCommand, IReservationsService } from '@strzel-sobie/common';
+import { CancelReservationCommand } from '@strzel-sobie/common';
+import { IReservationsService } from '@strzel-sobie/common/models';
 import { AppContext } from '../../../types';
 import { mapReservationsError } from '../../../utils/reservations-error-mapper';
 
@@ -61,8 +62,12 @@ export class DeleteReservation extends OpenAPIRoute {
     }
 
     const error = result.getError();
-    console.error('Error during reservation cancellation', error);
     const { status, body } = mapReservationsError(error);
+
+    if (status >= 500 && body.code === 'internal_error') {
+      console.error('Error during reservation cancellation', error);
+    }
+
     return c.json(body, status);
   }
 }

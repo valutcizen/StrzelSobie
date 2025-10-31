@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Login } from '../../../src/worker/src/endpoints/v1/auth/login';
-import { InvalidCredentialsError, Result } from '@strzel-sobie/common';
+import { InvalidCredentialsError, Result } from '@strzel-sobie/common/models';
 import type { LoginUserDto } from '@strzel-sobie/common';
 
 type LoginDependencies = {

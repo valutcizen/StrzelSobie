@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  PropositionNotFoundError,
   Result,
+  PropositionNotFoundError,
+  PropositionDetailDto,
   UnauthorizedPropositionError,
-  type PropositionDetailDto,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { GetPropositionDetail } from '../../../../../src/worker/src/endpoints/v1/propositions/get-proposition';
 import { createWorkerTestClient } from '../../../utils/app';
 import { mockConsoleError } from '../../../utils/console';

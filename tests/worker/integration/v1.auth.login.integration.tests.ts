@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { InvalidCredentialsError, Result } from '@strzel-sobie/common';
+import { InvalidCredentialsError, Result } from '@strzel-sobie/common/models';
 import { Login } from '../../../src/worker/src/endpoints/v1/auth/login';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getRangeRole, UserRole } from '@strzel-sobie/common';
+import { getRangeRole, UserRole } from '@strzel-sobie/common/models';
 
 const baseUser = {
   id: 1,

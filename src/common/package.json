@@ -4,6 +4,23 @@
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./models": {
+      "types": "./dist/index.models.d.ts",
+      "default": "./dist/index.models.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "models": [
+        "./dist/index.models.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsc"

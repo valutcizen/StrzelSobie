@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { InvalidRecordTimeError, Result, type CreatedRecordDto } from '@strzel-sobie/common';
+import { InvalidRecordTimeError, Result, type CreatedRecordDto } from '@strzel-sobie/common/models';
 import { CreateRecord } from '../../../src/worker/src/endpoints/v1/ranges/create-record';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

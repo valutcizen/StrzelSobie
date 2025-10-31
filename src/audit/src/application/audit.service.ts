@@ -1,5 +1,6 @@
 import { AuditRepository } from '../domain/audit.repository';
-import { AuditLogEntry, IAuditService, Result } from '@strzel-sobie/common';
+import { AuditLogEntry, IAuditService } from '@strzel-sobie/common/models';
+import { Result } from '@strzel-sobie/common';
 
 export class AuditService implements IAuditService {
   constructor(private readonly auditRepository: AuditRepository) {}

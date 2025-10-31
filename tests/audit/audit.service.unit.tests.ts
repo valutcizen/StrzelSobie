@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
-import { type AuditLogEntry } from '@strzel-sobie/common';
+import { type AuditLogEntry } from '@strzel-sobie/common/models';
 import { AuditService } from '@strzel-sobie/audit/src/application/audit.service';
 import type { AuditRepository } from '../../src/audit/src/domain/audit.repository';
 

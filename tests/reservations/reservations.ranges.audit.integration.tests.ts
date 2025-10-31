@@ -1,15 +1,22 @@
 import { describe, it, expect, vi, type Mocked } from 'vitest';
 import {
   Result,
+  CancelReservationCommand,
+  CreatePropositionCommand,
+  CreateRecordCommand,
+  CreateReservationCommand,
+  IReservationsService,
+  IRangesService,
+  IUserService,
+  IAuditService,
+  User,
+  Role,
+  RangeDetailsDto,
+  GetCalendarEventsQuery,
+  UserDto,
+  UserProfile,
   UserRole,
-  type IRangesService,
-  type IAuditService,
-  type GetCalendarEventsQuery,
-  type RangeDetailsDto,
-  type UserDto,
-  type Role,
-  type UserProfile,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { ReservationsService } from '@strzel-sobie/reservations/src/application/reservations.service';
 import type { IReservationsRepository, Proposition, Reservation, RecordEntity } from '@strzel-sobie/reservations/src/domain/reservations.repository';
 

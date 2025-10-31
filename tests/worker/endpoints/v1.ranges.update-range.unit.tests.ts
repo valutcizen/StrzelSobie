@@ -2,11 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { UpdateRange } from '../../../src/worker/src/endpoints/v1/ranges/update-range';
 import {
-  ForbiddenError,
-  RangeNotFoundError,
   Result,
-  type UserDto,
-} from '@strzel-sobie/common';
+  RangeNotFoundError,
+  UserDoesNotHavePermissionError,
+  UserDoesNotHaveRoleError,
+  ForbiddenError,
+  UpdateRangeDto,
+  UserDto,
+} from '@strzel-sobie/common/models';
 
 // chanfana extends Zod with an `openapi` helper at runtime; mirror that for isolated unit tests
 if (typeof (z.ZodType.prototype as { openapi?: () => unknown }).openapi !== 'function') {

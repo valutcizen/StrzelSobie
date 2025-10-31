@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GetRoles } from '../../../src/worker/src/endpoints/v1/user/roles';
-import { Result, type Role } from '@strzel-sobie/common';
+import { Result, type Role } from '@strzel-sobie/common/models';
 
 type GetRolesDependencies = {
   userService: {

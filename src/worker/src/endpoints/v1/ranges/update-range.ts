@@ -1,10 +1,5 @@
-import {
-  ForbiddenError,
-  IRangesService,
-  RangeNotFoundError,
-  UpdateRangeCommand,
-  UserDto,
-} from '@strzel-sobie/common';
+import { ForbiddenError, RangeNotFoundError, UpdateRangeCommand, UserDto } from '@strzel-sobie/common';
+import { IRangesService } from '@strzel-sobie/common/models';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
 import { Context } from '../../../types';

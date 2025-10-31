@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GetEvents } from '../../../src/worker/src/endpoints/v1/ranges/get-events';
 import {
-  RangeNotFoundError,
   Result,
-  type CalendarEventsDto,
-  type UserDto,
-} from '@strzel-sobie/common';
+  RangeNotFoundError,
+  GetEventsQuery,
+  EventDto,
+} from '@strzel-sobie/common/models';
 
 type GetEventsDependencies = {
   reservationsService: {

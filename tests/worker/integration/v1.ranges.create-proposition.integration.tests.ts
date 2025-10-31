@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   Result,
+  InvalidTimeRangeError,
+  UserDoesNotHavePermissionError,
+  CreatePropositionCommand,
+  CreatedPropositionDto,
   UnauthorizedPropositionError,
-  type CreatedPropositionDto,
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { CreateProposition } from '../../../src/worker/src/endpoints/v1/ranges/create-proposition';
 import { createWorkerTestClient } from '../utils/app';
 import { mockConsoleError } from '../utils/console';

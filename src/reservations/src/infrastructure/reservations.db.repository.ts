@@ -1,4 +1,4 @@
-import { IDatabase } from '@strzel-sobie/common';
+import { IDatabase } from '@strzel-sobie/common/models';
 import {
   CreatePropositionRecord,
   CreateRecordData,

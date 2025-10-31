@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import {
-  ForbiddenError,
-  RangeNotFoundError,
-  Result,
-  type UpdateRangeCommand,
-  type UserDto,
-} from '@strzel-sobie/common';
-import type { IRangesRepository } from '@strzel-sobie/ranges/src/domain/ranges.repository';
-import type { ShootingRange } from '@strzel-sobie/ranges/src/domain/shooting-range.model';
 import { RangesService } from '@strzel-sobie/ranges/src/application/ranges.service';
-import type { IAuditService } from '@strzel-sobie/common/src/audit/service';
+import {
+  Result,
+  CreateRangeDto,
+  UpdateRangeDto,
+  RangeDto,
+  IRangesRepository,
+  RangeNotFoundError,
+  ForbiddenError,
+  UpdateRangeCommand,
+  ShootingRange,
+  UserDto,
+} from '@strzel-sobie/common/models';
+import type { IAuditService } from '@strzel-sobie/common/models';
 
 const asMock = <Args extends unknown[], Return>(fn: (...args: Args) => Return) =>
   fn as unknown as Mock<Args, Return>;

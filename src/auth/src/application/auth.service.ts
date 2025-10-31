@@ -3,18 +3,20 @@ import {
   IAuditService,
   IAuthService,
   IUserService,
-  LoginUserDto,
-  RegisteredUserDto,
-  RegisterUserRequestDto,
-  Result,
   SessionData,
-  UserIdentifierDto,
+} from '@strzel-sobie/common/models';
+import {
   EmailAlreadyExistsError,
   InvalidCredentialsError,
-  UserNotFoundError
+  LoginUserDto,
+  RegisterUserRequestDto,
+  RegisteredUserDto,
+  Result,
+  UserIdentifierDto,
+  UserNotFoundError,
 } from '@strzel-sobie/common';
-import { IAuthRepository } from '../domain/auth.repository';
 import * as bcrypt from 'bcryptjs';
+import { IAuthRepository } from '../domain/auth.repository';
 import { ISessionRepository } from '../domain/session.repository';
 
 export class AuthService implements IAuthService {
