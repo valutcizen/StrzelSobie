@@ -15,14 +15,14 @@
           variant="text"
           @click="emitCancel"
         >
-          {{ cancelText }}
+          {{ cancelLabel }}
         </v-btn>
         <v-btn
           :color="color"
           :loading="loading"
           @click="emitConfirm"
         >
-          {{ confirmText }}
+          {{ confirmLabel }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -30,6 +30,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 interface ConfirmationDialogProps {
   open: boolean
   title: string
@@ -40,9 +43,7 @@ interface ConfirmationDialogProps {
   color?: string
 }
 
-withDefaults(defineProps<ConfirmationDialogProps>(), {
-  confirmText: 'Potwierdź',
-  cancelText: 'Anuluj',
+const props = withDefaults(defineProps<ConfirmationDialogProps>(), {
   loading: false,
   color: 'primary',
 })
@@ -52,6 +53,11 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+const { t } = useI18n()
+
+const confirmLabel = computed(() => props.confirmText ?? t('common.actions.confirm'))
+const cancelLabel = computed(() => props.cancelText ?? t('common.actions.cancel'))
 
 const onUpdate = (value: boolean) => {
   emit('update:open', value)

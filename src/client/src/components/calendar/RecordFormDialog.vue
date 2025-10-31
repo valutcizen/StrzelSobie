@@ -5,7 +5,7 @@
     @update:model-value="onDialogToggle"
   >
     <v-card>
-      <v-card-title>Zapisz bez rezerwacji</v-card-title>
+      <v-card-title>{{ t('calendar.recordDialog.title') }}</v-card-title>
       <Form
         :key="formKey"
         :initial-values="initialValues"
@@ -21,7 +21,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Data"
+                :label="t('calendar.forms.dateLabel')"
                 type="date"
               />
             </Field>
@@ -32,7 +32,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Początek"
+                :label="t('calendar.forms.startTimeLabel')"
                 type="time"
               />
             </Field>
@@ -43,7 +43,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Koniec"
+                :label="t('calendar.forms.endTimeLabel')"
                 type="time"
               />
             </Field>
@@ -54,7 +54,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Liczba uczestników"
+                :label="t('calendar.forms.participantsLabel')"
                 min="1"
                 type="number"
               />
@@ -66,7 +66,7 @@
               variant="text"
               @click="closeDialog"
             >
-              Anuluj
+              {{ t('common.actions.cancel') }}
             </v-btn>
             <v-btn
               :disabled="!meta.valid"
@@ -74,7 +74,7 @@
               color="primary"
               type="submit"
             >
-              Zapisz
+              {{ t('common.actions.save') }}
             </v-btn>
           </v-card-actions>
         </template>
@@ -91,6 +91,7 @@ import * as yup from 'yup'
 import { http } from '../../services/http'
 import { ensureTimePrecision } from '../../utils/datetime'
 import { format } from 'date-fns'
+import { useI18n } from 'vue-i18n'
 import type { CreateRecordCommand, CreatedRecordDto } from '@strzel-sobie/common'
 
 interface RecordFormDialogProps {
@@ -104,6 +105,8 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
   submitted: []
 }>()
+
+const { t } = useI18n()
 
 const schema = yup.object({
   date: yup.string().required(),

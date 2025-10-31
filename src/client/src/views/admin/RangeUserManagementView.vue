@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
+import { enUS, pl as plLocale } from 'date-fns/locale'
 import EditUserRolesDialog from '@/components/admin/EditUserRolesDialog.vue'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
@@ -28,14 +28,16 @@ const snackbarState = reactive({
 })
 const lastError = ref<string | null>(null)
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const headers = [
-  { title: 'Email', key: 'email' },
-  { title: 'Data utworzenia', key: 'createdAt' },
-  { title: 'Role dla strzelnicy', key: 'rangeRoles', sortable: false },
-  { title: 'Akcje', key: 'actions', sortable: false },
-]
+const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
+
+const headers = computed(() => [
+  { title: t('admin.rangeUsers.table.email'), key: 'email' },
+  { title: t('admin.rangeUsers.table.createdAt'), key: 'createdAt' },
+  { title: t('admin.rangeUsers.table.roles'), key: 'rangeRoles', sortable: false },
+  { title: t('admin.rangeUsers.table.actions'), key: 'actions', sortable: false },
+])
 
 const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
   snackbarState.open = true
@@ -47,7 +49,7 @@ const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 
 const formatDate = (value: string) => {
   try {
-    return format(new Date(value), 'Pp', { locale: pl })
+    return format(new Date(value), 'Pp', { locale: dateLocale.value })
   } catch {
     return value
   }
@@ -63,7 +65,7 @@ const fetchRangeMetadata = async () => {
     const match = data.find((range) => range.slug === currentRangeSlug.value)
 
     if (!match) {
-      throw new Error('Nie znaleziono strzelnicy dla bieżącego użytkownika.')
+      throw new Error(t('admin.rangeUsers.errors.fetchRange'))
     }
 
     rangeId.value = match.id
@@ -72,7 +74,7 @@ const fetchRangeMetadata = async () => {
     rangeId.value = null
     rangeName.value = ''
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się pobrać danych strzelnicy.'
+      error instanceof Error ? error.message : t('admin.rangeUsers.errors.fetchRange')
     throw error
   }
 }
@@ -82,7 +84,7 @@ const fetchUsers = async () => {
     await adminStore.fetchUsers()
   } catch (error) {
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się pobrać użytkowników.'
+      error instanceof Error ? error.message : t('admin.rangeUsers.errors.fetchUsers')
     throw error
   }
 }
@@ -92,7 +94,7 @@ const loadRoles = async () => {
     await adminStore.fetchRoles()
   } catch (error) {
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się pobrać listy ról.'
+      error instanceof Error ? error.message : t('admin.rangeUsers.errors.fetchRoles')
     throw error
   }
 }
@@ -197,7 +199,8 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
     for (const role of rolesToAdd) {
       const definition = adminStore.roleByName(role, 'range')
       if (!definition) {
-        throw new Error(`Nie znaleziono definicji roli ${role}`)
+        console.error('Missing range role definition', role)
+        throw new Error(t('admin.rangeUsers.errors.fetchRoles'))
       }
       await adminStore.assignRole(selectedUser.value.id, definition.id, rangeId.value)
     }
@@ -207,14 +210,14 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
     }
 
     await adminStore.fetchUsers()
-    showSnackbar('Role użytkownika dla tej strzelnicy zostały zaktualizowane.')
+    showSnackbar(t('admin.rangeUsers.snackbarSuccess'))
     closeDialog()
   } catch (error) {
     lastError.value =
       error instanceof Error
         ? error.message
-        : 'Nie udało się zaktualizować ról użytkownika dla tej strzelnicy.'
-    showSnackbar('Nie udało się zaktualizować ról.', 'error')
+        : t('admin.rangeUsers.snackbarError')
+    showSnackbar(t('admin.rangeUsers.snackbarError'), 'error')
   } finally {
     isSavingRoles.value = false
   }
@@ -226,7 +229,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
         <div class="d-flex flex-column">
-          <span>Zarządzanie rolami strzelnicy</span>
+          <span>{{ t('admin.rangeUsers.title') }}</span>
           <span
             v-if="rangeName"
             class="text-caption text-medium-emphasis"
@@ -239,7 +242,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
           prepend-icon="mdi-refresh"
           @click="initialize"
         >
-          Odśwież
+          {{ t('admin.rangeUsers.refresh') }}
         </v-btn>
       </v-card-title>
 
@@ -285,7 +288,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
               v-if="resolveRangeRoleNames(item).length === 0"
               class="text-body-2 text-medium-emphasis"
             >
-              Brak ról przypisanych do tej strzelnicy.
+              {{ t('admin.rangeUsers.table.noRoles') }}
             </span>
           </v-chip-group>
         </template>
@@ -311,7 +314,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
               mdi-target-account
             </v-icon>
             <p class="text-subtitle-2 mt-2">
-              Brak użytkowników do wyświetlenia.
+              {{ t('admin.rangeUsers.table.empty') }}
             </p>
           </div>
         </template>

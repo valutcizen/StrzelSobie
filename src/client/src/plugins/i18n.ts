@@ -2,6 +2,29 @@ import { createI18n } from 'vue-i18n';
 
 const messages = {
   en: {
+    common: {
+      actions: {
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        close: 'Close',
+        save: 'Save',
+        submit: 'Submit',
+        send: 'Send',
+        retry: 'Try again',
+        accept: 'Accept',
+        refresh: 'Refresh',
+      },
+      feedback: {
+        operationFailed: 'Failed to complete the action.',
+      },
+      localeLabels: {
+        en: 'English',
+        pl: 'Polski',
+      },
+      labels: {
+        userWithId: 'User #{id}',
+      },
+    },
     app: {
       title: 'Strzel Sobie',
     },
@@ -16,6 +39,7 @@ const messages = {
     navigation: {
       rangeInfo: 'Range info',
       calendar: 'Calendar',
+      profile: 'My profile',
       userManagement: 'User Management',
       rangeUserManagement: 'Range Role Management',
       userVerification: 'User Verification',
@@ -35,9 +59,126 @@ const messages = {
       operationFailed: 'Operation failed.',
       invalidCredentials: 'Invalid email or password.',
       invalidBody: 'Invalid input data.',
+      actions: {
+        login: 'Log in',
+        register: 'Register',
+      },
+      form: {
+        emailLabel: 'Email address',
+        passwordLabel: 'Password',
+        passwordConfirmationLabel: 'Confirm password',
+      },
+      validation: {
+        emailInvalid: 'Invalid email format.',
+        emailRequired: 'Email is required.',
+        passwordRequired: 'Password is required.',
+        passwordMinLength: 'Password must be at least 8 characters.',
+        passwordConfirmationRequired: 'Password confirmation is required.',
+        passwordsMustMatch: 'Passwords must match.',
+      },
     },
     footer: {
       privacyPolicy: 'Privacy Policy',
+    },
+    calendar: {
+      view: {
+        title: 'Calendar',
+        proposeSlot: 'Propose a slot',
+        newReservation: 'New reservation',
+        recordWithoutReservation: 'Log without reservation',
+      },
+      fc: {
+        today: 'Today',
+        week: 'Week',
+      },
+      alerts: {
+        detailsFetchFailed: 'Failed to load event details.',
+      },
+      snackbar: {
+        propositionSubmitted: 'The proposition has been submitted.',
+        reservationSaved: 'The reservation has been saved.',
+        recordSaved: 'Entry saved without reservation.',
+        reservationCancelled: 'The reservation has been cancelled.',
+        propositionCancelled: 'The proposition has been withdrawn.',
+        forceAdvice: 'If needed, try saving with force or adjust the parameters.',
+      },
+      confirmation: {
+        cancelReservationTitle: 'Cancel reservation?',
+        cancelReservationDescription: 'A cancelled reservation will no longer appear in the calendar.',
+        cancelPropositionTitle: 'Withdraw proposition?',
+        cancelPropositionDescription: 'A withdrawn proposition will disappear from the calendar.',
+      },
+      forms: {
+        dateLabel: 'Date',
+        startTimeLabel: 'Start time',
+        endTimeLabel: 'End time',
+        participantsLabel: 'Number of participants',
+        tracksLabel: 'Number of lanes',
+      },
+      propositionDialog: {
+        title: 'Propose a slot',
+        submit: 'Send',
+      },
+      reservationDialog: {
+        title: 'New reservation',
+        isPublic: 'Public',
+        isOpenForJoining: 'Open for joining',
+        forceLabel: 'Force save despite conflicts',
+        forceHint: 'Check to force the save even if conflicts exist.',
+        forceSuggestion: 'If needed, try saving with force or adjust the parameters.',
+        defaultError: 'Failed to save the reservation. Try again.',
+        propositionNotFound: 'Could not find the selected proposition to convert.',
+      },
+      recordDialog: {
+        title: 'Log without reservation',
+      },
+      eventDetail: {
+        summary: {
+          tracks: '{count} lanes',
+          participants: '{count} participants',
+        },
+        proposition: {
+          member: 'Member submission',
+          guest: 'Guest submission',
+        },
+        reservation: {
+          public: 'Public reservation',
+          private: 'Private reservation',
+        },
+        joinable: {
+          open: 'Open for joining',
+          closed: 'Invite-only',
+        },
+        visibility: {
+          label: 'Visibility: {value}',
+          public: 'public',
+          private: 'private',
+        },
+        sections: {
+          reservation: 'Reservation',
+          proposition: 'Proposition',
+        },
+        linkedProposition: 'Linked proposition #{id}',
+        linkedPropositionShort: 'Proposition #{id}',
+        status: {
+          pending: 'Status: pending approval',
+          converted: 'Status: converted to reservation',
+          cancelled: 'Status: cancelled',
+        },
+        labels: {
+          createdAt: 'Created at',
+          submittedAt: 'Submitted at',
+          notes: 'Notes',
+          tracksDemand: 'Tracks requested: {count}',
+          participants: 'Participants: {count}',
+        },
+        actions: {
+          retry: 'Try again',
+        },
+        errors: {
+          loadFailed: 'Failed to load event details.',
+        },
+      },
     },
     rangeLanding: {
       loadingTitle: 'Loading range data...',
@@ -61,6 +202,14 @@ const messages = {
         saturday: 'Saturday',
         sunday: 'Sunday',
       },
+      errors: {
+        fetchFailed: 'Failed to fetch range details.',
+      },
+    },
+    profile: {
+      title: 'My profile',
+      emailLabel: 'Email',
+      rolesHeading: 'Roles',
     },
     admin: {
       userRoles: {
@@ -72,6 +221,54 @@ const messages = {
         noSuggestedRole: 'No suggested role.',
         roleAssigned: 'User {email} received the {role} role.',
         roleRemoved: 'User {email} no longer has the {role} role.',
+        editTitle: 'Edit user roles',
+        selectRolesLabel: 'Roles',
+      },
+      users: {
+        title: 'User management',
+        refresh: 'Refresh',
+        snackbarSuccess: 'User roles have been updated.',
+        snackbarError: 'Failed to update user roles.',
+        table: {
+          email: 'Email',
+          createdAt: 'Created at',
+          roles: 'Roles',
+          actions: 'Actions',
+          empty: 'No users to display.',
+        },
+        errors: {
+          fetch: 'Failed to fetch users.',
+          fetchRoles: 'Failed to load role definitions.',
+        },
+      },
+      rangeUsers: {
+        title: 'Range role management',
+        refresh: 'Refresh',
+        snackbarSuccess: 'Range roles updated.',
+        snackbarError: 'Failed to update range roles.',
+        table: {
+          email: 'Email',
+          createdAt: 'Created at',
+          roles: 'Range roles',
+          actions: 'Actions',
+          empty: 'No users to display.',
+          noRoles: 'No roles assigned for this range.',
+        },
+        errors: {
+          fetchUsers: 'Failed to fetch users.',
+          fetchRoles: 'Failed to load role definitions.',
+          fetchRange: 'Failed to fetch range information.',
+        },
+      },
+      verification: {
+        title: 'User verification',
+        refresh: 'Refresh',
+        empty: 'No users are waiting for verification.',
+        snackbarError: 'Failed to approve the user.',
+        submittedAt: 'Submitted {timeAgo}',
+        errors: {
+          fetch: 'Failed to fetch pending users.',
+        },
       },
       rangeSettings: {
         title: 'Range settings',
@@ -86,10 +283,53 @@ const messages = {
         refreshAction: 'Refresh',
         successMessage: 'Range settings saved.',
         errorMessage: 'Failed to save range settings.',
+        recordSaved: 'Entry saved without reservation.',
+        validation: {
+          required: 'This field is required.',
+          invalidTime: 'Invalid time format (HH:MM).',
+          closeAfterOpen: 'Closing time must be later than opening time ({day}).',
+          minTracks: 'The minimum number of lanes is 1.',
+        },
       },
+    },
+    errors: {
+      notFound: {
+        title: 'Page not found',
+        subtitle: 'The page you are looking for does not exist.',
+        backToCalendar: 'Return to calendar',
+      },
+    },
+    privacyPolicy: {
+      title: 'Privacy policy',
+      description:
+        'The Strzel Sobie application cares about user privacy. The full policy will be available in a future release. Meanwhile, all user data is used solely to provide the reservation features described in the product requirements.',
+      contact: 'If you have any questions, contact the system administrator.',
     },
   },
   pl: {
+    common: {
+      actions: {
+        cancel: 'Anuluj',
+        confirm: 'Potwierdź',
+        close: 'Zamknij',
+        save: 'Zapisz',
+        submit: 'Zatwierdź',
+        send: 'Wyślij',
+        retry: 'Spróbuj ponownie',
+        accept: 'Akceptuj',
+        refresh: 'Odśwież',
+      },
+      feedback: {
+        operationFailed: 'Nie udało się wykonać akcji.',
+      },
+      localeLabels: {
+        en: 'English',
+        pl: 'Polski',
+      },
+      labels: {
+        userWithId: 'Użytkownik #{id}',
+      },
+    },
     app: {
       title: 'Strzel Sobie',
     },
@@ -104,6 +344,7 @@ const messages = {
     navigation: {
       rangeInfo: 'Strzelnica',
       calendar: 'Kalendarz',
+      profile: 'Mój profil',
       userManagement: 'Zarządzanie użytkownikami',
       rangeUserManagement: 'Zarządzanie rolami strzelnicy',
       userVerification: 'Weryfikacja użytkowników',
@@ -123,9 +364,126 @@ const messages = {
       operationFailed: 'Nie udało się ukończyć operacji.',
       invalidCredentials: 'Nieprawidłowy email lub hasło.',
       invalidBody: 'Błędne dane wejściowe.',
+      actions: {
+        login: 'Zaloguj',
+        register: 'Zarejestruj',
+      },
+      form: {
+        emailLabel: 'Adres e-mail',
+        passwordLabel: 'Hasło',
+        passwordConfirmationLabel: 'Potwierdź hasło',
+      },
+      validation: {
+        emailInvalid: 'Niepoprawny format adresu e-mail.',
+        emailRequired: 'Email jest wymagany.',
+        passwordRequired: 'Hasło jest wymagane.',
+        passwordMinLength: 'Hasło musi mieć co najmniej 8 znaków.',
+        passwordConfirmationRequired: 'Potwierdzenie hasła jest wymagane.',
+        passwordsMustMatch: 'Hasła muszą się zgadzać.',
+      },
     },
     footer: {
       privacyPolicy: 'Polityka Prywatności',
+    },
+    calendar: {
+      view: {
+        title: 'Kalendarz',
+        proposeSlot: 'Zaproponuj termin',
+        newReservation: 'Nowa rezerwacja',
+        recordWithoutReservation: 'Zapisz bez rezerwacji',
+      },
+      fc: {
+        today: 'Dzisiaj',
+        week: 'Tydzień',
+      },
+      alerts: {
+        detailsFetchFailed: 'Nie udało się pobrać szczegółów wydarzenia.',
+      },
+      snackbar: {
+        propositionSubmitted: 'Propozycja została zgłoszona.',
+        reservationSaved: 'Rezerwacja została zapisana.',
+        recordSaved: 'Zapisano termin bez rezerwacji.',
+        reservationCancelled: 'Rezerwacja została anulowana.',
+        propositionCancelled: 'Propozycja została wycofana.',
+        forceAdvice: 'Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.',
+      },
+      confirmation: {
+        cancelReservationTitle: 'Anulować rezerwację?',
+        cancelReservationDescription: 'Anulowana rezerwacja nie będzie już widoczna w kalendarzu.',
+        cancelPropositionTitle: 'Wycofać propozycję?',
+        cancelPropositionDescription: 'Wycofana propozycja zniknie z kalendarza.',
+      },
+      forms: {
+        dateLabel: 'Data',
+        startTimeLabel: 'Początek',
+        endTimeLabel: 'Koniec',
+        participantsLabel: 'Liczba uczestników',
+        tracksLabel: 'Liczba torów',
+      },
+      propositionDialog: {
+        title: 'Zaproponuj termin',
+        submit: 'Wyślij',
+      },
+      reservationDialog: {
+        title: 'Nowa rezerwacja',
+        isPublic: 'Publiczna',
+        isOpenForJoining: 'Otwarta na dołączenie',
+        forceLabel: 'Wymuś zapis mimo konfliktów',
+        forceHint: 'Zaznacz, aby wymusić zapis mimo istniejących rezerwacji.',
+        forceSuggestion: 'Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.',
+        defaultError: 'Nie udało się zapisać rezerwacji. Spróbuj ponownie.',
+        propositionNotFound: 'Nie znaleziono wybranej propozycji do konwersji.',
+      },
+      recordDialog: {
+        title: 'Zapisz bez rezerwacji',
+      },
+      eventDetail: {
+        summary: {
+          tracks: '{count} torów',
+          participants: '{count} uczestników',
+        },
+        proposition: {
+          member: 'Zgłoszenie członka',
+          guest: 'Zgłoszenie gościa',
+        },
+        reservation: {
+          public: 'Rezerwacja publiczna',
+          private: 'Rezerwacja prywatna',
+        },
+        joinable: {
+          open: 'Otwarta na dołączenie',
+          closed: 'Tylko dla zapisanych',
+        },
+        visibility: {
+          label: 'Widoczność: {value}',
+          public: 'publiczna',
+          private: 'prywatna',
+        },
+        sections: {
+          reservation: 'Rezerwacja',
+          proposition: 'Propozycja',
+        },
+        linkedProposition: 'Powiązana propozycja #{id}',
+        linkedPropositionShort: 'Propozycja #{id}',
+        status: {
+          pending: 'Status: oczekuje na akceptację',
+          converted: 'Status: przekształcona w rezerwację',
+          cancelled: 'Status: wycofana',
+        },
+        labels: {
+          createdAt: 'Data utworzenia',
+          submittedAt: 'Data zgłoszenia',
+          notes: 'Notatki',
+          tracksDemand: 'Zapotrzebowanie: {count} torów',
+          participants: 'Uczestnicy: {count}',
+        },
+        actions: {
+          retry: 'Spróbuj ponownie',
+        },
+        errors: {
+          loadFailed: 'Nie udało się pobrać szczegółów wydarzenia.',
+        },
+      },
     },
     rangeLanding: {
       loadingTitle: 'Ładujemy dane strzelnicy...',
@@ -149,6 +507,14 @@ const messages = {
         saturday: 'Sobota',
         sunday: 'Niedziela',
       },
+      errors: {
+        fetchFailed: 'Nie udało się pobrać danych strzelnicy.',
+      },
+    },
+    profile: {
+      title: 'Mój profil',
+      emailLabel: 'Email',
+      rolesHeading: 'Role',
     },
     admin: {
       userRoles: {
@@ -160,6 +526,54 @@ const messages = {
         noSuggestedRole: 'Brak proponowanej roli.',
         roleAssigned: 'Użytkownik {email} otrzymał rolę {role}.',
         roleRemoved: 'Użytkownik {email} nie ma już roli {role}.',
+        editTitle: 'Edytuj role użytkownika',
+        selectRolesLabel: 'Role',
+      },
+      users: {
+        title: 'Zarządzanie użytkownikami',
+        refresh: 'Odśwież',
+        snackbarSuccess: 'Role użytkownika zostały zaktualizowane.',
+        snackbarError: 'Nie udało się zaktualizować ról.',
+        table: {
+          email: 'Email',
+          createdAt: 'Data utworzenia',
+          roles: 'Role',
+          actions: 'Akcje',
+          empty: 'Brak użytkowników do wyświetlenia.',
+        },
+        errors: {
+          fetch: 'Nie udało się pobrać użytkowników.',
+          fetchRoles: 'Nie udało się pobrać listy ról.',
+        },
+      },
+      rangeUsers: {
+        title: 'Zarządzanie rolami strzelnicy',
+        refresh: 'Odśwież',
+        snackbarSuccess: 'Role użytkownika dla tej strzelnicy zostały zaktualizowane.',
+        snackbarError: 'Nie udało się zaktualizować ról.',
+        table: {
+          email: 'Email',
+          createdAt: 'Data utworzenia',
+          roles: 'Role dla strzelnicy',
+          actions: 'Akcje',
+          empty: 'Brak użytkowników do wyświetlenia.',
+          noRoles: 'Brak ról przypisanych do tej strzelnicy.',
+        },
+        errors: {
+          fetchUsers: 'Nie udało się pobrać użytkowników.',
+          fetchRoles: 'Nie udało się pobrać listy ról.',
+          fetchRange: 'Nie udało się pobrać danych strzelnicy.',
+        },
+      },
+      verification: {
+        title: 'Weryfikacja użytkowników',
+        refresh: 'Odśwież',
+        empty: 'Brak użytkowników oczekujących na weryfikację.',
+        snackbarError: 'Nie udało się zatwierdzić użytkownika.',
+        submittedAt: 'Zgłoszono {timeAgo}',
+        errors: {
+          fetch: 'Nie udało się pobrać oczekujących użytkowników.',
+        },
       },
       rangeSettings: {
         title: 'Ustawienia strzelnicy',
@@ -174,7 +588,27 @@ const messages = {
         refreshAction: 'Odśwież',
         successMessage: 'Ustawienia strzelnicy zostały zapisane.',
         errorMessage: 'Nie udało się zapisać ustawień strzelnicy.',
+        recordSaved: 'Zapisano termin bez rezerwacji.',
+        validation: {
+          required: 'Pole jest wymagane.',
+          invalidTime: 'Niepoprawny format godziny (HH:MM).',
+          closeAfterOpen: 'Godzina zamknięcia musi być późniejsza niż godzina otwarcia ({day}).',
+          minTracks: 'Minimalna liczba torów to 1.',
+        },
       },
+    },
+    errors: {
+      notFound: {
+        title: 'Nie znaleziono strony',
+        subtitle: 'Strona, której szukasz, nie istnieje.',
+        backToCalendar: 'Wróć do kalendarza',
+      },
+    },
+    privacyPolicy: {
+      title: 'Polityka prywatności',
+      description:
+        'Aplikacja Strzel Sobie dba o prywatność użytkowników. Pełna polityka będzie dostępna w kolejnej iteracji projektu. W międzyczasie wszystkie dane są wykorzystywane wyłącznie do świadczenia funkcji rezerwacyjnych opisanych w wymaganiach produktu.',
+      contact: 'W razie pytań skontaktuj się z administratorem systemu.',
     },
   },
 };

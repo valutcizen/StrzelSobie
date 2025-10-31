@@ -19,14 +19,16 @@
             <template #prepend>
               <v-icon>mdi-target</v-icon>
             </template>
-            <v-list-item-title>{{ tracksRequested }} torów</v-list-item-title>
+            <v-list-item-title>{{ t('calendar.eventDetail.summary.tracks', { count: tracksRequested }) }}</v-list-item-title>
           </v-list-item>
           <v-list-item v-if="isProposition">
             <template #prepend>
               <v-icon>mdi-account</v-icon>
             </template>
             <v-list-item-title>
-              {{ event.meta?.isMember ? 'Zgłoszenie członka' : 'Zgłoszenie gościa' }}
+              {{ event.meta?.isMember
+                ? t('calendar.eventDetail.proposition.member')
+                : t('calendar.eventDetail.proposition.guest') }}
             </v-list-item-title>
           </v-list-item>
           <v-list-item v-if="isReservation">
@@ -34,17 +36,19 @@
               <v-icon>mdi-shield-check</v-icon>
             </template>
             <v-list-item-title>
-              {{ event.meta?.isPublic ? 'Rezerwacja publiczna' : 'Rezerwacja prywatna' }}
+              {{ event.meta?.isPublic
+                ? t('calendar.eventDetail.reservation.public')
+                : t('calendar.eventDetail.reservation.private') }}
             </v-list-item-title>
             <v-list-item-subtitle v-if="event.meta?.isOpenForJoining">
-              Otwarta na dołączenie
+              {{ t('calendar.eventDetail.joinable.open') }}
             </v-list-item-subtitle>
           </v-list-item>
           <v-list-item v-if="participants">
             <template #prepend>
               <v-icon>mdi-account-group</v-icon>
             </template>
-            <v-list-item-title>{{ participants }} uczestników</v-list-item-title>
+            <v-list-item-title>{{ t('calendar.eventDetail.summary.participants', { count: participants }) }}</v-list-item-title>
           </v-list-item>
         </v-list>
 
@@ -71,7 +75,7 @@
               color="primary"
               @click="emitReload"
             >
-              Spróbuj ponownie
+              {{ t('common.actions.retry') }}
             </v-btn>
           </div>
         </v-alert>
@@ -84,7 +88,7 @@
             <v-divider class="mb-3" />
             <v-list density="compact">
               <template v-if="hasReservationSection">
-                <v-list-subheader>Rezerwacja</v-list-subheader>
+                <v-list-subheader>{{ t('calendar.eventDetail.sections.reservation') }}</v-list-subheader>
                 <v-list-item v-if="coordinatorDisplay">
                   <template #prepend>
                     <v-icon>mdi-account-tie</v-icon>
@@ -111,7 +115,7 @@
                     <v-icon>mdi-link-variant</v-icon>
                   </template>
                   <v-list-item-title>
-                    Powiązana propozycja #{{ linkedPropositionId }}
+                    {{ t('calendar.eventDetail.linkedProposition', { id: linkedPropositionId }) }}
                   </v-list-item-title>
                   <v-list-item-subtitle v-if="propositionSectionStatusLabel">
                     {{ propositionSectionStatusLabel }}
@@ -122,7 +126,7 @@
                     <v-icon>mdi-calendar-clock</v-icon>
                   </template>
                   <v-list-item-title>{{ detailCreatedAt }}</v-list-item-title>
-                  <v-list-item-subtitle>Data utworzenia</v-list-item-subtitle>
+                  <v-list-item-subtitle>{{ t('calendar.eventDetail.labels.createdAt') }}</v-list-item-subtitle>
                 </v-list-item>
                 <v-list-item v-if="detailNotes">
                   <template #prepend>
@@ -138,13 +142,13 @@
               />
 
               <template v-if="hasPropositionSection">
-                <v-list-subheader>Propozycja</v-list-subheader>
+                <v-list-subheader>{{ t('calendar.eventDetail.sections.proposition') }}</v-list-subheader>
                 <v-list-item v-if="!hasReservationSection && linkedPropositionId !== null">
                   <template #prepend>
                     <v-icon>mdi-link-variant</v-icon>
                   </template>
                   <v-list-item-title>
-                    Propozycja #{{ linkedPropositionId }}
+                    {{ t('calendar.eventDetail.linkedPropositionShort', { id: linkedPropositionId }) }}
                   </v-list-item-title>
                   <v-list-item-subtitle v-if="propositionSectionStatusLabel">
                     {{ propositionSectionStatusLabel }}
@@ -172,7 +176,7 @@
                     <v-icon>mdi-target</v-icon>
                   </template>
                   <v-list-item-title>
-                    Zapotrzebowanie: {{ propositionSectionTracksRequested }} torów
+                    {{ t('calendar.eventDetail.labels.tracksDemand', { count: propositionSectionTracksRequested }) }}
                   </v-list-item-title>
                 </v-list-item>
                 <v-list-item v-if="propositionSectionParticipants !== null">
@@ -180,7 +184,7 @@
                     <v-icon>mdi-account-group</v-icon>
                   </template>
                   <v-list-item-title>
-                    Uczestnicy: {{ propositionSectionParticipants }}
+                    {{ t('calendar.eventDetail.labels.participants', { count: propositionSectionParticipants }) }}
                   </v-list-item-title>
                 </v-list-item>
                 <v-list-item v-if="propositionSectionCreatedAt">
@@ -188,7 +192,7 @@
                     <v-icon>mdi-calendar-clock</v-icon>
                   </template>
                   <v-list-item-title>{{ propositionSectionCreatedAt }}</v-list-item-title>
-                  <v-list-item-subtitle>Data zgłoszenia</v-list-item-subtitle>
+                  <v-list-item-subtitle>{{ t('calendar.eventDetail.labels.submittedAt') }}</v-list-item-subtitle>
                 </v-list-item>
                 <v-list-item v-if="propositionSectionNotes">
                   <template #prepend>
@@ -207,14 +211,14 @@
           variant="text"
           @click="emitUpdate(false)"
         >
-          Zamknij
+          {{ t('common.actions.close') }}
         </v-btn>
         <v-btn
           v-if="canAccept"
           color="primary"
           @click="emitAccept"
         >
-          Akceptuj
+          {{ t('common.actions.accept') }}
         </v-btn>
         <v-btn
           v-if="canCancel"
@@ -222,7 +226,7 @@
           variant="tonal"
           @click="emitCancel"
         >
-          Anuluj
+          {{ t('common.actions.cancel') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -232,7 +236,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { format, parseISO } from 'date-fns'
-import { pl } from 'date-fns/locale'
+import { enUS, pl as plLocale } from 'date-fns/locale'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../../stores/auth'
 import { UserRoleEnum } from '../../types/auth'
 import type {
@@ -263,6 +268,10 @@ const emit = defineEmits<{
   cancel: [event: RangeEvent]
   'reload-details': [event: RangeEvent]
 }>()
+
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
 
 const authStore = useAuthStore()
 
@@ -311,12 +320,12 @@ const participants = computed(() => {
 
 const formattedStart = computed(() => {
   if (!event.value) return ''
-  return format(parseISO(event.value.start), 'PPpp', { locale: pl })
+  return format(parseISO(event.value.start), 'PPpp', { locale: dateLocale.value })
 })
 
 const formattedEnd = computed(() => {
   if (!event.value) return ''
-  return format(parseISO(event.value.end), 'PPpp', { locale: pl })
+  return format(parseISO(event.value.end), 'PPpp', { locale: dateLocale.value })
 })
 
 const formatDateTime = (value: string | null | undefined): string | null => {
@@ -324,7 +333,7 @@ const formatDateTime = (value: string | null | undefined): string | null => {
     return null
   }
   try {
-    return format(parseISO(value), 'PPpp', { locale: pl })
+    return format(parseISO(value), 'PPpp', { locale: dateLocale.value })
   } catch {
     return null
   }
@@ -341,11 +350,11 @@ const normalizeNotes = (value: unknown): string | null => {
 const buildPropositionStatusLabel = (detail: PropositionEventDetail | null): string | null => {
   switch (detail?.status) {
     case 'open':
-      return 'Status: oczekuje na akceptację'
+      return t('calendar.eventDetail.status.pending')
     case 'converted':
-      return 'Status: przekształcona w rezerwację'
+      return t('calendar.eventDetail.status.converted')
     case 'cancelled':
-      return 'Status: wycofana'
+      return t('calendar.eventDetail.status.cancelled')
     default:
       return null
   }
@@ -365,7 +374,9 @@ const formatPerson = (person: PersonSummary | null): PersonDisplay | null => {
   }
 
   const titleCandidate =
-    person.displayName ?? person.email ?? (person.id !== null ? `Użytkownik #${person.id}` : null)
+    person.displayName ??
+    person.email ??
+    (person.id !== null ? t('common.labels.userWithId', { id: person.id }) : null)
   const subtitleParts: string[] = []
 
   if (person.email && person.email !== titleCandidate) {
@@ -482,7 +493,10 @@ const reservationVisibilityLabel = computed(() => {
   if (!detail || detail.isPublic === null) {
     return null
   }
-  return detail.isPublic ? 'Widoczność: publiczna' : 'Widoczność: prywatna'
+  const visibilityValue = detail.isPublic
+    ? t('calendar.eventDetail.visibility.public')
+    : t('calendar.eventDetail.visibility.private')
+  return t('calendar.eventDetail.visibility.label', { value: visibilityValue })
 })
 
 const reservationJoinableLabel = computed(() => {
@@ -490,7 +504,9 @@ const reservationJoinableLabel = computed(() => {
   if (!detail || detail.isJoinable === null) {
     return null
   }
-  return detail.isJoinable ? 'Otwarta na dołączenie' : 'Tylko dla zapisanych'
+  return detail.isJoinable
+    ? t('calendar.eventDetail.joinable.open')
+    : t('calendar.eventDetail.joinable.closed')
 })
 
 const canAccept = computed(() =>

@@ -26,14 +26,14 @@ onMounted(() => {
       >
         <v-card
           v-if="authStore.user"
-          title="Mój profil"
+          :title="t('profile.title')"
         >
           <v-card-text>
             <div>
-              <strong>Email:</strong> {{ authStore.user.email }}
+              <strong>{{ t('profile.emailLabel') }}:</strong> {{ authStore.user.email }}
             </div>
             <div class="mt-4">
-              <strong>Role:</strong>
+              <strong>{{ t('profile.rolesHeading') }}:</strong>
               <v-chip-group>
                 <v-chip
                   v-for="role in authStore.user.roles"

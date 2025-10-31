@@ -12,14 +12,14 @@
           404
         </h1>
         <p class="text-subtitle-1">
-          Nie znaleziono strony.
+          {{ t('errors.notFound.subtitle') }}
         </p>
         <v-btn
           class="mt-4"
           color="primary"
           @click="goHome"
         >
-          Wróć do kalendarza
+          {{ t('errors.notFound.backToCalendar') }}
         </v-btn>
       </v-col>
     </v-row>
@@ -29,9 +29,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const goHome = () => {
   router.push({ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug ?? 'dobczyce' } })

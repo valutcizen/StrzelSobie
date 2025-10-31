@@ -34,10 +34,12 @@ import { toDateOnly } from '@/utils/datetime'
 import { http } from '@/services/http'
 import { UserRoleEnum } from '@/types/auth'
 import type { PropositionDetailDto, ReservationDetailDto } from '@strzel-sobie/common'
+import { useI18n } from 'vue-i18n'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
 const route = useRoute()
+const { t, locale } = useI18n()
 
 const rangeSlug = computed(() => String(route.params.rangeSlug ?? authStore.defaultRangeSlug))
 const canForceReservations = computed(() =>
@@ -372,7 +374,7 @@ const loadEventDetails = async (event: RangeEvent) => {
   } catch (error) {
     if (detailRequestId.value === requestId) {
       eventDetailState.error =
-        error instanceof Error ? error.message : 'Nie udało się pobrać szczegółów wydarzenia.'
+        error instanceof Error ? error.message : t('calendar.eventDetail.errors.loadFailed')
       eventDetailState.detail = null
     }
   } finally {
@@ -491,7 +493,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
   initialView: 'timeGridWeek',
   locales: [plLocale],
-  locale: 'pl',
+  locale: locale.value,
   slotDuration: '00:30:00',
   allDaySlot: false,
   expandRows: true,
@@ -507,13 +509,28 @@ const calendarOptions = computed<CalendarOptions>(() => ({
     right: 'timeGridWeek',
   },
   buttonText: {
-    today: 'Dzisiaj',
-    week: 'Tydzień',
+    today: t('calendar.fc.today'),
+    week: t('calendar.fc.week'),
   },
   select: handleSlotSelect,
   eventClick: handleEventClick,
   datesSet: handleDatesSet,
 }))
+
+watch(
+  () => locale.value,
+  (newLocale) => {
+    const api = calendarRef.value?.getApi()
+    if (!api) {
+      return
+    }
+    api.setOption('locale', newLocale)
+    api.setOption('buttonText', {
+      today: t('calendar.fc.today'),
+      week: t('calendar.fc.week'),
+    })
+  },
+)
 
 const refreshEvents = async () => {
   if (currentViewRange.value) {
@@ -653,13 +670,17 @@ const openCancellationConfirmation = (event: RangeEvent) => {
   confirmationState.open = true
   confirmationState.loading = false
   confirmationState.title =
-    event.type === 'reservation' ? 'Anulować rezerwację?' : 'Wycofać propozycję?'
+    event.type === 'reservation'
+      ? t('calendar.confirmation.cancelReservationTitle')
+      : t('calendar.confirmation.cancelPropositionTitle')
   confirmationState.description =
     event.type === 'reservation'
-      ? 'Anulowana rezerwacja nie będzie już widoczna w kalendarzu.'
-      : 'Wycofana propozycja zniknie z kalendarza.'
+      ? t('calendar.confirmation.cancelReservationDescription')
+      : t('calendar.confirmation.cancelPropositionDescription')
   confirmationState.successMessage =
-    event.type === 'reservation' ? 'Rezerwacja została anulowana.' : 'Propozycja została wycofana.'
+    event.type === 'reservation'
+      ? t('calendar.snackbar.reservationCancelled')
+      : t('calendar.snackbar.propositionCancelled')
   confirmationState.action = async () => {
     await performCancellation(event)
     await refreshEvents()
@@ -678,7 +699,7 @@ const handleConfirmationConfirm = async () => {
     showSnackbar(confirmationState.successMessage, 'success')
   } catch (error) {
     showSnackbar(
-      error instanceof Error ? error.message : 'Nie udało się wykonać akcji.',
+      error instanceof Error ? error.message : t('common.feedback.operationFailed'),
       'error',
     )
   } finally {
@@ -689,18 +710,18 @@ const handleConfirmationConfirm = async () => {
 const handlePropositionSubmitted = async () => {
   propositionDialogOpen.value = false
   await refreshEvents()
-  showSnackbar('Propozycja została zgłoszona.')
+  showSnackbar(t('calendar.snackbar.propositionSubmitted'))
 }
 
 const handleReservationSubmitted = async () => {
   reservationDialog.open = false
   await refreshEvents()
-  showSnackbar('Rezerwacja została zapisana.')
+  showSnackbar(t('calendar.snackbar.reservationSaved'))
 }
 
 const handleReservationError = (error: ReservationSubmissionError) => {
   const message = error.forceRequired
-    ? `${error.message} Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.`
+    ? `${error.message} ${t('calendar.snackbar.forceAdvice')}`
     : error.message
   showSnackbar(message, 'error')
 }
@@ -708,7 +729,7 @@ const handleReservationError = (error: ReservationSubmissionError) => {
 const handleRecordSubmitted = async () => {
   recordDialogOpen.value = false
   await refreshEvents()
-  showSnackbar('Zapisano termin bez rezerwacji.')
+  showSnackbar(t('calendar.snackbar.recordSaved'))
 }
 
 watch(
@@ -757,7 +778,7 @@ onBeforeUnmount(() => {
           <v-card-title class="d-flex align-center justify-space-between flex-wrap gap-4">
             <div>
               <div class="text-h6">
-                Kalendarz
+                {{ t('calendar.view.title') }}
               </div>
               <div class="text-caption text-medium-emphasis">
                 {{ rangeSlug }}
@@ -770,7 +791,7 @@ onBeforeUnmount(() => {
                 prepend-icon="mdi-target"
                 @click="openPropositionDialog"
               >
-                Zaproponuj termin
+                {{ t('calendar.view.proposeSlot') }}
               </v-btn>
               <v-btn
                 v-if="authStore.hasAnyRole([UserRoleEnum.Coordinator])"
@@ -778,7 +799,7 @@ onBeforeUnmount(() => {
                 prepend-icon="mdi-calendar-plus"
                 @click="openReservationDialog({})"
               >
-                Nowa rezerwacja
+                {{ t('calendar.view.newReservation') }}
               </v-btn>
               <v-btn
                 v-if="canManageRecords"
@@ -787,7 +808,7 @@ onBeforeUnmount(() => {
                 prepend-icon="mdi-clipboard-plus"
                 @click="recordDialogOpen = true"
               >
-                Zapisz bez rezerwacji
+                {{ t('calendar.view.recordWithoutReservation') }}
               </v-btn>
             </div>
           </v-card-title>
@@ -862,8 +883,6 @@ onBeforeUnmount(() => {
       :loading="confirmationState.loading"
       :title="confirmationState.title"
       :description="confirmationState.description"
-      confirm-text="Potwierdź"
-      cancel-text="Anuluj"
       color="error"
       @update:open="confirmationState.open = $event"
       @confirm="handleConfirmationConfirm"

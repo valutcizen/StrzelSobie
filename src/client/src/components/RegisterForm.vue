@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useField, useForm } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 
 interface RegisterFormValues {
   email: string
@@ -24,13 +25,21 @@ const emit = defineEmits<{
   submit: [payload: RegisterFormValues]
 }>()
 
+const { t } = useI18n()
+
 const validationSchema = yup.object({
-  email: yup.string().email('Niepoprawny format emaila').required('Email jest wymagany'),
-  password: yup.string().min(8, 'Hasło musi mieć co najmniej 8 znaków').required('Hasło jest wymagane'),
+  email: yup
+    .string()
+    .email(t('auth.validation.emailInvalid'))
+    .required(t('auth.validation.emailRequired')),
+  password: yup
+    .string()
+    .min(8, t('auth.validation.passwordMinLength'))
+    .required(t('auth.validation.passwordRequired')),
   passwordConfirmation: yup
     .string()
-    .oneOf([yup.ref('password')], 'Hasła muszą się zgadzać')
-    .required('Potwierdzenie hasła jest wymagane'),
+    .oneOf([yup.ref('password')], t('auth.validation.passwordsMustMatch'))
+    .required(t('auth.validation.passwordConfirmationRequired')),
 })
 
 const { handleSubmit, meta } = useForm<RegisterFormValues>({
@@ -66,7 +75,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
     <v-text-field
       v-model="email"
       :error-messages="emailError"
-      label="Email"
+      :label="t('auth.form.emailLabel')"
       name="email"
       type="email"
       autocomplete="email"
@@ -74,7 +83,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
     <v-text-field
       v-model="password"
       :error-messages="passwordError"
-      label="Hasło"
+      :label="t('auth.form.passwordLabel')"
       name="password"
       type="password"
       autocomplete="new-password"
@@ -82,7 +91,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
     <v-text-field
       v-model="passwordConfirmation"
       :error-messages="passwordConfirmationError"
-      label="Potwierdź hasło"
+      :label="t('auth.form.passwordConfirmationLabel')"
       name="passwordConfirmation"
       type="password"
       autocomplete="new-password"
@@ -94,7 +103,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
       color="primary"
       block
     >
-      Zarejestruj
+      {{ t('auth.actions.register') }}
     </v-btn>
   </v-form>
 </template>

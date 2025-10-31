@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useField, useForm } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 
 interface LoginFormValues {
   email: string
@@ -23,9 +24,14 @@ const emit = defineEmits<{
   submit: [payload: LoginFormValues]
 }>()
 
+const { t } = useI18n()
+
 const validationSchema = yup.object({
-  email: yup.string().email('Niepoprawny format emaila').required('Email jest wymagany'),
-  password: yup.string().required('Hasło jest wymagane'),
+  email: yup
+    .string()
+    .email(t('auth.validation.emailInvalid'))
+    .required(t('auth.validation.emailRequired')),
+  password: yup.string().required(t('auth.validation.passwordRequired')),
 })
 
 const { handleSubmit, meta } = useForm<LoginFormValues>({
@@ -59,7 +65,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
     <v-text-field
       v-model="email"
       :error-messages="emailError"
-      label="Email"
+      :label="t('auth.form.emailLabel')"
       name="email"
       type="email"
       autocomplete="email"
@@ -67,7 +73,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
     <v-text-field
       v-model="password"
       :error-messages="passwordError"
-      label="Hasło"
+      :label="t('auth.form.passwordLabel')"
       name="password"
       type="password"
       autocomplete="current-password"
@@ -79,7 +85,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
       color="primary"
       block
     >
-      Zaloguj
+      {{ t('auth.actions.login') }}
     </v-btn>
   </v-form>
 </template>

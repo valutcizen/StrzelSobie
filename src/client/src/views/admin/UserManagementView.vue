@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
+import { enUS, pl as plLocale } from 'date-fns/locale'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EditUserRolesDialog from '@/components/admin/EditUserRolesDialog.vue'
@@ -20,14 +20,16 @@ const snackbarState = reactive({
 })
 const lastError = ref<string | null>(null)
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const headers = [
-  { title: 'Email', key: 'email' },
-  { title: 'Data utworzenia', key: 'createdAt' },
-  { title: 'Role', key: 'globalRoleNames', sortable: false },
-  { title: 'Akcje', key: 'actions', sortable: false },
-]
+const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
+
+const headers = computed(() => [
+  { title: t('admin.users.table.email'), key: 'email' },
+  { title: t('admin.users.table.createdAt'), key: 'createdAt' },
+  { title: t('admin.users.table.roles'), key: 'globalRoleNames', sortable: false },
+  { title: t('admin.users.table.actions'), key: 'actions', sortable: false },
+])
 
 const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
   snackbarState.open = true
@@ -40,7 +42,7 @@ const loadRoles = async () => {
     await adminStore.fetchRoles()
   } catch (error) {
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się pobrać listy ról.'
+      error instanceof Error ? error.message : t('admin.users.errors.fetchRoles')
     throw error
   }
 }
@@ -50,7 +52,7 @@ const fetchUsers = async () => {
   try {
     await adminStore.fetchUsers()
   } catch (error) {
-    lastError.value = error instanceof Error ? error.message : 'Nie udało się pobrać użytkowników.'
+    lastError.value = error instanceof Error ? error.message : t('admin.users.errors.fetch')
   }
 }
 
@@ -122,7 +124,8 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
     for (const role of rolesToAdd) {
       const roleDefinition = adminStore.roleByName(role, 'global')
       if (!roleDefinition) {
-        throw new Error(`Nie znaleziono definicji roli ${role}`)
+        console.error('Missing role definition', role)
+        throw new Error(t('admin.users.errors.fetchRoles'))
       }
       await adminStore.assignRole(selectedUser.value.id, roleDefinition.id, null)
     }
@@ -132,12 +135,12 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
     }
 
     await adminStore.fetchUsers()
-    showSnackbar('Role użytkownika zostały zaktualizowane.')
+    showSnackbar(t('admin.users.snackbarSuccess'))
     closeDialog()
   } catch (error) {
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się zaktualizować ról użytkownika.'
-    showSnackbar('Nie udało się zaktualizować ról.', 'error')
+      error instanceof Error ? error.message : t('admin.users.snackbarError')
+    showSnackbar(t('admin.users.snackbarError'), 'error')
   } finally {
     isSavingRoles.value = false
   }
@@ -145,7 +148,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
 
 const formatDate = (value: string) => {
   try {
-    return format(new Date(value), 'Pp', { locale: pl })
+    return format(new Date(value), 'Pp', { locale: dateLocale.value })
   } catch {
     return value
   }
@@ -168,13 +171,13 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
   <v-container fluid>
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
-        <span>Zarządzanie użytkownikami</span>
+        <span>{{ t('admin.users.title') }}</span>
         <v-btn
           color="primary"
           prepend-icon="mdi-refresh"
           @click="fetchUsers"
         >
-          Odśwież
+          {{ t('admin.users.refresh') }}
         </v-btn>
       </v-card-title>
 
@@ -239,7 +242,7 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
               mdi-account-off
             </v-icon>
             <p class="text-subtitle-2 mt-2">
-              Brak użytkowników do wyświetlenia.
+              {{ t('admin.users.table.empty') }}
             </p>
           </div>
         </template>

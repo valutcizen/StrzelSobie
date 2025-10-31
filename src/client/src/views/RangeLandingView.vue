@@ -55,7 +55,7 @@ const fetchRange = async (slug: string, force = false) => {
   try {
     await rangeStore.fetchRangeDetails(slug, { force })
   } catch (error) {
-    console.error('Nie udało się pobrać danych strzelnicy.', error)
+    console.error(t('rangeLanding.errors.fetchFailed'), error)
   }
 }
 

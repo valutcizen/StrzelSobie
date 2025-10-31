@@ -5,7 +5,7 @@
     @update:model-value="onDialogToggle"
   >
     <v-card>
-      <v-card-title>Zaproponuj termin</v-card-title>
+      <v-card-title>{{ t('calendar.propositionDialog.title') }}</v-card-title>
       <Form
         :key="formKey"
         :initial-values="initialValues"
@@ -21,7 +21,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Data"
+                :label="t('calendar.forms.dateLabel')"
                 type="date"
               />
             </Field>
@@ -32,7 +32,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Początek"
+                :label="t('calendar.forms.startTimeLabel')"
                 type="time"
               />
             </Field>
@@ -43,7 +43,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Koniec"
+                :label="t('calendar.forms.endTimeLabel')"
                 type="time"
               />
             </Field>
@@ -54,7 +54,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Liczba uczestników"
+                :label="t('calendar.forms.participantsLabel')"
                 min="1"
                 type="number"
               />
@@ -66,7 +66,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Liczba torów"
+                :label="t('calendar.forms.tracksLabel')"
                 min="1"
                 type="number"
               />
@@ -78,7 +78,7 @@
               variant="text"
               @click="closeDialog"
             >
-              Anuluj
+              {{ t('common.actions.cancel') }}
             </v-btn>
             <v-btn
               :disabled="!meta.valid"
@@ -86,7 +86,7 @@
               color="primary"
               type="submit"
             >
-              Wyślij
+              {{ t('calendar.propositionDialog.submit') }}
             </v-btn>
           </v-card-actions>
         </template>
@@ -100,6 +100,7 @@ import { computed } from 'vue'
 import { Form, Field } from 'vee-validate'
 import type { SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
+import { useI18n } from 'vue-i18n'
 import { http } from '../../services/http'
 import { ensureTimePrecision, toDateInputValue, toTimeInputValue } from '../../utils/datetime'
 import type { CreatePropositionCommand, CreatedPropositionDto } from '@strzel-sobie/common'
@@ -129,6 +130,8 @@ const schema = yup.object({
   participants: yup.number().min(1).required(),
   tracks: yup.number().min(1).required(),
 })
+
+const { t } = useI18n()
 
 interface PropositionFormValues {
   date: string

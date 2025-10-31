@@ -31,3 +31,10 @@
 - Reuse request/response DTOs and service interfaces from `@strzel-sobie/common`; do **not** hand-roll duplicate TypeScript shapes for API calls.
 - When checking permissions or building role lists, rely on `UserRoleEnum` exported from the shared package instead of string literals.
 - Map incoming data through shared helpers/types before storing it in Pinia to keep the client aligned with backend contracts.
+
+## INTERNATIONALIZATION
+
+- Do not ship user-facing text as literals; pull copy from the shared message catalog in `src/client/src/plugins/i18n.ts` and add keys for both `en` and `pl` when introducing new strings.
+- Use the Composition API `useI18n` hook in components and views to access `t`, `locale`, and any other helpers you need; avoid injecting translations via props unless there is a strong reuse case.
+- Reuse the existing `common.*` keys (actions, feedback, labels) for standard buttons or alerts instead of creating duplicates in feature-specific namespaces.
+- When formatting dates or numbers (e.g., with `date-fns`), derive the locale from `useI18n().locale` so the output matches the active language.

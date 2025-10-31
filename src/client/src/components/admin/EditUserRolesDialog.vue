@@ -84,7 +84,7 @@ const handleCancel = () => {
   >
     <v-card>
       <v-card-title class="text-h6">
-        Edytuj role użytkownika
+        {{ t('admin.userRoles.editTitle') }}
       </v-card-title>
       <v-card-subtitle v-if="user">
         {{ user.email }}
@@ -105,7 +105,7 @@ const handleCancel = () => {
           :items="roleOptions"
           item-title="title"
           item-value="value"
-          label="Role"
+          :label="t('admin.userRoles.selectRolesLabel')"
           multiple
           chips
           closable-chips
@@ -138,14 +138,14 @@ const handleCancel = () => {
           :disabled="loading"
           @click="handleCancel"
         >
-          Anuluj
+          {{ t('common.actions.cancel') }}
         </v-btn>
         <v-btn
           color="primary"
           :loading="loading"
           @click="handleSave"
         >
-          Zapisz
+          {{ t('common.actions.save') }}
         </v-btn>
       </v-card-actions>
     </v-card>

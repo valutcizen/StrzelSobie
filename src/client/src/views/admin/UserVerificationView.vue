@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatDistanceToNow } from 'date-fns'
-import { pl } from 'date-fns/locale'
-import { onMounted, reactive, ref } from 'vue'
+import { enUS, pl as plLocale } from 'date-fns/locale'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStore } from '@/stores/admin'
 import type { PendingUser } from '@/types/admin'
@@ -17,7 +17,9 @@ const snackbar = reactive({
   color: 'success' as 'success' | 'error',
 })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
 
 const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 const userHasRole = (user: PendingUser, role: UserRole) => user.currentRoles?.includes(role) ?? false
@@ -30,7 +32,7 @@ const fetchPendingUsers = async () => {
     await adminStore.fetchPendingUsers()
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Nie udało się pobrać oczekujących użytkowników.'
+      error instanceof Error ? error.message : t('admin.verification.errors.fetch')
   }
 }
 
@@ -53,9 +55,9 @@ const promoteUser = async (user: PendingUser, role: UserRole) => {
     snackbar.color = 'success'
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Nie udało się zaktualizować roli użytkownika.'
+      error instanceof Error ? error.message : t('common.feedback.operationFailed')
     snackbar.open = true
-    snackbar.message = 'Nie udało się zatwierdzić użytkownika.'
+    snackbar.message = t('admin.verification.snackbarError')
     snackbar.color = 'error'
   } finally {
     loadingUserId.value = null
@@ -64,7 +66,7 @@ const promoteUser = async (user: PendingUser, role: UserRole) => {
 
 const formatSubmittedAt = (value: string) => {
   try {
-    return formatDistanceToNow(new Date(value), { locale: pl, addSuffix: true })
+    return formatDistanceToNow(new Date(value), { locale: dateLocale.value, addSuffix: true })
   } catch {
     return value
   }
@@ -79,13 +81,13 @@ onMounted(() => {
   <v-container fluid>
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
-        <span>Weryfikacja użytkowników</span>
+        <span>{{ t('admin.verification.title') }}</span>
         <v-btn
           color="primary"
           prepend-icon="mdi-refresh"
           @click="fetchPendingUsers"
         >
-          Odśwież
+          {{ t('admin.verification.refresh') }}
         </v-btn>
       </v-card-title>
 
@@ -117,7 +119,7 @@ onMounted(() => {
             mdi-account-check
           </v-icon>
           <p class="text-subtitle-2 mt-3">
-            Brak użytkowników oczekujących na weryfikację.
+            {{ t('admin.verification.empty') }}
           </p>
         </div>
 
@@ -131,7 +133,7 @@ onMounted(() => {
               <div class="d-flex flex-column">
                 <span class="text-subtitle-1 font-weight-medium">{{ user.email }}</span>
                 <span class="text-caption text-medium-emphasis">
-                  Zgłoszono {{ formatSubmittedAt(user.submittedAt) }}
+                  {{ t('admin.verification.submittedAt', { timeAgo: formatSubmittedAt(user.submittedAt) }) }}
                 </span>
               </div>
             </template>

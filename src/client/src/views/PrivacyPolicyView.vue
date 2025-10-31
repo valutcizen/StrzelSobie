@@ -8,17 +8,14 @@
       >
         <v-card>
           <v-card-title class="text-h5">
-            Polityka prywatności
+            {{ t('privacyPolicy.title') }}
           </v-card-title>
           <v-card-text class="text-body-2">
             <p>
-              Niniejsza aplikacja Strzel Sobie dba o prywatność użytkowników. Pełna treść polityki
-              prywatności będzie dostępna w kolejnej iteracji projektu. W międzyczasie wszystkie dane
-              użytkowników są wykorzystywane wyłącznie w celu świadczenia funkcji rezerwacyjnych
-              opisanych w wymaganiach produktu.
+              {{ t('privacyPolicy.description') }}
             </p>
             <p class="mt-4">
-              W razie pytań prosimy o kontakt z administratorem systemu.
+              {{ t('privacyPolicy.contact') }}
             </p>
           </v-card-text>
         </v-card>
@@ -26,3 +23,9 @@
     </v-row>
   </v-container>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+</script>

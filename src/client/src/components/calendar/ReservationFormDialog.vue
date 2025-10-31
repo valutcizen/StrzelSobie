@@ -5,7 +5,7 @@
     @update:model-value="onDialogToggle"
   >
     <v-card>
-      <v-card-title>Nowa rezerwacja</v-card-title>
+      <v-card-title>{{ t('calendar.reservationDialog.title') }}</v-card-title>
       <Form
         :key="formKey"
         :initial-values="initialValues"
@@ -26,7 +26,7 @@
                 v-if="submissionError.forceRequired"
                 class="mt-2 text-body-2"
               >
-                Możesz spróbować zmienić termin lub zapisać rezerwację z wymuszeniem, jeśli masz odpowiednie uprawnienia.
+                {{ t('calendar.reservationDialog.forceSuggestion') }}
               </div>
             </v-alert>
             <Field
@@ -36,7 +36,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Data"
+                :label="t('calendar.forms.dateLabel')"
                 type="date"
               />
             </Field>
@@ -47,7 +47,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Początek"
+                :label="t('calendar.forms.startTimeLabel')"
                 type="time"
               />
             </Field>
@@ -58,7 +58,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Koniec"
+                :label="t('calendar.forms.endTimeLabel')"
                 type="time"
               />
             </Field>
@@ -69,7 +69,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Liczba torów"
+                :label="t('calendar.forms.tracksLabel')"
                 min="1"
                 type="number"
               />
@@ -81,7 +81,7 @@
               <v-text-field
                 v-bind="field"
                 :error-messages="errorMessage"
-                label="Liczba uczestników"
+                :label="t('calendar.forms.participantsLabel')"
                 min="1"
                 type="number"
               />
@@ -91,7 +91,7 @@
                 :model-value="values.isPublic"
                 class="mt-4"
                 color="primary"
-                label="Publiczna"
+                :label="t('calendar.reservationDialog.isPublic')"
                 @update:model-value="(value) => {
                   setFieldValue('isPublic', value)
                   if (!value) {
@@ -103,7 +103,7 @@
                 :disabled="!values.isPublic"
                 :model-value="values.isOpenForJoining"
                 color="primary"
-                label="Otwarta na dołączenie"
+                :label="t('calendar.reservationDialog.isOpenForJoining')"
                 @update:model-value="(value) =>
                   setFieldValue('isOpenForJoining', values.isPublic ? value : false)"
               />
@@ -113,10 +113,10 @@
               :model-value="force"
               class="mt-4"
               color="primary"
-              label="Wymuś zapis mimo konfliktów"
+              :label="t('calendar.reservationDialog.forceLabel')"
               :messages="
                 submissionError?.forceRequired
-                  ? ['Zaznacz, aby wymusić zapis mimo istniejących rezerwacji.']
+                  ? [t('calendar.reservationDialog.forceHint')]
                   : undefined
               "
               @update:model-value="setForce"
@@ -128,7 +128,7 @@
               variant="text"
               @click="closeDialog"
             >
-              Anuluj
+              {{ t('common.actions.cancel') }}
             </v-btn>
             <v-btn
               :disabled="!meta.valid"
@@ -136,7 +136,7 @@
               color="primary"
               type="submit"
             >
-              Zapisz
+              {{ t('common.actions.save') }}
             </v-btn>
           </v-card-actions>
         </template>
@@ -154,6 +154,7 @@ import { isAxiosError } from 'axios'
 import { http } from '../../services/http'
 import { ensureTimePrecision } from '../../utils/datetime'
 import { format, parseISO } from 'date-fns'
+import { useI18n } from 'vue-i18n'
 import type {
   CreateReservationCommand,
   CreateReservationFromPropositionCommand,
@@ -184,6 +185,8 @@ const props = withDefaults(
     canUseForce: false,
   },
 )
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -229,7 +232,7 @@ interface ReservationErrorResponse {
 
 const submissionError = ref<ReservationSubmissionError | null>(null)
 const force = ref(false)
-const defaultErrorMessage = 'Nie udało się zapisać rezerwacji. Spróbuj ponownie.'
+const defaultErrorMessage = t('calendar.reservationDialog.defaultError')
 const setForce = (value: boolean | null) => {
   force.value = props.canUseForce ? Boolean(value) : false
 }
@@ -260,7 +263,7 @@ const mapSubmissionError = (error: unknown): ReservationSubmissionError => {
         case 'invalid_time_window':
           return 'Podany zakres czasu jest nieprawidłowy.'
         case 'proposition_not_found':
-          return 'Nie znaleziono wybranej propozycji do konwersji.'
+          return t('calendar.reservationDialog.propositionNotFound')
         case 'proposition_closed':
           return 'Propozycja nie jest już dostępna do konwersji.'
         default:

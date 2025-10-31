@@ -78,8 +78,8 @@ const daySchema = (dayLabel: string) =>
           is: true,
           then: (schema) =>
             schema
-              .required('Pole jest wymagane')
-              .matches(timeRegex, 'Niepoprawny format godziny (HH:MM)'),
+              .required(t('admin.rangeSettings.validation.required'))
+              .matches(timeRegex, t('admin.rangeSettings.validation.invalidTime')),
           otherwise: (schema) => schema.default(defaultOpenTime),
         }),
       close: yup
@@ -88,14 +88,14 @@ const daySchema = (dayLabel: string) =>
           is: true,
           then: (schema) =>
             schema
-              .required('Pole jest wymagane')
-              .matches(timeRegex, 'Niepoprawny format godziny (HH:MM)'),
+              .required(t('admin.rangeSettings.validation.required'))
+              .matches(timeRegex, t('admin.rangeSettings.validation.invalidTime')),
           otherwise: (schema) => schema.default(defaultCloseTime),
         }),
     })
     .test(
       'valid-range',
-      `Godzina zamknięcia musi być późniejsza niż godzina otwarcia (${dayLabel}).`,
+      t('admin.rangeSettings.validation.closeAfterOpen', { day: dayLabel }),
       (value) => {
         if (!value?.isOpen) {
           return true
@@ -112,9 +112,9 @@ const daySchema = (dayLabel: string) =>
 const schema = yup.object({
   totalTracks: yup
     .number()
-    .typeError('Pole jest wymagane')
-    .min(1, 'Minimalna liczba torów to 1')
-    .required('Pole jest wymagane'),
+    .typeError(t('admin.rangeSettings.validation.required'))
+    .min(1, t('admin.rangeSettings.validation.minTracks'))
+    .required(t('admin.rangeSettings.validation.required')),
   operatingHours: yup.object(
     dayOrder.reduce((acc, day) => {
       acc[day] = daySchema(t(`rangeLanding.days.${day}`))
@@ -164,7 +164,7 @@ const loadRangeSettings = async (force = false) => {
     formKey.value += 1
   } catch (error) {
     lastError.value =
-      error instanceof Error ? error.message : 'Nie udało się pobrać ustawień strzelnicy.'
+      error instanceof Error ? error.message : t('common.feedback.operationFailed')
   } finally {
     isLoading.value = false
   }
@@ -200,7 +200,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
 }
 
 const handleRecordSubmitted = () => {
-  showSnackbar('Zapisano termin bez rezerwacji.')
+  showSnackbar(t('calendar.snackbar.recordSaved'))
   recordDialogOpen.value = false
 }
 

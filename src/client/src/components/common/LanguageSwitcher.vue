@@ -27,19 +27,19 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { locale, availableLocales } = useI18n()
+const { locale, availableLocales, t } = useI18n()
 
-const LOCALE_CONFIG: Record<string, { flagClass: string; label: string }> = {
-  en: { flagClass: 'flag-icon flag-icon-gb', label: 'English' },
-  pl: { flagClass: 'flag-icon flag-icon-pl', label: 'Polski' },
+const LOCALE_FLAGS: Record<string, string> = {
+  en: 'flag-icon flag-icon-gb',
+  pl: 'flag-icon flag-icon-pl',
 }
 
 const localeOptions = computed(() => availableLocales.map((code) => {
-  const fallback = { flagClass: 'flag-icon flag-icon-un', label: code.toUpperCase() }
+  const fallbackFlag = 'flag-icon flag-icon-un'
   return {
     code,
-    flagClass: LOCALE_CONFIG[code]?.flagClass ?? fallback.flagClass,
-    label: LOCALE_CONFIG[code]?.label ?? fallback.label,
+    flagClass: LOCALE_FLAGS[code] ?? fallbackFlag,
+    label: t(`common.localeLabels.${code}`, code.toUpperCase()),
   }
 }))
 </script>
