@@ -215,7 +215,7 @@ describe('authMiddleware contract', () => {
       expect(spies.get).toHaveBeenNthCalledWith(2, 'userService');
       expect(spies.json).not.toHaveBeenCalled();
       expect(next).toHaveBeenCalledOnce();
-      expect(next.mock.results[0]?.value).toEqual(nextResult);
+      expect(await next.mock.results[0]?.value).toEqual(nextResult);
       expect(response).toBeUndefined();
     } finally {
       vi.useRealTimers();

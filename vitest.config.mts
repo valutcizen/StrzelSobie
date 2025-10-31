@@ -33,6 +33,10 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './tests/coverage',
+      exclude: [
+        'src/client/**',
+        '**/index.ts',
+      ]
     },
   },
   projects,

@@ -4,9 +4,9 @@ import {
   Result,
   UnauthorizedPropositionError,
 } from '@strzel-sobie/common';
-import { DeleteProposition } from '../../../src/worker/src/endpoints/v1/propositions/delete-proposition';
-import { createWorkerTestClient } from '../utils/app';
-import { mockConsoleError } from '../utils/console';
+import { DeleteProposition } from '../../../../../src/worker/src/endpoints/v1/propositions/delete-proposition';
+import { createWorkerTestClient } from '../../../utils/app';
+import { mockConsoleError } from '../../../utils/console';
 
 mockConsoleError();
 
