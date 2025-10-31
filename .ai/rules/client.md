@@ -25,3 +25,9 @@
 - Use nested routes for complex UIs with parent-child relationships
 - Leverage route params validation with sensitive: true for parameters that shouldn't be logged
 - Implement dynamic route matching with path parameters and regex patterns for flexible routing
+
+## DATA_CONTRACTS
+
+- Reuse request/response DTOs and service interfaces from `@strzel-sobie/common`; do **not** hand-roll duplicate TypeScript shapes for API calls.
+- When checking permissions or building role lists, rely on `UserRoleEnum` exported from the shared package instead of string literals.
+- Map incoming data through shared helpers/types before storing it in Pinia to keep the client aligned with backend contracts.

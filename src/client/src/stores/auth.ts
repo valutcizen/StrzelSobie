@@ -3,24 +3,7 @@ import { computed, ref } from 'vue'
 import type { AuthenticatedUser, RangeRolesMap, UserRole } from '../types/auth'
 import { http } from '../services/http'
 import { isUserRole, normalizeUserRoles } from '../utils/roles'
-
-interface LoginPayload {
-  email: string
-  password: string
-}
-
-interface RegisterPayload {
-  email: string
-  password: string
-}
-
-interface MeResponse {
-  id: number
-  email: string
-  phoneNumber: string | null
-  roles: string[]
-  rangeRoles: Record<string, string[]>
-}
+import type { LoginUserDto, RegisterUserRequestDto, MeDto } from '@strzel-sobie/common'
 
 const dedupeRoles = (roles: string[]): UserRole[] => {
   const unique = new Set<UserRole>()
@@ -62,7 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasAttemptedFetch.value = true
 
     try {
-      const { data } = await http.get<MeResponse>('/auth/me')
+      const { data } = await http.get<MeDto>('/auth/me')
 
       const rangeRoles: RangeRolesMap = Object.entries(data.rangeRoles ?? {}).reduce(
         (acc, [rangeId, roles]) => {
@@ -90,12 +73,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const login = async (payload: LoginPayload) => {
+  const login = async (payload: LoginUserDto) => {
     await http.post('/auth/login', payload)
     return fetchUser(true)
   }
 
-  const register = async (payload: RegisterPayload) => {
+  const register = async (payload: RegisterUserRequestDto) => {
     await http.post('/auth/register', payload)
     await http.post('/auth/login', payload)
     return fetchUser(true)

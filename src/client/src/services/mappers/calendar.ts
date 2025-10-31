@@ -6,48 +6,7 @@ import type {
   RangeEventType,
 } from '../../types/calendar'
 import { combineDateAndTime } from '../../utils/datetime'
-
-export interface PropositionEventDto {
-  id: number
-  userId: number
-  isMember: boolean
-  eventDate: string
-  startTime: string
-  endTime: string
-  tracksRequested: number
-}
-
-export interface ReservationEventDto {
-  id: number
-  propositionId: number | null
-  eventDate: string
-  startTime: string
-  endTime: string
-  tracksRequested: number | null
-  isPublic: boolean
-  isJoinable: boolean | null
-  details: {
-    coordinatorId: number
-    numParticipants: number
-  } | null
-  proposition: unknown
-}
-
-export interface RecordEventDto {
-  id: number
-  adminId: number
-  eventDate: string
-  startTime: string
-  endTime: string
-  numParticipants: number
-  createdAt: string
-}
-
-export interface CalendarEventsResponse {
-  propositions: PropositionEventDto[]
-  reservations: ReservationEventDto[]
-  records?: RecordEventDto[]
-}
+import type { CalendarEventsDto } from '@strzel-sobie/common'
 
 const PROPOSITION_STATUSES = new Set<Exclude<PropositionEventDetail['status'], null>>([
   'open',
@@ -89,16 +48,38 @@ const mapLinkedProposition = (proposition: unknown): PropositionEventDetail | nu
     return null
   }
 
-  const numParticipants = typeof data.numParticipants === 'number' ? data.numParticipants : null
-  const tracksRequested = typeof data.tracksRequested === 'number' ? data.tracksRequested : null
+  const numParticipants =
+    typeof data.numParticipants === 'number'
+      ? data.numParticipants
+      : typeof data.num_participants === 'number'
+        ? data.num_participants
+        : null
+  const tracksRequested =
+    typeof data.tracksRequested === 'number'
+      ? data.tracksRequested
+      : typeof data.tracks_requested === 'number'
+        ? data.tracks_requested
+        : null
   const statusRaw = typeof data.status === 'string' ? data.status : null
   const status =
     statusRaw && PROPOSITION_STATUSES.has(statusRaw as Exclude<PropositionEventDetail['status'], null>)
       ? (statusRaw as Exclude<PropositionEventDetail['status'], null>)
       : null
-  const createdAt = typeof data.createdAt === 'string' ? data.createdAt : null
-  const requester = toPersonSummary(data.requester)
-  const notes = typeof data.notes === 'string' ? data.notes : null
+  const createdAt =
+    typeof data.createdAt === 'string'
+      ? data.createdAt
+      : typeof data.created_at === 'string'
+        ? data.created_at
+        : null
+  const requester = toPersonSummary(data.requester ?? data.user)
+  const notes =
+    typeof data.notes === 'string'
+      ? data.notes
+      : typeof data.additionalNotes === 'string'
+        ? data.additionalNotes
+        : typeof data.comment === 'string'
+          ? data.comment
+          : null
 
   return {
     type: 'proposition',
@@ -130,7 +111,7 @@ const buildTitle = (type: RangeEventType, meta: { isMember?: boolean; isPublic?:
   return 'Zapis bez rezerwacji'
 }
 
-export const mapCalendarEvents = (dto: CalendarEventsResponse): RangeEvent[] => {
+export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
   const propositionEvents: RangeEvent[] = (dto.propositions ?? []).map((event) => ({
     id: `proposition-${event.id}`,
     sourceId: event.id,

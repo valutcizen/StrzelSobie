@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UserRow } from '@/types/admin'
-import type { UserRole } from '@/types/auth'
+import { UserRoleEnum, type UserRole } from '@/types/auth'
 import { EDITABLE_USER_ROLES, getRoleTranslationKey } from '@/utils/roles'
 
 const props = withDefaults(
@@ -18,7 +18,7 @@ const props = withDefaults(
     loading: false,
     assignedRoles: () => [],
     availableRoles: () => EDITABLE_USER_ROLES.slice(),
-    fixedRoles: () => ['Guest'],
+    fixedRoles: () => [UserRoleEnum.Guest],
   },
 )
 

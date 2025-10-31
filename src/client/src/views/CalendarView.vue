@@ -32,6 +32,8 @@ import type {
 } from '@/types/calendar'
 import { toDateOnly } from '@/utils/datetime'
 import { http } from '@/services/http'
+import { UserRoleEnum } from '@/types/auth'
+import type { PropositionDetailDto, ReservationDetailDto } from '@strzel-sobie/common'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
@@ -40,20 +42,20 @@ const route = useRoute()
 const rangeSlug = computed(() => String(route.params.rangeSlug ?? authStore.defaultRangeSlug))
 const canForceReservations = computed(() =>
   authStore.hasAnyRole([
-    'Coordinator',
-    'Shooting Range Administrator',
-    'Club/Community Administrator',
+    UserRoleEnum.Coordinator,
+    UserRoleEnum.ShootingRangeAdministrator,
+    UserRoleEnum.ClubCommunityAdministrator,
   ]),
 )
 const canManageRecords = computed(
   () =>
     authStore.hasAnyRole([
-      'Shooting Range Administrator',
-      'Club/Community Administrator',
+      UserRoleEnum.ShootingRangeAdministrator,
+      UserRoleEnum.ClubCommunityAdministrator,
     ]) ||
     authStore.hasAnyRangeRole([
-      'Shooting Range Administrator',
-      'Club/Community Administrator',
+      UserRoleEnum.ShootingRangeAdministrator,
+      UserRoleEnum.ClubCommunityAdministrator,
     ]),
 )
 
@@ -108,10 +110,10 @@ const snackbarState = reactive({
 
 const isJoinableIndicatorVisible = computed(() =>
   authStore.hasAnyRole([
-    'Member',
-    'Coordinator',
-    'Shooting Range Administrator',
-    'Club/Community Administrator',
+    UserRoleEnum.Member,
+    UserRoleEnum.Coordinator,
+    UserRoleEnum.ShootingRangeAdministrator,
+    UserRoleEnum.ClubCommunityAdministrator,
   ]),
 )
 
@@ -351,12 +353,12 @@ const loadEventDetails = async (event: RangeEvent) => {
   eventDetailState.error = null
 
   try {
-    const { data } = await http.get(endpoint)
-
     let detail: RangeEventDetail | null = null
     if (event.type === 'proposition') {
+      const { data } = await http.get<PropositionDetailDto>(endpoint)
       detail = mapPropositionDetail(data, event)
     } else {
+      const { data } = await http.get<ReservationDetailDto>(endpoint)
       detail = mapReservationDetail(data, event)
     }
 
@@ -430,7 +432,7 @@ const handleSlotSelect = (selectionInfo: DateSelectArg) => {
     end: selectionInfo.endStr,
   }
 
-  if (!authStore.hasAnyRole(['Coordinator'])) {
+  if (!authStore.hasAnyRole([UserRoleEnum.Coordinator])) {
     propositionDialogOpen.value = true
   } else {
     // Coordinators get the choice via the proposition dialog by default
@@ -771,7 +773,7 @@ onBeforeUnmount(() => {
                 Zaproponuj termin
               </v-btn>
               <v-btn
-                v-if="authStore.hasAnyRole(['Coordinator'])"
+                v-if="authStore.hasAnyRole([UserRoleEnum.Coordinator])"
                 color="primary"
                 prepend-icon="mdi-calendar-plus"
                 @click="openReservationDialog({})"

@@ -234,6 +234,7 @@ import { computed } from 'vue'
 import { format, parseISO } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import { useAuthStore } from '../../stores/auth'
+import { UserRoleEnum } from '../../types/auth'
 import type {
   PersonSummary,
   PropositionEventDetail,
@@ -493,10 +494,16 @@ const reservationJoinableLabel = computed(() => {
 })
 
 const canAccept = computed(() =>
-  isProposition.value && Boolean(event.value?.meta?.propositionId) && authStore.hasAnyRole(['Coordinator']),
+  isProposition.value &&
+  Boolean(event.value?.meta?.propositionId) &&
+  authStore.hasAnyRole([UserRoleEnum.Coordinator]),
 )
 const canCancel = computed(() =>
-  Boolean(event.value && event.value.type !== 'record' && authStore.hasAnyRole(['Coordinator', 'Shooting Range Administrator'])),
+  Boolean(
+    event.value &&
+      event.value.type !== 'record' &&
+      authStore.hasAnyRole([UserRoleEnum.Coordinator, UserRoleEnum.ShootingRangeAdministrator]),
+  ),
 )
 
 const emitUpdate = (value: boolean) => {

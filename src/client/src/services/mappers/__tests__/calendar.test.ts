@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { mapCalendarEvents } from '../calendar'
+import type { CalendarEventsDto } from '@strzel-sobie/common'
 
 describe('mapCalendarEvents', () => {
   it('transforms propositions and reservations into calendar events', () => {
-    const response = {
+    const response: CalendarEventsDto = {
       propositions: [
         {
           id: 5,
@@ -49,6 +50,7 @@ describe('mapCalendarEvents', () => {
           },
         },
       ],
+      records: [],
     }
 
     const events = mapCalendarEvents(response)
@@ -75,7 +77,7 @@ describe('mapCalendarEvents', () => {
   })
 
   it('sorts events chronologically by start time', () => {
-    const response = {
+    const response: CalendarEventsDto = {
       propositions: [
         {
           id: 2,
@@ -101,6 +103,7 @@ describe('mapCalendarEvents', () => {
           proposition: null,
         },
       ],
+      records: [],
     }
 
     const events = mapCalendarEvents(response)

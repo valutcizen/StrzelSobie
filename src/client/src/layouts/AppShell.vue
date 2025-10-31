@@ -72,27 +72,27 @@
           icon="mdi-account-group"
           :label="t('navigation.userManagement')"
           :to="{ name: 'UserManagement' }"
-          :roles="['Club/Community Administrator']"
+          :roles="[UserRoleEnum.ClubCommunityAdministrator]"
         />
         <RoleBasedLink
           icon="mdi-account-cog"
           :label="t('navigation.rangeUserManagement')"
           :to="{ name: 'RangeUserManagement' }"
-          :roles="['Club/Community Administrator']"
-          :range-roles="['Shooting Range Administrator']"
+          :roles="[UserRoleEnum.ClubCommunityAdministrator]"
+          :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
         />
         <RoleBasedLink
           icon="mdi-account-check"
           :label="t('navigation.userVerification')"
           :to="{ name: 'UserVerification' }"
-          :roles="['Confirmator']"
+          :roles="[UserRoleEnum.Confirmator]"
         />
         <RoleBasedLink
           icon="mdi-target-account"
           :label="t('navigation.rangeSettings')"
           :to="{ name: 'RangeSettings' }"
-          :roles="['Club/Community Administrator']"
-          :range-roles="['Shooting Range Administrator']"
+          :roles="[UserRoleEnum.ClubCommunityAdministrator]"
+          :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
         />
       </v-list>
     </v-navigation-drawer>
@@ -113,6 +113,7 @@ import { useDisplay } from 'vuetify'
 import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
+import { UserRoleEnum } from '@/types/auth'
 
 const { t } = useI18n()
 const authStore = useAuthStore()

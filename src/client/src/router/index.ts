@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import type { UserRole } from '@/types/auth'
+import { UserRoleEnum, type UserRole } from '@/types/auth'
 
 interface AppRouteMeta {
   requiresAuth?: boolean
@@ -45,7 +45,7 @@ const routes: AppRouteRecordRaw[] = [
     path: '/admin/users',
     name: 'UserManagement',
     component: () => import('@/views/admin/UserManagementView.vue'),
-    meta: { requiresAuth: true, requiredRoles: ['Club/Community Administrator'] },
+    meta: { requiresAuth: true, requiredRoles: [UserRoleEnum.ClubCommunityAdministrator] },
   },
   {
     path: '/admin/range-users',
@@ -53,15 +53,15 @@ const routes: AppRouteRecordRaw[] = [
     component: () => import('@/views/admin/RangeUserManagementView.vue'),
     meta: {
       requiresAuth: true,
-      requiredRoles: ['Club/Community Administrator'],
-      requiredRangeRoles: ['Shooting Range Administrator'],
+      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
+      requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
     },
   },
   {
     path: '/admin/verify-users',
     name: 'UserVerification',
     component: () => import('@/views/admin/UserVerificationView.vue'),
-    meta: { requiresAuth: true, requiredRoles: ['Confirmator'] },
+    meta: { requiresAuth: true, requiredRoles: [UserRoleEnum.Confirmator] },
   },
   {
     path: '/admin/range-settings',
@@ -69,8 +69,8 @@ const routes: AppRouteRecordRaw[] = [
     component: () => import('@/views/admin/RangeSettingsView.vue'),
     meta: {
       requiresAuth: true,
-      requiredRoles: ['Club/Community Administrator'],
-      requiredRangeRoles: ['Shooting Range Administrator'],
+      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
+      requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
     },
   },
   {

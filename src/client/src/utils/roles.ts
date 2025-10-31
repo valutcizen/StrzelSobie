@@ -1,25 +1,25 @@
-import type { UserRole } from '@/types/auth'
+import { UserRoleEnum, type UserRole } from '@/types/auth'
 
 export const USER_ROLES: readonly UserRole[] = [
-  'Guest',
-  'Member',
-  'Coordinator',
-  'Confirmator',
-  'Shooting Range Administrator',
-  'Club/Community Administrator',
+  UserRoleEnum.Guest,
+  UserRoleEnum.Member,
+  UserRoleEnum.Coordinator,
+  UserRoleEnum.Confirmator,
+  UserRoleEnum.ShootingRangeAdministrator,
+  UserRoleEnum.ClubCommunityAdministrator,
 ] as const
 
 export const EDITABLE_USER_ROLES: readonly UserRole[] = USER_ROLES.filter(
-  (role) => role !== 'Guest',
+  (role) => role !== UserRoleEnum.Guest,
 ) as UserRole[]
 
 const ROLE_TRANSLATION_KEYS: Record<UserRole, string> = {
-  Guest: 'roles.guest',
-  Member: 'roles.member',
-  Coordinator: 'roles.coordinator',
-  Confirmator: 'roles.confirmator',
-  'Shooting Range Administrator': 'roles.shootingRangeAdmin',
-  'Club/Community Administrator': 'roles.clubCommunityAdmin',
+  [UserRoleEnum.Guest]: 'roles.guest',
+  [UserRoleEnum.Member]: 'roles.member',
+  [UserRoleEnum.Coordinator]: 'roles.coordinator',
+  [UserRoleEnum.Confirmator]: 'roles.confirmator',
+  [UserRoleEnum.ShootingRangeAdministrator]: 'roles.shootingRangeAdmin',
+  [UserRoleEnum.ClubCommunityAdministrator]: 'roles.clubCommunityAdmin',
 }
 
 export const getRoleTranslationKey = (role: UserRole) => ROLE_TRANSLATION_KEYS[role]
@@ -36,7 +36,7 @@ export const normalizeUserRoles = (roles: string[]): UserRole[] => {
     }
   }
 
-  userRoles.add('Guest')
+  userRoles.add(UserRoleEnum.Guest)
 
   return Array.from(userRoles)
 }

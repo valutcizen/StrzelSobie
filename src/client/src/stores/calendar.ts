@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { http } from '../services/http'
 import type { RangeEvent } from '../types/calendar'
-import { mapCalendarEvents, type CalendarEventsResponse } from '../services/mappers/calendar'
+import { mapCalendarEvents } from '../services/mappers/calendar'
+import type { CalendarEventsDto } from '@strzel-sobie/common'
 
 interface FetchEventsParams {
   rangeSlug: string
@@ -39,7 +40,7 @@ export const useCalendarStore = defineStore('calendar', {
       this.lastQueryKey = queryKey
 
       try {
-        const { data } = await http.get<CalendarEventsResponse>(`/ranges/${rangeSlug}/events`, {
+        const { data } = await http.get<CalendarEventsDto>(`/ranges/${rangeSlug}/events`, {
           params: {
             startDate,
             endDate,

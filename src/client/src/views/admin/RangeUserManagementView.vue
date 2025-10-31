@@ -9,13 +9,8 @@ import { useAuthStore } from '@/stores/auth'
 import { http } from '@/services/http'
 import type { UserRow } from '@/types/admin'
 import type { UserRole } from '@/types/auth'
-import { getRoleTranslationKey } from '@/utils/roles'
-
-type RangeSummary = {
-  id: number
-  slug: string
-  displayName: string
-}
+import { getRoleTranslationKey, isUserRole } from '@/utils/roles'
+import type { RangeSummaryDto } from '@strzel-sobie/common'
 
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
@@ -64,7 +59,7 @@ const fetchRangeMetadata = async () => {
   lastError.value = null
 
   try {
-    const { data } = await http.get<RangeSummary[]>('/ranges')
+    const { data } = await http.get<RangeSummaryDto[]>('/ranges')
     const match = data.find((range) => range.slug === currentRangeSlug.value)
 
     if (!match) {
@@ -146,11 +141,17 @@ const selectedRangeRoleNames = computed<UserRole[]>(() => {
   }
 
   const assignments = selectedUser.value.rangeRoles[String(rangeId.value)] ?? []
-  return assignments.map((assignment) => assignment.name)
+  return assignments
+    .map((assignment) => assignment.name)
+    .filter((name): name is string => typeof name === 'string')
+    .filter(isUserRole)
 })
 
 const availableRangeRoleOptions = computed<UserRole[]>(() =>
-  adminStore.rangeRoleDefinitions.map((role) => role.name),
+  adminStore.rangeRoleDefinitions
+    .map((role) => role.name)
+    .filter((name): name is string => typeof name === 'string')
+    .filter(isUserRole),
 )
 
 const resolveRangeRoleNames = (user: UserRow): UserRole[] => {
@@ -159,7 +160,10 @@ const resolveRangeRoleNames = (user: UserRow): UserRole[] => {
   }
 
   const assignments = user.rangeRoles[String(rangeId.value)] ?? []
-  return assignments.map((assignment) => assignment.name)
+  return assignments
+    .map((assignment) => assignment.name)
+    .filter((name): name is string => typeof name === 'string')
+    .filter(isUserRole)
 }
 
 const syncRolesForUser = async (updatedRoles: UserRole[]) => {
@@ -171,11 +175,21 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
   lastError.value = null
 
   const assignments = selectedUser.value.rangeRoles[String(rangeId.value)] ?? []
-  const currentRoleNames = new Set(assignments.map((assignment) => assignment.name))
+  const currentRoleNames = new Set<UserRole>(
+    assignments
+      .map((assignment) => assignment.name)
+      .filter((name): name is string => typeof name === 'string')
+      .filter(isUserRole),
+  )
   const desiredRoleNames = Array.from(new Set(updatedRoles))
 
   const rolesToAdd = desiredRoleNames.filter((role) => !currentRoleNames.has(role))
-  const rolesToRemove = assignments.filter((assignment) => !desiredRoleNames.includes(assignment.name))
+  const rolesToRemove = assignments.filter((assignment) => {
+    if (typeof assignment.name !== 'string' || !isUserRole(assignment.name)) {
+      return false
+    }
+    return !desiredRoleNames.includes(assignment.name)
+  })
 
   try {
     await loadRoles()

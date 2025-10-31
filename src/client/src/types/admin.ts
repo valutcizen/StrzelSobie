@@ -1,12 +1,8 @@
+import type { Role } from '@strzel-sobie/common/models'
 import type { UserRole } from './auth'
 
-export type RoleScope = 'global' | 'range'
-
-export interface RoleDefinition {
-  id: number
-  name: UserRole
-  scope: RoleScope
-}
+export type RoleScope = Role['scope']
+export type RoleDefinition = Role
 
 export interface RoleAssignment extends RoleDefinition {
   rangeId?: number

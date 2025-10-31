@@ -154,6 +154,11 @@ import { isAxiosError } from 'axios'
 import { http } from '../../services/http'
 import { ensureTimePrecision } from '../../utils/datetime'
 import { format, parseISO } from 'date-fns'
+import type {
+  CreateReservationCommand,
+  CreateReservationFromPropositionCommand,
+  CreatedReservationDto,
+} from '@strzel-sobie/common'
 
 const props = withDefaults(
   defineProps<{
@@ -208,27 +213,6 @@ interface ReservationFormValues {
   participants: number
   isPublic: boolean
   isOpenForJoining: boolean
-}
-
-interface CreateReservationPayload {
-  eventDate: string
-  startTime: string
-  endTime: string
-  numParticipants: number
-  tracksRequested: number
-  isPublic: boolean
-  isJoinable: boolean
-}
-
-interface ConvertReservationPayload {
-  propositionId: number
-  eventDate?: string
-  startTime?: string
-  endTime?: string
-  tracksRequested?: number
-  numParticipants?: number
-  isPublic?: boolean
-  isJoinable?: boolean
 }
 
 export interface ReservationSubmissionError {
@@ -390,7 +374,7 @@ const submitReservation: SubmissionHandler = async (values, _ctx) => {
 
   try {
     if (isConversion.value && props.propositionId) {
-      const payload: ConvertReservationPayload = {
+      const payload: CreateReservationFromPropositionCommand = {
         propositionId: props.propositionId,
         eventDate,
         startTime,
@@ -401,9 +385,13 @@ const submitReservation: SubmissionHandler = async (values, _ctx) => {
         isJoinable: isOpenForJoiningValue,
       }
 
-      await http.post(`/ranges/${props.rangeSlug}/reservations`, payload, requestConfig)
+      await http.post<CreatedReservationDto>(
+        `/ranges/${props.rangeSlug}/reservations`,
+        payload,
+        requestConfig,
+      )
     } else {
-      const payload: CreateReservationPayload = {
+      const payload: CreateReservationCommand = {
         eventDate,
         startTime,
         endTime,
@@ -413,7 +401,11 @@ const submitReservation: SubmissionHandler = async (values, _ctx) => {
         isJoinable: isOpenForJoiningValue,
       }
 
-      await http.post(`/ranges/${props.rangeSlug}/reservations`, payload, requestConfig)
+      await http.post<CreatedReservationDto>(
+        `/ranges/${props.rangeSlug}/reservations`,
+        payload,
+        requestConfig,
+      )
     }
   } catch (error) {
     const normalizedError = mapSubmissionError(error)

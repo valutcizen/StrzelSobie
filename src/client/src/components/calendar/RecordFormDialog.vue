@@ -91,6 +91,7 @@ import * as yup from 'yup'
 import { http } from '../../services/http'
 import { ensureTimePrecision } from '../../utils/datetime'
 import { format } from 'date-fns'
+import type { CreateRecordCommand, CreatedRecordDto } from '@strzel-sobie/common'
 
 interface RecordFormDialogProps {
   open: boolean
@@ -116,13 +117,6 @@ interface RecordFormValues {
   startTime: string
   endTime: string
   participants: number
-}
-
-interface CreateRecordPayload {
-  eventDate: string
-  startTime: string
-  endTime: string
-  numParticipants: number
 }
 
 const formKey = ref(0)
@@ -171,14 +165,14 @@ const submitRecord: SubmissionHandler = async (values, _ctx) => {
     return
   }
 
-  const recordPayload: CreateRecordPayload = {
+  const recordPayload: CreateRecordCommand = {
     eventDate: payload.date,
     startTime: ensureTimePrecision(payload.startTime),
     endTime: ensureTimePrecision(payload.endTime),
     numParticipants: Number(payload.participants),
   }
 
-  await http.post(`/ranges/${props.rangeSlug}/records`, recordPayload)
+  await http.post<CreatedRecordDto>(`/ranges/${props.rangeSlug}/records`, recordPayload)
   emit('submitted')
   closeDialog()
 }

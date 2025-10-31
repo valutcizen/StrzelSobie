@@ -5,7 +5,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminStore } from '@/stores/admin'
 import type { PendingUser } from '@/types/admin'
-import type { UserRole } from '@/types/auth'
+import { UserRoleEnum, type UserRole } from '@/types/auth'
 import { getRoleTranslationKey } from '@/utils/roles'
 
 const adminStore = useAdminStore()
@@ -21,7 +21,8 @@ const { t } = useI18n()
 
 const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 const userHasRole = (user: PendingUser, role: UserRole) => user.currentRoles?.includes(role) ?? false
-const visibleRoles = (user: PendingUser) => (user.currentRoles ?? []).filter((role) => role !== 'Guest')
+const visibleRoles = (user: PendingUser) =>
+  (user.currentRoles ?? []).filter((role) => role !== UserRoleEnum.Guest)
 
 const fetchPendingUsers = async () => {
   errorMessage.value = null
@@ -161,26 +162,26 @@ onMounted(() => {
               <div class="d-flex gap-2">
                 <v-btn
                   size="small"
-                  :color="userHasRole(user, 'Member') ? 'error' : 'success'"
+                  :color="userHasRole(user, UserRoleEnum.Member) ? 'error' : 'success'"
                   :loading="loadingUserId === user.id"
-                  @click="promoteUser(user, 'Member')"
+                  @click="promoteUser(user, UserRoleEnum.Member)"
                 >
                   {{
-                    userHasRole(user, 'Member')
-                      ? t('admin.userRoles.removeRole', { role: translateRole('Member') })
-                      : t('admin.userRoles.assignRole', { role: translateRole('Member') })
+                    userHasRole(user, UserRoleEnum.Member)
+                      ? t('admin.userRoles.removeRole', { role: translateRole(UserRoleEnum.Member) })
+                      : t('admin.userRoles.assignRole', { role: translateRole(UserRoleEnum.Member) })
                   }}
                 </v-btn>
                 <v-btn
                   size="small"
-                  :color="userHasRole(user, 'Coordinator') ? 'error' : 'primary'"
+                  :color="userHasRole(user, UserRoleEnum.Coordinator) ? 'error' : 'primary'"
                   :loading="loadingUserId === user.id"
-                  @click="promoteUser(user, 'Coordinator')"
+                  @click="promoteUser(user, UserRoleEnum.Coordinator)"
                 >
                   {{
-                    userHasRole(user, 'Coordinator')
-                      ? t('admin.userRoles.removeRole', { role: translateRole('Coordinator') })
-                      : t('admin.userRoles.assignRole', { role: translateRole('Coordinator') })
+                    userHasRole(user, UserRoleEnum.Coordinator)
+                      ? t('admin.userRoles.removeRole', { role: translateRole(UserRoleEnum.Coordinator) })
+                      : t('admin.userRoles.assignRole', { role: translateRole(UserRoleEnum.Coordinator) })
                   }}
                 </v-btn>
               </div>

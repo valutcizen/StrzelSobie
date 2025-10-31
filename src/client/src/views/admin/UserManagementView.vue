@@ -6,8 +6,8 @@ import { useI18n } from 'vue-i18n'
 import EditUserRolesDialog from '@/components/admin/EditUserRolesDialog.vue'
 import { useAdminStore } from '@/stores/admin'
 import type { UserRow } from '@/types/admin'
-import type { UserRole } from '@/types/auth'
-import { getRoleTranslationKey } from '@/utils/roles'
+import { UserRoleEnum, type UserRole } from '@/types/auth'
+import { getRoleTranslationKey, isUserRole } from '@/utils/roles'
 
 const adminStore = useAdminStore()
 const selectedUser = ref<UserRow | null>(null)
@@ -93,15 +93,28 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
   isSavingRoles.value = true
   lastError.value = null
 
-  const immutableRoles = new Set<UserRole>(['Guest'])
-  const currentAssignments = selectedUser.value.globalRoles.filter(
-    (assignment) => !immutableRoles.has(assignment.name),
+  const immutableRoles = new Set<UserRole>([UserRoleEnum.Guest])
+  const currentAssignments = selectedUser.value.globalRoles.filter((assignment) => {
+    if (typeof assignment.name !== 'string' || !isUserRole(assignment.name)) {
+      return false
+    }
+    return !immutableRoles.has(assignment.name)
+  })
+  const currentRoleNames = new Set<UserRole>(
+    currentAssignments
+      .map((assignment) => assignment.name)
+      .filter((name): name is string => typeof name === 'string')
+      .filter(isUserRole),
   )
-  const currentRoleNames = new Set(currentAssignments.map((assignment) => assignment.name))
   const desiredRoleNames = updatedRoles.filter((role) => !immutableRoles.has(role))
 
   const rolesToAdd = desiredRoleNames.filter((role) => !currentRoleNames.has(role))
-  const rolesToRemove = currentAssignments.filter((assignment) => !desiredRoleNames.includes(assignment.name))
+  const rolesToRemove = currentAssignments.filter((assignment) => {
+    if (typeof assignment.name !== 'string' || !isUserRole(assignment.name)) {
+      return false
+    }
+    return !desiredRoleNames.includes(assignment.name)
+  })
 
   try {
     await loadRoles()
@@ -143,7 +156,9 @@ const translateRole = (role: UserRole) => t(getRoleTranslationKey(role))
 const availableGlobalRoleOptions = computed<UserRole[]>(() =>
   adminStore.globalRoleDefinitions
     .map((role) => role.name)
-    .filter((role) => role !== 'Guest'),
+    .filter((name): name is string => typeof name === 'string')
+    .filter(isUserRole)
+    .filter((role) => role !== UserRoleEnum.Guest),
 )
 
 const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalRoleNames ?? [])

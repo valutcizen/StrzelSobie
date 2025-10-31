@@ -3,32 +3,10 @@ import { http } from '../services/http'
 import type { PendingUser, RoleAssignment, RoleDefinition, RoleScope, UserRow } from '../types/admin'
 import type { UserRole } from '../types/auth'
 import { isUserRole, normalizeUserRoles } from '../utils/roles'
+import type { AssignRoleCommand, PaginatedUsersDto, UserDto } from '@strzel-sobie/common'
+import type { Role } from '@strzel-sobie/common/models'
 
-type WorkerRoleDto = {
-  id: number
-  name: string
-  scope: RoleScope
-}
-
-type WorkerUserDto = {
-  id: number
-  email: string
-  isDeleted: 0 | 1
-  createdAt: string
-  roles?: WorkerRoleDto[]
-  rangeRoles?: Record<string, WorkerRoleDto[]>
-}
-
-type PaginatedUsersResponse = {
-  data: WorkerUserDto[]
-  pagination: {
-    total: number
-    page: number
-    limit: number
-  }
-}
-
-const mapWorkerRoleToAssignment = (role: WorkerRoleDto, rangeId?: number): RoleAssignment | null => {
+const mapRoleToAssignment = (role: Role, rangeId?: number): RoleAssignment | null => {
   if (!isUserRole(role.name)) {
     return null
   }
@@ -41,15 +19,15 @@ const mapWorkerRoleToAssignment = (role: WorkerRoleDto, rangeId?: number): RoleA
   }
 }
 
-const mapWorkerUserToRow = (user: WorkerUserDto): UserRow => {
+const mapUserDtoToRow = (user: UserDto): UserRow => {
   const globalRoles = (user.roles ?? [])
-    .map((role) => mapWorkerRoleToAssignment(role))
+    .map((role) => mapRoleToAssignment(role))
     .filter((role): role is RoleAssignment => role !== null && role.scope === 'global')
 
   const rangeRolesEntries = Object.entries(user.rangeRoles ?? {}).reduce<Record<string, RoleAssignment[]>>(
     (acc, [rangeId, roles]) => {
       const assignments = roles
-        .map((role) => mapWorkerRoleToAssignment(role, Number(rangeId)))
+        .map((role) => mapRoleToAssignment(role, Number(rangeId)))
         .filter((role): role is RoleAssignment => role !== null)
 
       if (assignments.length > 0) {
@@ -122,8 +100,8 @@ export const useAdminStore = defineStore('admin', {
       this.isLoadingUsers = true
 
       try {
-        const { data } = await http.get<PaginatedUsersResponse>('/users')
-        this.users = data.data.map(mapWorkerUserToRow)
+        const { data } = await http.get<PaginatedUsersDto>('/users')
+        this.users = data.data.map(mapUserDtoToRow)
       } finally {
         this.isLoadingUsers = false
       }
@@ -136,10 +114,8 @@ export const useAdminStore = defineStore('admin', {
       this.isLoadingRoles = true
 
       try {
-        const { data } = await http.get<WorkerRoleDto[]>('/user/roles')
-        this.roles = data
-          .map((role) => (isUserRole(role.name) ? role : null))
-          .filter((role): role is RoleDefinition => role !== null)
+        const { data } = await http.get<Role[]>('/user/roles')
+        this.roles = data.filter((role): role is RoleDefinition => isUserRole(role.name))
       } finally {
         this.isLoadingRoles = false
       }
@@ -150,34 +126,30 @@ export const useAdminStore = defineStore('admin', {
       this.isLoadingPending = true
 
       try {
-        const { data } = await http.get<{ users?: PendingUser[] } & Partial<PaginatedUsersResponse>>(
+        const { data } = await http.get<Partial<PaginatedUsersDto> & { users?: UserDto[] }>(
           '/users?status=pending-verification',
         )
 
-        if (Array.isArray(data.users)) {
-          this.pendingUsers = data.users.map((user) => {
-            const currentRoles = extractRoleNames(
-              (user as Partial<PendingUser> & { roles?: unknown }).currentRoles ??
-                (user as { roles?: unknown }).roles,
-            )
+        const mapToPendingUser = (user: UserDto | (UserDto & { currentRoles?: unknown })) => {
+          const roleSourceRaw = (user as { currentRoles?: unknown }).currentRoles
+          const roleSource = Array.isArray(roleSourceRaw) ? roleSourceRaw : user.roles ?? []
 
-            return {
-              ...user,
-              id: String((user as { id: string | number }).id),
-              currentRoles,
-            }
-          })
-          return this.pendingUsers
-        }
-
-        if (Array.isArray(data.data)) {
-          this.pendingUsers = data.data.map((user) => ({
+          return {
             id: String(user.id),
             email: user.email,
             submittedAt: user.createdAt,
             requestedRole: undefined,
-            currentRoles: extractRoleNames(user.roles ?? []),
-          }))
+            currentRoles: extractRoleNames(roleSource),
+          }
+        }
+
+        if (Array.isArray(data.users)) {
+          this.pendingUsers = data.users.map(mapToPendingUser)
+          return this.pendingUsers
+        }
+
+        if (Array.isArray(data.data)) {
+          this.pendingUsers = data.data.map(mapToPendingUser)
           return this.pendingUsers
         }
 
@@ -188,7 +160,8 @@ export const useAdminStore = defineStore('admin', {
       }
     },
     async assignRole(userId: string, roleId: number, rangeId: number | null = null) {
-      await http.post(`/users/${userId}/roles`, { roleId, rangeId })
+      const payload: AssignRoleCommand = { roleId, rangeId }
+      await http.post(`/users/${userId}/roles`, payload)
     },
     async revokeRole(userId: string, roleId: number, rangeId: number | null = null) {
       const query = rangeId !== null ? `?rangeId=${rangeId}` : ''

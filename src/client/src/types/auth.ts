@@ -1,10 +1,7 @@
-export type UserRole =
-  | 'Guest'
-  | 'Member'
-  | 'Coordinator'
-  | 'Confirmator'
-  | 'Shooting Range Administrator'
-  | 'Club/Community Administrator'
+import { UserRole as CommonUserRole } from '@strzel-sobie/common/models'
+
+export const UserRoleEnum = CommonUserRole
+export type UserRole = (typeof CommonUserRole)[keyof typeof CommonUserRole]
 
 export type RangeRolesMap = Record<string, UserRole[]>
 

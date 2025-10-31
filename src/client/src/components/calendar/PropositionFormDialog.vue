@@ -102,6 +102,7 @@ import type { SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
 import { http } from '../../services/http'
 import { ensureTimePrecision, toDateInputValue, toTimeInputValue } from '../../utils/datetime'
+import type { CreatePropositionCommand, CreatedPropositionDto } from '@strzel-sobie/common'
 
 export interface SelectedSlot {
   start: string
@@ -135,14 +136,6 @@ interface PropositionFormValues {
   endTime: string
   participants: number
   tracks: number
-}
-
-interface CreatePropositionPayload {
-  eventDate: string
-  startTime: string
-  endTime: string
-  numParticipants: number
-  tracksRequested: number
 }
 
 const defaultTimeValues = () => {
@@ -196,7 +189,7 @@ const submitProposition: SubmissionHandler = async (values, _ctx) => {
     return
   }
 
-  const payload: CreatePropositionPayload = {
+  const payload: CreatePropositionCommand = {
     eventDate: date,
     startTime: ensureTimePrecision(startTime),
     endTime: ensureTimePrecision(endTime),
@@ -204,7 +197,7 @@ const submitProposition: SubmissionHandler = async (values, _ctx) => {
     tracksRequested: Number(tracks),
   }
 
-  await http.post(`/ranges/${props.rangeSlug}/propositions`, payload)
+  await http.post<CreatedPropositionDto>(`/ranges/${props.rangeSlug}/propositions`, payload)
   emit('submitted')
   closeDialog()
 }
