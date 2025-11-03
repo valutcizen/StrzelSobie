@@ -1,7 +1,7 @@
-
-import { readdir, rm } from 'fs/promises';
-import { execSync } from 'child_process';
-import { join, dirname } from 'path';
+import { readdir, rm, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import { spawnSync } from 'child_process';
+import { join, dirname, resolve, basename } from 'path';
 import { fileURLToPath } from 'url';
 
 // --- Configuration ---
@@ -12,17 +12,90 @@ const projectRoot = join(__dirname, '..'); // Assumes script is in 'scripts' sub
 const dbName = 'strzel-sobie-db';
 const migrationsDir = join(projectRoot, 'migrations');
 const mockDataDir = join(projectRoot, 'mock-data');
-const wranglerStateDir = join(projectRoot, 'src', 'worker', '.wrangler', 'state');
-const wranglerConfig = join(projectRoot, 'src', 'worker', 'wrangler.jsonc');
+const workerDir = join(projectRoot, 'src', 'worker');
+const wranglerDir = join(workerDir, '.wrangler');
+const wranglerStateDir = join(wranglerDir, 'state');
+const wranglerTmpDir = join(wranglerDir, 'tmp');
+const wranglerConfig = join(workerDir, 'wrangler.jsonc');
+const wranglerHomeDir = join(wranglerDir, 'home');
 // --- End Configuration ---
+
+const isWindows = process.platform === 'win32';
+const wranglerBinaryCandidate = join(projectRoot, 'node_modules', '.bin', isWindows ? 'wrangler.cmd' : 'wrangler');
+const wranglerBinary = existsSync(wranglerBinaryCandidate)
+  ? wranglerBinaryCandidate
+  : isWindows
+    ? 'wrangler.cmd'
+    : 'wrangler';
+
+function runWrangler(args, { capture = false } = {}) {
+  const result = spawnSync(wranglerBinary, args, {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      WRANGLER_HOME: wranglerHomeDir,
+      XDG_CONFIG_HOME: wranglerHomeDir,
+    },
+    stdio: capture ? 'pipe' : 'inherit',
+    encoding: capture ? 'utf-8' : undefined,
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    const stderr = result.stderr ? result.stderr.toString() : '';
+    throw new Error(`wrangler ${args.join(' ')} exited with code ${result.status}\n${stderr}`);
+  }
+
+  return capture ? result.stdout : undefined;
+}
+
+function parseArgs(argv) {
+  const parsed = {
+    regenerate: false,
+    seedFiles: [],
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--regenerate') {
+      parsed.regenerate = true;
+    } else if (arg === '--file' || arg === '--seed') {
+      const next = argv[i + 1];
+      if (!next) {
+        throw new Error(`Expected a path after "${arg}"`);
+      }
+      parsed.seedFiles.push(resolve(projectRoot, next));
+      i += 1;
+    }
+  }
+
+  return parsed;
+}
 
 async function main() {
   try {
-    const shouldRegenerate = process.argv.includes('--regenerate');
+    const { regenerate: shouldRegenerate, seedFiles: extraSeedFiles } = parseArgs(process.argv.slice(2));
+
+    await mkdir(wranglerHomeDir, { recursive: true });
+    await mkdir(wranglerStateDir, { recursive: true });
+
+    for (const seedFile of extraSeedFiles) {
+      if (!existsSync(seedFile)) {
+        throw new Error(`Seed file not found: ${seedFile}`);
+      }
+    }
+
     if (shouldRegenerate) {
       console.log('--- Regenerating DB mock ---');
       console.log(`Deleting old local database state in ${wranglerStateDir}...`);
-      await rm(wranglerStateDir, { recursive: true, force: true });
+      await Promise.all([
+        rm(wranglerStateDir, { recursive: true, force: true }),
+        rm(wranglerTmpDir, { recursive: true, force: true }),
+      ]);
+      await mkdir(wranglerStateDir, { recursive: true });
       console.log('...Done. Database will be recreated from all migrations.');
     }
 
@@ -41,8 +114,16 @@ async function main() {
       console.log('No mock-data directory found, skipping.');
     }
 
+    const additionalSeedFiles = extraSeedFiles
+      .map(filePath => ({ dir: dirname(filePath), name: basename(filePath), absolutePath: filePath }));
+
     const availableMigrations = [...migrationFiles, ...mockDataFiles]
       .filter(file => file.name.endsWith('.sql'))
+      .map(file => ({
+        ...file,
+        absolutePath: join(file.dir, file.name),
+      }))
+      .concat(additionalSeedFiles)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     if (availableMigrations.length === 0) {
@@ -56,12 +137,24 @@ async function main() {
     console.log('[2/4] Checking for applied migrations in the database...');
     let appliedMigrations = [];
     try {
-      const command = `wrangler d1 execute ${dbName} --local --config=${wranglerConfig} --command="SELECT migration_name FROM schema_migrations"`;
-      // The output of a successful command is a JSON string like `[{"results":[{"migration_name":"0000_initial_schema.sql"}]}]`
-      const result = execSync(command, { cwd: projectRoot, encoding: 'utf-8' });
-      const parsedResult = JSON.parse(result);
-      if (parsedResult && parsedResult[0] && parsedResult[0].results) {
-          appliedMigrations = parsedResult[0].results.map(row => row.migration_name);
+      const output = runWrangler(
+        [
+          'd1',
+          'execute',
+          dbName,
+          '--local',
+          '--config',
+          wranglerConfig,
+          '--command',
+          'SELECT migration_name FROM schema_migrations',
+          '--json',
+        ],
+        { capture: true }
+      );
+
+      const parsedResult = JSON.parse(output ?? '[]');
+      if (parsedResult && Array.isArray(parsedResult) && parsedResult[0] && parsedResult[0].results) {
+        appliedMigrations = parsedResult[0].results.map(row => row.migration_name);
       }
       console.log(`Found ${appliedMigrations.length} applied migration(s).`);
     } catch (e) {
@@ -87,14 +180,32 @@ async function main() {
     // 4. Execute each new migration
     console.log('[4/4] Applying new migrations...');
     for (const file of migrationsToApply) {
-      const filePath = join(file.dir, file.name);
+      const filePath = file.absolutePath ?? join(file.dir, file.name);
       console.log(`Applying ${file.name}...`);
-      const applyCommand = `wrangler d1 execute ${dbName} --local --file=${filePath} --config=${wranglerConfig}`;
-      execSync(applyCommand, { stdio: 'inherit', cwd: projectRoot });
 
+      runWrangler([
+        'd1',
+        'execute',
+        dbName,
+        '--local',
+        '--config',
+        wranglerConfig,
+        '--file',
+        filePath,
+      ]);
+
+      const sanitizedName = file.name.replace(/'/g, "''");
       console.log(`Recording ${file.name} in schema_migrations...`);
-      const recordCommand = `wrangler d1 execute ${dbName} --local --config=${wranglerConfig} --command="INSERT INTO schema_migrations (migration_name) VALUES ('${file.name}')"`;
-      execSync(recordCommand, { stdio: 'inherit', cwd: projectRoot });
+      runWrangler([
+        'd1',
+        'execute',
+        dbName,
+        '--local',
+        '--config',
+        wranglerConfig,
+        '--command',
+        `INSERT INTO schema_migrations (migration_name) VALUES ('${sanitizedName}')`,
+      ]);
     }
 
     console.log('--- DB mock generation complete! ---');

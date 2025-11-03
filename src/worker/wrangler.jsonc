@@ -11,12 +11,13 @@
 		"enabled": true
 	},
 	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "strzel-sobie-db",
-			"database_id": "${D1_DATABASE_ID}",
-			"preview_database_id": "${D1_PREVIEW_DATABASE_ID}"
-		}
+			{
+				"binding": "DB",
+				"database_name": "strzel-sobie-db",
+				"database_id": "strzel-sobie-db",
+				"preview_database_id": "strzel-sobie-db",
+				"migrations_dir": "../../migrations"
+			}
 	],
 	"kv_namespaces": [
 		{
@@ -24,5 +25,17 @@
 			"id": "${SESSIONS_KV_ID}",
 			"preview_id": "${SESSIONS_KV_PREVIEW_ID}"
 		}
-	]
+	],
+	"env": {
+		"production": {
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "strzel-sobie-db",
+					"database_id": "${D1_DATABASE_ID}",
+					"preview_database_id": "${D1_PREVIEW_DATABASE_ID}"
+				}
+			]
+		}
+	}
 }

@@ -44,3 +44,15 @@ We distinguish between three main types of integration tests:
 -   **Location**: All integration tests should be located in the `tests` workspace, under a directory corresponding to the module being tested.
 -   **Test Runner**: Use Vitest for running integration tests.
 -   **Mocking**: Use Vitest's mocking capabilities (`vi.mock`, `vi.spyOn`) to isolate the components under test.
+
+---
+
+## End-to-End (E2E) Testing
+
+E2E tests are the final layer of our testing strategy, designed to ensure the entire application works seamlessly from the user's perspective.
+
+-   **Goal**: To simulate real user workflows by interacting with the application through the browser. E2E tests verify the complete flow, from the frontend UI to the backend API and the database.
+-   **Framework**: We use **Playwright** for all E2E tests.
+-   **Location**: All E2E tests are located in the `tests-e2e` directory in the project root.
+-   **File Naming**: Test files should be named according to the feature they cover, using the convention `[feature].spec.ts` (e.g., `authentication.spec.ts`).
+-   **Database**: E2E tests run against a real test database. A `globalSetup.ts` script for Playwright ensures the database is reset and seeded with consistent mock data (`tests-e2e/e2e-mock-data.sql`) before every test run. This is configured in `playwright.config.ts`.

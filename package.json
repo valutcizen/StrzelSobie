@@ -15,9 +15,11 @@
     "db:migrate": "node scripts/generate-db-mock.mjs",
     "db:reset": "node scripts/generate-db-mock.mjs --regenerate",
     "dev:backend": "npm run dev -w @strzel-sobie/worker",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/bcryptjs": "^3.0.0",
     "@vitest/coverage-v8": "^4.0.6",
     "vitest": "^4.0.6"
