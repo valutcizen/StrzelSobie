@@ -14,6 +14,7 @@
     "test:unit": "npm run test:unit -w tests --",
     "db:migrate": "node scripts/generate-db-mock.mjs",
     "db:reset": "node scripts/generate-db-mock.mjs --regenerate",
+    "db:e2e": "node scripts/generate-db-mock.mjs --no-mock-data --regenerate --file tests-e2e/e2e-mock-data.sql",
     "dev:backend": "npm run dev -w @strzel-sobie/worker",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"

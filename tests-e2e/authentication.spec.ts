@@ -25,6 +25,7 @@ test.describe('Authentication', () => {
 
     // Verify that the user is logged in by checking for a profile element (e.g., a logout button)
     // This selector will need to be updated based on the actual layout
+        await page.getByLabel('Menu użytkownika').click();
     await expect(page.locator('text=Wyloguj')).toBeVisible();
   });
 });

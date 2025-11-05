@@ -56,12 +56,15 @@ function parseArgs(argv) {
   const parsed = {
     regenerate: false,
     seedFiles: [],
+    includeMockData: true,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--regenerate') {
       parsed.regenerate = true;
+    } else if (arg === '--no-mock-data') {
+      parsed.includeMockData = false;
     } else if (arg === '--file' || arg === '--seed') {
       const next = argv[i + 1];
       if (!next) {
@@ -77,7 +80,7 @@ function parseArgs(argv) {
 
 async function main() {
   try {
-    const { regenerate: shouldRegenerate, seedFiles: extraSeedFiles } = parseArgs(process.argv.slice(2));
+    const { regenerate: shouldRegenerate, seedFiles: extraSeedFiles, includeMockData } = parseArgs(process.argv.slice(2));
 
     await mkdir(wranglerHomeDir, { recursive: true });
     await mkdir(wranglerStateDir, { recursive: true });
@@ -105,13 +108,15 @@ async function main() {
     console.log('[1/4] Finding migration files...');
     const migrationFiles = (await readdir(migrationsDir)).map(file => ({ dir: migrationsDir, name: file }));
     let mockDataFiles = [];
-    try {
-      mockDataFiles = (await readdir(mockDataDir)).map(file => ({ dir: mockDataDir, name: file }));
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error;
+    if (includeMockData) {
+      try {
+        mockDataFiles = (await readdir(mockDataDir)).map(file => ({ dir: mockDataDir, name: file }));
+      } catch (error) {
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+        console.log('No mock-data directory found, skipping.');
       }
-      console.log('No mock-data directory found, skipping.');
     }
 
     const additionalSeedFiles = extraSeedFiles

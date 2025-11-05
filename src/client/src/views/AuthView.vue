@@ -108,7 +108,7 @@ const redirectAfterSuccess = async () => {
     return
   }
 
-  await router.push({ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } })
+  await router.push({ name: 'RangeLanding', params: { rangeSlug: 'dobczyce' } })
 }
 
 const handleLogin = async (payload: { email: string; password: string }) => {

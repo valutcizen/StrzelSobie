@@ -36,6 +36,9 @@ const authStore = useAuthStore()
 const { t } = useI18n()
 
 const goHome = () => {
-  router.push({ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug ?? 'dobczyce' } })
+  router.push({
+    name: 'RangeLanding',
+    params: { rangeSlug: authStore.defaultRangeSlug ?? import.meta.env.VITE_DEFAULT_RANGE_SLUG },
+  })
 }
 </script>

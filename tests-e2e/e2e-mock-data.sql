@@ -24,7 +24,7 @@ PRAGMA foreign_keys = ON;
 -- Ranges
 -- =============================================================================
 INSERT INTO ranges_shooting_ranges (id, slug, display_name, total_tracks, operating_hours)
-VALUES (99, 'e2e-range', 'E2E Test Range', 8, '{"monday":{"open":"10:00","close":"18:00"},"tuesday":{"open":"10:00","close":"18:00"},"wednesday":{"open":"10:00","close":"18:00"},"thursday":{"open":"10:00","close":"18:00"},"friday":{"open":"10:00","close":"18:00"}}');
+VALUES (99, 'dobczyce', 'E2E Test Range', 8, '{"monday":{"open":"10:00","close":"18:00"},"tuesday":{"open":"10:00","close":"18:00"},"wednesday":{"open":"10:00","close":"18:00"},"thursday":{"open":"10:00","close":"18:00"},"friday":{"open":"10:00","close":"18:00"}}');
 
 -- =============================================================================
 -- Users & Credentials
