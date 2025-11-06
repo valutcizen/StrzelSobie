@@ -69,9 +69,9 @@ Here is a breakdown of the tests for each feature defined in your `api-plan.md`:
 *   **Integration Tests:**
     *   Verify the `/api/v1/ranges` and `/api/v1/ranges/{rangeSlug}` endpoints.
 *   **E2E Tests (Playwright):**
-    *   The list of shooting ranges is displayed correctly.
     *   A user can view the details of a specific range.
     *   A "Range Administrator" can update the settings for a range.
+    *   *(Out of MVP scope: displaying the list of ranges.)*
 
 ### 4. Calendar Events
 

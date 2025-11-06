@@ -323,4 +323,136 @@ test.describe('Users & Roles', () => {
     await page.waitForURL('/auth');
     await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
   });
+
+  test('a coordinator can view contact details for a managed reservation', async ({ page }) => {
+    const formatDate = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate(),
+      ).padStart(2, '0')}`;
+    const formatTime = (date: Date) =>
+      `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+    const today = new Date();
+    const dayOffset = (today.getDay() + 6) % 7; // Monday = 0
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    const propositionStart = new Date(monday);
+    propositionStart.setDate(monday.getDate() + 2);
+    propositionStart.setHours(15, 30, 0, 0);
+
+    const propositionEnd = new Date(propositionStart);
+    propositionEnd.setHours(propositionStart.getHours() + 1);
+
+    const eventDate = formatDate(propositionStart);
+    const startTime = formatTime(propositionStart);
+    const endTime = formatTime(propositionEnd);
+
+    await page.request.post('/api/v1/auth/login', {
+      data: { email: 'member@e2e.com', password: 'memberpassword' },
+    });
+
+    const propositionResponse = await page.request.post('/api/v1/ranges/dobczyce/propositions', {
+      data: {
+        eventDate,
+        startTime,
+        endTime,
+        numParticipants: 2,
+        tracksRequested: 1,
+      },
+    });
+
+    const { id: propositionId } = await propositionResponse.json();
+    expect(typeof propositionId).toBe('number');
+
+    await page.request.post('/api/v1/auth/logout');
+
+    await page.request.post('/api/v1/auth/login', {
+      data: { email: 'coordinator@e2e.com', password: 'coordinatorpassword' },
+    });
+
+    const reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
+      data: {
+        propositionId,
+        eventDate,
+        startTime,
+        endTime,
+        numParticipants: 3,
+        tracksRequested: 2,
+        isPublic: false,
+        isJoinable: false,
+      },
+    });
+
+    expect(reservationResponse.ok()).toBeTruthy();
+
+    const { id: reservationId } = await reservationResponse.json();
+    expect(typeof reservationId).toBe('number');
+
+    await page.request.post('/api/v1/auth/logout');
+
+    await page.goto('/auth');
+
+    await page.getByLabel('Adres e-mail', { exact: true }).fill('coordinator@e2e.com');
+    await page.getByLabel('Hasło', { exact: true }).fill('coordinatorpassword');
+    await page.getByRole('button', { name: 'Zaloguj' }).click();
+
+    await page.waitForURL('/dobczyce');
+    await expect(page).toHaveURL('/dobczyce');
+
+    const eventsResponsePromise = page.waitForResponse((response) => {
+      if (!response.url().includes('/api/v1/ranges/dobczyce/events')) {
+        return false;
+      }
+      if (response.request().method() !== 'GET') {
+        return false;
+      }
+      return response.status() === 200;
+    });
+
+    await Promise.all([
+      eventsResponsePromise,
+      page.getByRole('button', { name: 'Przejdź do kalendarza' }).click(),
+    ]);
+
+    await page.waitForURL('/dobczyce/reservations');
+    const eventsPayload = await eventsResponsePromise.then((response) => response.json());
+
+    const reservationEntry = (eventsPayload.reservations ?? []).find(
+      (item: { id: number }) => item.id === reservationId,
+    );
+    expect(reservationEntry).toBeDefined();
+
+    const eventLocator = page
+      .locator('.fc-timegrid-event')
+      .filter({ hasText: startTime })
+      .filter({ hasText: 'Rezerwacja' })
+      .first();
+    await expect(eventLocator).toBeVisible({ timeout: 20000 });
+
+    const reservationDetailResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/v1/reservations/${reservationId}`) &&
+        response.request().method() === 'GET' &&
+        response.status() === 200,
+    );
+
+    await eventLocator.click();
+    await reservationDetailResponse;
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    await expect(dialog.getByText('member@e2e.com')).toBeVisible();
+    await expect(dialog.getByText('303303303')).toBeVisible();
+
+    await dialog.getByRole('button', { name: 'Zamknij' }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.getByLabel('Menu użytkownika').click();
+    await page.locator('text=Wyloguj').click();
+    await page.waitForURL('/auth');
+    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+  });
 });
