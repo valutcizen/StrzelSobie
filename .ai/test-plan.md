@@ -24,6 +24,7 @@ Our testing strategy will follow the testing pyramid model:
     | `standard-user@e2e.com`         | Member, Guest (stable login/logout scenarios)                                  | `standardpassword`    |
 
 *   **Selector guidelines:** Prefer accessible queries (`getByRole`, `getByLabel`, `getByText`) to keep tests resilient to layout changes. When interacting with Vuetify menus or dialogs, close the overlay (`await combobox.press('Escape')`) before clicking primary actions to avoid pointer interception timeouts.
+*   **Localized strings:** UI copy is sourced at runtime from `src/client/src/locales/pl.json`. Tests must read translations from this file (see `tests-e2e/support/i18n.ts`) instead of hard‑coding literals, so that updates to the UI locale automatically propagate to the Playwright suite.
 
 *   **Role assignment matrix:** Use the correct actor for each scenario to avoid backend rejections.
 

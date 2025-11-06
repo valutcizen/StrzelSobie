@@ -10,7 +10,8 @@
     "profile": "Mój profil",
     "userManagement": "Zarządzanie użytkownikami",
     "userVerification": "Weryfikacja użytkowników",
-    "rangeSettings": "Ustawienia strzelnicy"
+    "rangeSettings": "Ustawienia strzelnicy",
+    "rangeUserManagement": "Zarządzanie rolami strzelnicy"
   },
   "auth": {
     "loginTab": "Logowanie",
@@ -22,10 +23,34 @@
     "switchToLogin": "Masz już konto? Zaloguj się",
     "switchToRegister": "Nie masz konta? Zarejestruj się"
   },
+  "userMenu": {
+    "label": "Menu użytkownika",
+    "profile": "Mój profil",
+    "logout": "Wyloguj"
+  },
+  "roles": {
+    "guest": "Gość",
+    "member": "Członek",
+    "coordinator": "Koordynator",
+    "confirmator": "Potwierdzający",
+    "shootingRangeAdmin": "Administrator strzelnicy",
+    "clubCommunityAdmin": "Administrator klubu/społeczności"
+  },
+  "common": {
+    "actions": {
+      "save": "Zapisz",
+      "close": "Zamknij",
+      "retry": "Spróbuj ponownie"
+    },
+    "labels": {
+      "userWithId": "Użytkownik #{id}"
+    }
+  },
   "calendar": {
     "emptyState": "Brak wydarzeń dla tego tygodnia.",
     "propositionCta": "Zaproponuj termin",
-    "loading": "Ładujemy kalendarz..."
+    "loading": "Ładujemy kalendarz...",
+    "eventReservation": "Rezerwacja"
   },
   "rangeLanding": {
     "loadingTitle": "Ładujemy dane strzelnicy...",
@@ -56,10 +81,26 @@
   },
   "admin": {
     "users": {
-      "title": "Zarządzanie użytkownikami"
+      "title": "Zarządzanie użytkownikami",
+      "refresh": "Odśwież",
+      "snackbarSuccess": "Role użytkownika zostały zaktualizowane.",
+      "snackbarError": "Nie udało się zaktualizować ról."
+    },
+    "userRoles": {
+      "guestImmutableHint": "Rola {role} jest przypisana każdemu użytkownikowi.",
+      "currentRolesLabel": "Przypisane role",
+      "assignRole": "Nadaj rolę {role}",
+      "removeRole": "Usuń rolę {role}",
+      "suggestedRole": "Sugerowana rola: {role}",
+      "noSuggestedRole": "Brak proponowanej roli.",
+      "roleAssigned": "Użytkownik {email} otrzymał rolę {role}.",
+      "roleRemoved": "Użytkownik {email} nie ma już roli {role}.",
+      "editTitle": "Edytuj role użytkownika",
+      "selectRolesLabel": "Role"
     },
     "verification": {
-      "title": "Weryfikacja użytkowników"
+      "title": "Weryfikacja użytkowników",
+      "refresh": "Odśwież"
     },
     "rangeSettings": {
       "title": "Ustawienia strzelnicy",

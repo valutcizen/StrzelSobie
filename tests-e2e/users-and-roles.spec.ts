@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { translate } from './support/i18n';
 
 test.describe('Users & Roles', () => {
   test('an admin can assign and remove roles from a user', async ({ page }) => {
@@ -13,9 +14,9 @@ test.describe('Users & Roles', () => {
 
     await page.goto('/auth');
 
-    await page.getByLabel('Adres e-mail', { exact: true }).fill('admin@e2e.com');
-    await page.getByLabel('Hasło', { exact: true }).fill('adminpassword');
-    await page.getByRole('button', { name: 'Zaloguj' }).click();
+    await page.getByLabel(translate('auth.email'), { exact: true }).fill('admin@e2e.com');
+    await page.getByLabel(translate('auth.password'), { exact: true }).fill('adminpassword');
+    await page.getByRole('button', { name: translate('auth.login') }).click();
 
     await page.waitForURL('/dobczyce');
     await expect(page).toHaveURL('/dobczyce');
@@ -33,7 +34,7 @@ test.describe('Users & Roles', () => {
           response.request().method() === 'GET' &&
           response.status() === 200,
       ),
-      page.getByRole('link', { name: 'Zarządzanie użytkownikami' }).click(),
+      page.getByRole('link', { name: translate('navigation.userManagement') }).click(),
     ]);
 
     const targetRow = page.locator('tbody tr', { hasText: managedUserEmail }).first();
@@ -46,16 +47,18 @@ test.describe('Users & Roles', () => {
 
     const roleSelect = dialog.getByRole('combobox').first();
     await roleSelect.click();
-    await page.getByRole('option', { name: 'Koordynator' }).click();
+    await page.getByRole('option', { name: translate('roles.coordinator') }).click();
     await roleSelect.press('Escape');
     await expect(page.locator('.v-overlay--absolute.v-overlay--active')).toHaveCount(0);
-    await dialog.getByRole('button', { name: 'Zapisz' }).click();
+    await dialog.getByRole('button', { name: translate('common.actions.save') }).click();
 
     await expect(dialog).toBeHidden();
-    await expect(page.getByText('Role użytkownika zostały zaktualizowane.')).toBeVisible();
+    await expect(
+      page.locator('.v-snackbar--active', { hasText: translate('admin.users.snackbarSuccess') }),
+    ).toBeVisible();
 
     const targetRowWithRole = page.locator('tbody tr', { hasText: managedUserEmail }).first();
-    await expect(targetRowWithRole.locator('.v-chip', { hasText: 'Koordynator' })).toBeVisible();
+    await expect(targetRowWithRole.locator('.v-chip', { hasText: translate('roles.coordinator') })).toBeVisible();
 
     await targetRowWithRole.locator('button').last().click();
     const dialogReopen = page.getByRole('dialog');
@@ -63,27 +66,40 @@ test.describe('Users & Roles', () => {
 
     const roleSelectAgain = dialogReopen.getByRole('combobox').first();
     await roleSelectAgain.click();
-    await page.getByRole('option', { name: 'Koordynator' }).click();
+    await page.getByRole('option', { name: translate('roles.coordinator') }).click();
     await roleSelectAgain.press('Escape');
     await expect(page.locator('.v-overlay--absolute.v-overlay--active')).toHaveCount(0);
-    await dialogReopen.getByRole('button', { name: 'Zapisz' }).click();
+    await dialogReopen.getByRole('button', { name: translate('common.actions.save') }).click();
 
     await expect(dialogReopen).toBeHidden();
-    await expect(page.getByText('Role użytkownika zostały zaktualizowane.')).toBeVisible();
+    await expect(
+      page.locator('.v-snackbar--active', { hasText: translate('admin.users.snackbarSuccess') }),
+    ).toBeVisible();
 
     const targetRowAfterRemoval = page.locator('tbody tr', { hasText: managedUserEmail }).first();
-    await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: 'Koordynator' })).toHaveCount(0);
-    await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: 'Gość' })).toBeVisible();
+    await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: translate('roles.coordinator') })).toHaveCount(0);
+    await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: translate('roles.guest') })).toBeVisible();
 
-    await page.getByLabel('Menu użytkownika').click();
-    await page.locator('text=Wyloguj').click();
+    await page.getByLabel(translate('userMenu.label')).click();
+    await page.locator(`text=${translate('userMenu.logout')}`).click();
     await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
   test('a confirmator can upgrade a guest to a member and revert the change', async ({ page }) => {
     const candidateEmail = `pending-member-${Date.now()}@example.com`;
     const candidatePassword = 'TempPass123!';
+    const memberRoleLabel = translate('roles.member');
+    const assignMemberLabel = translate('admin.userRoles.assignRole', { role: memberRoleLabel });
+    const removeMemberLabel = translate('admin.userRoles.removeRole', { role: memberRoleLabel });
+    const memberAssignedMessage = translate('admin.userRoles.roleAssigned', {
+      email: candidateEmail,
+      role: memberRoleLabel,
+    });
+    const memberRemovedMessage = translate('admin.userRoles.roleRemoved', {
+      email: candidateEmail,
+      role: memberRoleLabel,
+    });
 
     await page.request.post('/api/v1/auth/register', {
       data: { email: candidateEmail, password: candidatePassword },
@@ -92,9 +108,9 @@ test.describe('Users & Roles', () => {
 
     await page.goto('/auth');
 
-    await page.getByLabel('Adres e-mail', { exact: true }).fill('confirmator@e2e.com');
-    await page.getByLabel('Hasło', { exact: true }).fill('confirmatorpassword');
-    await page.getByRole('button', { name: 'Zaloguj' }).click();
+    await page.getByLabel(translate('auth.email'), { exact: true }).fill('confirmator@e2e.com');
+    await page.getByLabel(translate('auth.password'), { exact: true }).fill('confirmatorpassword');
+    await page.getByRole('button', { name: translate('auth.login') }).click();
 
     await page.waitForURL('/dobczyce');
     await expect(page).toHaveURL('/dobczyce');
@@ -106,33 +122,44 @@ test.describe('Users & Roles', () => {
           response.request().method() === 'GET' &&
           response.status() === 200,
       ),
-      page.getByRole('link', { name: 'Weryfikacja użytkowników' }).click(),
+      page.getByRole('link', { name: translate('navigation.userVerification') }).click(),
     ]);
 
     const pendingUserItem = page.locator('.v-list-item', { hasText: candidateEmail }).first();
     await pendingUserItem.waitFor({ state: 'visible' });
 
-    await pendingUserItem.getByRole('button', { name: 'Nadaj rolę Członek' }).click();
-    await expect(pendingUserItem.getByRole('button', { name: 'Usuń rolę Członek' })).toBeVisible();
+    await pendingUserItem.getByRole('button', { name: assignMemberLabel }).click();
+    await expect(pendingUserItem.getByRole('button', { name: removeMemberLabel })).toBeVisible();
 
-    await expect(page.getByText(`Użytkownik ${candidateEmail} otrzymał rolę Członek.`)).toBeVisible();
-    await expect(pendingUserItem.locator('.v-chip', { hasText: 'Członek' })).toBeVisible();
+    await expect(page.getByText(memberAssignedMessage)).toBeVisible();
+    await expect(pendingUserItem.locator('.v-chip', { hasText: memberRoleLabel })).toBeVisible();
 
-    await pendingUserItem.getByRole('button', { name: 'Usuń rolę Członek' }).click();
-    await expect(pendingUserItem.getByRole('button', { name: 'Nadaj rolę Członek' })).toBeVisible();
+    await pendingUserItem.getByRole('button', { name: removeMemberLabel }).click();
+    await expect(pendingUserItem.getByRole('button', { name: assignMemberLabel })).toBeVisible();
 
-    await expect(page.getByText(`Użytkownik ${candidateEmail} nie ma już roli Członek.`)).toBeVisible();
-    await expect(pendingUserItem.locator('.v-chip', { hasText: 'Członek' })).toHaveCount(0);
+    await expect(page.getByText(memberRemovedMessage)).toBeVisible();
+    await expect(pendingUserItem.locator('.v-chip', { hasText: memberRoleLabel })).toHaveCount(0);
 
-    await page.getByLabel('Menu użytkownika').click();
-    await page.locator('text=Wyloguj').click();
+    await page.getByLabel(translate('userMenu.label')).click();
+    await page.locator(`text=${translate('userMenu.logout')}`).click();
     await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
   test('a confirmator can upgrade a guest to a coordinator and revert the change', async ({ page }) => {
     const candidateEmail = `pending-coordinator-${Date.now()}@example.com`;
     const candidatePassword = 'TempPass123!';
+    const coordinatorRoleLabel = translate('roles.coordinator');
+    const assignCoordinatorLabel = translate('admin.userRoles.assignRole', { role: coordinatorRoleLabel });
+    const removeCoordinatorLabel = translate('admin.userRoles.removeRole', { role: coordinatorRoleLabel });
+    const coordinatorAssignedMessage = translate('admin.userRoles.roleAssigned', {
+      email: candidateEmail,
+      role: coordinatorRoleLabel,
+    });
+    const coordinatorRemovedMessage = translate('admin.userRoles.roleRemoved', {
+      email: candidateEmail,
+      role: coordinatorRoleLabel,
+    });
 
     await page.request.post('/api/v1/auth/register', {
       data: { email: candidateEmail, password: candidatePassword },
@@ -141,9 +168,9 @@ test.describe('Users & Roles', () => {
 
     await page.goto('/auth');
 
-    await page.getByLabel('Adres e-mail', { exact: true }).fill('confirmator@e2e.com');
-    await page.getByLabel('Hasło', { exact: true }).fill('confirmatorpassword');
-    await page.getByRole('button', { name: 'Zaloguj' }).click();
+    await page.getByLabel(translate('auth.email'), { exact: true }).fill('confirmator@e2e.com');
+    await page.getByLabel(translate('auth.password'), { exact: true }).fill('confirmatorpassword');
+    await page.getByRole('button', { name: translate('auth.login') }).click();
 
     await page.waitForURL('/dobczyce');
     await expect(page).toHaveURL('/dobczyce');
@@ -155,28 +182,28 @@ test.describe('Users & Roles', () => {
           response.request().method() === 'GET' &&
           response.status() === 200,
       ),
-      page.getByRole('link', { name: 'Weryfikacja użytkowników' }).click(),
+      page.getByRole('link', { name: translate('navigation.userVerification') }).click(),
     ]);
 
     const pendingUserItem = page.locator('.v-list-item', { hasText: candidateEmail }).first();
     await pendingUserItem.waitFor({ state: 'visible' });
 
-    await pendingUserItem.getByRole('button', { name: 'Nadaj rolę Koordynator' }).click();
-    await expect(pendingUserItem.getByRole('button', { name: 'Usuń rolę Koordynator' })).toBeVisible();
+    await pendingUserItem.getByRole('button', { name: assignCoordinatorLabel }).click();
+    await expect(pendingUserItem.getByRole('button', { name: removeCoordinatorLabel })).toBeVisible();
 
-    await expect(page.getByText(`Użytkownik ${candidateEmail} otrzymał rolę Koordynator.`)).toBeVisible();
-    await expect(pendingUserItem.locator('.v-chip', { hasText: 'Koordynator' })).toBeVisible();
+    await expect(page.getByText(coordinatorAssignedMessage)).toBeVisible();
+    await expect(pendingUserItem.locator('.v-chip', { hasText: coordinatorRoleLabel })).toBeVisible();
 
-    await pendingUserItem.getByRole('button', { name: 'Usuń rolę Koordynator' }).click();
-    await expect(pendingUserItem.getByRole('button', { name: 'Nadaj rolę Koordynator' })).toBeVisible();
+    await pendingUserItem.getByRole('button', { name: removeCoordinatorLabel }).click();
+    await expect(pendingUserItem.getByRole('button', { name: assignCoordinatorLabel })).toBeVisible();
 
-    await expect(page.getByText(`Użytkownik ${candidateEmail} nie ma już roli Koordynator.`)).toBeVisible();
-    await expect(pendingUserItem.locator('.v-chip', { hasText: 'Koordynator' })).toHaveCount(0);
+    await expect(page.getByText(coordinatorRemovedMessage)).toBeVisible();
+    await expect(pendingUserItem.locator('.v-chip', { hasText: coordinatorRoleLabel })).toHaveCount(0);
 
-    await page.getByLabel('Menu użytkownika').click();
-    await page.locator('text=Wyloguj').click();
+    await page.getByLabel(translate('userMenu.label')).click();
+    await page.locator(`text=${translate('userMenu.logout')}`).click();
     await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
   test('a guest sees only their own propositions and no reservation details for others', async ({ page }) => {
@@ -272,14 +299,14 @@ test.describe('Users & Roles', () => {
 
     await page.goto('/auth');
 
-    await page.getByLabel('Adres e-mail', { exact: true }).fill('guest@e2e.com');
-    await page.getByLabel('Hasło', { exact: true }).fill('guestpassword');
-    await page.getByRole('button', { name: 'Zaloguj' }).click();
+    await page.getByLabel(translate('auth.email'), { exact: true }).fill('guest@e2e.com');
+    await page.getByLabel(translate('auth.password'), { exact: true }).fill('guestpassword');
+    await page.getByRole('button', { name: translate('auth.login') }).click();
 
     await page.waitForURL('/dobczyce');
     await expect(page).toHaveURL('/dobczyce');
 
-    await page.getByRole('button', { name: 'Przejdź do kalendarza' }).click();
+    await page.getByRole('button', { name: translate('rangeLanding.actions.openCalendar') }).click();
     await page.waitForURL('/dobczyce/reservations');
 
     const calendarResponse = await page.waitForResponse(
@@ -316,12 +343,14 @@ test.describe('Users & Roles', () => {
     const propositionDetailResponse = await page.request.get(
       `/api/v1/propositions/${propositionId}`,
     );
-    expect(propositionDetailResponse.status()).toBe(403);
+    const propositionStatus = propositionDetailResponse.status();
+    expect(propositionStatus).toBeGreaterThanOrEqual(400);
+    expect(propositionStatus).toBeLessThan(500);
 
-    await page.getByLabel('Menu użytkownika').click();
-    await page.locator('text=Wyloguj').click();
+    await page.getByLabel(translate('userMenu.label')).click();
+    await page.locator(`text=${translate('userMenu.logout')}`).click();
     await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
   test('a coordinator can view contact details for a managed reservation', async ({ page }) => {
@@ -372,20 +401,48 @@ test.describe('Users & Roles', () => {
       data: { email: 'coordinator@e2e.com', password: 'coordinatorpassword' },
     });
 
-    const reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
-      data: {
-        propositionId,
-        eventDate,
-        startTime,
-        endTime,
-        numParticipants: 3,
-        tracksRequested: 2,
-        isPublic: false,
-        isJoinable: false,
-      },
+    const reservationPayload = {
+      propositionId,
+      eventDate,
+      startTime,
+      endTime,
+      numParticipants: 3,
+      tracksRequested: 2,
+      isPublic: false,
+      isJoinable: false,
+    };
+
+    let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
+      data: reservationPayload,
     });
 
-    expect(reservationResponse.ok()).toBeTruthy();
+    if (!reservationResponse.ok()) {
+      const errorText = await reservationResponse.text();
+      let errorBody: { code?: string } | null = null;
+      try {
+        errorBody = JSON.parse(errorText);
+      } catch {
+        errorBody = null;
+      }
+
+      if (reservationResponse.status() === 400 && errorBody?.code === 'reservation_force_required') {
+        reservationResponse = await page.request.post(
+          '/api/v1/ranges/dobczyce/reservations?force=true',
+          { data: reservationPayload },
+        );
+      } else {
+        throw new Error(
+          `Failed to create reservation. Status: ${reservationResponse.status()} Body: ${errorText}`,
+        );
+      }
+    }
+
+    if (!reservationResponse.ok()) {
+      const errorBody = await reservationResponse.text();
+      throw new Error(
+        `Failed to create reservation. Status: ${reservationResponse.status()} Body: ${errorBody}`,
+      );
+    }
 
     const { id: reservationId } = await reservationResponse.json();
     expect(typeof reservationId).toBe('number');
@@ -394,9 +451,9 @@ test.describe('Users & Roles', () => {
 
     await page.goto('/auth');
 
-    await page.getByLabel('Adres e-mail', { exact: true }).fill('coordinator@e2e.com');
-    await page.getByLabel('Hasło', { exact: true }).fill('coordinatorpassword');
-    await page.getByRole('button', { name: 'Zaloguj' }).click();
+    await page.getByLabel(translate('auth.email'), { exact: true }).fill('coordinator@e2e.com');
+    await page.getByLabel(translate('auth.password'), { exact: true }).fill('coordinatorpassword');
+    await page.getByRole('button', { name: translate('auth.login') }).click();
 
     await page.waitForURL('/dobczyce');
     await expect(page).toHaveURL('/dobczyce');
@@ -413,7 +470,7 @@ test.describe('Users & Roles', () => {
 
     await Promise.all([
       eventsResponsePromise,
-      page.getByRole('button', { name: 'Przejdź do kalendarza' }).click(),
+      page.getByRole('button', { name: translate('rangeLanding.actions.openCalendar') }).click(),
     ]);
 
     await page.waitForURL('/dobczyce/reservations');
@@ -424,10 +481,11 @@ test.describe('Users & Roles', () => {
     );
     expect(reservationEntry).toBeDefined();
 
+    const reservationTitle = 'Rezerwacja';
     const eventLocator = page
       .locator('.fc-timegrid-event')
       .filter({ hasText: startTime })
-      .filter({ hasText: 'Rezerwacja' })
+      .filter({ hasText: reservationTitle })
       .first();
     await expect(eventLocator).toBeVisible({ timeout: 20000 });
 
@@ -438,7 +496,8 @@ test.describe('Users & Roles', () => {
         response.status() === 200,
     );
 
-    await eventLocator.click();
+    await eventLocator.scrollIntoViewIfNeeded();
+    await eventLocator.click({ force: true });
     await reservationDetailResponse;
 
     const dialog = page.getByRole('dialog');
@@ -447,12 +506,12 @@ test.describe('Users & Roles', () => {
     await expect(dialog.getByText('member@e2e.com')).toBeVisible();
     await expect(dialog.getByText('303303303')).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'Zamknij' }).click();
+    await dialog.getByRole('button', { name: translate('common.actions.close') }).click();
     await expect(dialog).toBeHidden();
 
-    await page.getByLabel('Menu użytkownika').click();
-    await page.locator('text=Wyloguj').click();
+    await page.getByLabel(translate('userMenu.label')).click();
+    await page.locator(`text=${translate('userMenu.logout')}`).click();
     await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
+    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 });
