@@ -49,7 +49,7 @@ Standard booking and reservation applications available on the market do not add
 
 ### 3.6. Data Privacy and UI
 - Reservation visibility is role-dependent:
-  - Guests can view the calendar and see details of "Public" reservations.
+  - Guests can view the calendar, see all reservations, and only ever see anonymized reservation summaries without coordinator or participant details.
   - Members can view the calendar and see details for all reservations.
   - All other user-generated content remains visible only to authenticated users.
 - Personal contact information (phone/email) will be visible only to Administrators and the specific Coordinator assigned to a reservation.
@@ -106,8 +106,8 @@ Standard booking and reservation applications available on the market do not add
 - Acceptance Criteria:
   - The calendar displays a 7-day view and can be navigated to the next/previous weeks.
   - Available time slots are clearly visible to all users.
-  - Propositions are visible to all authenticated users.
-  - As a Guest, I can see and view details for reservations explicitly marked as "Public". Other reservations are shown as "busy" with no details.
+  - Propositions are visible to all authenticated users except Guests, who can only see propositions they created.
+  - As a Guest, I can see reservations on the calendar, but they are always shown without personal or contact details, regardless of their visibility flags.
   - As a Member (or higher role), I can see and view details for all reservations.
   - As a Member (or higher role), reservations are clearly marked with a visual indicator if they are "Open for Joining".
 

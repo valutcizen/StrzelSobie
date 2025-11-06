@@ -59,7 +59,7 @@ Here is a breakdown of the tests for each feature defined in your `api-plan.md`:
     *   An admin can assign and remove roles from a user.
     *   A "Confirmator" can upgrade a "Guest" to a "Member".
     *   A "Confirmator" can upgrade a "Guest" to a "Coordinator".
-    *   A "Guest" cannot see personal contact information of other users.
+    *   A "Guest" only sees propositions they created and sees other users' reservations without personal details.
     *   A "Coordinator" can see the contact information of a user for a reservation they manage.
 
 ### 3. Ranges

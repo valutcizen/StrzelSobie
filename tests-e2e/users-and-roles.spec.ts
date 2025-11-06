@@ -179,7 +179,7 @@ test.describe('Users & Roles', () => {
     await expect(page.getByRole('button', { name: 'Zaloguj' })).toBeVisible();
   });
 
-  test('a guest cannot see contact information of other users', async ({ page }) => {
+  test('a guest sees only their own propositions and no reservation details for others', async ({ page }) => {
     const formatDate = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
         date.getDate(),
@@ -221,6 +221,55 @@ test.describe('Users & Roles', () => {
     const { id: propositionId } = await createResponse.json();
     await page.request.post('/api/v1/auth/logout');
 
+    await page.request.post('/api/v1/auth/login', {
+      data: { email: 'coordinator@e2e.com', password: 'coordinatorpassword' },
+    });
+
+    const candidateDayOffsets = [2, 3, 4]; // mid-week slots to reduce conflict risk
+    const candidateHours = [8, 10, 12, 14, 16, 18];
+
+    let reservationId: number | null = null;
+
+    for (const dayOffsetCandidate of candidateDayOffsets) {
+      if (reservationId) {
+        break;
+      }
+
+      for (const hourCandidate of candidateHours) {
+        const reservationStartObj = new Date(monday);
+        reservationStartObj.setDate(monday.getDate() + dayOffsetCandidate);
+        reservationStartObj.setHours(hourCandidate, 0, 0, 0);
+
+        const reservationEndObj = new Date(reservationStartObj);
+        reservationEndObj.setHours(reservationStartObj.getHours() + 1);
+
+        const reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
+          data: {
+            eventDate: formatDate(reservationStartObj),
+            startTime: formatTime(reservationStartObj),
+            endTime: formatTime(reservationEndObj),
+            numParticipants: 3,
+            tracksRequested: 2,
+            isPublic: false,
+            isJoinable: false,
+          },
+        });
+
+        if (!reservationResponse.ok()) {
+          continue;
+        }
+
+        const payload = await reservationResponse.json();
+        reservationId = payload.id ?? null;
+        break;
+      }
+    }
+
+    expect(reservationId).toBeDefined();
+    const resolvedReservationId = reservationId!;
+
+    await page.request.post('/api/v1/auth/logout');
+
     await page.goto('/auth');
 
     await page.getByLabel('Adres e-mail', { exact: true }).fill('guest@e2e.com');
@@ -244,22 +293,30 @@ test.describe('Users & Roles', () => {
     const propositionEntry = (calendarPayload.propositions ?? []).find(
       (item: { id: number }) => item.id === propositionId,
     );
-    expect(propositionEntry).toBeDefined();
+    expect(propositionEntry).toBeUndefined();
+
+    const reservationEntry = (calendarPayload.reservations ?? []).find(
+      (item: { id: number }) => item.id === resolvedReservationId,
+    );
+    expect(reservationEntry).toBeDefined();
+    expect(reservationEntry?.details).toBeNull();
+    expect(reservationEntry?.tracksRequested).toBeNull();
+    expect(reservationEntry?.isJoinable).toBeNull();
 
     const propositionLocator = page.locator(
       `[data-event-id="proposition-${propositionId}"]`,
     );
-    await propositionLocator.waitFor({ state: 'visible', timeout: 10000 });
-    await propositionLocator.click();
+    await expect(propositionLocator).toHaveCount(0);
 
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('Zgłoszenie członka');
-    await expect(dialog).not.toContainText('member@e2e.com');
-    await expect(dialog).not.toContainText('303303303');
+    const reservationDetailResponse = await page.request.get(
+      `/api/v1/reservations/${resolvedReservationId}`,
+    );
+    expect(reservationDetailResponse.status()).toBe(403);
 
-    await dialog.press('Escape');
-    await expect(dialog).toBeHidden();
+    const propositionDetailResponse = await page.request.get(
+      `/api/v1/propositions/${propositionId}`,
+    );
+    expect(propositionDetailResponse.status()).toBe(403);
 
     await page.getByLabel('Menu użytkownika').click();
     await page.locator('text=Wyloguj').click();
