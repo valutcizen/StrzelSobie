@@ -59,6 +59,10 @@ INSERT INTO auth_user_credentials (user_id, password_hash) VALUES (906, '$2b$10$
 INSERT INTO users_users (id, email, phone_number) VALUES (907, 'user-to-be-promoted@e2e.com', '707707707');
 INSERT INTO auth_user_credentials (user_id, password_hash) VALUES (907, '$2b$10$n153T9xZ45QMhCrZpFJ3ou90V3Ge8D.VkTyFUmjUms6vN1kUnlpfm');
 
+-- ID 908: Standard member for login/logout e2e scenario
+INSERT INTO users_users (id, email, phone_number) VALUES (908, 'standard-user@e2e.com', '808808808');
+INSERT INTO auth_user_credentials (user_id, password_hash) VALUES (908, '$2b$10$OuM9wtYDVy4Mnhw.IweP7Obu1tc.qSDv6KkaKsNrbcfjbBXpnB/L6');
+
 
 -- =============================================================================
 -- Role Assignments
@@ -86,6 +90,9 @@ INSERT INTO users_user_range_roles (user_id, role_id, range_id) VALUES (906, 5, 
 
 -- User 907: user-to-be-promoted@e2e.com -> Guest
 INSERT INTO users_user_global_roles (user_id, role_id) VALUES (907, 1);
+
+-- User 908: standard-user@e2e.com -> Member (and Guest)
+INSERT INTO users_user_global_roles (user_id, role_id) VALUES (908, 2), (908, 1);
 
 -- =============================================================================
 -- Propositions & Reservations

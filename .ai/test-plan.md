@@ -8,6 +8,30 @@ Our testing strategy will follow the testing pyramid model:
 2.  **Integration Tests (Middle of the pyramid):** These will verify the interactions between different modules of the application (e.g., service to database, service to service). We'll continue using `vitest` for these, but with real database connections to a test database.
 3.  **End-to-End (E2E) Tests (Top of the pyramid):** These will simulate real user workflows from the frontend to the backend. We will use the Playwright framework for these tests.
 
+### E2E Testing Conventions
+
+*   **Seeded accounts:** The E2E database seed ships with deterministic users. Passwords follow the pattern `<local-part>password` (e.g. `adminpassword`). Quick reference:
+
+    | Email                           | Primary roles (global unless noted)                                            | Password              |
+    |---------------------------------|--------------------------------------------------------------------------------|-----------------------|
+    | `admin@e2e.com`                 | Club/Community Administrator                                                   | `adminpassword`       |
+    | `coordinator@e2e.com`           | Coordinator, Member, Guest                                                     | `coordinatorpassword` |
+    | `member@e2e.com`                | Member, Guest                                                                  | `memberpassword`      |
+    | `guest@e2e.com`                 | Guest                                                                          | `guestpassword`       |
+    | `confirmator@e2e.com`           | Confirmator                                                                    | `confirmatorpassword` |
+    | `rangeadmin@e2e.com`            | Shooting Range Administrator (range 99)                                        | `rangeadminpassword`  |
+    | `user-to-be-promoted@e2e.com`   | Guest (used for confirmator upgrade scenarios)                                 | `user-to-be-promotedpassword` |
+    | `standard-user@e2e.com`         | Member, Guest (stable login/logout scenarios)                                  | `standardpassword`    |
+
+*   **Selector guidelines:** Prefer accessible queries (`getByRole`, `getByLabel`, `getByText`) to keep tests resilient to layout changes. When interacting with Vuetify menus or dialogs, close the overlay (`await combobox.press('Escape')`) before clicking primary actions to avoid pointer interception timeouts.
+
+*   **Role assignment matrix:** Use the correct actor for each scenario to avoid backend rejections.
+
+    | Acting user                    | Allowed assignments/removals                             | Notes                                                     |
+    |--------------------------------|----------------------------------------------------------|-----------------------------------------------------------|
+    | Confirmator (`confirmator@…`) | Member, Coordinator (global only)                        | Can toggle these for pending users via verification view. |
+    | Club/Community Admin (`admin@…`) | Any global role; range roles when paired with range admin rights | Use user management for global roles, range settings for range roles. |
+
 ## Test Plan by Feature
 
 Here is a breakdown of the tests for each feature defined in your `api-plan.md`:
