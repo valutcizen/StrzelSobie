@@ -17,7 +17,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container>
+  <v-container data-testid="profile-view">
     <v-row justify="center">
       <v-col
         cols="12"
@@ -27,12 +27,16 @@ onMounted(() => {
         <v-card
           v-if="authStore.user"
           :title="t('profile.title')"
+          data-testid="profile-card"
         >
           <v-card-text>
-            <div>
+            <div data-testid="profile-email">
               <strong>{{ t('profile.emailLabel') }}:</strong> {{ authStore.user.email }}
             </div>
-            <div class="mt-4">
+            <div
+              class="mt-4"
+              data-testid="profile-roles"
+            >
               <strong>{{ t('profile.rolesHeading') }}:</strong>
               <v-chip-group>
                 <v-chip

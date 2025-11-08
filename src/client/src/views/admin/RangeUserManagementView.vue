@@ -225,7 +225,10 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
 </script>
 
 <template>
-  <v-container fluid>
+  <v-container
+    fluid
+    data-testid="range-user-management-view"
+  >
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
         <div class="d-flex flex-column">
@@ -240,6 +243,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
         <v-btn
           color="primary"
           prepend-icon="mdi-refresh"
+          data-testid="range-user-management-refresh-button"
           @click="initialize"
         >
           {{ t('admin.rangeUsers.refresh') }}
@@ -268,6 +272,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
         :items="adminStore.users"
         :loading="adminStore.isLoadingUsers"
         class="elevation-0"
+        data-testid="range-user-management-table"
       >
         <template #item.createdAt="{ item }">
           {{ formatDate(item.createdAt) }}
@@ -299,6 +304,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
             variant="text"
             color="primary"
             :disabled="rangeId === null"
+            :data-testid="`range-user-management-edit-button-${item.id}`"
             @click="openEditDialog(item)"
           >
             <v-icon>mdi-pencil</v-icon>
@@ -336,6 +342,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
       v-model="snackbarState.open"
       :color="snackbarState.color"
       timeout="3000"
+      data-testid="range-user-management-snackbar"
     >
       {{ snackbarState.message }}
     </v-snackbar>

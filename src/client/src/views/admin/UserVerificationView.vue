@@ -78,13 +78,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container fluid>
+  <v-container
+    fluid
+    data-testid="user-verification-view"
+  >
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
         <span>{{ t('admin.verification.title') }}</span>
         <v-btn
           color="primary"
           prepend-icon="mdi-refresh"
+          data-testid="user-verification-refresh-button"
           @click="fetchPendingUsers"
         >
           {{ t('admin.verification.refresh') }}
@@ -128,6 +132,7 @@ onMounted(() => {
             v-for="user in adminStore.pendingUsers"
             :key="user.id"
             class="py-4"
+            :data-testid="`user-verification-item-${user.id}`"
           >
             <template #title>
               <div class="d-flex flex-column">
@@ -166,6 +171,7 @@ onMounted(() => {
                   size="small"
                   :color="userHasRole(user, UserRoleEnum.Member) ? 'error' : 'success'"
                   :loading="loadingUserId === user.id"
+                  :data-testid="`user-verification-promote-member-button-${user.id}`"
                   @click="promoteUser(user, UserRoleEnum.Member)"
                 >
                   {{
@@ -178,6 +184,7 @@ onMounted(() => {
                   size="small"
                   :color="userHasRole(user, UserRoleEnum.Coordinator) ? 'error' : 'primary'"
                   :loading="loadingUserId === user.id"
+                  :data-testid="`user-verification-promote-coordinator-button-${user.id}`"
                   @click="promoteUser(user, UserRoleEnum.Coordinator)"
                 >
                   {{
@@ -197,6 +204,7 @@ onMounted(() => {
       v-model="snackbar.open"
       :color="snackbar.color"
       timeout="3000"
+      data-testid="user-verification-snackbar"
     >
       {{ snackbar.message }}
     </v-snackbar>

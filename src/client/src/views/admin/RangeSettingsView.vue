@@ -210,184 +210,393 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container fluid>
+
+  <v-container
+
+    fluid
+
+    data-testid="range-settings-view"
+
+  >
+
     <v-card>
+
       <v-card-title class="d-flex align-center justify-space-between">
+
         <span>{{ t('admin.rangeSettings.title') }}</span>
+
         <v-btn
+
           color="primary"
+
           variant="tonal"
+
           prepend-icon="mdi-refresh"
+
           :disabled="isLoading"
+
+          data-testid="range-settings-refresh-button"
+
           @click="loadRangeSettings(true)"
+
         >
+
           {{ t('admin.rangeSettings.refreshAction') }}
+
         </v-btn>
+
       </v-card-title>
 
+
+
       <v-progress-linear
+
         v-if="isLoading"
+
         indeterminate
+
         color="primary"
+
       />
 
+
+
       <v-alert
+
         v-if="lastError"
+
         type="error"
+
         variant="tonal"
+
         border="start"
+
         class="mx-4 mt-4"
+
       >
+
         {{ lastError }}
+
       </v-alert>
 
+
+
       <Form
+
         :key="formKey"
+
         :initial-values="initialValues"
+
         :validation-schema="schema"
+
         @submit="submitSettings"
+
       >
+
         <template #default="{ values }">
+
           <v-card-text>
+
             <v-row>
+
               <v-col
+
                 cols="12"
+
                 md="4"
+
               >
+
                 <Field
+
                   name="totalTracks"
+
                   v-slot="{ field, errorMessage }"
+
                 >
+
                   <v-text-field
+
                     :label="t('admin.rangeSettings.totalTracksLabel')"
+
                     type="number"
+
                     min="1"
+
                     :model-value="field.value"
+
                     :error-messages="errorMessage"
+
+                    data-testid="range-settings-total-tracks-input"
+
                     @update:model-value="field.onChange"
+
                     @blur="field.onBlur"
+
                   />
+
                 </Field>
+
               </v-col>
+
             </v-row>
+
+
 
             <v-divider class="my-6" />
 
-            <v-row>
-              <v-col cols="12">
-                <h3 class="text-subtitle-1 font-weight-medium">
-                  {{ t('admin.rangeSettings.operatingHoursHeading') }}
-                </h3>
-              </v-col>
-            </v-row>
+
 
             <v-row>
-              <v-col
-                v-for="day in dayOrder"
-                :key="day"
-                cols="12"
-                md="6"
-              >
-                <v-sheet
-                  rounded="lg"
-                  class="pa-4"
-                  color="grey-lighten-4"
-                >
-                  <div class="d-flex align-center justify-space-between mb-2">
-                    <span class="text-subtitle-2">
-                      {{ t(`rangeLanding.days.${day}`) }}
-                    </span>
-                    <Field
-                      :name="`operatingHours.${day}.isOpen`"
-                      v-slot="{ field }"
-                    >
-                      <v-switch
-                        density="compact"
-                        inset
-                        color="primary"
-                        hide-details
-                        :model-value="field.value"
-                        :label="
-                          field.value
-                            ? t('admin.rangeSettings.openLabel')
-                            : t('admin.rangeSettings.closedLabel')
-                        "
-                        @update:model-value="field.onChange"
-                        @blur="field.onBlur"
-                      />
-                    </Field>
-                  </div>
-                  <v-row class="mt-2" dense>
-                    <v-col cols="6">
-                      <Field
-                        :name="`operatingHours.${day}.open`"
-                        v-slot="{ field, errorMessage }"
-                      >
-                        <v-text-field
-                          type="time"
-                          :label="t('admin.rangeSettings.openTimeLabel')"
-                          :model-value="field.value"
-                          :disabled="!values.operatingHours[day].isOpen"
-                          :error-messages="errorMessage"
-                          @update:model-value="field.onChange"
-                          @blur="field.onBlur"
-                        />
-                      </Field>
-                    </v-col>
-                    <v-col cols="6">
-                      <Field
-                        :name="`operatingHours.${day}.close`"
-                        v-slot="{ field, errorMessage }"
-                      >
-                        <v-text-field
-                          type="time"
-                          :label="t('admin.rangeSettings.closeTimeLabel')"
-                          :model-value="field.value"
-                          :disabled="!values.operatingHours[day].isOpen"
-                          :error-messages="errorMessage"
-                          @update:model-value="field.onChange"
-                          @blur="field.onBlur"
-                        />
-                      </Field>
-                    </v-col>
-                  </v-row>
-                </v-sheet>
+
+              <v-col cols="12">
+
+                <h3 class="text-subtitle-1 font-weight-medium">
+
+                  {{ t('admin.rangeSettings.operatingHoursHeading') }}
+
+                </h3>
+
               </v-col>
+
             </v-row>
+
+
+
+            <v-row>
+
+              <v-col
+
+                v-for="day in dayOrder"
+
+                :key="day"
+
+                cols="12"
+
+                md="6"
+
+              >
+
+                <v-sheet
+
+                  rounded="lg"
+
+                  class="pa-4"
+
+                  color="grey-lighten-4"
+
+                >
+
+                  <div class="d-flex align-center justify-space-between mb-2">
+
+                    <span class="text-subtitle-2">
+
+                      {{ t(`rangeLanding.days.${day}`) }}
+
+                    </span>
+
+                    <Field
+
+                      :name="`operatingHours.${day}.isOpen`"
+
+                      v-slot="{ field }"
+
+                    >
+
+                      <v-switch
+
+                        density="compact"
+
+                        inset
+
+                        color="primary"
+
+                        hide-details
+
+                        :model-value="field.value"
+
+                        :label="
+
+                          field.value
+
+                            ? t('admin.rangeSettings.openLabel')
+
+                            : t('admin.rangeSettings.closedLabel')
+
+                        "
+
+                        :data-testid="`range-settings-${day}-is-open-switch`"
+
+                        @update:model-value="field.onChange"
+
+                        @blur="field.onBlur"
+
+                      />
+
+                    </Field>
+
+                  </div>
+
+                  <v-row
+
+                    class="mt-2"
+
+                    dense
+
+                  >
+
+                    <v-col cols="6">
+
+                      <Field
+
+                        :name="`operatingHours.${day}.open`"
+
+                        v-slot="{ field, errorMessage }"
+
+                      >
+
+                        <v-text-field
+
+                          type="time"
+
+                          :label="t('admin.rangeSettings.openTimeLabel')"
+
+                          :model-value="field.value"
+
+                          :disabled="!values.operatingHours[day].isOpen"
+
+                          :error-messages="errorMessage"
+
+                          :data-testid="`range-settings-${day}-open-time-input`"
+
+                          @update:model-value="field.onChange"
+
+                          @blur="field.onBlur"
+
+                        />
+
+                      </Field>
+
+                    </v-col>
+
+                    <v-col cols="6">
+
+                      <Field
+
+                        :name="`operatingHours.${day}.close`"
+
+                        v-slot="{ field, errorMessage }"
+
+                      >
+
+                        <v-text-field
+
+                          type="time"
+
+                          :label="t('admin.rangeSettings.closeTimeLabel')"
+
+                          :model-value="field.value"
+
+                          :disabled="!values.operatingHours[day].isOpen"
+
+                          :error-messages="errorMessage"
+
+                          :data-testid="`range-settings-${day}-close-time-input`"
+
+                          @update:model-value="field.onChange"
+
+                          @blur="field.onBlur"
+
+                        />
+
+                      </Field>
+
+                    </v-col>
+
+                  </v-row>
+
+                </v-sheet>
+
+              </v-col>
+
+            </v-row>
+
           </v-card-text>
+
           <v-card-actions class="justify-space-between flex-wrap">
+
             <v-btn
+
               variant="text"
+
               prepend-icon="mdi-clipboard-plus"
+
+              data-testid="range-settings-record-action-button"
+
               @click="recordDialogOpen = true"
+
             >
+
               {{ t('admin.rangeSettings.recordAction') }}
+
             </v-btn>
+
             <v-btn
+
               color="primary"
+
               :loading="isSaving"
+
               type="submit"
+
+              data-testid="range-settings-submit-button"
+
             >
+
               {{ t('admin.rangeSettings.submitAction') }}
+
             </v-btn>
+
           </v-card-actions>
+
         </template>
+
       </Form>
+
     </v-card>
 
+
+
     <RecordFormDialog
+
       :open="recordDialogOpen"
+
       :range-slug="rangeSlug"
+
       @update:open="recordDialogOpen = $event"
+
       @submitted="handleRecordSubmitted"
+
     />
 
+
+
     <v-snackbar
+
       v-model="snackbar.open"
+
       :color="snackbar.color"
+
       timeout="3000"
+
+      data-testid="range-settings-snackbar"
+
     >
+
       {{ snackbar.message }}
+
     </v-snackbar>
+
   </v-container>
+
 </template>

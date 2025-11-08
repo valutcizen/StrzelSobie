@@ -69,6 +69,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
       name="email"
       type="email"
       autocomplete="email"
+      data-testid="login-email-input"
     />
     <v-text-field
       v-model="password"
@@ -77,6 +78,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
       name="password"
       type="password"
       autocomplete="current-password"
+      data-testid="login-password-input"
     />
     <v-btn
       :disabled="isDisabled"
@@ -84,6 +86,7 @@ const isDisabled = computed(() => props.loading || !meta.value.valid)
       type="submit"
       color="primary"
       block
+      data-testid="login-submit-button"
     >
       {{ t('auth.actions.login') }}
     </v-btn>

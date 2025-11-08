@@ -4,6 +4,7 @@
     class="language-switcher"
     density="compact"
     mandatory
+    data-testid="language-switcher"
   >
     <v-btn
       v-for="option in localeOptions"
@@ -13,6 +14,7 @@
       :title="option.label"
       size="small"
       variant="text"
+      :data-testid="`language-switcher-${option.code}`"
     >
       <span
         aria-hidden="true"

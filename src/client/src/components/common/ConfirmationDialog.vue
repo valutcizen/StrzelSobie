@@ -2,6 +2,7 @@
   <v-dialog
     :model-value="open"
     max-width="420"
+    data-testid="confirmation-dialog"
     @update:model-value="onUpdate"
   >
     <v-card>
@@ -13,6 +14,7 @@
         <v-spacer />
         <v-btn
           variant="text"
+          data-testid="confirmation-dialog-cancel-button"
           @click="emitCancel"
         >
           {{ cancelLabel }}
@@ -20,6 +22,7 @@
         <v-btn
           :color="color"
           :loading="loading"
+          data-testid="confirmation-dialog-confirm-button"
           @click="emitConfirm"
         >
           {{ confirmLabel }}

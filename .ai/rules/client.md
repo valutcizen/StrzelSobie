@@ -38,3 +38,8 @@
 - Use the Composition API `useI18n` hook in components and views to access `t`, `locale`, and any other helpers you need; avoid injecting translations via props unless there is a strong reuse case.
 - Reuse the existing `common.*` keys (actions, feedback, labels) for standard buttons or alerts instead of creating duplicates in feature-specific namespaces.
 - When formatting dates or numbers (e.g., with `date-fns`), derive the locale from `useI18n().locale` so the output matches the active language.
+
+## E2E_TESTING_STANDARDS
+
+- **Page Object Model (POM):** When writing E2E tests, use the Page Object Model design pattern. Create dedicated classes for pages and components to encapsulate element selectors and interaction logic, promoting reusability and maintainability.
+- **`data-testid` Attributes:** For elements that are targeted by E2E tests, add a `data-testid` attribute. This provides a stable and explicit contract for tests and decouples them from implementation details like CSS classes or element tags.

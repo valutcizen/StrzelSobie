@@ -11,6 +11,7 @@
         rel="noopener noreferrer"
         class="text-decoration-none"
         prepend-icon="mdi-github"
+        data-testid="footer-github-link"
       >
         {{ t('app.title') }}
       </v-btn>
@@ -18,6 +19,7 @@
         variant="text"
         :to="{ name: 'PrivacyPolicy' }"
         prepend-icon="mdi-shield-account"
+        data-testid="footer-privacy-policy-link"
       >
         {{ t('footer.privacyPolicy') }}
       </v-btn>

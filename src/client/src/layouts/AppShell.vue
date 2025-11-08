@@ -25,6 +25,7 @@
             variant="text"
             v-bind="props"
             :aria-label="t('userMenu.label')"
+            data-testid="user-menu-button"
           />
         </template>
         <v-list density="compact">
@@ -37,6 +38,7 @@
           <v-divider class="my-1" />
           <v-list-item
             prepend-icon="mdi-logout"
+            data-testid="logout-button"
             @click="handleLogout"
           >
             <v-list-item-title>{{ t('userMenu.logout') }}</v-list-item-title>

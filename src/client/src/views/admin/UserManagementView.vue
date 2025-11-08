@@ -168,13 +168,17 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
 </script>
 
 <template>
-  <v-container fluid>
+  <v-container
+    fluid
+    data-testid="user-management-view"
+  >
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
         <span>{{ t('admin.users.title') }}</span>
         <v-btn
           color="primary"
           prepend-icon="mdi-refresh"
+          data-testid="user-management-refresh-button"
           @click="fetchUsers"
         >
           {{ t('admin.users.refresh') }}
@@ -203,6 +207,7 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
         :items="adminStore.users"
         :loading="adminStore.isLoadingUsers"
         class="elevation-0"
+        data-testid="user-management-table"
       >
         <template #item.createdAt="{ item }">
           {{ formatDate(item.createdAt) }}
@@ -227,6 +232,7 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
             icon
             variant="text"
             color="primary"
+            :data-testid="`user-management-edit-button-${item.id}`"
             @click="openEditDialog(item)"
           >
             <v-icon>mdi-pencil</v-icon>
@@ -263,6 +269,7 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
       v-model="snackbarState.open"
       :color="snackbarState.color"
       timeout="3000"
+      data-testid="user-management-snackbar"
     >
       {{ snackbarState.message }}
     </v-snackbar>

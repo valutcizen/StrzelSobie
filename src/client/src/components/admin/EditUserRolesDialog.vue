@@ -81,6 +81,7 @@ const handleCancel = () => {
     v-model="dialogModel"
     max-width="520"
     :persistent="loading"
+    data-testid="edit-user-roles-dialog"
   >
     <v-card>
       <v-card-title class="text-h6">
@@ -110,6 +111,7 @@ const handleCancel = () => {
           chips
           closable-chips
           :disabled="loading"
+          data-testid="edit-user-roles-select"
         />
         <div class="mt-4">
           <span class="text-subtitle-2 text-medium-emphasis">
@@ -136,6 +138,7 @@ const handleCancel = () => {
         <v-btn
           variant="text"
           :disabled="loading"
+          data-testid="edit-user-roles-cancel-button"
           @click="handleCancel"
         >
           {{ t('common.actions.cancel') }}
@@ -143,6 +146,7 @@ const handleCancel = () => {
         <v-btn
           color="primary"
           :loading="loading"
+          data-testid="edit-user-roles-save-button"
           @click="handleSave"
         >
           {{ t('common.actions.save') }}

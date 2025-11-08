@@ -2,6 +2,7 @@
   <v-dialog
     :model-value="open"
     max-width="560"
+    data-testid="event-detail-dialog"
     @update:model-value="emitUpdate"
   >
     <v-card v-if="event">
@@ -73,6 +74,7 @@
               size="small"
               variant="text"
               color="primary"
+              data-testid="event-detail-retry-button"
               @click="emitReload"
             >
               {{ t('common.actions.retry') }}
@@ -209,6 +211,7 @@
         <v-spacer />
         <v-btn
           variant="text"
+          data-testid="event-detail-close-button"
           @click="emitUpdate(false)"
         >
           {{ t('common.actions.close') }}
@@ -216,6 +219,7 @@
         <v-btn
           v-if="canAccept"
           color="primary"
+          data-testid="event-detail-accept-button"
           @click="emitAccept"
         >
           {{ t('common.actions.accept') }}
@@ -224,6 +228,7 @@
           v-if="canCancel"
           color="error"
           variant="tonal"
+          data-testid="event-detail-cancel-button"
           @click="emitCancel"
         >
           {{ t('common.actions.cancel') }}

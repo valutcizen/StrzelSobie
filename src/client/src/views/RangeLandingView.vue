@@ -88,6 +88,7 @@ watch(
   <v-container
     class="py-8"
     fluid
+    data-testid="range-landing-view"
   >
     <v-row justify="center">
       <v-col
@@ -99,7 +100,7 @@ watch(
             color="primary"
             density="comfortable"
           >
-            <v-toolbar-title>
+            <v-toolbar-title data-testid="range-landing-title">
               {{ rangeStore.currentRange?.displayName ?? t('rangeLanding.loadingTitle') }}
             </v-toolbar-title>
             <v-spacer />
@@ -108,6 +109,7 @@ watch(
               variant="text"
               :disabled="isLoading"
               :aria-label="t('rangeLanding.actions.refresh')"
+              data-testid="range-landing-refresh-button"
               @click="handleRefresh"
             />
           </v-toolbar>
@@ -145,6 +147,7 @@ watch(
                   color="primary"
                   prepend-icon="mdi-calendar-clock"
                   class="mt-4 mt-md-0"
+                  data-testid="range-landing-open-calendar-button"
                   @click="handleOpenCalendar"
                 >
                   {{ t('rangeLanding.actions.openCalendar') }}
@@ -160,7 +163,10 @@ watch(
                 </v-card-title>
                 <v-divider />
                 <v-card-text>
-                  <v-table density="comfortable">
+                  <v-table
+                    density="comfortable"
+                    data-testid="range-landing-operating-hours-table"
+                  >
                     <tbody>
                       <tr
                         v-for="row in operatingHoursRows"

@@ -1,5 +1,8 @@
 <template>
-  <v-container class="py-12">
+  <v-container
+    class="py-12"
+    data-testid="privacy-policy-view"
+  >
     <v-row justify="center">
       <v-col
         cols="12"

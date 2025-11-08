@@ -2,6 +2,7 @@
   <v-dialog
     :model-value="open"
     max-width="480"
+    data-testid="proposition-form-dialog"
     @update:model-value="onDialogToggle"
   >
     <v-card>
@@ -23,6 +24,7 @@
                 :error-messages="errorMessage"
                 :label="t('calendar.forms.dateLabel')"
                 type="date"
+                data-testid="proposition-form-date-input"
               />
             </Field>
             <Field
@@ -34,6 +36,7 @@
                 :error-messages="errorMessage"
                 :label="t('calendar.forms.startTimeLabel')"
                 type="time"
+                data-testid="proposition-form-start-time-input"
               />
             </Field>
             <Field
@@ -45,6 +48,7 @@
                 :error-messages="errorMessage"
                 :label="t('calendar.forms.endTimeLabel')"
                 type="time"
+                data-testid="proposition-form-end-time-input"
               />
             </Field>
             <Field
@@ -57,6 +61,7 @@
                 :label="t('calendar.forms.participantsLabel')"
                 min="1"
                 type="number"
+                data-testid="proposition-form-participants-input"
               />
             </Field>
             <Field
@@ -69,6 +74,7 @@
                 :label="t('calendar.forms.tracksLabel')"
                 min="1"
                 type="number"
+                data-testid="proposition-form-tracks-input"
               />
             </Field>
           </v-card-text>
@@ -76,6 +82,7 @@
             <v-spacer />
             <v-btn
               variant="text"
+              data-testid="proposition-form-cancel-button"
               @click="closeDialog"
             >
               {{ t('common.actions.cancel') }}
@@ -85,6 +92,7 @@
               :loading="isSubmitting"
               color="primary"
               type="submit"
+              data-testid="proposition-form-submit-button"
             >
               {{ t('calendar.propositionDialog.submit') }}
             </v-btn>

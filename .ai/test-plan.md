@@ -23,7 +23,8 @@ Our testing strategy will follow the testing pyramid model:
     | `user-to-be-promoted@e2e.com`   | Guest (used for confirmator upgrade scenarios)                                 | `user-to-be-promotedpassword` |
     | `standard-user@e2e.com`         | Member, Guest (stable login/logout scenarios)                                  | `standardpassword`    |
 
-*   **Selector guidelines:** Prefer accessible queries (`getByRole`, `getByLabel`, `getByText`) to keep tests resilient to layout changes. When interacting with Vuetify menus or dialogs, close the overlay (`await combobox.press('Escape')`) before clicking primary actions to avoid pointer interception timeouts.
+*   **Page Object Model (POM):** Structure E2E tests using the Page Object Model pattern. Each page or significant component in the application should have a corresponding class that encapsulates the selectors and methods for interacting with that part of the UI. This improves test maintenance and readability.
+*   **Selector guidelines:** Prefer `data-testid` attributes for locating elements to decouple tests from implementation details like CSS classes or DOM structure. When `data-testid` is not available, use accessible queries (`getByRole`, `getByLabel`, `getByText`) to keep tests resilient to layout changes. When interacting with Vuetify menus or dialogs, close the overlay (`await combobox.press('Escape')`) before clicking primary actions to avoid pointer interception timeouts.
 *   **Localized strings:** UI copy is sourced at runtime from `src/client/src/locales/pl.json`. Tests must read translations from this file (see `tests-e2e/support/i18n.ts`) instead of hard‑coding literals, so that updates to the UI locale automatically propagate to the Playwright suite.
 
 *   **Role assignment matrix:** Use the correct actor for each scenario to avoid backend rejections.

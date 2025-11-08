@@ -2,6 +2,7 @@
   <v-dialog
     :model-value="open"
     max-width="480"
+    data-testid="reservation-form-dialog"
     @update:model-value="onDialogToggle"
   >
     <v-card>
@@ -38,6 +39,7 @@
                 :error-messages="errorMessage"
                 :label="t('calendar.forms.dateLabel')"
                 type="date"
+                data-testid="reservation-form-date-input"
               />
             </Field>
             <Field
@@ -49,6 +51,7 @@
                 :error-messages="errorMessage"
                 :label="t('calendar.forms.startTimeLabel')"
                 type="time"
+                data-testid="reservation-form-start-time-input"
               />
             </Field>
             <Field
@@ -60,6 +63,7 @@
                 :error-messages="errorMessage"
                 :label="t('calendar.forms.endTimeLabel')"
                 type="time"
+                data-testid="reservation-form-end-time-input"
               />
             </Field>
             <Field
@@ -72,6 +76,7 @@
                 :label="t('calendar.forms.tracksLabel')"
                 min="1"
                 type="number"
+                data-testid="reservation-form-tracks-input"
               />
             </Field>
             <Field
@@ -84,6 +89,7 @@
                 :label="t('calendar.forms.participantsLabel')"
                 min="1"
                 type="number"
+                data-testid="reservation-form-participants-input"
               />
             </Field>
             <div>
@@ -92,6 +98,7 @@
                 class="mt-4"
                 color="primary"
                 :label="t('calendar.reservationDialog.isPublic')"
+                data-testid="reservation-form-is-public-switch"
                 @update:model-value="(value) => {
                   setFieldValue('isPublic', value)
                   if (!value) {
@@ -104,6 +111,7 @@
                 :model-value="values.isOpenForJoining"
                 color="primary"
                 :label="t('calendar.reservationDialog.isOpenForJoining')"
+                data-testid="reservation-form-is-open-for-joining-switch"
                 @update:model-value="(value) =>
                   setFieldValue('isOpenForJoining', values.isPublic ? value : false)"
               />
@@ -119,6 +127,7 @@
                   ? [t('calendar.reservationDialog.forceHint')]
                   : undefined
               "
+              data-testid="reservation-form-force-switch"
               @update:model-value="setForce"
             />
           </v-card-text>
@@ -126,6 +135,7 @@
             <v-spacer />
             <v-btn
               variant="text"
+              data-testid="reservation-form-cancel-button"
               @click="closeDialog"
             >
               {{ t('common.actions.cancel') }}
@@ -135,6 +145,7 @@
               :loading="isSubmitting"
               color="primary"
               type="submit"
+              data-testid="reservation-form-submit-button"
             >
               {{ t('common.actions.save') }}
             </v-btn>

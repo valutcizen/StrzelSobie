@@ -1,5 +1,8 @@
 <template>
-  <v-container class="text-center py-16">
+  <v-container
+    class="text-center py-16"
+    data-testid="not-found-view"
+  >
     <v-row justify="center">
       <v-col
         cols="12"
@@ -17,6 +20,7 @@
         <v-btn
           class="mt-4"
           color="primary"
+          data-testid="not-found-back-to-calendar-button"
           @click="goHome"
         >
           {{ t('errors.notFound.backToCalendar') }}

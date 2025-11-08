@@ -4,6 +4,7 @@
     :to="to"
     :title="label"
     :aria-label="label"
+    :data-testid="testId"
     class="role-based-link"
     nav
     variant="text"
@@ -52,6 +53,17 @@ const isVisible = computed(() => {
   }
 
   return requiresGlobal ? hasGlobalAccess : hasRangeAccess
+})
+
+const testId = computed(() => {
+  if (typeof props.to === 'string') {
+    const sanitized = props.to.replace(/[^a-zA-Z0-9-]/g, '-')
+    return `nav-${sanitized}`
+  }
+  if (typeof props.to === 'object' && props.to.name) {
+    return `nav-${String(props.to.name)}`
+  }
+  return 'nav-link'
 })
 </script>
 

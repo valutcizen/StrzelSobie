@@ -789,6 +789,7 @@ onBeforeUnmount(() => {
                 color="secondary"
                 variant="outlined"
                 prepend-icon="mdi-target"
+                data-testid="calendar-propose-slot-button"
                 @click="openPropositionDialog"
               >
                 {{ t('calendar.view.proposeSlot') }}
@@ -797,6 +798,7 @@ onBeforeUnmount(() => {
                 v-if="authStore.hasAnyRole([UserRoleEnum.Coordinator])"
                 color="primary"
                 prepend-icon="mdi-calendar-plus"
+                data-testid="calendar-new-reservation-button"
                 @click="openReservationDialog({})"
               >
                 {{ t('calendar.view.newReservation') }}
@@ -806,6 +808,7 @@ onBeforeUnmount(() => {
                 color="primary"
                 variant="tonal"
                 prepend-icon="mdi-clipboard-plus"
+                data-testid="calendar-record-without-reservation-button"
                 @click="recordDialogOpen = true"
               >
                 {{ t('calendar.view.recordWithoutReservation') }}
@@ -824,7 +827,10 @@ onBeforeUnmount(() => {
               {{ calendarStore.lastError }}
             </v-alert>
 
-            <div ref="calendarContainerRef">
+            <div
+              ref="calendarContainerRef"
+              data-testid="calendar"
+            >
               <FullCalendar
                 ref="calendarRef"
                 :options="calendarOptions"
@@ -892,6 +898,7 @@ onBeforeUnmount(() => {
       v-model="snackbarState.open"
       :color="snackbarState.color"
       timeout="3000"
+      data-testid="calendar-snackbar"
     >
       {{ snackbarState.message }}
     </v-snackbar>
