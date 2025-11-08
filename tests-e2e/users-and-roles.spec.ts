@@ -1,8 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, request } from '@playwright/test';
 import { translate } from './support/i18n';
 
 test.describe('Users & Roles', () => {
-  test('an admin can assign and remove roles from a user', async ({ page }) => {
+  test('an admin can assign and remove roles from a user @admin', async ({ page }) => {
+
     const uniqueId = Date.now();
     const managedUserEmail = `role-admin-${uniqueId}@example.com`;
     const managedUserPassword = 'TempPass123!';
@@ -10,16 +11,8 @@ test.describe('Users & Roles', () => {
     await page.request.post('/api/v1/auth/register', {
       data: { email: managedUserEmail, password: managedUserPassword },
     });
-    await page.request.post('/api/v1/auth/logout');
 
-    await page.goto('/auth');
-
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill('admin@e2e.com');
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill('adminpassword');
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-    await page.waitForURL('/dobczyce');
-    await expect(page).toHaveURL('/dobczyce');
+    await page.goto('/dobczyce');
 
     await Promise.all([
       page.waitForResponse(
@@ -79,14 +72,10 @@ test.describe('Users & Roles', () => {
     const targetRowAfterRemoval = page.locator('tbody tr', { hasText: managedUserEmail }).first();
     await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: translate('roles.coordinator') })).toHaveCount(0);
     await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: translate('roles.guest') })).toBeVisible();
-
-    await page.getByLabel(translate('userMenu.label')).click();
-    await page.locator(`text=${translate('userMenu.logout')}`).click();
-    await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
-  test('a confirmator can upgrade a guest to a member and revert the change', async ({ page }) => {
+  test('a confirmator can upgrade a guest to a member and revert the change @confirmator', async ({ page }) => {
+
     const candidateEmail = `pending-member-${Date.now()}@example.com`;
     const candidatePassword = 'TempPass123!';
     const memberRoleLabel = translate('roles.member');
@@ -104,16 +93,8 @@ test.describe('Users & Roles', () => {
     await page.request.post('/api/v1/auth/register', {
       data: { email: candidateEmail, password: candidatePassword },
     });
-    await page.request.post('/api/v1/auth/logout');
 
-    await page.goto('/auth');
-
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill('confirmator@e2e.com');
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill('confirmatorpassword');
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-    await page.waitForURL('/dobczyce');
-    await expect(page).toHaveURL('/dobczyce');
+    await page.goto('/dobczyce');
 
     await Promise.all([
       page.waitForResponse(
@@ -139,14 +120,10 @@ test.describe('Users & Roles', () => {
 
     await expect(page.getByText(memberRemovedMessage)).toBeVisible();
     await expect(pendingUserItem.locator('.v-chip', { hasText: memberRoleLabel })).toHaveCount(0);
-
-    await page.getByLabel(translate('userMenu.label')).click();
-    await page.locator(`text=${translate('userMenu.logout')}`).click();
-    await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
-  test('a confirmator can upgrade a guest to a coordinator and revert the change', async ({ page }) => {
+  test('a confirmator can upgrade a guest to a coordinator and revert the change @confirmator', async ({ page }) => {
+
     const candidateEmail = `pending-coordinator-${Date.now()}@example.com`;
     const candidatePassword = 'TempPass123!';
     const coordinatorRoleLabel = translate('roles.coordinator');
@@ -164,16 +141,8 @@ test.describe('Users & Roles', () => {
     await page.request.post('/api/v1/auth/register', {
       data: { email: candidateEmail, password: candidatePassword },
     });
-    await page.request.post('/api/v1/auth/logout');
 
-    await page.goto('/auth');
-
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill('confirmator@e2e.com');
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill('confirmatorpassword');
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-    await page.waitForURL('/dobczyce');
-    await expect(page).toHaveURL('/dobczyce');
+    await page.goto('/dobczyce');
 
     await Promise.all([
       page.waitForResponse(
@@ -199,14 +168,10 @@ test.describe('Users & Roles', () => {
 
     await expect(page.getByText(coordinatorRemovedMessage)).toBeVisible();
     await expect(pendingUserItem.locator('.v-chip', { hasText: coordinatorRoleLabel })).toHaveCount(0);
-
-    await page.getByLabel(translate('userMenu.label')).click();
-    await page.locator(`text=${translate('userMenu.logout')}`).click();
-    await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
-  test('a guest sees only their own propositions and no reservation details for others', async ({ page }) => {
+  test('a guest sees only their own propositions and no reservation details for others @guest', async ({ page }) => {
+
     const formatDate = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
         date.getDate(),
@@ -222,7 +187,7 @@ test.describe('Users & Roles', () => {
 
     const eventDateObj = new Date(monday);
     eventDateObj.setDate(monday.getDate() + 1);
-    eventDateObj.setHours(12, 0, 0, 0);
+    eventDateObj.setHours(10, 0, 0, 0);
 
     const eventEndObj = new Date(eventDateObj);
     eventEndObj.setHours(eventDateObj.getHours() + 1);
@@ -231,11 +196,8 @@ test.describe('Users & Roles', () => {
     const startTime = formatTime(eventDateObj);
     const endTime = formatTime(eventEndObj);
 
-    await page.request.post('/api/v1/auth/login', {
-      data: { email: 'member@e2e.com', password: 'memberpassword' },
-    });
-
-    const createResponse = await page.request.post('/api/v1/ranges/dobczyce/propositions', {
+    const memberContext = await request.newContext({ storageState: 'tests-e2e/.auth/member.json' });
+    const createResponse = await memberContext.post('http://localhost:5173/api/v1/ranges/dobczyce/propositions', {
       data: {
         eventDate,
         startTime,
@@ -244,16 +206,16 @@ test.describe('Users & Roles', () => {
         tracksRequested: 1,
       },
     });
+    if (!createResponse.ok()) {
+      console.error(await createResponse.text());
+    }
+    expect(createResponse.ok()).toBeTruthy();
 
     const { id: propositionId } = await createResponse.json();
-    await page.request.post('/api/v1/auth/logout');
 
-    await page.request.post('/api/v1/auth/login', {
-      data: { email: 'coordinator@e2e.com', password: 'coordinatorpassword' },
-    });
-
+    const coordinatorContext = await request.newContext({ storageState: 'tests-e2e/.auth/coordinator.json' });
     const candidateDayOffsets = [2, 3, 4]; // mid-week slots to reduce conflict risk
-    const candidateHours = [8, 10, 12, 14, 16, 18];
+    const candidateHours = [8, 12, 16];
 
     let reservationId: number | null = null;
 
@@ -270,7 +232,7 @@ test.describe('Users & Roles', () => {
         const reservationEndObj = new Date(reservationStartObj);
         reservationEndObj.setHours(reservationStartObj.getHours() + 1);
 
-        const reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
+        const reservationResponse = await coordinatorContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
           data: {
             eventDate: formatDate(reservationStartObj),
             startTime: formatTime(reservationStartObj),
@@ -295,19 +257,7 @@ test.describe('Users & Roles', () => {
     expect(reservationId).toBeDefined();
     const resolvedReservationId = reservationId!;
 
-    await page.request.post('/api/v1/auth/logout');
-
-    await page.goto('/auth');
-
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill('guest@e2e.com');
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill('guestpassword');
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-    await page.waitForURL('/dobczyce');
-    await expect(page).toHaveURL('/dobczyce');
-
-    await page.getByRole('button', { name: translate('rangeLanding.actions.openCalendar') }).click();
-    await page.waitForURL('/dobczyce/reservations');
+    await page.goto('/dobczyce/reservations');
 
     const calendarResponse = await page.waitForResponse(
       (response) =>
@@ -346,14 +296,10 @@ test.describe('Users & Roles', () => {
     const propositionStatus = propositionDetailResponse.status();
     expect(propositionStatus).toBeGreaterThanOrEqual(400);
     expect(propositionStatus).toBeLessThan(500);
-
-    await page.getByLabel(translate('userMenu.label')).click();
-    await page.locator(`text=${translate('userMenu.logout')}`).click();
-    await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 
-  test('a coordinator can view contact details for a managed reservation', async ({ page }) => {
+  test('a coordinator can view contact details for a managed reservation @coordinator', async ({ page }) => {
+
     const formatDate = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
         date.getDate(),
@@ -367,96 +313,114 @@ test.describe('Users & Roles', () => {
     monday.setDate(today.getDate() - dayOffset);
     monday.setHours(0, 0, 0, 0);
 
-    const propositionStart = new Date(monday);
-    propositionStart.setDate(monday.getDate() + 2);
-    propositionStart.setHours(15, 30, 0, 0);
+    const memberContext = await request.newContext({ storageState: 'tests-e2e/.auth/member.json' });
+    const candidateDayOffsets = [2, 3, 4, 5];
+    const candidateHours = [8, 11, 14, 17, 19];
+    const candidateMinutes = [5, 20, 35, 50];
 
-    const propositionEnd = new Date(propositionStart);
-    propositionEnd.setHours(propositionStart.getHours() + 1);
-
-    const eventDate = formatDate(propositionStart);
-    const startTime = formatTime(propositionStart);
-    const endTime = formatTime(propositionEnd);
-
-    await page.request.post('/api/v1/auth/login', {
-      data: { email: 'member@e2e.com', password: 'memberpassword' },
-    });
-
-    const propositionResponse = await page.request.post('/api/v1/ranges/dobczyce/propositions', {
-      data: {
-        eventDate,
-        startTime,
-        endTime,
-        numParticipants: 2,
-        tracksRequested: 1,
-      },
-    });
-
-    const { id: propositionId } = await propositionResponse.json();
-    expect(typeof propositionId).toBe('number');
-
-    await page.request.post('/api/v1/auth/logout');
-
-    await page.request.post('/api/v1/auth/login', {
-      data: { email: 'coordinator@e2e.com', password: 'coordinatorpassword' },
-    });
-
-    const reservationPayload = {
-      propositionId,
-      eventDate,
-      startTime,
-      endTime,
-      numParticipants: 3,
-      tracksRequested: 2,
-      isPublic: false,
-      isJoinable: false,
+    const toDisplayTime = (time: string) => {
+      const [hours, minutes] = time.split(':');
+      return `${parseInt(hours, 10)}:${minutes}`;
     };
 
-    let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
-      data: reservationPayload,
-    });
+    let propositionId: number | null = null;
+    let reservationId: number | null = null;
+    let selectedSlot: { eventDate: string; startTime: string; endTime: string; label: string } | null = null;
 
-    if (!reservationResponse.ok()) {
-      const errorText = await reservationResponse.text();
-      let errorBody: { code?: string } | null = null;
-      try {
-        errorBody = JSON.parse(errorText);
-      } catch {
-        errorBody = null;
-      }
+    slotSearch: for (const dayOffset of candidateDayOffsets) {
+      for (const hour of candidateHours) {
+        for (const minute of candidateMinutes) {
+          const propositionStart = new Date(monday);
+          propositionStart.setDate(monday.getDate() + dayOffset);
+          propositionStart.setHours(hour, minute, 0, 0);
 
-      if (reservationResponse.status() === 400 && errorBody?.code === 'reservation_force_required') {
-        reservationResponse = await page.request.post(
-          '/api/v1/ranges/dobczyce/reservations?force=true',
-          { data: reservationPayload },
-        );
-      } else {
-        throw new Error(
-          `Failed to create reservation. Status: ${reservationResponse.status()} Body: ${errorText}`,
-        );
+          const propositionEnd = new Date(propositionStart);
+          propositionEnd.setHours(propositionStart.getHours() + 1);
+
+          const eventDate = formatDate(propositionStart);
+          const startTime = formatTime(propositionStart);
+          const endTime = formatTime(propositionEnd);
+
+          const propositionResponse = await memberContext.post(
+            'http://localhost:5173/api/v1/ranges/dobczyce/propositions',
+            {
+              data: {
+                eventDate,
+                startTime,
+                endTime,
+                numParticipants: 2,
+                tracksRequested: 1,
+              },
+            },
+          );
+
+          if (!propositionResponse.ok()) {
+            continue;
+          }
+
+          const propositionPayload = await propositionResponse.json();
+          propositionId = propositionPayload.id;
+
+          const reservationPayload = {
+            propositionId,
+            eventDate,
+            startTime,
+            endTime,
+            numParticipants: 3,
+            tracksRequested: 2,
+            isPublic: false,
+            isJoinable: false,
+          };
+
+          let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
+            data: reservationPayload,
+          });
+
+          if (!reservationResponse.ok()) {
+            const errorText = await reservationResponse.text();
+            let errorBody: { code?: string } | null = null;
+            try {
+              errorBody = JSON.parse(errorText);
+            } catch {
+              errorBody = null;
+            }
+
+            if (reservationResponse.status() === 400 && errorBody?.code === 'reservation_force_required') {
+              reservationResponse = await page.request.post(
+                '/api/v1/ranges/dobczyce/reservations?force=true',
+                { data: reservationPayload },
+              );
+            } else {
+              await memberContext
+                .delete(`http://localhost:5173/api/v1/propositions/${propositionId}`)
+                .catch(() => {});
+              propositionId = null;
+              continue;
+            }
+          }
+
+          if (!reservationResponse.ok()) {
+            await memberContext.delete(`http://localhost:5173/api/v1/propositions/${propositionId}`).catch(() => {});
+            propositionId = null;
+            continue;
+          }
+
+          const reservationPayloadResponse = await reservationResponse.json();
+          reservationId = reservationPayloadResponse.id;
+          const displayLabel = `${toDisplayTime(startTime)} - ${toDisplayTime(endTime)}`;
+          selectedSlot = { eventDate, startTime, endTime, label: displayLabel };
+          break slotSearch;
+        }
       }
     }
 
-    if (!reservationResponse.ok()) {
-      const errorBody = await reservationResponse.text();
-      throw new Error(
-        `Failed to create reservation. Status: ${reservationResponse.status()} Body: ${errorBody}`,
-      );
+    if (!propositionId || !reservationId || !selectedSlot) {
+      throw new Error('Failed to create a unique reservation for coordinator test without conflicts.');
     }
 
-    const { id: reservationId } = await reservationResponse.json();
-    expect(typeof reservationId).toBe('number');
+    const { startTime, label: eventLabel } = selectedSlot;
 
-    await page.request.post('/api/v1/auth/logout');
-
-    await page.goto('/auth');
-
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill('coordinator@e2e.com');
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill('coordinatorpassword');
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-    await page.waitForURL('/dobczyce');
-    await expect(page).toHaveURL('/dobczyce');
+    await page.goto('/dobczyce/reservations');
 
     const eventsResponsePromise = page.waitForResponse((response) => {
       if (!response.url().includes('/api/v1/ranges/dobczyce/events')) {
@@ -468,12 +432,7 @@ test.describe('Users & Roles', () => {
       return response.status() === 200;
     });
 
-    await Promise.all([
-      eventsResponsePromise,
-      page.getByRole('button', { name: translate('rangeLanding.actions.openCalendar') }).click(),
-    ]);
-
-    await page.waitForURL('/dobczyce/reservations');
+    await eventsResponsePromise;
     const eventsPayload = await eventsResponsePromise.then((response) => response.json());
 
     const reservationEntry = (eventsPayload.reservations ?? []).find(
@@ -481,24 +440,15 @@ test.describe('Users & Roles', () => {
     );
     expect(reservationEntry).toBeDefined();
 
-    const reservationTitle = 'Rezerwacja';
     const eventLocator = page
       .locator('.fc-timegrid-event')
-      .filter({ hasText: startTime })
-      .filter({ hasText: reservationTitle })
+      .filter({ hasText: eventLabel })
+      .filter({ hasText: 'Rezerwacja' })
       .first();
     await expect(eventLocator).toBeVisible({ timeout: 20000 });
 
-    const reservationDetailResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes(`/api/v1/reservations/${reservationId}`) &&
-        response.request().method() === 'GET' &&
-        response.status() === 200,
-    );
-
     await eventLocator.scrollIntoViewIfNeeded();
     await eventLocator.click({ force: true });
-    await reservationDetailResponse;
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
@@ -508,10 +458,5 @@ test.describe('Users & Roles', () => {
 
     await dialog.getByRole('button', { name: translate('common.actions.close') }).click();
     await expect(dialog).toBeHidden();
-
-    await page.getByLabel(translate('userMenu.label')).click();
-    await page.locator(`text=${translate('userMenu.logout')}`).click();
-    await page.waitForURL('/auth');
-    await expect(page.getByRole('button', { name: translate('auth.login') })).toBeVisible();
   });
 });

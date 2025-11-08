@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const escapeForRegExp = (value: string) => value.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+const roleGrep = (role: string) => new RegExp(`@(?:all|${escapeForRegExp(role)})\\b`);
+
 export default defineConfig({
   globalSetup: require.resolve('./tests-e2e/globalSetup.ts'),
   testDir: './tests-e2e',
@@ -14,9 +17,88 @@ export default defineConfig({
   },
 
   projects: [
+    { name: 'setup', testMatch: /globalSetup\.ts/ },
     {
-      name: 'chromium',
+      name: 'chromium-unauthenticated',
       use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/*.unauthenticated.spec.ts',
     },
-  ]
+    {
+      name: 'admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/admin.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('admin'),
+    },
+    {
+      name: 'coordinator',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/coordinator.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('coordinator'),
+    },
+    {
+      name: 'member',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/member.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('member'),
+    },
+    {
+      name: 'guest',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/guest.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('guest'),
+    },
+    {
+      name: 'confirmator',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/confirmator.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('confirmator'),
+    },
+    {
+      name: 'range-admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/range-admin.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('range-admin'),
+    },
+    {
+      name: 'standard-user',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests-e2e/.auth/standard-user.json',
+      },
+      dependencies: ['setup'],
+      testMatch: '**/*.spec.ts',
+      testIgnore: '**/*.unauthenticated.spec.ts',
+      grep: roleGrep('standard-user'),
+    },
+  ],
 });

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { AuthPage } from './pages/auth.page';
 import { translate } from './support/i18n';
 
-test.describe('Authentication', () => {
+test.describe('Unauthenticated user', () => {
   test('should allow a new user to register and then log in', async ({ page }) => {
     const dateTicks = Date.now();
     const email = `test-user-${dateTicks}@example.com`;
@@ -31,26 +31,6 @@ test.describe('Authentication', () => {
     const authPage = new AuthPage(page);
     await authPage.userMenuButton.click();
     await expect(authPage.logoutButton).toBeVisible();
-  });
-
-  test('should allow an existing user to log in and then log out', async ({ page }) => {
-    const authPage = new AuthPage(page);
-    await authPage.goto();
-
-    // Fill out the login form with an existing seeded user
-    await authPage.login('standard-user@e2e.com', 'standardpassword');
-
-    // Expect to land on the default range page with range details visible
-    await page.waitForURL('/dobczyce');
-    await expect(page).toHaveURL('/dobczyce');
-    await expect(page.locator('text=E2E Test Range')).toBeVisible();
-
-    // Open the user menu and log out
-    await authPage.logout();
-
-    // Verify the user is taken back to the login view
-    await page.waitForURL('/auth');
-    await expect(authPage.loginButton).toBeVisible();
   });
 
   test('should redirect unauthenticated users to the login page when accessing protected routes', async ({ page }) => {

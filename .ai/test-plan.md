@@ -29,6 +29,17 @@ Our testing strategy will follow the testing pyramid model:
 
 *   **Role assignment matrix:** Use the correct actor for each scenario to avoid backend rejections.
 
+*   **Role-scoped Playwright projects:** Each seeded user role maps to a dedicated Playwright project configured in `playwright.config.ts`. Tag every E2E test with the role(s) it requires by appending `@<role>`; supported tags are `@admin`, `@coordinator`, `@confirmator`, `@member`, `@guest`, `@range-admin`, `@standard-user`, and `@all` (runs in every authenticated project). Unauthenticated flows belong in specs that match `*.unauthenticated.spec.ts` and are executed by the `chromium-unauthenticated` project. Forgetting a tag means the test will never run for its intended role.
+
+*   **Saved Browser State & pristine calendar:** To speed up E2E tests, we use Playwright's ability to save and reuse browser state. A global setup script (`tests-e2e/globalSetup.ts`) runs once before all tests. This script logs in as each of the predefined test users (admin, coordinator, etc.) and saves the authenticated browser state (cookies, local storage) into a JSON file in the `tests-e2e/.auth/` directory. The script also logs in as the admin and removes every reservation, proposition, and record for the default `dobczyce` range so each run starts with an empty calendar; tests must seed whatever data they rely on within the scenario.
+
+    Each user role has its own project in the `playwright.config.ts` file. These projects are configured to use the corresponding saved browser state. This means that when a test runs under a specific project, it starts with the user already logged in. This approach has several advantages:
+    *   **Faster tests:** It avoids the overhead of logging in before each test.
+    *   **More reliable tests:** It separates the authentication logic from the test logic, making tests less brittle.
+    *   **Cleaner tests:** Test files are cleaner as they don't need to include login steps.
+
+    There is also an unauthenticated project for tests that need to run as a logged-out user.
+
     | Acting user                    | Allowed assignments/removals                             | Notes                                                     |
     |--------------------------------|----------------------------------------------------------|-----------------------------------------------------------|
     | Confirmator (`confirmator@…`) | Member, Coordinator (global only)                        | Can toggle these for pending users via verification view. |
@@ -46,9 +57,9 @@ Here is a breakdown of the tests for each feature defined in your `api-plan.md`:
 *   **Integration Tests:**
     *   Verify that the `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/logout`, and `/api/v1/auth/me` endpoints work correctly with the `AuthService` and the database.
 *   **E2E Tests (Playwright):**
-    *   A user can register for a new account.
-    *   A user can log in and log out.
-    *   A user cannot access protected routes when unauthenticated.
+    *   A user can register for a new account. *(tests live in `tests-e2e/authentication.unauthenticated.spec.ts`, executed by the `chromium-unauthenticated` project).*
+    *   A user can log in and log out. *(tests live in `tests-e2e/authentication.authenticated.spec.ts`, tagged `@standard-user`).*
+    *   A user cannot access protected routes when unauthenticated. *(part of `authentication.unauthenticated.spec.ts`).*
 
 ### 2. Users & Roles
 

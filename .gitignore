@@ -5,6 +5,7 @@ src/client/dist/
 .DS_Store
 playwright-report/
 test-results/
+tests-e2e/.auth
 
 # Node.js
 node_modules/

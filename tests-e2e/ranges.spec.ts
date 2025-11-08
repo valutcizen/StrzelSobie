@@ -1,30 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { translate } from './support/i18n';
 
-const memberCredentials = {
-  email: 'member@e2e.com',
-  password: 'memberpassword',
-};
-
-const adminCredentials = {
-  email: 'admin@e2e.com',
-  password: 'adminpassword',
-};
-
 const rangeSlug = 'dobczyce';
 const rangeId = 99;
 const adminUserId = 901;
 const rangeAdminRoleId = 5;
 
 test.describe('Ranges', () => {
-  test('should display range details for the current range', async ({ page }) => {
-    await page.goto('/auth');
+  test('should display range details for the current range @member', async ({ page }) => {
 
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill(memberCredentials.email);
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill(memberCredentials.password);
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-    await page.waitForURL(`/${rangeSlug}`);
+    await page.goto(`/${rangeSlug}`);
     await expect(page).toHaveURL(`/${rangeSlug}`);
 
     await expect(page.getByText(translate('rangeLanding.operatingHours.title'), { exact: false })).toBeVisible();
@@ -46,22 +31,11 @@ test.describe('Ranges', () => {
     await expect(page.getByRole('button', { name: translate('rangeLanding.actions.openCalendar') })).toBeVisible();
   });
 
-  test('a range administrator can update range settings', async ({ page }) => {
-    await page.request.post('/api/v1/auth/login', {
-      data: adminCredentials,
-    });
-
-    await page.request.delete(`/api/v1/users/${adminUserId}/roles/${rangeAdminRoleId}?rangeId=${rangeId}`);
-    const assignResponse = await page.request.post(`/api/v1/users/${adminUserId}/roles`, {
-      data: { roleId: rangeAdminRoleId, rangeId },
-    });
-    expect(assignResponse.ok()).toBeTruthy();
+  test('a range administrator can update range settings @range-admin', async ({ page }) => {
 
     const initialRangeResponse = await page.request.get(`/api/v1/ranges/${rangeSlug}`);
     expect(initialRangeResponse.ok()).toBeTruthy();
     const initialRange = await initialRangeResponse.json();
-
-    await page.request.post('/api/v1/auth/logout');
 
     const updatedTotalTracks = (initialRange.totalTracks ?? 0) + 1;
     const updatedOperatingHours = JSON.parse(JSON.stringify(initialRange.operatingHours ?? {}));
@@ -73,13 +47,6 @@ test.describe('Ranges', () => {
     };
 
     try {
-      await page.goto('/auth');
-
-    await page.getByLabel(translate('auth.email'), { exact: true }).fill(adminCredentials.email);
-    await page.getByLabel(translate('auth.password'), { exact: true }).fill(adminCredentials.password);
-    await page.getByRole('button', { name: translate('auth.login') }).click();
-
-      await page.waitForURL(`/${rangeSlug}`);
       await page.goto('/admin/range-settings');
       await page.waitForURL('/admin/range-settings');
       await expect(
@@ -139,14 +106,9 @@ test.describe('Ranges', () => {
       expect(refreshedRange.operatingHours?.monday?.open).toBe('09:00');
       expect(refreshedRange.operatingHours?.monday?.close).toBe('17:00');
     } finally {
-      await page.request.post('/api/v1/auth/login', {
-        data: adminCredentials,
-      });
       await page.request.patch(`/api/v1/ranges/${rangeSlug}`, {
         data: revertPayload,
       });
-      await page.request.delete(`/api/v1/users/${adminUserId}/roles/${rangeAdminRoleId}?rangeId=${rangeId}`);
-      await page.request.post('/api/v1/auth/logout');
     }
   });
 });
