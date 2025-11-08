@@ -1,27 +1,18 @@
 {
   "app": {
-    "title": "Strzel Sobie",
-    "logout": "Wyloguj",
-    "privacyPolicy": "Polityka Prywatności"
+    "title": "Strzel Sobie"
   },
   "navigation": {
     "rangeInfo": "Strzelnica",
     "calendar": "Kalendarz",
-    "profile": "Mój profil",
     "userManagement": "Zarządzanie użytkownikami",
     "userVerification": "Weryfikacja użytkowników",
     "rangeSettings": "Ustawienia strzelnicy",
     "rangeUserManagement": "Zarządzanie rolami strzelnicy"
   },
   "auth": {
-    "loginTab": "Logowanie",
-    "registerTab": "Rejestracja",
-    "email": "Adres e-mail",
-    "password": "Hasło",
     "login": "Zaloguj",
-    "register": "Zarejestruj",
-    "switchToLogin": "Masz już konto? Zaloguj się",
-    "switchToRegister": "Nie masz konta? Zarejestruj się"
+    "register": "Zarejestruj"
   },
   "userMenu": {
     "label": "Menu użytkownika",
@@ -56,9 +47,6 @@
     "fc": {
       "today": "Dzisiaj",
       "week": "Tydzień"
-    },
-    "alerts": {
-      "detailsFetchFailed": "Nie udało się pobrać szczegółów wydarzenia."
     },
     "snackbar": {
       "propositionSubmitted": "Propozycja została zgłoszona.",
@@ -134,21 +122,13 @@
       "labels": {
         "createdAt": "Data utworzenia",
         "submittedAt": "Data zgłoszenia",
-        "notes": "Notatki",
         "tracksDemand": "Zapotrzebowanie: {count} torów",
         "participants": "Uczestnicy: {count}"
-      },
-      "actions": {
-        "retry": "Spróbuj ponownie"
       },
       "errors": {
         "loadFailed": "Nie udało się pobrać szczegółów wydarzenia."
       }
-    },
-    "emptyState": "Brak wydarzeń dla tego tygodnia.",
-    "propositionCta": "Zaproponuj termin",
-    "loading": "Ładujemy kalendarz...",
-    "eventReservation": "Rezerwacja"
+    }
   },
   "rangeLanding": {
     "loadingTitle": "Ładujemy dane strzelnicy...",
