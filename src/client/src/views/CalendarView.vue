@@ -7,6 +7,7 @@ import type {
   DateSelectArg,
   DatesSetArg,
   EventClickArg,
+  EventMountArg,
 } from '@fullcalendar/core'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -489,6 +490,10 @@ const handleDetailReload = (event: RangeEvent) => {
   void loadEventDetails(event)
 }
 
+const handleEventDidMount = (info: EventMountArg) => {
+  info.el.setAttribute('data-event-id', info.event.id)
+}
+
 const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
   initialView: 'timeGridWeek',
@@ -515,6 +520,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   select: handleSlotSelect,
   eventClick: handleEventClick,
   datesSet: handleDatesSet,
+  eventDidMount: handleEventDidMount,
 }))
 
 watch(

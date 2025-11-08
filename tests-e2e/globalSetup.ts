@@ -1,3 +1,5 @@
+import { rmSync } from 'fs';
+import { join } from 'path';
 import { FullConfig, request } from '@playwright/test';
 import type { CalendarEventsDto } from '@strzel-sobie/common';
 
@@ -48,6 +50,7 @@ const ADMIN_CREDENTIALS = {
   email: adminUser.email,
   password: adminUser.password,
 };
+const SLOT_LOCK_ROOT = join(process.cwd(), 'tmp', 'e2e-slot-locks');
 
 const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
@@ -109,6 +112,7 @@ async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0].use;
   const users = [adminUser, coordinatorUser, memberUser, guestUser, confirmatorUser, rangeAdminUser, standardUser];
 
+  rmSync(SLOT_LOCK_ROOT, { recursive: true, force: true });
   await clearRangeEvents(baseURL ?? '', DEFAULT_RANGE_SLUG);
 
   for (const user of users) {

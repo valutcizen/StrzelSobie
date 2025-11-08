@@ -96,6 +96,7 @@ Here is a breakdown of the tests for each feature defined in your `api-plan.md`:
     *   The calendar correctly displays propositions and reservations.
     *   A user can click on an event to see more details.
     *   "Joinable" reservations have a visual indicator for "Members".
+    *   **Test data coordination:** Every calendar E2E spec must reserve its own 30-minute slot via the `claimSlot` helper (`tests-e2e/support/calendar-slots.ts`). Call `claimSlot(seed)` with a unique seed per test (e.g., project + test title), use the returned slot for creating propositions/reservations, and invoke the provided `release()` during cleanup. This prevents parallel runs from creating overlapping events and keeps the deterministic “current-week Monday” schedule described in the requirements.
 
 ### 5. Propositions
 

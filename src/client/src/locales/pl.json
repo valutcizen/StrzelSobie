@@ -47,6 +47,104 @@
     }
   },
   "calendar": {
+    "view": {
+      "title": "Kalendarz",
+      "proposeSlot": "Zaproponuj termin",
+      "newReservation": "Nowa rezerwacja",
+      "recordWithoutReservation": "Zapisz bez rezerwacji"
+    },
+    "fc": {
+      "today": "Dzisiaj",
+      "week": "Tydzień"
+    },
+    "alerts": {
+      "detailsFetchFailed": "Nie udało się pobrać szczegółów wydarzenia."
+    },
+    "snackbar": {
+      "propositionSubmitted": "Propozycja została zgłoszona.",
+      "reservationSaved": "Rezerwacja została zapisana.",
+      "recordSaved": "Zapisano termin bez rezerwacji.",
+      "reservationCancelled": "Rezerwacja została anulowana.",
+      "propositionCancelled": "Propozycja została wycofana.",
+      "forceAdvice": "Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry."
+    },
+    "confirmation": {
+      "cancelReservationTitle": "Anulować rezerwację?",
+      "cancelReservationDescription": "Anulowana rezerwacja nie będzie już widoczna w kalendarzu.",
+      "cancelPropositionTitle": "Wycofać propozycję?",
+      "cancelPropositionDescription": "Wycofana propozycja zniknie z kalendarza."
+    },
+    "forms": {
+      "dateLabel": "Data",
+      "startTimeLabel": "Początek",
+      "endTimeLabel": "Koniec",
+      "participantsLabel": "Liczba uczestników",
+      "tracksLabel": "Liczba torów"
+    },
+    "propositionDialog": {
+      "title": "Zaproponuj termin",
+      "submit": "Wyślij"
+    },
+    "reservationDialog": {
+      "title": "Nowa rezerwacja",
+      "isPublic": "Publiczna",
+      "isOpenForJoining": "Otwarta na dołączenie",
+      "forceLabel": "Wymuś zapis mimo konfliktów",
+      "forceHint": "Zaznacz, aby wymusić zapis mimo istniejących rezerwacji.",
+      "forceSuggestion": "Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.",
+      "defaultError": "Nie udało się zapisać rezerwacji. Spróbuj ponownie.",
+      "propositionNotFound": "Nie znaleziono wybranej propozycji do konwersji."
+    },
+    "recordDialog": {
+      "title": "Zapisz bez rezerwacji"
+    },
+    "eventDetail": {
+      "summary": {
+        "tracks": "{count} torów",
+        "participants": "{count} uczestników"
+      },
+      "proposition": {
+        "member": "Zgłoszenie członka",
+        "guest": "Zgłoszenie gościa"
+      },
+      "reservation": {
+        "public": "Rezerwacja publiczna",
+        "private": "Rezerwacja prywatna"
+      },
+      "joinable": {
+        "open": "Otwarta na dołączenie",
+        "closed": "Tylko dla zapisanych"
+      },
+      "visibility": {
+        "label": "Widoczność: {value}",
+        "public": "publiczna",
+        "private": "prywatna"
+      },
+      "sections": {
+        "reservation": "Rezerwacja",
+        "proposition": "Propozycja"
+      },
+      "linkedProposition": "Powiązana propozycja #{id}",
+      "linkedPropositionShort": "Propozycja #{id}",
+      "status": {
+        "pending": "Status: oczekuje na akceptację",
+        "converted": "Status: przekształcona w rezerwację",
+        "cancelled": "Status: wycofana"
+      },
+      "labels": {
+        "createdAt": "Data utworzenia",
+        "submittedAt": "Data zgłoszenia",
+        "notes": "Notatki",
+        "tracksDemand": "Zapotrzebowanie: {count} torów",
+        "participants": "Uczestnicy: {count}"
+      },
+      "actions": {
+        "retry": "Spróbuj ponownie"
+      },
+      "errors": {
+        "loadFailed": "Nie udało się pobrać szczegółów wydarzenia."
+      }
+    },
     "emptyState": "Brak wydarzeń dla tego tygodnia.",
     "propositionCta": "Zaproponuj termin",
     "loading": "Ładujemy kalendarz...",
