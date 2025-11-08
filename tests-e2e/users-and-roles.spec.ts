@@ -46,9 +46,9 @@ test.describe('Users & Roles', () => {
     await dialog.getByRole('button', { name: translate('common.actions.save') }).click();
 
     await expect(dialog).toBeHidden();
-    await expect(
-      page.locator('.v-snackbar--active', { hasText: translate('admin.users.snackbarSuccess') }),
-    ).toBeVisible();
+    const usersSnackbar = page.getByTestId('user-management-snackbar');
+    await expect(usersSnackbar).toBeVisible();
+    await expect(usersSnackbar).toContainText(translate('admin.users.snackbarSuccess'));
 
     const targetRowWithRole = page.locator('tbody tr', { hasText: managedUserEmail }).first();
     await expect(targetRowWithRole.locator('.v-chip', { hasText: translate('roles.coordinator') })).toBeVisible();
@@ -65,9 +65,8 @@ test.describe('Users & Roles', () => {
     await dialogReopen.getByRole('button', { name: translate('common.actions.save') }).click();
 
     await expect(dialogReopen).toBeHidden();
-    await expect(
-      page.locator('.v-snackbar--active', { hasText: translate('admin.users.snackbarSuccess') }),
-    ).toBeVisible();
+    await expect(usersSnackbar).toBeVisible();
+    await expect(usersSnackbar).toContainText(translate('admin.users.snackbarSuccess'));
 
     const targetRowAfterRemoval = page.locator('tbody tr', { hasText: managedUserEmail }).first();
     await expect(targetRowAfterRemoval.locator('.v-chip', { hasText: translate('roles.coordinator') })).toHaveCount(0);
