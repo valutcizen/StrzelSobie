@@ -33,6 +33,10 @@ Our testing strategy will follow the testing pyramid model:
 
 *   **Saved Browser State & pristine calendar:** To speed up E2E tests, we use Playwright's ability to save and reuse browser state. A global setup script (`tests-e2e/globalSetup.ts`) runs once before all tests. This script logs in as each of the predefined test users (admin, coordinator, etc.) and saves the authenticated browser state (cookies, local storage) into a JSON file in the `tests-e2e/.auth/` directory. The script also logs in as the admin and removes every reservation, proposition, and record for the default `dobczyce` range so each run starts with an empty calendar; tests must seed whatever data they rely on within the scenario.
 
+*   **Playwright reporter flag:** Always include `--reporter=line` when invoking Playwright (e.g., `npx playwright test <args> --reporter=line`) so logs remain consistent.
+
+*   **Frontend restarts:** Never restart the frontend dev server yourself. When a change in the client module (`src/client`) would require a restart, pause and ask the user to restart it for you before proceeding.
+
     Each user role has its own project in the `playwright.config.ts` file. These projects are configured to use the corresponding saved browser state. This means that when a test runs under a specific project, it starts with the user already logged in. This approach has several advantages:
     *   **Faster tests:** It avoids the overhead of logging in before each test.
     *   **More reliable tests:** It separates the authentication logic from the test logic, making tests less brittle.

@@ -665,7 +665,7 @@ const performCancellation = async (event: RangeEvent) => {
   }
 
   if (event.type === 'proposition' && event.meta?.propositionId) {
-    await http.delete(`/ranges/${rangeSlug.value}/propositions/${event.meta.propositionId}`)
+    await http.delete(`/propositions/${event.meta.propositionId}`)
   } else if (event.type === 'reservation' && event.meta?.reservationId) {
     await http.delete(`/ranges/${rangeSlug.value}/reservations/${event.meta.reservationId}`)
   }
