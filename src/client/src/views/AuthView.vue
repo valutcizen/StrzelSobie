@@ -22,11 +22,18 @@
           v-model="activeTab"
           bg-color="transparent"
           grow
+          data-testid="auth-tabs"
         >
-          <v-tab value="login">
+          <v-tab
+            value="login"
+            data-testid="auth-login-tab"
+          >
             {{ t('auth.login') }}
           </v-tab>
-          <v-tab value="register">
+          <v-tab
+            value="register"
+            data-testid="auth-register-tab"
+          >
             {{ t('auth.register') }}
           </v-tab>
         </v-tabs>
