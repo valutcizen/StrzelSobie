@@ -205,8 +205,7 @@ test.describe('Calendar Events', () => {
       const dialog = page.getByTestId('event-detail-dialog');
       await expect(dialog).toBeVisible();
 
-      const reservationSectionLabel = translate('calendar.eventDetail.sections.reservation');
-      await expect(dialog.getByText(reservationSectionLabel)).toBeVisible();
+      await expect(dialog.getByTestId('event-detail-reservation-section')).toBeVisible();
 
       const tracksSummary = translate('calendar.eventDetail.summary.tracks', { count: 3 });
       const participantsSummary = translate('calendar.eventDetail.summary.participants', { count: 4 });

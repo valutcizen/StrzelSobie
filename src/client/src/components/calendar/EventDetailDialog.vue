@@ -90,7 +90,9 @@
             <v-divider class="mb-3" />
             <v-list density="compact">
               <template v-if="hasReservationSection">
-                <v-list-subheader>{{ t('calendar.eventDetail.sections.reservation') }}</v-list-subheader>
+                <v-list-subheader data-testid="event-detail-reservation-section">
+                  {{ t('calendar.eventDetail.sections.reservation') }}
+                </v-list-subheader>
                 <v-list-item v-if="coordinatorDisplay">
                   <template #prepend>
                     <v-icon>mdi-account-tie</v-icon>
@@ -144,7 +146,9 @@
               />
 
               <template v-if="hasPropositionSection">
-                <v-list-subheader>{{ t('calendar.eventDetail.sections.proposition') }}</v-list-subheader>
+                <v-list-subheader data-testid="event-detail-proposition-section">
+                  {{ t('calendar.eventDetail.sections.proposition') }}
+                </v-list-subheader>
                 <v-list-item v-if="!hasReservationSection && linkedPropositionId !== null">
                   <template #prepend>
                     <v-icon>mdi-link-variant</v-icon>
