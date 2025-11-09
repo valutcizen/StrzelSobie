@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import type { RouteLocationNamedRaw, RouteLocationRaw } from 'vue-router'
 import type { UserRole } from '../../types/auth'
 import { useAuthStore } from '../../stores/auth'
 
@@ -36,6 +36,10 @@ interface RoleBasedLinkProps {
 const props = defineProps<RoleBasedLinkProps>()
 
 const authStore = useAuthStore()
+
+const hasRouteName = (to: RouteLocationRaw): to is RouteLocationNamedRaw => {
+  return typeof to === 'object' && to !== null && 'name' in to && to.name !== undefined
+}
 
 const isVisible = computed(() => {
   const requiresGlobal = Array.isArray(props.roles) && props.roles.length > 0
@@ -60,7 +64,7 @@ const testId = computed(() => {
     const sanitized = props.to.replace(/[^a-zA-Z0-9-]/g, '-')
     return `nav-${sanitized}`
   }
-  if (typeof props.to === 'object' && props.to.name) {
+  if (hasRouteName(props.to)) {
     return `nav-${String(props.to.name)}`
   }
   return 'nav-link'
