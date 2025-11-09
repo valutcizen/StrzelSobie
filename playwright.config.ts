@@ -1,10 +1,14 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig, devices } from '@playwright/test';
 
 const escapeForRegExp = (value: string) => value.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 const roleGrep = (role: string) => new RegExp(`@(?:all|${escapeForRegExp(role)})\\b`);
+const globalSetupFile = fileURLToPath(new URL('./tests-e2e/globalSetup.ts', import.meta.url));
 
 export default defineConfig({
-  globalSetup: require.resolve('./tests-e2e/globalSetup.ts'),
+  globalSetup: path.resolve(globalSetupFile),
   testDir: './tests-e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
