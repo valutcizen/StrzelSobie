@@ -1,7 +1,10 @@
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 type TranslationTree = Record<string, unknown>;
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const translations: TranslationTree = JSON.parse(
   readFileSync(resolve(__dirname, '../../src/client/src/locales/pl.json'), 'utf-8'),
