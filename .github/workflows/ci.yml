@@ -76,7 +76,7 @@ jobs:
           CI: true
 
       - name: Wait for servers to be ready
-        run: npx wait-on http://localhost:8787 http://localhost:5173
+        run: npx wait-on tcp:localhost:8787 tcp:localhost:5173 --timeout=180000 --log
 
       - name: Run E2E tests
         run: npm run test:e2e-ci
