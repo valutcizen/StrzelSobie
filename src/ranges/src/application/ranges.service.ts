@@ -49,7 +49,7 @@ export class RangesService implements IRangesService {
       };
       return Result.ok(dto);
     } catch (error) {
-        return Result.fail(new Error("Failed to parse operating hours"));
+        return Result.fail(new Error("Failed to parse operating hours", { cause: error }));
     }
   }
 

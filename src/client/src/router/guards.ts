@@ -19,7 +19,7 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
 
     try {
       await authStore.fetchUser()
-    } catch (error) {
+    } catch {
       if (to.name !== 'Auth') {
         return { name: 'Auth', query: { redirect: to.fullPath } }
       }

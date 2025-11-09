@@ -1,7 +1,7 @@
 export interface IDbStatement {
-  bind(...values: any[]): this;
+  bind(...values: unknown[]): this;
   first<T>(): Promise<T | null>;
-  run(): Promise<any>;
+  run(): Promise<void>;
   all<T>(): Promise<{ results: T[] }>;
 }
 

@@ -1,5 +1,4 @@
 import { SessionData } from '@strzel-sobie/common/models';
-import { Result } from '@strzel-sobie/common';
 
 export interface ISessionRepository {
   createSession(session: SessionData): Promise<string>;

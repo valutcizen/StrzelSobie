@@ -90,15 +90,6 @@ export class UserDbRepository implements IUserRepository {
 
     return result || null;
   }
-  async getByEmail(email: string): Promise<User | null> {
-    throw new Error('Method not implemented.');
-  }
-  async add(user: User): Promise<User> {
-    throw new Error('Method not implemented.');
-  }
-  async update(user: User): Promise<User> {
-    throw new Error('Method not implemented.');
-  }
 
   async findAndCount(options: GetUsersOptions = {}): Promise<{ users: User[]; total: number; }> {
     const { page = 1, limit = 10, sortBy = 'id', sortOrder = 'desc', filter } = options;

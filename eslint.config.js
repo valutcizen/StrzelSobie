@@ -7,9 +7,12 @@ import vue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
 
 export default [
+  {
+    ignores: ['**/*.js', '**/dist/**'],
+  },
   eslint.configs.recommended,
   {
-    files: ['src/**/*.ts', 'tests/**/*.ts', 'src/**/*.tsx', 'src/**/*.mts', 'src/**/*.cts', '!src/**/dist/**/*.ts'],
+    files: ['src/**/*.ts', 'tests/**/*.ts', 'src/**/*.tsx', 'src/**/*.mts', 'src/**/*.cts'],
     languageOptions: {
       parser: parser,
       parserOptions: {
@@ -42,7 +45,7 @@ export default [
     },
   },
   {
-    files: ['src/client/src/**/*.vue', 'src/client/src/**/*.ts', 'src/client/src/**/*.js'],
+    files: ['src/client/src/**/*.vue', 'src/client/src/**/*.ts'],
     languageOptions: {
       parser: vueParser,
       parserOptions: {

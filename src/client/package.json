@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc --incremental && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
+    "lint": "eslint . --ext .vue,.ts --fix"
   },
   "dependencies": {
     "@strzel-sobie/common": "file:../common",

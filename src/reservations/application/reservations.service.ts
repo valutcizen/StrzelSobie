@@ -4,9 +4,7 @@ import {
   GetCalendarEventsQuery,
   Result,
   IRangesService,
-  getRangeRole,
-  CancelReservationCommand,
-  UserDto,
+  getRangeRole
 } from '@strzel-sobie/common';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
@@ -85,12 +83,5 @@ export class ReservationsService implements IReservationsService {
     };
 
     return Result.ok(calendarEvents);
-  }
-
-  public async cancelReservation(
-    command: CancelReservationCommand,
-    user: UserDto
-  ): Promise<Result<void, Error>> {
-    return Result.fail(new Error('cancelReservation not implemented yet'));
   }
 }
