@@ -83,8 +83,16 @@ test.describe('Ranges', () => {
 
       await expect(page.getByText(translate('admin.rangeSettings.successMessage'))).toBeVisible();
 
+      const reloadRangeResponsePromise = page.waitForResponse(
+        (response) =>
+          response.url().includes(`/api/v1/ranges/${rangeSlug}`) &&
+          response.request().method() === 'GET',
+      );
+
       await page.reload();
       await page.waitForURL('/admin/range-settings');
+      await reloadRangeResponsePromise;
+
       await expect(
         page.getByRole('heading', {
           name: translate('admin.rangeSettings.operatingHoursHeading'),
