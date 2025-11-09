@@ -1,8 +1,11 @@
 import { Result } from '@strzel-sobie/common';
-import { Reservation, ReservationId, Proposition, PropositionId, Record, RecordId } from './reservation';
 
-export type Proposition = {
-  id: number;
+export type ReservationId = number;
+export type PropositionId = number;
+export type RecordId = number;
+
+export interface Proposition {
+  id: PropositionId;
   user_id: number;
   range_id: number;
   status: 'open' | 'converted' | 'cancelled';
@@ -14,11 +17,11 @@ export type Proposition = {
   is_member: boolean;
 };
 
-export type Reservation = {
-  id: number;
+export interface Reservation {
+  id: ReservationId;
   range_id: number;
   coordinator_id: number;
-  proposition_id: number | null;
+  proposition_id: PropositionId | null;
   event_date: string;
   start_time: string;
   end_time: string;

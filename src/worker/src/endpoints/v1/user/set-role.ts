@@ -1,5 +1,4 @@
 import {
-  AssignRoleCommand,
   ForbiddenError,
   RangeNotFoundError,
   RoleNotFoundError,

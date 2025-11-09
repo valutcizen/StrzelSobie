@@ -1,5 +1,8 @@
 <template>
-  <div class="d-flex flex-column" style="height: 100vh;">
+  <div
+    class="d-flex flex-column"
+    style="height: 100vh;"
+  >
     <v-app-bar
       color="primary"
       density="comfortable"

@@ -1,6 +1,7 @@
 {
   "name": "strzel-sobie",
   "private": true,
+  "type": "module",
   "workspaces": [
     "src/*",
     "tests"
@@ -10,7 +11,7 @@
     "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/users -w src/reservations -w src/ranges -w src/notifications -w src/audit && npm run build -w src/worker",
     "build:frontend": "npm run build -w src/client",
     "dev:frontend": "npm run dev -w @strzel-sobie/client",
-    "lint": "npm run lint -w @strzel-sobie/client",
+    "lint": "npm run lint --workspaces --if-present",
     "test": "vitest run",
     "test:unit": "npm run test:unit -w tests --",
     "db:migrate": "node scripts/generate-db-mock.mjs",
@@ -24,7 +25,11 @@
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "@types/bcryptjs": "^3.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^4.0.6",
+    "eslint": "^9.8.0",
+    "typescript": "^5.6.3",
     "vitest": "^4.0.6",
     "wait-on": "^9.0.3"
   },

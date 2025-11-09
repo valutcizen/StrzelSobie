@@ -6,7 +6,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240405.0",

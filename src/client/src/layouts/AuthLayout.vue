@@ -1,8 +1,15 @@
 <template>
-  <div class="d-flex flex-column" style="height: 100vh;">
+  <div
+    class="d-flex flex-column"
+    style="height: 100vh;"
+  >
     <v-main class="bg-grey-lighten-5 flex-grow-1">
       <v-container class="fill-height d-flex align-center justify-center py-12">
-        <v-alert v-if="error" type="error" :text="error" />
+        <v-alert
+          v-if="error"
+          type="error"
+          :text="error"
+        />
         <slot v-else />
       </v-container>
     </v-main>

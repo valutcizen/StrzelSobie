@@ -23,6 +23,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
   }
 }

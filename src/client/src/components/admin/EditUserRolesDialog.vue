@@ -45,7 +45,7 @@ const roleOptions = computed(() =>
   })),
 )
 
-const assignedRoles = computed<UserRole[]>(() => {
+const currentAssignedRoles = computed<UserRole[]>(() => {
   const unique = new Set<UserRole>([...fixedRoles.value, ...editedRoles.value])
   return Array.from(unique)
 })
@@ -122,7 +122,7 @@ const handleCancel = () => {
             selected-class="text-white"
           >
             <v-chip
-              v-for="role in assignedRoles"
+              v-for="role in currentAssignedRoles"
               :key="role"
               color="primary"
               size="small"

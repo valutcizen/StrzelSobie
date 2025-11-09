@@ -1,0 +1,3 @@
+# Ignore compiled output
+**/dist
+src/client/dist
