@@ -33,10 +33,13 @@ jobs:
         run: |
           TEMP_SCRIPT_PATH="./scripts/create-admin-temp.sql"
           cp ./scripts/create-admin.sql.template "$TEMP_SCRIPT_PATH"
+
+          EMAIL='${{ github.event.inputs.email }}'
+          PASSWORD_HASH='${{ github.event.inputs.password_hash }}'
           
           # Use a different separator for sed to avoid issues with special characters in the hash
-          sed -i "s|__EMAIL__|${{ github.event.inputs.email }}|g" "$TEMP_SCRIPT_PATH"
-          sed -i "s|__PASSWORD_HASH__|${{ github.event.inputs.password_hash }}|g" "$TEMP_SCRIPT_PATH"
+          sed -i "s|__EMAIL__|$EMAIL|g" "$TEMP_SCRIPT_PATH"
+          sed -i "s|__PASSWORD_HASH__|$PASSWORD_HASH|g" "$TEMP_SCRIPT_PATH"
           
           echo "script_path=$TEMP_SCRIPT_PATH" >> $GITHUB_OUTPUT
 
