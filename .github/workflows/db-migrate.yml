@@ -24,6 +24,6 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: --config wrangler.jsonc d1 migrations apply DB --env ${{ github.event.inputs.environment }}
-          workingDirectory: src/worker
+          preCommands: cd src/worker
+          command: d1 migrations apply DB --env ${{ github.event.inputs.environment }}
           wranglerVersion: '4.46.0'
