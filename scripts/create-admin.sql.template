@@ -1,8 +1,6 @@
 -- This script creates a new user (if not exists), sets their password hash, and assigns them the
 -- global "Club/Community Administrator" role (ID 6).
--- It uses placeholders that will be replaced by the GitHub Actions workflow.
-
-BEGIN TRANSACTION;
+-- It is executed remotely via Wrangler, so leave transaction management to D1.
 
 -- 1. Create the user record if it does not already exist.
 INSERT OR IGNORE INTO users_users (email) VALUES ('__EMAIL__');
@@ -16,5 +14,3 @@ ON CONFLICT(user_id) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 -- 3. Assign the administrator role (ID 6) to the user if not already assigned.
 INSERT OR IGNORE INTO users_user_global_roles (user_id, role_id)
 SELECT id, 6 FROM users_users WHERE email = '__EMAIL__';
-
-COMMIT;
