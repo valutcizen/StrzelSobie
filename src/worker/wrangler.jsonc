@@ -33,7 +33,8 @@
 				{
 					"binding": "DB",
 					"database_name": "strzel-sobie-db-staging",
-					"database_id": "${D1_DATABASE_ID_STAGING}"
+					"database_id": "${D1_DATABASE_ID_STAGING}",
+					"migrations_dir": "../../migrations"
 				}
 			],
 			"kv_namespaces": [
@@ -49,7 +50,8 @@
 				{
 					"binding": "DB",
 					"database_name": "strzel-sobie-db-production",
-					"database_id": "${D1_DATABASE_ID_PRODUCTION}"
+					"database_id": "${D1_DATABASE_ID_PRODUCTION}",
+					"migrations_dir": "../../migrations"
 				}
 			],
 			"kv_namespaces": [
