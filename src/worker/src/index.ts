@@ -32,12 +32,22 @@ import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/res
 import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
 
+const parseAllowedOrigins = (rawOrigins?: string): string[] =>
+  (rawOrigins ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // CORS Middleware
 app.use('/api/*', cors({
   origin: (origin, c) => {
-    const allowedOrigins = (c.env.ALLOWED_ORIGINS || '').split(',');
+    if (!origin) {
+      return undefined;
+    }
+
+    const allowedOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS);
     if (allowedOrigins.includes(origin)) {
       return origin;
     }
@@ -47,8 +57,12 @@ app.use('/api/*', cors({
     }
     // For preview deployments, we can be more permissive or have a dynamic system.
     // As a basic approach, we can check if the origin matches a Cloudflare Pages preview URL pattern.
-    if (new URL(origin).hostname.endsWith('.strzel-sobie-client.pages.dev')) {
-      return origin;
+    try {
+      if (new URL(origin).hostname.endsWith('.strzel-sobie-client.pages.dev')) {
+        return origin;
+      }
+    } catch {
+      return undefined;
     }
     // Return undefined to disallow other origins
     return undefined;

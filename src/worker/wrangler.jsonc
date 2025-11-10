@@ -7,6 +7,9 @@
 	"name": "strzel-sobie-worker",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-10-11",
+	"vars": {
+		"ALLOWED_ORIGINS": "http://localhost:5173"
+	},
 	"observability": {
 		"enabled": true
 	},
@@ -29,6 +32,9 @@
 	"env": {
 		"staging": {
 			"name": "strzel-sobie-worker-staging",
+			"vars": {
+				"ALLOWED_ORIGINS": "https://ss.valut.bid"
+			},
 			"d1_databases": [
 				{
 					"binding": "DB",
@@ -46,6 +52,9 @@
 		},
 		"production": {
 			"name": "strzel-sobie-worker-production",
+			"vars": {
+				"ALLOWED_ORIGINS": "https://ss.valut.bid"
+			},
 			"d1_databases": [
 				{
 					"binding": "DB",
