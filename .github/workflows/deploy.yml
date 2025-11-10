@@ -27,9 +27,11 @@ jobs:
         id: vars
         run: |
           if [ "${{ github.event.inputs.environment }}" == "production" ]; then
-            echo "WORKER_URL=https://strzel-sobie-worker.${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}" >> $GITHUB_ENV
+            echo "WORKER_URL=https://strzel-sobie-worker-production.${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}" >> $GITHUB_ENV
+            echo "PAGES_PROJECT_NAME=strzel-sobie-client-production" >> $GITHUB_ENV
           else
-            echo "WORKER_URL=https://${{ github.event.inputs.environment }}.strzel-sobie-worker.${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}" >> $GITHUB_ENV
+            echo "WORKER_URL=https://strzel-sobie-worker-staging.${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}" >> $GITHUB_ENV
+            echo "PAGES_PROJECT_NAME=strzel-sobie-client-staging" >> $GITHUB_ENV
           fi
 
       - name: Build project
@@ -49,4 +51,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy src/client/dist --project-name=strzel-sobie-client --branch=${{ github.ref_name }}
+          command: pages deploy src/client/dist --project-name=${{ env.PAGES_PROJECT_NAME }} --branch=${{ github.ref_name }}

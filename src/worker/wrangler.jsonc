@@ -28,6 +28,7 @@
 	],
 	"env": {
 		"staging": {
+			"name": "strzel-sobie-worker-staging",
 			"d1_databases": [
 				{
 					"binding": "DB",
@@ -43,6 +44,7 @@
 			]
 		},
 		"production": {
+			"name": "strzel-sobie-worker-production",
 			"d1_databases": [
 				{
 					"binding": "DB",
