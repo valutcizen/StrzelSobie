@@ -43,8 +43,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: publish --env ${{ github.event.inputs.environment }}
-          workingDirectory: src/worker
+          command: wrangler --config src/worker/wrangler.jsonc publish --env ${{ github.event.inputs.environment }}
           wranglerVersion: '4.46.0'
 
       - name: Deploy Client to Cloudflare Pages
