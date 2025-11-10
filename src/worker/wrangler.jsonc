@@ -33,14 +33,14 @@
 				{
 					"binding": "DB",
 					"database_name": "strzel-sobie-db-staging",
-					"database_id": "${D1_DATABASE_ID_STAGING}",
+					"database_id": "${D1_DATABASE_ID}",
 					"migrations_dir": "../../migrations"
 				}
 			],
 			"kv_namespaces": [
 				{
 					"binding": "SESSIONS_KV",
-					"id": "${SESSIONS_KV_ID_STAGING}"
+					"id": "${SESSIONS_KV_ID}"
 				}
 			]
 		},
@@ -50,14 +50,14 @@
 				{
 					"binding": "DB",
 					"database_name": "strzel-sobie-db-production",
-					"database_id": "${D1_DATABASE_ID_PRODUCTION}",
+					"database_id": "${D1_DATABASE_ID}",
 					"migrations_dir": "../../migrations"
 				}
 			],
 			"kv_namespaces": [
 				{
 					"binding": "SESSIONS_KV",
-					"id": "${SESSIONS_KV_ID_PRODUCTION}"
+					"id": "${SESSIONS_KV_ID}"
 				}
 			]
 		}

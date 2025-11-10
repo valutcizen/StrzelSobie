@@ -41,13 +41,13 @@ Add a configuration block for your new environment in `src/worker/wrangler.jsonc
         {
           "binding": "DB",
           "database_name": "strzel-sobie-db-dev",
-          "database_id": "${D1_DATABASE_ID_DEV}"
+          "database_id": "${D1_DATABASE_ID}"
         }
       ],
       "kv_namespaces": [
         {
           "binding": "SESSIONS_KV",
-          "id": "${SESSIONS_KV_ID_DEV}"
+          "id": "${SESSIONS_KV_ID}"
         }
       ]
     },
@@ -68,8 +68,9 @@ Add a configuration block for your new environment in `src/worker/wrangler.jsonc
 1.  **Add Environment Variables:**
     - Go to your `strzel-sobie-worker` > `Settings` > `Variables`.
     - For the `dev` environment, add the following secrets, using the IDs you noted in Step 1:
-        - `D1_DATABASE_ID_DEV`: The ID of your new D1 database.
-        - `SESSIONS_KV_ID_DEV`: The ID of your new KV namespace.
+        - `D1_DATABASE_ID`: The ID of your new D1 database.
+        - `SESSIONS_KV_ID`: The ID of your new KV namespace.
+    - Repeat for each environment (staging, production, etc.). You can reuse the same variable names—Cloudflare and GitHub environments keep their own values so the workflows stay readable.
 
 ---
 
@@ -119,3 +120,5 @@ Finally, update the GitHub Actions workflow to recognize the new environment and
     ```
 
 After completing these steps, you will be able to select `dev` from the "Run workflow" dropdown, and the action will deploy your application to the new custom URLs with its own isolated database and session storage.
+
+> **GitHub Actions variables:** For each GitHub Environment (e.g., `staging`, `production`, `dev`), add repository variables named `D1_DATABASE_ID` and `SESSIONS_KV_ID` with the environment-specific UUIDs. Because each environment maintains its own values, the workflows can keep referencing the same variable names without losing readability.
