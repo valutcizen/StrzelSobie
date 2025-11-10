@@ -65,7 +65,7 @@ export class Login extends OpenAPIRoute {
       setCookie(c, 'session_token', token, {
         httpOnly: true,
         secure: true,
-        sameSite: 'Strict',
+        sameSite: 'None',
         maxAge: 3600, // 1 hour
       });
 

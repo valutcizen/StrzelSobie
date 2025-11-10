@@ -108,7 +108,7 @@ describe('Login endpoint contract', () => {
     expect(cookieString).toContain(`session_token=${token}`);
     expect(cookieString).toContain('HttpOnly');
     expect(cookieString).toContain('Secure');
-    expect(cookieString).toContain('SameSite=Strict');
+    expect(cookieString).toContain('SameSite=None');
     expect(cookieString).toContain('Max-Age=3600');
 
     expect(spies.json).toHaveBeenCalledWith({
