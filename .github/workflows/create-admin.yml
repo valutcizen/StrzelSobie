@@ -42,5 +42,6 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: --config src/worker/wrangler.jsonc d1 execute DB --env ${{ github.event.inputs.environment }} --file=${{ steps.prepare-script.outputs.script_path }}
+          command: --config wrangler.jsonc d1 execute DB --env ${{ github.event.inputs.environment }} --file=${{ steps.prepare-script.outputs.script_path }}
+          workingDirectory: src/worker
           wranglerVersion: '4.46.0'
