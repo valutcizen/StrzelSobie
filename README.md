@@ -41,6 +41,42 @@ The system is built with a robust role-based access control system to ensure use
 - Cloudflare Workflows (CD)
 - Cloudflare (Hosting)
 
+## Workflows / CI/CD
+
+This project uses GitHub Actions for continuous integration, deployment, and database management. For instructions on adding a new deployment environment, see the [Adding Environments Guide](docs/adding-environments.md).
+
+### CI (`ci.yml`)
+- **Trigger:** Automatically runs on pushes and pull requests to the `main` branch. Can also be run manually.
+- **Purpose:** Ensures code quality and stability.
+- **Jobs:**
+    - `Lint & Test`: Installs dependencies, builds the project, runs linting checks, and executes all unit and integration tests with coverage reports.
+    - `E2E Tests`: Runs the full end-to-end test suite using Playwright against live development servers.
+
+### Deploy (`deploy.yml`)
+- **Trigger:** Manual (`workflow_dispatch`).
+- **Purpose:** Deploys the application to the specified Cloudflare environment.
+- **Process:**
+    1.  Prompts the user to select an environment (`staging` or `production`).
+    2.  Installs dependencies and builds the client and worker applications.
+    3.  Injects the correct worker URL into the client build based on the selected environment.
+    4.  Publishes the worker to the corresponding Cloudflare environment.
+    5.  Deploys the client to Cloudflare Pages.
+
+### Apply DB Migrations (`db-migrate.yml`)
+- **Trigger:** Manual (`workflow_dispatch`).
+- **Purpose:** Applies pending database migrations to a Cloudflare D1 database.
+- **Process:**
+    1.  Prompts the user to select an environment (`staging` or `production`).
+    2.  Runs the `wrangler d1 migrations apply` command against the database associated with the selected environment.
+
+### Create Admin User (`create-admin.yml`)
+- **Trigger:** Manual (`workflow_dispatch`).
+- **Purpose:** Creates a new user with global administrator privileges or updates an existing user to be an admin.
+- **Process:**
+    1.  Prompts the user to select an environment (`staging` or `production`).
+    2.  Requires the user's `email` and a `password_hash`.
+    3.  Executes a SQL script to create/update the user, set their password, and assign the admin role in a single, safe transaction.
+
 ## Getting Started Locally
 
 To set up the project for local development, follow these steps:
@@ -66,6 +102,20 @@ The following scripts are available to be run from the project's root directory:
 - `npm run build`: Builds all modules/workspaces.
 - `npm run test`: Runs the test suite for the entire project using Vitest.
 - `npm run test:unit`: Runs only unit tests that match the `*.unit.tests.ts` naming convention.
+
+### Generating Password Hashes for Admin Users
+
+To create an admin user via the GitHub Actions workflow, you need to provide a pre-hashed password. This hash must be generated using the same algorithm and salt rounds as the application. You can use the provided script locally:
+
+1.  **Ensure dependencies are installed:**
+    ```bash
+    npm install
+    ```
+2.  **Generate the password hash:**
+    ```bash
+    node scripts/hash-password.mjs "your-secure-password"
+    ```
+    Replace `"your-secure-password"` with the actual password you want to use. The script will output the bcrypt hash, which you can then copy and paste into the `password_hash` input field when triggering the "Create Admin User" workflow.
 
 ## Project Scope (MVP)
 

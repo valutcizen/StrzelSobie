@@ -1,5 +1,6 @@
 import { fromHono } from 'chanfana';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { Login } from './endpoints/v1/auth/login';
 import { Logout } from './endpoints/v1/auth/logout';
 import { Me } from './endpoints/v1/auth/me';
@@ -32,6 +33,30 @@ import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// CORS Middleware
+app.use('/api/*', cors({
+  origin: (origin, c) => {
+    const allowedOrigins = (c.env.ALLOWED_ORIGINS || '').split(',');
+    if (allowedOrigins.includes(origin)) {
+      return origin;
+    }
+    // Allow localhost for local development
+    if (origin.startsWith('http://localhost:')) {
+      return origin;
+    }
+    // For preview deployments, we can be more permissive or have a dynamic system.
+    // As a basic approach, we can check if the origin matches a Cloudflare Pages preview URL pattern.
+    if (new URL(origin).hostname.endsWith('.strzel-sobie-client.pages.dev')) {
+      return origin;
+    }
+    // Return undefined to disallow other origins
+    return undefined;
+  },
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 
 // Middleware for setting up services
 app.use('*', async (c, next) => {

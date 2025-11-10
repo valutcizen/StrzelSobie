@@ -1,0 +1,46 @@
+name: Create Admin User
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to create the user in'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      email:
+        description: 'The email address for the new admin user.'
+        required: true
+      password_hash:
+        description: 'The pre-hashed password. This must be generated locally using the application''s hashing algorithm (see README.md for instructions).'
+        required: true
+
+jobs:
+  create-admin:
+    name: Create admin on ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SQL Script
+        id: prepare-script
+        run: |
+          TEMP_SCRIPT_PATH="./scripts/create-admin-temp.sql"
+          cp ./scripts/create-admin.sql.template "$TEMP_SCRIPT_PATH"
+          
+          # Use a different separator for sed to avoid issues with special characters in the hash
+          sed -i "s|__EMAIL__|${{ github.event.inputs.email }}|g" "$TEMP_SCRIPT_PATH"
+          sed -i "s|__PASSWORD_HASH__|${{ github.event.inputs.password_hash }}|g" "$TEMP_SCRIPT_PATH"
+          
+          echo "script_path=$TEMP_SCRIPT_PATH" >> $GITHUB_OUTPUT
+
+      - name: Execute SQL Script
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: d1 execute DB --env ${{ github.event.inputs.environment }} --file=${{ steps.prepare-script.outputs.script_path }}
+          workingDirectory: src/worker

@@ -3,7 +3,7 @@ import type { Router } from 'vue-router'
 import type { AuthStore } from '../stores/auth'
 
 export const http = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   withCredentials: true,
 })
 

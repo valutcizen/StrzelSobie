@@ -27,13 +27,33 @@
 		}
 	],
 	"env": {
+		"staging": {
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "strzel-sobie-db-staging",
+					"database_id": "${D1_DATABASE_ID_STAGING}"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "SESSIONS_KV",
+					"id": "${SESSIONS_KV_ID_STAGING}"
+				}
+			]
+		},
 		"production": {
 			"d1_databases": [
 				{
 					"binding": "DB",
-					"database_name": "strzel-sobie-db",
-					"database_id": "${D1_DATABASE_ID}",
-					"preview_database_id": "${D1_PREVIEW_DATABASE_ID}"
+					"database_name": "strzel-sobie-db-production",
+					"database_id": "${D1_DATABASE_ID_PRODUCTION}"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "SESSIONS_KV",
+					"id": "${SESSIONS_KV_ID_PRODUCTION}"
 				}
 			]
 		}

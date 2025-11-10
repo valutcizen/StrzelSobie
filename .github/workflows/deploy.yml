@@ -23,8 +23,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Set up environment-specific variables
+        id: vars
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "WORKER_URL=https://strzel-sobie-worker.${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}" >> $GITHUB_ENV
+          else
+            echo "WORKER_URL=https://${{ github.event.inputs.environment }}.strzel-sobie-worker.${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}" >> $GITHUB_ENV
+          fi
+
       - name: Build project
         run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ env.WORKER_URL }}/api/v1
 
       - name: Deploy Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
@@ -37,5 +48,5 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy src/client/dist --project-name=strzel-sobie-client --branch=${{ github.ref_name }}
