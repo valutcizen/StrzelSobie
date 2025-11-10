@@ -45,6 +45,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: publish --env ${{ github.event.inputs.environment }}
           workingDirectory: src/worker
+          wranglerVersion: '4.46.0'
 
       - name: Deploy Client to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
@@ -52,3 +53,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy src/client/dist --project-name=${{ env.PAGES_PROJECT_NAME }} --branch=${{ github.ref_name }}
+          wranglerVersion: '4.46.0'

@@ -44,3 +44,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: d1 execute DB --env ${{ github.event.inputs.environment }} --file=${{ steps.prepare-script.outputs.script_path }}
           workingDirectory: src/worker
+          wranglerVersion: '4.46.0'
