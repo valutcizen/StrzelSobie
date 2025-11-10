@@ -30,6 +30,7 @@ export default [
         Headers: true,
         crypto: true,
         console: true,
+        URL: true, // Added URL global for worker environment
       },
     },
     plugins: {
