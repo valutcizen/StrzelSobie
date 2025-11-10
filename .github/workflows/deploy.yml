@@ -46,7 +46,8 @@ jobs:
       - name: Deploy Worker to Cloudflare
         run: |
           cd src/worker
-          npx wrangler --config wrangler.jsonc publish --env ${{ github.event.inputs.environment }}
+          envsubst '$D1_DATABASE_ID $SESSIONS_KV_ID' < wrangler.jsonc > wrangler.resolved.jsonc
+          npx wrangler --config wrangler.resolved.jsonc publish --env ${{ github.event.inputs.environment }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}

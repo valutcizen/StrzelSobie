@@ -1,6 +1,7 @@
 .ai/history
 dist/
 src/client/dist/
+src/worker/wrangler.resolved.jsonc
 .vscode/
 .DS_Store
 playwright-report/
