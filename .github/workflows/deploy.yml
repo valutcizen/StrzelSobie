@@ -40,17 +40,14 @@ jobs:
           VITE_API_BASE_URL: ${{ env.WORKER_URL }}/api/v1
 
       - name: Deploy Worker to Cloudflare
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          preCommands: cd src/worker
-          command: publish --env ${{ github.event.inputs.environment }}
-          wranglerVersion: '4.46.0'
+        run: |
+          cd src/worker
+          npx wrangler --config wrangler.jsonc publish --env ${{ github.event.inputs.environment }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy Client to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy src/client/dist --project-name=${{ env.PAGES_PROJECT_NAME }} --branch=${{ github.ref_name }}
-          wranglerVersion: '4.46.0'
+        run: npx wrangler pages deploy src/client/dist --project-name=${{ env.PAGES_PROJECT_NAME }} --branch=${{ github.ref_name }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

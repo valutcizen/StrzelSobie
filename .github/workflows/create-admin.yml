@@ -39,9 +39,8 @@ jobs:
           echo "script_path=$TEMP_SCRIPT_PATH" >> $GITHUB_OUTPUT
 
       - name: Execute SQL Script
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          preCommands: cd src/worker
-          command: d1 execute DB --env ${{ github.event.inputs.environment }} --file=../../${{ steps.prepare-script.outputs.script_path }}
-          wranglerVersion: '4.46.0'
+        run: |
+          cd src/worker
+          npx wrangler --config wrangler.jsonc d1 execute DB --env ${{ github.event.inputs.environment }} --file=../../${{ steps.prepare-script.outputs.script_path }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
