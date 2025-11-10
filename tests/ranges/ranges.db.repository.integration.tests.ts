@@ -31,9 +31,9 @@ describe('RangesDbRepository integration', () => {
           id: 1,
           slug: 'dobczyce',
           displayName: 'Strzelnica Dobczyce',
-          totalTracks: 10,
+          totalTracks: 2,
           operatingHours:
-            '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"}}',
+            '{\n  "monday": {"open": "06:00", "close": "22:00"},\n  "tuesday": {"open": "06:00", "close": "22:00"},\n  "wednesday": {"open": "06:00", "close": "22:00"},\n  "thursday": {"open": "06:00", "close": "22:00"},\n  "friday": {"open": "06:00", "close": "22:00"},\n  "saturday": {"open": "06:00", "close": "22:00"},\n  "sunday": {"open": "06:00", "close": "22:00"}\n}',
         },
         {
           id: 2,
@@ -62,9 +62,9 @@ describe('RangesDbRepository integration', () => {
       id: 1,
       slug: 'dobczyce',
       displayName: 'Strzelnica Dobczyce',
-      totalTracks: 10,
+      totalTracks: 2,
       operatingHours:
-        '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"}}',
+        '{\n  "monday": {"open": "06:00", "close": "22:00"},\n  "tuesday": {"open": "06:00", "close": "22:00"},\n  "wednesday": {"open": "06:00", "close": "22:00"},\n  "thursday": {"open": "06:00", "close": "22:00"},\n  "friday": {"open": "06:00", "close": "22:00"},\n  "saturday": {"open": "06:00", "close": "22:00"},\n  "sunday": {"open": "06:00", "close": "22:00"}\n}',
     });
   });
 
