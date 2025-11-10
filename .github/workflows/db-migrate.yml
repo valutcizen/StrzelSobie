@@ -25,4 +25,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: d1 migrations apply DB --env ${{ github.event.inputs.environment }}
-          workingDirectory: src/worker
+          configPath: src/worker/wrangler.jsonc
