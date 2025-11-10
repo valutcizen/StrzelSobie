@@ -23,6 +23,6 @@ jobs:
       - name: Apply migrations
         run: |
           cd src/worker
-          npx wrangler --config wrangler.jsonc d1 migrations apply DB --env ${{ github.event.inputs.environment }}
+          npx wrangler --config wrangler.jsonc d1 migrations apply DB --env ${{ github.event.inputs.environment }} --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
