@@ -66,7 +66,19 @@ export class UserService implements IUserService {
     options: GetUsersOptions = {}
   ): Promise<Result<PaginatedUsersDto>> {
     try {
-      const { users, total } = await this.userRepository.findAndCount(options);
+      const page = options.page && options.page > 0 ? Math.trunc(options.page) : 1;
+      const limit = options.limit && options.limit > 0 ? Math.trunc(options.limit) : 10;
+      const sortBy = options.sortBy ?? 'id';
+      const sortOrder = options.sortOrder ?? 'desc';
+      const filter = options.filter;
+
+      const { users, total } = await this.userRepository.findAndCount({
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        filter,
+      });
       const userDtos: UserDto[] = await Promise.all(
         users.map(async (user: User) => {
           const profile = await this.userRepository.getFullUserProfile(user.id);
@@ -104,8 +116,8 @@ export class UserService implements IUserService {
         data: userDtos,
         pagination: {
           total,
-          page: options.page || 1,
-          limit: options.limit || 10,
+          page,
+          limit,
         },
       });
     } catch (error) {

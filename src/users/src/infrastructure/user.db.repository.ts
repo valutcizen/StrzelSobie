@@ -93,7 +93,18 @@ export class UserDbRepository implements IUserRepository {
 
   async findAndCount(options: GetUsersOptions = {}): Promise<{ users: User[]; total: number; }> {
     const { page = 1, limit = 10, sortBy = 'id', sortOrder = 'desc', filter } = options;
-    const offset = (page - 1) * limit;
+
+    const toPositiveInt = (value: number | undefined, fallback: number) => {
+      if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+        return fallback;
+      }
+      const normalized = Math.trunc(value);
+      return normalized > 0 ? normalized : fallback;
+    };
+
+    const safePage = toPositiveInt(page, 1);
+    const safeLimit = toPositiveInt(limit, 10);
+    const offset = (safePage - 1) * safeLimit;
 
     let whereClause = '';
     const params: (string | number)[] = [];
@@ -107,13 +118,20 @@ export class UserDbRepository implements IUserRepository {
     const countResult = await countStmt.bind(...params).first<{ total: number }>();
     const total = countResult?.total || 0;
 
-    const sortColumn = ['id', 'email', 'createdAt'].includes(sortBy) ? sortBy : 'id';
+    const sortColumnMap: Record<'id' | 'email' | 'createdAt', string> = {
+      id: 'id',
+      email: 'email',
+      createdAt: 'created_at',
+    };
+
+    const sortColumnKey = sortBy && sortBy in sortColumnMap ? (sortBy as keyof typeof sortColumnMap) : 'id';
+    const sortColumn = sortColumnMap[sortColumnKey];
     const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
     const dataStmt = this.db.prepare(
       `SELECT id, email, is_deleted, created_at FROM users_users ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`
     );
-    params.push(limit, offset);
+    params.push(safeLimit, offset);
 
     const { results } = await dataStmt.bind(...params).all<User>();
 

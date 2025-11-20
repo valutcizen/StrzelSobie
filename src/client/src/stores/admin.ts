@@ -3,8 +3,10 @@ import { http } from '../services/http'
 import type { PendingUser, RoleAssignment, RoleDefinition, RoleScope, UserRow } from '../types/admin'
 import type { UserRole } from '../types/auth'
 import { isUserRole, normalizeUserRoles } from '../utils/roles'
-import type { AssignRoleCommand, PaginatedUsersDto, UserDto } from '@strzel-sobie/common'
+import type { AssignRoleCommand, GetUsersOptions, PaginatedUsersDto, UserDto } from '@strzel-sobie/common'
 import type { Role } from '@strzel-sobie/common/models'
+
+type FetchUsersParams = Partial<Pick<GetUsersOptions, 'page' | 'limit' | 'sortBy' | 'sortOrder' | 'filter'>>
 
 const mapRoleToAssignment = (role: Role, rangeId?: number): RoleAssignment | null => {
   if (!isUserRole(role.name)) {
@@ -81,6 +83,15 @@ export const useAdminStore = defineStore('admin', {
     isLoadingPending: false,
     roles: [] as RoleDefinition[],
     isLoadingRoles: false,
+    usersPagination: {
+      total: 0,
+      page: 1,
+      limit: 10,
+    } as PaginatedUsersDto['pagination'],
+    usersSort: {
+      sortBy: 'createdAt' as GetUsersOptions['sortBy'],
+      sortOrder: 'desc' as GetUsersOptions['sortOrder'],
+    },
   }),
   getters: {
     globalRoleDefinitions(state): RoleDefinition[] {
@@ -96,12 +107,28 @@ export const useAdminStore = defineStore('admin', {
     },
   },
   actions: {
-    async fetchUsers() {
+    async fetchUsers(params: FetchUsersParams = {}) {
       this.isLoadingUsers = true
 
+      const page = params.page ?? this.usersPagination.page ?? 1
+      const limit = params.limit ?? this.usersPagination.limit ?? 10
+      const sortBy = params.sortBy ?? this.usersSort.sortBy ?? 'createdAt'
+      const sortOrder = params.sortOrder ?? this.usersSort.sortOrder ?? 'desc'
+      const filter = params.filter ?? undefined
+
       try {
-        const { data } = await http.get<PaginatedUsersDto>('/users')
+        const { data } = await http.get<PaginatedUsersDto>('/users', {
+          params: {
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            filter,
+          },
+        })
         this.users = data.data.map(mapUserDtoToRow)
+        this.usersPagination = data.pagination
+        this.usersSort = { sortBy, sortOrder }
       } finally {
         this.isLoadingUsers = false
       }
@@ -207,6 +234,8 @@ export const useAdminStore = defineStore('admin', {
       this.users = []
       this.pendingUsers = []
       this.roles = []
+      this.usersPagination = { total: 0, page: 1, limit: 10 }
+      this.usersSort = { sortBy: 'createdAt', sortOrder: 'desc' }
     },
   },
 })

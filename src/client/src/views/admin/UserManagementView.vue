@@ -1,13 +1,25 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import { enUS, pl as plLocale } from 'date-fns/locale'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EditUserRolesDialog from '@/components/admin/EditUserRolesDialog.vue'
 import { useAdminStore } from '@/stores/admin'
 import type { UserRow } from '@/types/admin'
 import { UserRoleEnum, type UserRole } from '@/types/auth'
 import { getRoleTranslationKey, isUserRole } from '@/utils/roles'
+import type { GetUsersOptions } from '@strzel-sobie/common'
+
+type SortableColumn = NonNullable<GetUsersOptions['sortBy']>
+type SortDirection = NonNullable<GetUsersOptions['sortOrder']>
+type DataTableSort = { key: string; order?: 'asc' | 'desc' }
+type DataTableOptions = { page: number; itemsPerPage: number; sortBy: DataTableSort[] }
+type TableOptionsSnapshot = {
+  page: number
+  itemsPerPage: number
+  sortBy: SortableColumn
+  sortOrder: SortDirection
+}
 
 const adminStore = useAdminStore()
 const selectedUser = ref<UserRow | null>(null)
@@ -19,10 +31,13 @@ const snackbarState = reactive({
   color: 'success' as 'success' | 'error',
 })
 const lastError = ref<string | null>(null)
+const lastRequestedOptions = ref<TableOptionsSnapshot | null>(null)
+const isSyncingFromResponse = ref(false)
 
 const { t, locale } = useI18n()
 
 const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
+const sortableColumns: SortableColumn[] = ['id', 'email', 'createdAt']
 
 const headers = computed(() => [
   { title: t('admin.users.table.email'), key: 'email' },
@@ -30,6 +45,16 @@ const headers = computed(() => [
   { title: t('admin.users.table.roles'), key: 'globalRoleNames', sortable: false },
   { title: t('admin.users.table.actions'), key: 'actions', sortable: false },
 ])
+
+const tableState = reactive({
+  page: 1,
+  itemsPerPage: 10,
+  sortBy: 'createdAt' as SortableColumn,
+  sortOrder: 'desc' as SortDirection,
+})
+
+const tableSortBy = computed(() => [{ key: tableState.sortBy, order: tableState.sortOrder }])
+const totalUsers = computed(() => adminStore.usersPagination.total)
 
 const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
   snackbarState.open = true
@@ -47,16 +72,59 @@ const loadRoles = async () => {
   }
 }
 
-const fetchUsers = async () => {
+const syncTableWithStore = () => {
+  tableState.page = adminStore.usersPagination.page
+  tableState.itemsPerPage = adminStore.usersPagination.limit
+  tableState.sortBy = adminStore.usersSort.sortBy ?? tableState.sortBy
+  tableState.sortOrder = adminStore.usersSort.sortOrder ?? tableState.sortOrder
+}
+
+const fetchUsers = async (
+  overrides: Partial<{
+    page: number
+    itemsPerPage: number
+    sortBy: SortableColumn
+    sortOrder: SortDirection
+  }> = {},
+) => {
   lastError.value = null
+
+  isSyncingFromResponse.value = true
+  const page = Math.max(overrides.page ?? tableState.page, 1)
+  const itemsPerPage = Math.max(overrides.itemsPerPage ?? tableState.itemsPerPage, 1)
+  const sortBy = overrides.sortBy ?? tableState.sortBy
+  const sortOrder = overrides.sortOrder ?? tableState.sortOrder
+
+  tableState.page = page
+  tableState.itemsPerPage = itemsPerPage
+  tableState.sortBy = sortBy
+  tableState.sortOrder = sortOrder
+
+  lastRequestedOptions.value = {
+    page,
+    itemsPerPage,
+    sortBy,
+    sortOrder,
+  }
+
   try {
-    await adminStore.fetchUsers()
+    await adminStore.fetchUsers({
+      page,
+      limit: itemsPerPage,
+      sortBy,
+      sortOrder,
+    })
+    syncTableWithStore()
   } catch (error) {
     lastError.value = error instanceof Error ? error.message : t('admin.users.errors.fetch')
+  } finally {
+    await nextTick()
+    isSyncingFromResponse.value = false
   }
 }
 
 const initialize = async () => {
+  syncTableWithStore()
   try {
     await Promise.all([loadRoles(), fetchUsers()])
   } catch {
@@ -134,7 +202,7 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
       await adminStore.revokeRole(selectedUser.value.id, assignment.id, null)
     }
 
-    await adminStore.fetchUsers()
+    await fetchUsers()
     showSnackbar(t('admin.users.snackbarSuccess'))
     closeDialog()
   } catch (error) {
@@ -165,6 +233,40 @@ const availableGlobalRoleOptions = computed<UserRole[]>(() =>
 )
 
 const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalRoleNames ?? [])
+
+const handleTableOptionsUpdate = (options: DataTableOptions) => {
+  if (isSyncingFromResponse.value || adminStore.isLoadingUsers) {
+    return
+  }
+
+  const [sort] = options.sortBy
+  const sortBy = sortableColumns.includes(sort?.key as SortableColumn)
+    ? (sort?.key as SortableColumn)
+    : tableState.sortBy
+  const sortOrder: SortDirection =
+    sort?.order === 'asc' || sort?.order === 'desc' ? sort.order : tableState.sortOrder
+
+  if (
+    lastRequestedOptions.value &&
+    lastRequestedOptions.value.page === options.page &&
+    lastRequestedOptions.value.itemsPerPage === options.itemsPerPage &&
+    lastRequestedOptions.value.sortBy === sortBy &&
+    lastRequestedOptions.value.sortOrder === sortOrder
+  ) {
+    tableState.page = lastRequestedOptions.value.page
+    tableState.itemsPerPage = lastRequestedOptions.value.itemsPerPage
+    tableState.sortBy = lastRequestedOptions.value.sortBy
+    tableState.sortOrder = lastRequestedOptions.value.sortOrder
+    return
+  }
+
+  void fetchUsers({
+    page: options.page,
+    itemsPerPage: options.itemsPerPage,
+    sortBy,
+    sortOrder,
+  })
+}
 </script>
 
 <template>
@@ -202,12 +304,17 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
         {{ lastError }}
       </v-alert>
 
-      <v-data-table
+      <v-data-table-server
         :headers="headers"
         :items="adminStore.users"
+        :items-length="totalUsers"
         :loading="adminStore.isLoadingUsers"
+        v-model:page="tableState.page"
+        v-model:items-per-page="tableState.itemsPerPage"
+        :sort-by="tableSortBy"
         class="elevation-0"
         data-testid="user-management-table"
+        @update:options="handleTableOptionsUpdate"
       >
         <template #item.createdAt="{ item }">
           {{ formatDate(item.createdAt) }}
@@ -252,7 +359,7 @@ const selectedUserRoles = computed<UserRole[]>(() => selectedUser.value?.globalR
             </p>
           </div>
         </template>
-      </v-data-table>
+      </v-data-table-server>
     </v-card>
 
     <EditUserRolesDialog
