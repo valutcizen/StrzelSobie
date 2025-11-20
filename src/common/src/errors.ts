@@ -151,3 +151,10 @@ export class ReservationCancellationError extends Error {
     this.name = 'ReservationCancellationError';
   }
 }
+
+export class RangeClosedError extends Error {
+  constructor(message = 'Range is closed for the selected time window') {
+    super(message);
+    this.name = 'RangeClosedError';
+  }
+}

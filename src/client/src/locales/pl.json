@@ -49,6 +49,9 @@
       "day": "Dzień",
       "week": "Tydzień"
     },
+    "errors": {
+      "rangeClosed": "Strzelnica jest zamknięta w wybranym czasie."
+    },
     "snackbar": {
       "propositionSubmitted": "Propozycja została zgłoszona.",
       "reservationSaved": "Rezerwacja została zapisana.",
@@ -72,7 +75,8 @@
     },
     "propositionDialog": {
       "title": "Zaproponuj termin",
-      "submit": "Wyślij"
+      "submit": "Wyślij",
+      "defaultError": "Nie udało się zgłosić propozycji. Spróbuj ponownie."
     },
     "reservationDialog": {
       "title": "Nowa rezerwacja",

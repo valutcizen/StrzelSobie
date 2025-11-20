@@ -39,6 +39,7 @@ import {
   PropositionAlreadyClosedError,
   ReservationConflictError,
   InvalidRecordTimeError,
+  RangeClosedError,
 } from '@strzel-sobie/common/models';
 import { ReservationsService } from '../../src/reservations/src/application/reservations.service';
 import type {
@@ -102,12 +103,22 @@ const createRole = (name: UserRole, scope: Role['scope'] = 'global', idSeed = Ma
   scope,
 });
 
+const defaultOperatingHours: RangeDetailsDto['operatingHours'] = {
+  monday: { open: '08:00', close: '20:00' },
+  tuesday: { open: '08:00', close: '20:00' },
+  wednesday: { open: '08:00', close: '20:00' },
+  thursday: { open: '08:00', close: '20:00' },
+  friday: { open: '08:00', close: '20:00' },
+  saturday: { open: '08:00', close: '18:00' },
+  sunday: null,
+};
+
 const createRangeDetails = (overrides: Partial<RangeDetailsDto> = {}): RangeDetailsDto => ({
   id: 1,
   slug: 'alpha-range',
   displayName: 'Alpha Range',
   totalTracks: 6,
-  operatingHours: {},
+  operatingHours: defaultOperatingHours,
   ...overrides,
 });
 
@@ -623,6 +634,29 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
+    });
+
+    it('returns RangeClosedError when requested time is outside operating hours', async () => {
+      const ctx = createTestContext({
+        operatingHours: {
+          ...defaultOperatingHours,
+          wednesday: { open: '10:00', close: '12:00' },
+        },
+      });
+      const user = createCoordinatorUser();
+      const command = createDirectReservationCommand({ startTime: '09:00', endTime: '10:30' });
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        command,
+        { force: false },
+        user
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(RangeClosedError);
+      expect(ctx.reservationsRepository.getOverlappingReservationsDetails).not.toHaveBeenCalled();
+      expect(ctx.reservationsRepository.createReservation).not.toHaveBeenCalled();
     });
 
     it('returns failure when conflict exists and force disabled', async () => {
@@ -1439,6 +1473,29 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(InvalidPropositionTimeError);
+    });
+
+    it('returns RangeClosedError when proposition falls outside operating hours', async () => {
+      const ctx = createTestContext({
+        operatingHours: {
+          ...defaultOperatingHours,
+          tuesday: { open: '10:00', close: '12:00' },
+        },
+      });
+      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
+      const narrowedCommand = {
+        ...command,
+        eventDate: '2024-04-02',
+        startTime: '08:00',
+        endTime: '09:00',
+      };
+
+      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, narrowedCommand, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(RangeClosedError);
+      expect(ctx.reservationsRepository.getOverlappingUsage).not.toHaveBeenCalled();
+      expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
     });
 
     it('allows users with range member roles to create propositions', async () => {

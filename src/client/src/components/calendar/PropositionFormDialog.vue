@@ -15,6 +15,15 @@
       >
         <template #default="{ isSubmitting, meta }">
           <v-card-text>
+            <v-alert
+              v-if="submissionError"
+              type="error"
+              variant="tonal"
+              border="start"
+              class="mb-4"
+            >
+              {{ submissionError }}
+            </v-alert>
             <Field
               v-slot="{ field, errorMessage }"
               name="date"
@@ -104,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Form, Field } from 'vee-validate'
 import type { SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
@@ -112,6 +121,7 @@ import { useI18n } from 'vue-i18n'
 import { http } from '../../services/http'
 import { ensureTimePrecision, toDateInputValue, toTimeInputValue } from '../../utils/datetime'
 import type { CreatePropositionCommand, CreatedPropositionDto } from '@strzel-sobie/common'
+import { isAxiosError } from 'axios'
 
 export interface SelectedSlot {
   start: string
@@ -140,6 +150,8 @@ const schema = yup.object({
 })
 
 const { t } = useI18n()
+const submissionError = ref<string | null>(null)
+const defaultErrorMessage = t('calendar.propositionDialog.defaultError')
 
 interface PropositionFormValues {
   date: string
@@ -187,11 +199,31 @@ const initialValues = computed(() => {
 const formKey = computed(() => (props.selectedSlot ? `${props.selectedSlot.start}-${props.selectedSlot.end}` : 'default'))
 
 const onDialogToggle = (value: boolean) => {
+  if (!value) {
+    submissionError.value = null
+  }
   emit('update:open', value)
 }
 
 const closeDialog = () => {
+  submissionError.value = null
   emit('update:open', false)
+}
+
+const mapSubmissionError = (error: unknown): string => {
+  if (isAxiosError(error)) {
+    const payload = error.response?.data as { code?: string; message?: string } | undefined
+    switch (payload?.code) {
+      case 'range_closed':
+        return t('calendar.errors.rangeClosed')
+      case 'invalid_time_window':
+        return defaultErrorMessage
+      default:
+        return payload?.message ?? defaultErrorMessage
+    }
+  }
+
+  return defaultErrorMessage
 }
 
 const submitProposition: SubmissionHandler = async (values, _ctx) => {
@@ -199,6 +231,8 @@ const submitProposition: SubmissionHandler = async (values, _ctx) => {
   if (!props.rangeSlug) {
     return
   }
+
+  submissionError.value = null
 
   const payload: CreatePropositionCommand = {
     eventDate: date,
@@ -208,7 +242,13 @@ const submitProposition: SubmissionHandler = async (values, _ctx) => {
     tracksRequested: Number(tracks),
   }
 
-  await http.post<CreatedPropositionDto>(`/ranges/${props.rangeSlug}/propositions`, payload)
+  try {
+    await http.post<CreatedPropositionDto>(`/ranges/${props.rangeSlug}/propositions`, payload)
+  } catch (error) {
+    submissionError.value = mapSubmissionError(error)
+    return
+  }
+
   emit('submitted')
   closeDialog()
 }

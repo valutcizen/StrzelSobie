@@ -277,6 +277,8 @@ const mapSubmissionError = (error: unknown): ReservationSubmissionError => {
           return t('calendar.reservationDialog.propositionNotFound')
         case 'proposition_closed':
           return 'Propozycja nie jest już dostępna do konwersji.'
+        case 'range_closed':
+          return t('calendar.errors.rangeClosed')
         default:
           return data?.message ?? defaultErrorMessage
       }

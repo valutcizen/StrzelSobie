@@ -2,6 +2,7 @@ import {
   ForbiddenError,
   InvalidPropositionTimeError,
   InvalidReservationTimeError,
+  RangeClosedError,
   PropositionAlreadyClosedError,
   PropositionConflictError,
   PropositionNotFoundError,
@@ -52,6 +53,13 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 400,
       body: { code: 'invalid_reservation_time', message: error.message },
+    };
+  }
+
+  if (error instanceof RangeClosedError) {
+    return {
+      status: 400,
+      body: { code: 'range_closed', message: error.message },
     };
   }
 

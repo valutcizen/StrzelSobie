@@ -97,7 +97,10 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       slug: 'north-range',
       displayName: 'North Range',
       totalTracks: 10,
-      operatingHours: { tuesday: { open: '09:00', close: '17:00' } },
+      operatingHours: {
+        monday: { open: '08:00', close: '20:00' },
+        tuesday: { open: '09:00', close: '17:00' },
+      },
     };
     const adminRole: Role = { id: 10, name: UserRole.ClubCommunityAdministrator, scope: 'global' };
     const user: UserDto = {

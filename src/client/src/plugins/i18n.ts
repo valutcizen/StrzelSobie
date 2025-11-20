@@ -92,6 +92,9 @@ const messages = {
         day: 'Day',
         week: 'Week',
       },
+      errors: {
+        rangeClosed: 'The range is closed for the selected time window.',
+      },
       alerts: {
         detailsFetchFailed: 'Failed to load event details.',
       },
@@ -119,6 +122,7 @@ const messages = {
       propositionDialog: {
         title: 'Propose a slot',
         submit: 'Send',
+        defaultError: 'Failed to submit the proposition. Try again.',
       },
       reservationDialog: {
         title: 'New reservation',
@@ -398,6 +402,9 @@ const messages = {
         day: 'Dzień',
         week: 'Tydzień',
       },
+      errors: {
+        rangeClosed: 'Strzelnica jest zamknięta w wybranym czasie.',
+      },
       alerts: {
         detailsFetchFailed: 'Nie udało się pobrać szczegółów wydarzenia.',
       },
@@ -425,6 +432,7 @@ const messages = {
       propositionDialog: {
         title: 'Zaproponuj termin',
         submit: 'Wyślij',
+        defaultError: 'Nie udało się zgłosić propozycji. Spróbuj ponownie.',
       },
       reservationDialog: {
         title: 'Nowa rezerwacja',

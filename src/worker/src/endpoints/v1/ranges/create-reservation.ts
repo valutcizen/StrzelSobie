@@ -210,7 +210,7 @@ export class CreateReservation extends OpenAPIRoute {
         },
       },
       '400': {
-        description: 'Invalid request payload or conflicting schedule',
+        description: 'Invalid request payload, outside operating hours, or conflicting schedule',
       },
       '403': {
         description: 'User not permitted to create reservations',

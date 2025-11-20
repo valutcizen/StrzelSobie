@@ -38,7 +38,9 @@ import {
   ReservationDetailDto,
   ReservationNotFoundError,
   Result,
+  RangeClosedError,
   UnauthorizedPropositionError,
+  OperatingHours,
   UserDto,
 } from '@strzel-sobie/common';
 import {
@@ -416,6 +418,16 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(validationError);
     }
 
+    const operatingHoursError = this.ensureWithinOperatingHours(
+      command.eventDate,
+      command.startTime,
+      command.endTime,
+      rangeDetails.operatingHours
+    );
+    if (operatingHoursError) {
+      return Result.fail(operatingHoursError);
+    }
+
     try {
       const usage = await this.reservationsRepository.getOverlappingUsage(
         rangeId,
@@ -542,6 +554,16 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(validationError);
     }
 
+    const operatingHoursError = this.ensureWithinOperatingHours(
+      command.eventDate,
+      command.startTime,
+      command.endTime,
+      rangeDetails.operatingHours
+    );
+    if (operatingHoursError) {
+      return Result.fail(operatingHoursError);
+    }
+
     let conflicts: ReservationConflict[];
     try {
       conflicts = await this.reservationsRepository.getOverlappingReservationsDetails(
@@ -661,6 +683,16 @@ export class ReservationsService implements IReservationsService {
     );
     if (validationError) {
       return Result.fail(validationError);
+    }
+
+    const operatingHoursError = this.ensureWithinOperatingHours(
+      eventDate,
+      startTime,
+      endTime,
+      rangeDetails.operatingHours
+    );
+    if (operatingHoursError) {
+      return Result.fail(operatingHoursError);
     }
 
     let conflicts: ReservationConflict[];
@@ -1138,6 +1170,70 @@ export class ReservationsService implements IReservationsService {
     }
 
     return null;
+  }
+
+  private ensureWithinOperatingHours(
+    eventDate: string,
+    startTime: string,
+    endTime: string,
+    operatingHours: OperatingHours
+  ): Error | null {
+    const dayKey = this.getOperatingDayKey(eventDate);
+    if (!dayKey) {
+      return new RangeClosedError('Range is closed for the selected date');
+    }
+
+    const window = operatingHours?.[dayKey];
+    if (!window) {
+      return new RangeClosedError('Range is closed for the selected date');
+    }
+
+    const openMinutes = this.toMinutes(window.open);
+    const closeMinutes = this.toMinutes(window.close);
+    const startMinutes = this.toMinutes(startTime);
+    const endMinutes = this.toMinutes(endTime);
+
+    if (
+      openMinutes === null ||
+      closeMinutes === null ||
+      startMinutes === null ||
+      endMinutes === null
+    ) {
+      return new RangeClosedError('Range operating hours are misconfigured');
+    }
+
+    if (startMinutes < openMinutes || endMinutes > closeMinutes) {
+      return new RangeClosedError('Selected time is outside of range operating hours');
+    }
+
+    return null;
+  }
+
+  private getOperatingDayKey(eventDate: string): string | null {
+    const dayNames = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ] as const;
+
+    const date = new Date(`${eventDate}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return dayNames[date.getUTCDay()] ?? null;
+  }
+
+  private toMinutes(time: string): number | null {
+    const [hours, minutes] = time.split(':').map(Number);
+    if ([hours, minutes].some((value) => Number.isNaN(value))) {
+      return null;
+    }
+    return hours * 60 + minutes;
   }
 
   private validateRecordCommand(

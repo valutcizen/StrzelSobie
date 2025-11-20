@@ -127,7 +127,7 @@ export class CreateProposition extends OpenAPIRoute {
         },
       },
       '400': {
-        description: 'Validation failed or schedule conflict detected',
+        description: 'Validation failed, outside operating hours, or schedule conflict detected',
       },
       '403': {
         description: 'User not permitted to create propositions',
