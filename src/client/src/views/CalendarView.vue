@@ -1,44 +1,24 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import FullCalendar from '@fullcalendar/vue3'
-import type {
-  CalendarOptions,
-  DateSelectArg,
-  DatesSetArg,
-  EventClickArg,
-  EventInput,
-  EventMountArg,
-} from '@fullcalendar/core'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import plLocale from '@fullcalendar/core/locales/pl'
-import { useCalendarStore } from '@/stores/calendar'
-import { useAuthStore } from '@/stores/auth'
 import EventDetailDialog from '@/components/calendar/EventDetailDialog.vue'
-import PropositionFormDialog, {
-  type SelectedSlot,
-} from '@/components/calendar/PropositionFormDialog.vue'
-import ReservationFormDialog, {
-  type ReservationSubmissionError,
-} from '@/components/calendar/ReservationFormDialog.vue'
+import PropositionFormDialog from '@/components/calendar/PropositionFormDialog.vue'
+import ReservationFormDialog from '@/components/calendar/ReservationFormDialog.vue'
 import ConfirmationDialog from '@/components/common/ConfirmationDialog.vue'
 import RecordFormDialog from '@/components/calendar/RecordFormDialog.vue'
-import type {
-  PersonSummary,
-  RangeEvent,
-  RangeEventDetail,
-  PropositionEventDetail,
-  ReservationEventDetail,
-} from '@/types/calendar'
-import { toDateOnly } from '@/utils/datetime'
-import { http } from '@/services/http'
+import { useCalendarStore } from '@/stores/calendar'
+import { useAuthStore } from '@/stores/auth'
+import { useRangeStore } from '@/stores/range'
 import { UserRoleEnum } from '@/types/auth'
-import type { PropositionDetailDto, ReservationDetailDto } from '@strzel-sobie/common'
+import type { RangeEvent } from '@/types/calendar'
 import { useI18n } from 'vue-i18n'
 import { useDisplay } from 'vuetify'
-import { useRangeStore } from '@/stores/range'
+import { useOperatingHours } from '@/views/calendar/useOperatingHours'
+import { useCalendarEvents } from '@/views/calendar/useCalendarEvents'
+import { useEventDetails } from '@/views/calendar/useEventDetails'
+import { useCalendarDialogs } from '@/views/calendar/useCalendarDialogs'
+import CalendarHeaderActions from '@/views/calendar/CalendarHeaderActions.vue'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
@@ -46,6 +26,7 @@ const rangeStore = useRangeStore()
 const route = useRoute()
 const { t, locale } = useI18n()
 const display = useDisplay()
+
 const isSmallScreen = computed(() => display.smAndDown.value)
 const defaultView = computed(() => (isSmallScreen.value ? 'timeGridDay' : 'timeGridWeek'))
 
@@ -70,56 +51,6 @@ const canManageRecords = computed(
     ]),
 )
 
-const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
-const calendarContainerRef = ref<HTMLElement | null>(null)
-let resizeObserver: ResizeObserver | null = null
-const currentViewRange = ref<{ start: Date; end: Date } | null>(null)
-const selectedEvent = ref<RangeEvent | null>(null)
-const eventDetailOpen = ref(false)
-const weekdayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
-
-interface EventDetailState {
-  loading: boolean
-  error: string | null
-  detail: RangeEventDetail | null
-}
-
-const eventDetailState = reactive<EventDetailState>({
-  loading: false,
-  error: null,
-  detail: null,
-})
-
-const detailCache = new Map<string, RangeEventDetail>()
-const detailRequestId = ref(0)
-
-const selectedSlot = ref<SelectedSlot | null>(null)
-const propositionDialogOpen = ref(false)
-const reservationDialog = reactive({
-  open: false,
-  propositionId: null as number | null,
-  defaultStart: null as string | null,
-  defaultEnd: null as string | null,
-  defaultTracks: null as number | null,
-  defaultParticipants: null as number | null,
-  defaultIsPublic: null as boolean | null,
-  defaultIsOpenForJoining: null as boolean | null,
-})
-const recordDialogOpen = ref(false)
-const confirmationState = reactive({
-  open: false,
-  loading: false,
-  title: '',
-  description: '',
-  successMessage: '',
-  action: null as null | (() => Promise<void>),
-})
-const snackbarState = reactive({
-  open: false,
-  message: '',
-  color: 'success' as 'success' | 'error',
-})
-
 const isJoinableIndicatorVisible = computed(() =>
   authStore.hasAnyRole([
     UserRoleEnum.Member,
@@ -129,308 +60,87 @@ const isJoinableIndicatorVisible = computed(() =>
   ]),
 )
 
-const calendarEvents = computed<EventInput[]>(() =>
-  calendarStore.events.map((event) => {
-    const classNames = [`event-${event.type}`]
-    let backgroundColor = '#4a5568'
-    let borderColor = '#2d3748'
-    let textColor = '#ffffff'
+const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
+const calendarContainerRef = ref<HTMLElement | null>(null)
+const currentViewRange = ref<{ start: Date; end: Date } | null>(null)
+let resizeObserver: ResizeObserver | null = null
 
-    if (event.type === 'proposition') {
-      const isMember = Boolean(event.meta?.isMember)
-      classNames.push(isMember ? 'event-proposition-member' : 'event-proposition-guest')
-      backgroundColor = isMember ? '#2746b9' : '#3a6bff'
-      borderColor = isMember ? '#1d3391' : '#2651d6'
-    } else if (event.type === 'reservation') {
-      const isPublic = Boolean(event.meta?.isPublic)
-      const isJoinable = Boolean(event.meta?.isOpenForJoining)
+const { closedCalendarBackgroundEvents, calendarTimeBounds } = useOperatingHours({
+  currentViewRange,
+  events: computed(() => calendarStore.events),
+  t,
+})
 
-      if (isPublic) {
-        classNames.push('event-reservation-public')
-        backgroundColor = '#f59e0b'
-        borderColor = '#c27802'
-        textColor = '#2f1b00'
-      } else {
-        classNames.push(isJoinable ? 'event-reservation-joinable' : 'event-reservation-private')
-        backgroundColor = '#2f9e44'
-        borderColor = isJoinable ? '#c27802' : '#1f7d3f'
-      }
-    } else if (event.type === 'record') {
-      classNames.push('event-record')
-      backgroundColor = '#6d4c41'
-      borderColor = '#4e342e'
-    }
+let clearEventDetailCache: () => void = () => {}
 
-    if (event.meta?.isMember) {
-      classNames.push('event-member')
-    }
+const {
+  calendarOptions,
+  handleEventDidMount,
+  loadEventsForRange,
+  refreshEvents,
+} = useCalendarEvents({
+  calendarRef,
+  calendarStore,
+  closedCalendarBackgroundEvents,
+  calendarTimeBounds,
+  currentViewRange,
+  defaultView,
+  isJoinableIndicatorVisible,
+  locale,
+  onForceReload: () => clearEventDetailCache(),
+  rangeSlug,
+  t,
+})
 
-    if (event.meta?.isOpenForJoining && isJoinableIndicatorVisible.value) {
-      classNames.push('event-joinable')
-    }
+const {
+  confirmationState,
+  handleConfirmationConfirm,
+  handlePropositionSubmitted,
+  handleRecordSubmitted,
+  handleReservationError,
+  handleReservationSubmitted,
+  handleSlotSelect,
+  openCancellationConfirmation,
+  openPropositionDialog,
+  openReservationDialog,
+  propositionDialogOpen,
+  recordDialogOpen,
+  reservationDialog,
+  selectedSlot,
+  snackbarState,
+} = useCalendarDialogs({
+  calendarRef,
+  canCreateReservations,
+  rangeSlug,
+  refreshEvents,
+  t,
+})
 
-    return {
-      id: event.id,
-      title: event.title,
-      start: event.start,
-      end: event.end,
-      allDay: event.allDay ?? false,
-      backgroundColor,
-      borderColor,
-      textColor,
-      extendedProps: {
-        rangeEvent: event,
-      },
-      classNames,
-    }
-  }),
-)
+const {
+  clearCache,
+  eventDetailOpen,
+  eventDetailState,
+  handleAcceptEvent,
+  handleDetailReload,
+  handleEventClick,
+  selectedEvent,
+} = useEventDetails({
+  openReservationDialog,
+  t,
+})
 
-type PropositionStatus = Exclude<PropositionEventDetail['status'], null>
+clearEventDetailCache = clearCache
 
-const PROPOSITION_STATUSES = new Set<PropositionStatus>(['open', 'converted', 'cancelled'])
+const enhancedCalendarOptions = computed(() => ({
+  ...calendarOptions.value,
+  select: handleSlotSelect,
+  eventClick: handleEventClick,
+  eventDidMount: handleEventDidMount,
+}))
 
-const getEventDetailCacheKey = (event: RangeEvent) => event.id
-
-const toNullableNumber = (value: unknown): number | null =>
-  typeof value === 'number' ? value : null
-
-const toNullableString = (value: unknown): string | null =>
-  typeof value === 'string' ? value : null
-
-const toBooleanOrNull = (value: unknown): boolean | null => {
-  if (typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    if (Number.isNaN(value)) {
-      return null
-    }
-    return value !== 0
-  }
-
-  return null
-}
-
-const toPersonSummary = (raw: unknown): PersonSummary | null => {
-  if (!raw || typeof raw !== 'object') {
-    return null
-  }
-
-  const data = raw as Record<string, unknown>
-  const id = typeof data.id === 'number' ? data.id : null
-  const email = toNullableString(data.email)
-  const phoneNumber = toNullableString(data.phoneNumber ?? data.phone_number)
-  const displayName = toNullableString(data.displayName ?? data.display_name)
-
-  if (id === null && !email && !phoneNumber && !displayName) {
-    return null
-  }
-
-  return {
-    id,
-    email,
-    phoneNumber,
-    displayName,
-  }
-}
-
-const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEventDetail => {
-  const data = (raw ?? {}) as Record<string, unknown>
-
-  const propositionId =
-    typeof data.id === 'number' ? data.id : event.meta?.propositionId ?? event.sourceId
-
-  const numParticipants =
-    toNullableNumber(data.numParticipants ?? data.num_participants) ??
-    (typeof event.meta?.numParticipants === 'number' ? event.meta.numParticipants : null)
-
-  const tracksRequested =
-    toNullableNumber(data.tracksRequested ?? data.tracks_requested) ??
-    (typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null)
-
-  const statusRaw = data.status
-  const statusValue = typeof statusRaw === 'string' ? statusRaw : null
-  const status =
-    statusValue && PROPOSITION_STATUSES.has(statusValue as PropositionStatus)
-      ? (statusValue as PropositionStatus)
-      : null
-
-  const createdAt = toNullableString(data.createdAt ?? data.created_at)
-  const requester = toPersonSummary(data.requester ?? data.user)
-  const notes = toNullableString(data.notes ?? data.additionalNotes ?? data.comment)
-
-  return {
-    type: 'proposition',
-    propositionId,
-    numParticipants,
-    tracksRequested,
-    status,
-    createdAt,
-    requester,
-    notes: notes ?? undefined,
-  }
-}
-
-const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEventDetail => {
-  const data = (raw ?? {}) as Record<string, unknown>
-
-  const reservationId =
-    typeof data.id === 'number' ? data.id : event.meta?.reservationId ?? event.sourceId
-
-  let propositionId = toNullableNumber(data.propositionId ?? data.proposition_id)
-
-  const numParticipants =
-    toNullableNumber(data.numParticipants ?? data.num_participants) ??
-    (typeof event.meta?.numParticipants === 'number' ? event.meta.numParticipants : null)
-
-  const tracksRequested =
-    toNullableNumber(
-      data.tracksRequested ??
-        data.tracks_requested ??
-        data.tracksAllocated ??
-        data.tracks_allocated,
-    ) ?? (typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null)
-
-  const isPublic =
-    toBooleanOrNull(data.isPublic ?? data.is_public) ??
-    (typeof event.meta?.isPublic === 'boolean' ? event.meta.isPublic : null)
-
-  const isJoinable =
-    toBooleanOrNull(
-      data.isJoinable ??
-        data.is_joinable ??
-        data.openForJoining ??
-        data.open_for_joining,
-    ) ?? (typeof event.meta?.isOpenForJoining === 'boolean' ? event.meta.isOpenForJoining : null)
-
-  const createdAt = toNullableString(data.createdAt ?? data.created_at)
-  const coordinator = toPersonSummary(data.coordinator ?? data.owner ?? data.manager)
-  const notes = toNullableString(data.notes ?? data.additionalNotes ?? data.comment)
-  const rawPropositionDetail =
-    data.proposition ?? data.linkedProposition ?? data.originalProposition ?? null
-  const proposition =
-    rawPropositionDetail !== null ? mapPropositionDetail(rawPropositionDetail, event) : null
-
-  if (proposition && propositionId === null) {
-    propositionId = proposition.propositionId
-  }
-
-  return {
-    type: 'reservation',
-    reservationId,
-    propositionId,
-    proposition,
-    numParticipants,
-    tracksRequested,
-    isPublic,
-    isJoinable,
-    createdAt,
-    coordinator,
-    notes: notes ?? undefined,
-  }
-}
-
-const loadEventDetails = async (event: RangeEvent) => {
-  if (event.type !== 'proposition' && event.type !== 'reservation') {
-    eventDetailState.loading = false
-    eventDetailState.error = null
-    return
-  }
-
-  const cacheKey = getEventDetailCacheKey(event)
-  let endpoint: string | null = null
-
-  if (event.type === 'proposition') {
-    const propositionId = event.meta?.propositionId
-    if (!propositionId) {
-      eventDetailState.loading = false
-      eventDetailState.error = null
-      return
-    }
-    endpoint = `/propositions/${propositionId}`
-  } else {
-    const reservationId = event.meta?.reservationId
-    if (!reservationId) {
-      eventDetailState.loading = false
-      eventDetailState.error = null
-      return
-    }
-    endpoint = `/reservations/${reservationId}`
-  }
-
-  const requestId = ++detailRequestId.value
-  eventDetailState.loading = true
-  eventDetailState.error = null
-
-  try {
-    let detail: RangeEventDetail | null = null
-    if (event.type === 'proposition') {
-      const { data } = await http.get<PropositionDetailDto>(endpoint)
-      detail = mapPropositionDetail(data, event)
-    } else {
-      const { data } = await http.get<ReservationDetailDto>(endpoint)
-      detail = mapReservationDetail(data, event)
-    }
-
-    if (detail) {
-      detailCache.set(cacheKey, detail)
-    }
-
-    if (detailRequestId.value === requestId) {
-      eventDetailState.detail = detail
-    }
-  } catch (error) {
-    if (detailRequestId.value === requestId) {
-      eventDetailState.error =
-        error instanceof Error ? error.message : t('calendar.eventDetail.errors.loadFailed')
-      eventDetailState.detail = null
-    }
-  } finally {
-    if (detailRequestId.value === requestId) {
-      eventDetailState.loading = false
-    }
-  }
-}
-
-const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
-  snackbarState.open = true
-  snackbarState.message = message
-  snackbarState.color = color
-}
-
-const loadEventsForRange = async (range: { start: Date; end: Date }, force = false) => {
-  if (!rangeSlug.value) {
-    return
-  }
-
-  if (force) {
-    detailCache.clear()
-  }
-
-  await calendarStore.fetchEvents({
-    rangeSlug: rangeSlug.value,
-    startDate: toDateOnly(range.start),
-    endDate: toDateOnly(range.end),
-    force,
-  })
-}
-
-const handleDatesSet = async (info: DatesSetArg) => {
-  const prev = currentViewRange.value
-  const nextRange = { start: info.start, end: info.end }
-  const isSameRange =
-    prev &&
-    prev.start.getTime() === nextRange.start.getTime() &&
-    prev.end.getTime() === nextRange.end.getTime()
-
-  if (isSameRange) {
-    return
-  }
-
-  currentViewRange.value = nextRange
-  await loadEventsForRange(nextRange)
+const openCancellationDialog = (event: RangeEvent) => {
+  eventDetailOpen.value = false
+  openCancellationConfirmation(event)
 }
 
 const loadRangeDetails = async () => {
@@ -442,389 +152,6 @@ const loadRangeDetails = async () => {
     await rangeStore.fetchRangeDetails(rangeSlug.value)
   } catch {
     // If range metadata is unavailable, fall back to default calendar bounds.
-  }
-}
-
-const handleSlotSelect = (selectionInfo: DateSelectArg) => {
-  const { start, end } = selectionInfo
-
-  if (reservationDialog.open || propositionDialogOpen.value) {
-    calendarRef.value?.getApi().unselect()
-    return
-  }
-
-  const isSameDay = start.toDateString() === end.toDateString()
-
-  // Special case: selection ends at midnight of the next day.
-  const endIsMidnight =
-    end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0 && end.getMilliseconds() === 0
-  const startPlusOneDay = new Date(start)
-  startPlusOneDay.setDate(start.getDate() + 1)
-  const endIsNextDay = startPlusOneDay.toDateString() === end.toDateString()
-
-  if (!isSameDay && !(endIsNextDay && endIsMidnight)) {
-    calendarRef.value?.getApi().unselect()
-    return
-  }
-
-  calendarRef.value?.getApi().unselect()
-
-  if (canCreateReservations.value) {
-    selectedSlot.value = null
-    openReservationDialog({
-      defaultStart: selectionInfo.startStr,
-      defaultEnd: selectionInfo.endStr,
-    })
-    return
-  }
-
-  selectedSlot.value = {
-    start: selectionInfo.startStr,
-    end: selectionInfo.endStr,
-  }
-  propositionDialogOpen.value = true
-}
-
-const handleEventClick = (clickInfo: EventClickArg) => {
-  const rangeEvent = (clickInfo.event.extendedProps.rangeEvent ?? null) as RangeEvent | null
-  if (!rangeEvent) {
-    return
-  }
-
-  selectedEvent.value = rangeEvent
-  eventDetailOpen.value = true
-
-  const cacheKey = getEventDetailCacheKey(rangeEvent)
-  const cachedDetail = detailCache.get(cacheKey) ?? null
-
-  eventDetailState.detail = cachedDetail
-  eventDetailState.error = null
-  const needsRefresh =
-    cachedDetail &&
-    rangeEvent.type === 'reservation' &&
-    cachedDetail.type === 'reservation' &&
-    cachedDetail.propositionId !== null &&
-    !cachedDetail.proposition
-  if (cachedDetail && !needsRefresh) {
-    eventDetailState.loading = false
-    return
-  }
-
-  if (rangeEvent.type === 'proposition' || rangeEvent.type === 'reservation') {
-    eventDetailState.loading = true
-    void loadEventDetails(rangeEvent)
-  } else {
-    eventDetailState.loading = false
-  }
-}
-
-const handleDetailReload = (event: RangeEvent) => {
-  if (event.type !== 'proposition' && event.type !== 'reservation') {
-    return
-  }
-
-  detailCache.delete(getEventDetailCacheKey(event))
-  eventDetailState.error = null
-  eventDetailState.loading = true
-
-  void loadEventDetails(event)
-}
-
-const handleEventDidMount = (info: EventMountArg) => {
-  info.el.setAttribute('data-event-id', info.event.id)
-}
-
-const parseTimeToMinutes = (value: string | null | undefined): number | null => {
-  if (!value || typeof value !== 'string') {
-    return null
-  }
-
-  const [hoursStr, minutesStr] = value.split(':')
-  const hours = Number(hoursStr)
-  const minutes = Number(minutesStr)
-
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
-    return null
-  }
-
-  return hours * 60 + minutes
-}
-
-const formatMinutesAsTime = (totalMinutes: number): string => {
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  const paddedHours = String(Math.min(Math.max(hours, 0), 24)).padStart(2, '0')
-  const paddedMinutes = String(Math.min(Math.max(minutes, 0), 59)).padStart(2, '0')
-  return `${paddedHours}:${paddedMinutes}:00`
-}
-
-const minutesFromDate = (value: string | Date | null | undefined): number | null => {
-  if (!value) {
-    return null
-  }
-
-  const dateValue = typeof value === 'string' ? new Date(value) : value
-  if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) {
-    return null
-  }
-
-  return dateValue.getHours() * 60 + dateValue.getMinutes()
-}
-
-const minutesToDateOnDay = (day: Date, minutes: number): Date => {
-  const normalizedMinutes = Math.min(Math.max(minutes, 0), 24 * 60)
-  return new Date(
-    day.getFullYear(),
-    day.getMonth(),
-    day.getDate(),
-    Math.floor(normalizedMinutes / 60),
-    normalizedMinutes % 60,
-    0,
-    0,
-  )
-}
-
-const formatDateKey = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const getWeekdayKey = (date: Date): (typeof weekdayKeys)[number] =>
-  weekdayKeys[date.getDay()] ?? weekdayKeys[0]
-
-const CLOSED_BACKGROUND_COLOR = '#e7eaf0'
-
-const createClosedBackgroundEvent = (
-  start: Date,
-  end: Date,
-  idSuffix: string,
-  title: string,
-): EventInput | null => {
-  if (end <= start) {
-    return null
-  }
-
-  return {
-    id: `closed-${idSuffix}-${start.getTime()}`,
-    start,
-    end,
-    display: 'background',
-    backgroundColor: CLOSED_BACKGROUND_COLOR,
-    classNames: ['calendar-closed-slot'],
-    title,
-  }
-}
-
-const closedCalendarBackgroundEvents = computed<EventInput[]>(() => {
-  const viewRange = currentViewRange.value
-  const operatingHours = rangeStore.currentRange?.operatingHours
-
-  if (!viewRange || !operatingHours) {
-    return []
-  }
-
-  const closedEvents: EventInput[] = []
-  const dayCursor = new Date(viewRange.start)
-  dayCursor.setHours(0, 0, 0, 0)
-
-  const viewEnd = new Date(viewRange.end)
-  viewEnd.setHours(0, 0, 0, 0)
-
-  const closedLabel = t('calendar.view.closedLabel')
-
-  while (dayCursor < viewEnd) {
-    const dayStart = new Date(dayCursor)
-    const dayEnd = new Date(dayCursor)
-    dayEnd.setDate(dayEnd.getDate() + 1)
-
-    const dayKey = getWeekdayKey(dayStart)
-    const dateKey = formatDateKey(dayStart)
-    const hours = operatingHours[dayKey] ?? null
-
-    if (!hours) {
-      const closedDay = createClosedBackgroundEvent(dayStart, dayEnd, dateKey, closedLabel)
-      if (closedDay) {
-        closedEvents.push(closedDay)
-      }
-    } else {
-      const openMinutes = parseTimeToMinutes(hours.open)
-      const closeMinutes = parseTimeToMinutes(hours.close)
-
-      const isDayClosed = openMinutes === null || closeMinutes === null || openMinutes >= closeMinutes
-      if (isDayClosed) {
-        const closedDay = createClosedBackgroundEvent(dayStart, dayEnd, dateKey, closedLabel)
-        if (closedDay) {
-          closedEvents.push(closedDay)
-        }
-      } else {
-        const beforeOpen = createClosedBackgroundEvent(
-          dayStart,
-          minutesToDateOnDay(dayStart, openMinutes),
-          `${dateKey}-before`,
-          closedLabel,
-        )
-        const afterClose = createClosedBackgroundEvent(
-          minutesToDateOnDay(dayStart, closeMinutes),
-          dayEnd,
-          `${dateKey}-after`,
-          closedLabel,
-        )
-
-        if (beforeOpen) {
-          closedEvents.push(beforeOpen)
-        }
-        if (afterClose) {
-          closedEvents.push(afterClose)
-        }
-      }
-    }
-
-    dayCursor.setDate(dayCursor.getDate() + 1)
-  }
-
-  return closedEvents
-})
-
-const calendarTimeBounds = computed(() => {
-  const operatingHours = rangeStore.currentRange?.operatingHours
-  let earliest: number | null = null
-  let latest: number | null = null
-
-  if (operatingHours) {
-    for (const entry of Object.values(operatingHours)) {
-      if (!entry) {
-        continue
-      }
-
-      const openMinutes = parseTimeToMinutes(entry.open)
-      const closeMinutes = parseTimeToMinutes(entry.close)
-
-      if (openMinutes === null || closeMinutes === null) {
-        continue
-      }
-
-      earliest = earliest === null ? openMinutes : Math.min(earliest, openMinutes)
-      latest = latest === null ? closeMinutes : Math.max(latest, closeMinutes)
-    }
-  }
-
-  const eventBounds = calendarStore.events.reduce<{
-    earliest: number | null
-    latest: number | null
-  }>(
-    (acc, event) => {
-      const startMinutes = minutesFromDate(event.start)
-      const endMinutes = minutesFromDate(event.end)
-
-      if (startMinutes !== null) {
-        acc.earliest = acc.earliest === null ? startMinutes : Math.min(acc.earliest, startMinutes)
-      }
-      if (endMinutes !== null) {
-        acc.latest = acc.latest === null ? endMinutes : Math.max(acc.latest, endMinutes)
-      }
-
-      return acc
-    },
-    { earliest: null, latest: null },
-  )
-
-  const candidateMin = [earliest, eventBounds.earliest].filter(
-    (value): value is number => typeof value === 'number',
-  )
-  const candidateMax = [latest, eventBounds.latest].filter(
-    (value): value is number => typeof value === 'number',
-  )
-
-  if (candidateMin.length === 0 && candidateMax.length === 0) {
-    return null
-  }
-
-  const slotMinMinutes = Math.max(0, Math.min(...(candidateMin.length ? candidateMin : [0])))
-  const slotMaxMinutesRaw = Math.max(
-    slotMinMinutes + 60,
-    ...candidateMax,
-    ...(candidateMin.length ? candidateMin : []),
-  )
-  const slotMaxMinutes = Math.min(slotMaxMinutesRaw + 30, 24 * 60)
-
-  return {
-    slotMinTime: formatMinutesAsTime(slotMinMinutes),
-    slotMaxTime: formatMinutesAsTime(slotMaxMinutes),
-  }
-})
-
-const calendarDisplayEvents = computed<EventInput[]>(() => [
-  ...calendarEvents.value,
-  ...closedCalendarBackgroundEvents.value,
-])
-
-const calendarOptions = computed<CalendarOptions>(() => ({
-  plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
-  initialView: defaultView.value,
-  locales: [plLocale],
-  locale: locale.value,
-  slotDuration: '00:30:00',
-  slotMinTime: calendarTimeBounds.value?.slotMinTime ?? '00:00:00',
-  slotMaxTime: calendarTimeBounds.value?.slotMaxTime ?? '24:00:00',
-  allDaySlot: false,
-  expandRows: true,
-  firstDay: 1,
-  nowIndicator: true,
-  selectable: true,
-  selectMirror: true,
-  events: calendarDisplayEvents.value,
-  height: 'auto',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'timeGridDay,timeGridWeek',
-  },
-  buttonText: {
-    today: t('calendar.fc.today'),
-    day: t('calendar.fc.day'),
-    week: t('calendar.fc.week'),
-  },
-  select: handleSlotSelect,
-  eventClick: handleEventClick,
-  datesSet: handleDatesSet,
-  eventDidMount: handleEventDidMount,
-}))
-
-watch(
-  () => locale.value,
-  (newLocale) => {
-    const api = calendarRef.value?.getApi()
-    if (!api) {
-      return
-    }
-    api.setOption('locale', newLocale)
-    api.setOption('buttonText', {
-      today: t('calendar.fc.today'),
-      day: t('calendar.fc.day'),
-      week: t('calendar.fc.week'),
-    })
-  },
-)
-
-watch(
-  defaultView,
-  (newView) => {
-    const api = calendarRef.value?.getApi()
-    if (!api) {
-      return
-    }
-
-    if (api.view.type !== newView) {
-      api.changeView(newView)
-    }
-  },
-)
-
-const refreshEvents = async () => {
-  if (currentViewRange.value) {
-    await loadEventsForRange(currentViewRange.value, true)
   }
 }
 
@@ -849,185 +176,11 @@ watch(calendarContainerRef, (newEl, oldEl) => {
 })
 
 watch(
-  () => eventDetailOpen.value,
-  (open) => {
-    if (!open) {
-      eventDetailState.loading = false
-      eventDetailState.error = null
-      eventDetailState.detail = null
-      selectedEvent.value = null
-    }
-  },
-)
-
-const openPropositionDialog = () => {
-  const now = new Date()
-  now.setMinutes(0, 0, 0)
-  const end = new Date(now)
-  end.setHours(end.getHours() + 1)
-
-  selectedSlot.value = {
-    start: now.toISOString(),
-    end: end.toISOString(),
-  }
-  propositionDialogOpen.value = true
-}
-
-const openReservationDialog = (options: {
-  propositionId?: number | null
-  defaultStart?: string | null
-  defaultEnd?: string | null
-  defaultTracks?: number | null
-  defaultParticipants?: number | null
-  defaultIsPublic?: boolean | null
-  defaultIsOpenForJoining?: boolean | null
-}) => {
-  const defaultStart = options.defaultStart
-  const defaultEnd = options.defaultEnd
-
-  if (!defaultStart || !defaultEnd) {
-    const start = new Date()
-    start.setMinutes(0, 0, 0)
-    const end = new Date(start)
-    end.setHours(end.getHours() + 1)
-
-    reservationDialog.defaultStart = defaultStart ?? start.toISOString()
-    reservationDialog.defaultEnd = defaultEnd ?? end.toISOString()
-  } else {
-    reservationDialog.defaultStart = defaultStart
-    reservationDialog.defaultEnd = defaultEnd
-  }
-
-  reservationDialog.open = true
-  reservationDialog.propositionId = options.propositionId ?? null
-  reservationDialog.defaultTracks =
-    typeof options.defaultTracks === 'number' ? options.defaultTracks : null
-  reservationDialog.defaultParticipants =
-    typeof options.defaultParticipants === 'number' ? options.defaultParticipants : null
-
-  const isPublicDefault =
-    typeof options.defaultIsPublic === 'boolean' ? options.defaultIsPublic : true
-  reservationDialog.defaultIsPublic = isPublicDefault
-
-  const isOpenForJoiningDefault =
-    typeof options.defaultIsOpenForJoining === 'boolean'
-      ? options.defaultIsOpenForJoining && isPublicDefault
-      : false
-  reservationDialog.defaultIsOpenForJoining = isOpenForJoiningDefault
-}
-
-const handleAcceptEvent = (event: RangeEvent) => {
-  eventDetailOpen.value = false
-  let defaultTracks: number | null =
-    typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null
-  let defaultParticipants: number | null = null
-
-  const detail = eventDetailState.detail
-  if (detail && detail.type === 'proposition') {
-    if (typeof detail.tracksRequested === 'number') {
-      defaultTracks = detail.tracksRequested
-    }
-    if (typeof detail.numParticipants === 'number') {
-      defaultParticipants = detail.numParticipants
-    }
-  }
-
-  openReservationDialog({
-    propositionId: event.meta?.propositionId ?? null,
-    defaultStart: event.start,
-    defaultEnd: event.end,
-    defaultTracks,
-    defaultParticipants,
-    defaultIsPublic: false,
-    defaultIsOpenForJoining: false,
-  })
-}
-
-const performCancellation = async (event: RangeEvent) => {
-  if (!rangeSlug.value) {
-    return
-  }
-
-  if (event.type === 'proposition' && event.meta?.propositionId) {
-    await http.delete(`/propositions/${event.meta.propositionId}`)
-  } else if (event.type === 'reservation' && event.meta?.reservationId) {
-    await http.delete(`/ranges/${rangeSlug.value}/reservations/${event.meta.reservationId}`)
-  }
-}
-
-const openCancellationConfirmation = (event: RangeEvent) => {
-  eventDetailOpen.value = false
-  confirmationState.open = true
-  confirmationState.loading = false
-  confirmationState.title =
-    event.type === 'reservation'
-      ? t('calendar.confirmation.cancelReservationTitle')
-      : t('calendar.confirmation.cancelPropositionTitle')
-  confirmationState.description =
-    event.type === 'reservation'
-      ? t('calendar.confirmation.cancelReservationDescription')
-      : t('calendar.confirmation.cancelPropositionDescription')
-  confirmationState.successMessage =
-    event.type === 'reservation'
-      ? t('calendar.snackbar.reservationCancelled')
-      : t('calendar.snackbar.propositionCancelled')
-  confirmationState.action = async () => {
-    await performCancellation(event)
-    await refreshEvents()
-  }
-}
-
-const handleConfirmationConfirm = async () => {
-  if (!confirmationState.action) {
-    return
-  }
-
-  confirmationState.loading = true
-  try {
-    await confirmationState.action()
-    confirmationState.open = false
-    showSnackbar(confirmationState.successMessage, 'success')
-  } catch (error) {
-    showSnackbar(
-      error instanceof Error ? error.message : t('common.feedback.operationFailed'),
-      'error',
-    )
-  } finally {
-    confirmationState.loading = false
-  }
-}
-
-const handlePropositionSubmitted = async () => {
-  propositionDialogOpen.value = false
-  await refreshEvents()
-  showSnackbar(t('calendar.snackbar.propositionSubmitted'))
-}
-
-const handleReservationSubmitted = async () => {
-  reservationDialog.open = false
-  await refreshEvents()
-  showSnackbar(t('calendar.snackbar.reservationSaved'))
-}
-
-const handleReservationError = (error: ReservationSubmissionError) => {
-  const message = error.forceRequired
-    ? `${error.message} ${t('calendar.snackbar.forceAdvice')}`
-    : error.message
-  showSnackbar(message, 'error')
-}
-
-const handleRecordSubmitted = async () => {
-  recordDialogOpen.value = false
-  await refreshEvents()
-  showSnackbar(t('calendar.snackbar.recordSaved'))
-}
-
-watch(
   () => rangeSlug.value,
   async () => {
     await loadRangeDetails()
     calendarStore.clear()
-    detailCache.clear()
+    clearCache()
     if (currentViewRange.value) {
       await loadEventsForRange(currentViewRange.value, true)
     }
@@ -1044,7 +197,6 @@ onMounted(async () => {
     }
   }
 
-  // Ensure initial events load even before calendar emits datesSet
   await loadRangeDetails()
   if (!currentViewRange.value) {
     const start = new Date()
@@ -1067,46 +219,14 @@ onBeforeUnmount(() => {
     <v-row>
       <v-col cols="12">
         <v-card>
-          <v-card-title class="d-flex align-center justify-space-between flex-wrap gap-4">
-            <div>
-              <div class="text-h6">
-                {{ t('calendar.view.title') }}
-              </div>
-              <div class="text-caption text-medium-emphasis">
-                {{ rangeSlug }}
-              </div>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              <v-btn
-                color="secondary"
-                variant="outlined"
-                prepend-icon="mdi-target"
-                data-testid="calendar-propose-slot-button"
-                @click="openPropositionDialog"
-              >
-                {{ t('calendar.view.proposeSlot') }}
-              </v-btn>
-              <v-btn
-                v-if="canCreateReservations"
-                color="primary"
-                prepend-icon="mdi-calendar-plus"
-                data-testid="calendar-new-reservation-button"
-                @click="openReservationDialog({})"
-              >
-                {{ t('calendar.view.newReservation') }}
-              </v-btn>
-              <v-btn
-                v-if="canManageRecords"
-                color="primary"
-                variant="tonal"
-                prepend-icon="mdi-clipboard-plus"
-                data-testid="calendar-record-without-reservation-button"
-                @click="recordDialogOpen = true"
-              >
-                {{ t('calendar.view.recordWithoutReservation') }}
-              </v-btn>
-            </div>
-          </v-card-title>
+          <CalendarHeaderActions
+            :range-slug="rangeSlug"
+            :can-create-reservations="canCreateReservations"
+            :can-manage-records="canManageRecords"
+            @propose="openPropositionDialog"
+            @reserve="openReservationDialog({})"
+            @record="recordDialogOpen = true"
+          />
           <v-divider />
           <v-card-text>
             <v-alert
@@ -1125,7 +245,7 @@ onBeforeUnmount(() => {
             >
               <FullCalendar
                 ref="calendarRef"
-                :options="calendarOptions"
+                :options="enhancedCalendarOptions"
               />
             </div>
           </v-card-text>
@@ -1141,7 +261,7 @@ onBeforeUnmount(() => {
       :error="eventDetailState.error"
       @update:open="eventDetailOpen = $event"
       @accept="handleAcceptEvent"
-      @cancel="openCancellationConfirmation"
+      @cancel="openCancellationDialog"
       @reload-details="handleDetailReload"
     />
 
