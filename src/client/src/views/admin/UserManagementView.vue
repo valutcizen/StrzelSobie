@@ -202,8 +202,9 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
       await adminStore.revokeRole(selectedUser.value.id, assignment.id, null)
     }
 
-    await fetchUsers()
+    const refreshPromise = fetchUsers()
     showSnackbar(t('admin.users.snackbarSuccess'))
+    await refreshPromise
     closeDialog()
   } catch (error) {
     lastError.value =
@@ -375,7 +376,7 @@ const handleTableOptionsUpdate = (options: DataTableOptions) => {
     <v-snackbar
       v-model="snackbarState.open"
       :color="snackbarState.color"
-      timeout="3000"
+      timeout="6000"
       data-testid="user-management-snackbar"
     >
       {{ snackbarState.message }}

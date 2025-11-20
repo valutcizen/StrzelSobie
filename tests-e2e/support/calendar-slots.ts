@@ -35,8 +35,8 @@ const hashSeed = (seed: string): number => {
 };
 
 const buildWeekSlots = (weekStart: Date): SlotCandidate[] => {
-  const dayOffsets = [0, 1, 2, 3, 4, 5, 6];
-  const hours = Array.from({ length: 13 }, (_, index) => 7 + index); // 07:00–19:30
+  const dayOffsets = [0, 1, 2, 3, 4]; // Monday–Friday
+  const hours = Array.from({ length: 8 }, (_, index) => 10 + index); // 10:00–17:30
   const minutes = [0, 30];
 
   const slots: SlotCandidate[] = [];

@@ -536,38 +536,84 @@ const formatMinutesAsTime = (totalMinutes: number): string => {
   return `${paddedHours}:${paddedMinutes}:00`
 }
 
-const calendarTimeBounds = computed(() => {
-  const operatingHours = rangeStore.currentRange?.operatingHours
-  if (!operatingHours) {
+const minutesFromDate = (value: string | Date | null | undefined): number | null => {
+  if (!value) {
     return null
   }
 
+  const dateValue = typeof value === 'string' ? new Date(value) : value
+  if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) {
+    return null
+  }
+
+  return dateValue.getHours() * 60 + dateValue.getMinutes()
+}
+
+const calendarTimeBounds = computed(() => {
+  const operatingHours = rangeStore.currentRange?.operatingHours
   let earliest: number | null = null
   let latest: number | null = null
 
-  for (const entry of Object.values(operatingHours)) {
-    if (!entry) {
-      continue
+  if (operatingHours) {
+    for (const entry of Object.values(operatingHours)) {
+      if (!entry) {
+        continue
+      }
+
+      const openMinutes = parseTimeToMinutes(entry.open)
+      const closeMinutes = parseTimeToMinutes(entry.close)
+
+      if (openMinutes === null || closeMinutes === null) {
+        continue
+      }
+
+      earliest = earliest === null ? openMinutes : Math.min(earliest, openMinutes)
+      latest = latest === null ? closeMinutes : Math.max(latest, closeMinutes)
     }
-
-    const openMinutes = parseTimeToMinutes(entry.open)
-    const closeMinutes = parseTimeToMinutes(entry.close)
-
-    if (openMinutes === null || closeMinutes === null) {
-      continue
-    }
-
-    earliest = earliest === null ? openMinutes : Math.min(earliest, openMinutes)
-    latest = latest === null ? closeMinutes : Math.max(latest, closeMinutes)
   }
 
-  if (earliest === null || latest === null) {
+  const eventBounds = calendarStore.events.reduce<{
+    earliest: number | null
+    latest: number | null
+  }>(
+    (acc, event) => {
+      const startMinutes = minutesFromDate(event.start)
+      const endMinutes = minutesFromDate(event.end)
+
+      if (startMinutes !== null) {
+        acc.earliest = acc.earliest === null ? startMinutes : Math.min(acc.earliest, startMinutes)
+      }
+      if (endMinutes !== null) {
+        acc.latest = acc.latest === null ? endMinutes : Math.max(acc.latest, endMinutes)
+      }
+
+      return acc
+    },
+    { earliest: null, latest: null },
+  )
+
+  const candidateMin = [earliest, eventBounds.earliest].filter(
+    (value): value is number => typeof value === 'number',
+  )
+  const candidateMax = [latest, eventBounds.latest].filter(
+    (value): value is number => typeof value === 'number',
+  )
+
+  if (candidateMin.length === 0 && candidateMax.length === 0) {
     return null
   }
 
+  const slotMinMinutes = Math.max(0, Math.min(...(candidateMin.length ? candidateMin : [0])))
+  const slotMaxMinutesRaw = Math.max(
+    slotMinMinutes + 60,
+    ...candidateMax,
+    ...(candidateMin.length ? candidateMin : []),
+  )
+  const slotMaxMinutes = Math.min(slotMaxMinutesRaw + 30, 24 * 60)
+
   return {
-    slotMinTime: formatMinutesAsTime(earliest),
-    slotMaxTime: formatMinutesAsTime(latest),
+    slotMinTime: formatMinutesAsTime(slotMinMinutes),
+    slotMaxTime: formatMinutesAsTime(slotMaxMinutes),
   }
 })
 
