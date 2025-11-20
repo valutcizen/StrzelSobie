@@ -89,6 +89,7 @@ const messages = {
       },
       fc: {
         today: 'Today',
+        day: 'Day',
         week: 'Week',
       },
       alerts: {
@@ -394,6 +395,7 @@ const messages = {
       },
       fc: {
         today: 'Dzisiaj',
+        day: 'Dzień',
         week: 'Tydzień',
       },
       alerts: {

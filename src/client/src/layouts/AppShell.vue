@@ -128,12 +128,17 @@ const router = useRouter()
 const display = useDisplay()
 const isSmallScreen = computed(() => display.smAndDown.value)
 const drawer = ref(!isSmallScreen.value)
-const isRail = ref(isSmallScreen.value)
+// Keep the drawer expanded on small screens to show labels; allow rail only on larger viewports.
+const isRail = ref(false)
 
-watch(isSmallScreen, (isSmall) => {
-  drawer.value = !isSmall
-  isRail.value = isSmall
-}, { immediate: true })
+watch(
+  isSmallScreen,
+  (isSmall) => {
+    drawer.value = !isSmall
+    isRail.value = isSmall ? false : isRail.value
+  },
+  { immediate: true },
+)
 
 const handleLogout = async () => {
   await authStore.logout()

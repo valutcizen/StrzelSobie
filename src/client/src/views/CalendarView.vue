@@ -36,11 +36,15 @@ import { http } from '@/services/http'
 import { UserRoleEnum } from '@/types/auth'
 import type { PropositionDetailDto, ReservationDetailDto } from '@strzel-sobie/common'
 import { useI18n } from 'vue-i18n'
+import { useDisplay } from 'vuetify'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
 const route = useRoute()
 const { t, locale } = useI18n()
+const display = useDisplay()
+const isSmallScreen = computed(() => display.smAndDown.value)
+const defaultView = computed(() => (isSmallScreen.value ? 'timeGridDay' : 'timeGridWeek'))
 
 const rangeSlug = computed(() => String(route.params.rangeSlug ?? authStore.defaultRangeSlug))
 const canForceReservations = computed(() =>
@@ -496,7 +500,7 @@ const handleEventDidMount = (info: EventMountArg) => {
 
 const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
-  initialView: 'timeGridWeek',
+  initialView: defaultView.value,
   locales: [plLocale],
   locale: locale.value,
   slotDuration: '00:30:00',
@@ -511,10 +515,11 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
-    right: 'timeGridWeek',
+    right: 'timeGridDay,timeGridWeek',
   },
   buttonText: {
     today: t('calendar.fc.today'),
+    day: t('calendar.fc.day'),
     week: t('calendar.fc.week'),
   },
   select: handleSlotSelect,
@@ -533,8 +538,23 @@ watch(
     api.setOption('locale', newLocale)
     api.setOption('buttonText', {
       today: t('calendar.fc.today'),
+      day: t('calendar.fc.day'),
       week: t('calendar.fc.week'),
     })
+  },
+)
+
+watch(
+  defaultView,
+  (newView) => {
+    const api = calendarRef.value?.getApi()
+    if (!api) {
+      return
+    }
+
+    if (api.view.type !== newView) {
+      api.changeView(newView)
+    }
   },
 )
 
