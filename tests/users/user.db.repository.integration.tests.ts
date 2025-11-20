@@ -73,6 +73,41 @@ describe('UserDbRepository integration', () => {
     expect(users[0]).toHaveProperty('email');
   });
 
+  it('findAndCount paginates deterministically with provided page/limit', async () => {
+    const isolatedDb = await createTestDatabase({ includeMockData: false });
+    const isolatedRepository = new UserDbRepository(isolatedDb.db);
+
+    try {
+      const baseTimestamp = new Date('2024-01-01T00:00:00.000Z').getTime();
+      for (let i = 0; i < 5; i++) {
+        await isolatedDb.d1
+          .prepare('INSERT INTO users_users (email, created_at) VALUES (?, ?)')
+          .bind(`page-${i + 1}@example.com`, new Date(baseTimestamp + i * 1_000).toISOString())
+          .run();
+      }
+
+      const firstPage = await isolatedRepository.findAndCount({
+        page: 1,
+        limit: 2,
+        sortBy: 'createdAt',
+        sortOrder: 'asc',
+      });
+      const secondPage = await isolatedRepository.findAndCount({
+        page: 2,
+        limit: 2,
+        sortBy: 'createdAt',
+        sortOrder: 'asc',
+      });
+
+      expect(firstPage.total).toBe(5);
+      expect(secondPage.total).toBe(5);
+      expect(firstPage.users.map((user) => user.email)).toEqual(['page-1@example.com', 'page-2@example.com']);
+      expect(secondPage.users.map((user) => user.email)).toEqual(['page-3@example.com', 'page-4@example.com']);
+    } finally {
+      isolatedDb.cleanup();
+    }
+  });
+
   it('getRoles returns available role definitions', async () => {
     const roles = await repository.getRoles();
     expect(roles).toHaveLength(6);

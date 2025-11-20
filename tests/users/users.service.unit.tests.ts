@@ -158,6 +158,60 @@ describe('UserService contract', () => {
     });
   });
 
+  describe('getUsers pagination plumbing', () => {
+    it('passes sanitized pagination to repository and returns it back', async () => {
+      const { service, userRepository } = createTestContext();
+      const user = makeUserModel({ id: 10, email: 'page@example.com' });
+      const profile = makeProfile({ id: 10, email: 'page@example.com', roles: [], rangeRoles: {} });
+
+      userRepository.findAndCount.mockResolvedValue({ users: [user], total: 5 });
+      userRepository.getFullUserProfile.mockResolvedValue(profile);
+      userRepository.getRoles.mockResolvedValue([]);
+
+      const result = await service.getUsers({
+        page: 3,
+        limit: 2,
+        sortBy: 'createdAt',
+        sortOrder: 'asc',
+      });
+
+      expect(userRepository.findAndCount).toHaveBeenCalledWith({
+        page: 3,
+        limit: 2,
+        sortBy: 'createdAt',
+        sortOrder: 'asc',
+        filter: undefined,
+      });
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().pagination).toEqual({ total: 5, page: 3, limit: 2 });
+      expect(result.getValue().data[0].id).toBe(user.id);
+    });
+
+    it('normalizes non-positive or invalid page/limit before querying', async () => {
+      const { service, userRepository } = createTestContext();
+
+      userRepository.findAndCount.mockResolvedValue({ users: [], total: 0 });
+      userRepository.getFullUserProfile.mockResolvedValue(makeProfile());
+      userRepository.getRoles.mockResolvedValue([]);
+
+      const result = await service.getUsers({
+        page: 0,
+        limit: -5,
+        sortBy: 'email',
+        sortOrder: 'desc',
+      });
+
+      expect(userRepository.findAndCount).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+        sortBy: 'email',
+        sortOrder: 'desc',
+        filter: undefined,
+      });
+      expect(result.getValue().pagination).toEqual({ total: 0, page: 1, limit: 10 });
+    });
+  });
+
   describe('getFullUserProfile', () => {
     it('returns the full profile when it exists', async () => {
       const { service, userRepository } = createTestContext();

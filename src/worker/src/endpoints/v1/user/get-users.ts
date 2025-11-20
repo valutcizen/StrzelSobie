@@ -61,9 +61,10 @@ export class GetUsers extends OpenAPIRoute {
 
   async handle(c: Context) {
     const userService: UserService = c.get('userService');
-    const query = c.req.valid('query');
+    const querySource = typeof c.req.query === 'function' ? c.req.query() : c.req.valid('query');
+    const parsedQuery = GetUsersQueryDtoSchema.parse(querySource);
 
-    const result = await userService.getUsers(query);
+    const result = await userService.getUsers(parsedQuery);
 
     if (!result.isSuccess) {
         console.error('Error while fetching users', result.getError());
