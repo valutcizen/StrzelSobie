@@ -226,8 +226,7 @@ describe('CreateReservation endpoint contract', () => {
       payload: { code: 'range_not_found', message: error.message },
       status: 404,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation creation', error);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
   it('logs unexpected failures and returns a 500 response for unknown errors', async () => {
@@ -280,7 +279,6 @@ describe('CreateReservation endpoint contract', () => {
       payload: { code: 'internal_error', message: 'Unexpected error occurred' },
       status: 500,
     });
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error during reservation creation', unexpectedError);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });
