@@ -19,14 +19,14 @@
     "profile": "Mój profil",
     "logout": "Wyloguj"
   },
-  "roles": {
-    "guest": "Gość",
-    "member": "Członek",
-    "coordinator": "Koordynator",
-    "confirmator": "Potwierdzający",
-    "shootingRangeAdmin": "Administrator strzelnicy",
-    "clubCommunityAdmin": "Administrator klubu/społeczności"
-  },
+    "roles": {
+      "guest": "Gość",
+      "member": "Członek",
+      "coordinator": "Prowadzący strzelanie",
+      "confirmator": "Potwierdzający role",
+      "shootingRangeAdmin": "Administrator strzelnicy",
+      "clubCommunityAdmin": "Administrator klubu/społeczności"
+    },
   "common": {
     "actions": {
       "save": "Zapisz",

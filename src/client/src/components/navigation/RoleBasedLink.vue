@@ -2,7 +2,6 @@
   <v-list-item
     v-if="isVisible"
     :to="to"
-    :title="label"
     :aria-label="label"
     :data-testid="testId"
     class="role-based-link"

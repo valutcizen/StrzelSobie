@@ -336,8 +336,8 @@ const messages = {
     roles: {
       guest: 'Gość',
       member: 'Członek',
-      coordinator: 'Koordynator',
-      confirmator: 'Potwierdzający',
+      coordinator: 'Prowadzący strzelanie',
+      confirmator: 'Potwierdzający role',
       shootingRangeAdmin: 'Administrator strzelnicy',
       clubCommunityAdmin: 'Administrator klubu/społeczności',
     },
