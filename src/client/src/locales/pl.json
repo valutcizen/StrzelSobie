@@ -38,12 +38,13 @@
     }
   },
   "calendar": {
-    "view": {
-      "title": "Kalendarz",
-      "proposeSlot": "Zaproponuj termin",
-      "newReservation": "Nowa rezerwacja",
-      "recordWithoutReservation": "Zapisz bez rezerwacji"
-    },
+      "view": {
+        "title": "Kalendarz",
+        "proposeSlot": "Zaproponuj termin",
+        "newReservation": "Nowa rezerwacja",
+        "recordWithoutReservation": "Zapisz bez rezerwacji",
+        "closedLabel": "Zamknięte"
+      },
     "fc": {
       "today": "Dzisiaj",
       "day": "Dzień",

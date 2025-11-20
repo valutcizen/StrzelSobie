@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import FullCalendar from '@fullcalendar/vue3'
 import type {
@@ -7,6 +7,7 @@ import type {
   DateSelectArg,
   DatesSetArg,
   EventClickArg,
+  EventInput,
   EventMountArg,
 } from '@fullcalendar/core'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -56,6 +57,7 @@ const canForceReservations = computed(() =>
     UserRoleEnum.ClubCommunityAdministrator,
   ]),
 )
+const canCreateReservations = computed(() => authStore.hasAnyRole([UserRoleEnum.Coordinator]))
 const canManageRecords = computed(
   () =>
     authStore.hasAnyRole([
@@ -74,6 +76,7 @@ let resizeObserver: ResizeObserver | null = null
 const currentViewRange = ref<{ start: Date; end: Date } | null>(null)
 const selectedEvent = ref<RangeEvent | null>(null)
 const eventDetailOpen = ref(false)
+const weekdayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 
 interface EventDetailState {
   loading: boolean
@@ -126,7 +129,7 @@ const isJoinableIndicatorVisible = computed(() =>
   ]),
 )
 
-const calendarEvents = computed(() =>
+const calendarEvents = computed<EventInput[]>(() =>
   calendarStore.events.map((event) => {
     const classNames = [`event-${event.type}`]
     let backgroundColor = '#4a5568'
@@ -415,8 +418,19 @@ const loadEventsForRange = async (range: { start: Date; end: Date }, force = fal
 }
 
 const handleDatesSet = async (info: DatesSetArg) => {
-  currentViewRange.value = { start: info.start, end: info.end }
-  await loadEventsForRange(currentViewRange.value)
+  const prev = currentViewRange.value
+  const nextRange = { start: info.start, end: info.end }
+  const isSameRange =
+    prev &&
+    prev.start.getTime() === nextRange.start.getTime() &&
+    prev.end.getTime() === nextRange.end.getTime()
+
+  if (isSameRange) {
+    return
+  }
+
+  currentViewRange.value = nextRange
+  await loadEventsForRange(nextRange)
 }
 
 const loadRangeDetails = async () => {
@@ -434,6 +448,11 @@ const loadRangeDetails = async () => {
 const handleSlotSelect = (selectionInfo: DateSelectArg) => {
   const { start, end } = selectionInfo
 
+  if (reservationDialog.open || propositionDialogOpen.value) {
+    calendarRef.value?.getApi().unselect()
+    return
+  }
+
   const isSameDay = start.toDateString() === end.toDateString()
 
   // Special case: selection ends at midnight of the next day.
@@ -448,19 +467,22 @@ const handleSlotSelect = (selectionInfo: DateSelectArg) => {
     return
   }
 
+  calendarRef.value?.getApi().unselect()
+
+  if (canCreateReservations.value) {
+    selectedSlot.value = null
+    openReservationDialog({
+      defaultStart: selectionInfo.startStr,
+      defaultEnd: selectionInfo.endStr,
+    })
+    return
+  }
+
   selectedSlot.value = {
     start: selectionInfo.startStr,
     end: selectionInfo.endStr,
   }
-
-  if (!authStore.hasAnyRole([UserRoleEnum.Coordinator])) {
-    propositionDialogOpen.value = true
-  } else {
-    // Coordinators get the choice via the proposition dialog by default
-    propositionDialogOpen.value = true
-  }
-
-  calendarRef.value?.getApi().unselect()
+  propositionDialogOpen.value = true
 }
 
 const handleEventClick = (clickInfo: EventClickArg) => {
@@ -549,6 +571,122 @@ const minutesFromDate = (value: string | Date | null | undefined): number | null
   return dateValue.getHours() * 60 + dateValue.getMinutes()
 }
 
+const minutesToDateOnDay = (day: Date, minutes: number): Date => {
+  const normalizedMinutes = Math.min(Math.max(minutes, 0), 24 * 60)
+  return new Date(
+    day.getFullYear(),
+    day.getMonth(),
+    day.getDate(),
+    Math.floor(normalizedMinutes / 60),
+    normalizedMinutes % 60,
+    0,
+    0,
+  )
+}
+
+const formatDateKey = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const getWeekdayKey = (date: Date): (typeof weekdayKeys)[number] =>
+  weekdayKeys[date.getDay()] ?? weekdayKeys[0]
+
+const CLOSED_BACKGROUND_COLOR = '#e7eaf0'
+
+const createClosedBackgroundEvent = (
+  start: Date,
+  end: Date,
+  idSuffix: string,
+  title: string,
+): EventInput | null => {
+  if (end <= start) {
+    return null
+  }
+
+  return {
+    id: `closed-${idSuffix}-${start.getTime()}`,
+    start,
+    end,
+    display: 'background',
+    backgroundColor: CLOSED_BACKGROUND_COLOR,
+    classNames: ['calendar-closed-slot'],
+    title,
+  }
+}
+
+const closedCalendarBackgroundEvents = computed<EventInput[]>(() => {
+  const viewRange = currentViewRange.value
+  const operatingHours = rangeStore.currentRange?.operatingHours
+
+  if (!viewRange || !operatingHours) {
+    return []
+  }
+
+  const closedEvents: EventInput[] = []
+  const dayCursor = new Date(viewRange.start)
+  dayCursor.setHours(0, 0, 0, 0)
+
+  const viewEnd = new Date(viewRange.end)
+  viewEnd.setHours(0, 0, 0, 0)
+
+  const closedLabel = t('calendar.view.closedLabel')
+
+  while (dayCursor < viewEnd) {
+    const dayStart = new Date(dayCursor)
+    const dayEnd = new Date(dayCursor)
+    dayEnd.setDate(dayEnd.getDate() + 1)
+
+    const dayKey = getWeekdayKey(dayStart)
+    const dateKey = formatDateKey(dayStart)
+    const hours = operatingHours[dayKey] ?? null
+
+    if (!hours) {
+      const closedDay = createClosedBackgroundEvent(dayStart, dayEnd, dateKey, closedLabel)
+      if (closedDay) {
+        closedEvents.push(closedDay)
+      }
+    } else {
+      const openMinutes = parseTimeToMinutes(hours.open)
+      const closeMinutes = parseTimeToMinutes(hours.close)
+
+      const isDayClosed = openMinutes === null || closeMinutes === null || openMinutes >= closeMinutes
+      if (isDayClosed) {
+        const closedDay = createClosedBackgroundEvent(dayStart, dayEnd, dateKey, closedLabel)
+        if (closedDay) {
+          closedEvents.push(closedDay)
+        }
+      } else {
+        const beforeOpen = createClosedBackgroundEvent(
+          dayStart,
+          minutesToDateOnDay(dayStart, openMinutes),
+          `${dateKey}-before`,
+          closedLabel,
+        )
+        const afterClose = createClosedBackgroundEvent(
+          minutesToDateOnDay(dayStart, closeMinutes),
+          dayEnd,
+          `${dateKey}-after`,
+          closedLabel,
+        )
+
+        if (beforeOpen) {
+          closedEvents.push(beforeOpen)
+        }
+        if (afterClose) {
+          closedEvents.push(afterClose)
+        }
+      }
+    }
+
+    dayCursor.setDate(dayCursor.getDate() + 1)
+  }
+
+  return closedEvents
+})
+
 const calendarTimeBounds = computed(() => {
   const operatingHours = rangeStore.currentRange?.operatingHours
   let earliest: number | null = null
@@ -617,6 +755,11 @@ const calendarTimeBounds = computed(() => {
   }
 })
 
+const calendarDisplayEvents = computed<EventInput[]>(() => [
+  ...calendarEvents.value,
+  ...closedCalendarBackgroundEvents.value,
+])
+
 const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
   initialView: defaultView.value,
@@ -631,7 +774,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   nowIndicator: true,
   selectable: true,
   selectMirror: true,
-  events: calendarEvents.value,
+  events: calendarDisplayEvents.value,
   height: 'auto',
   headerToolbar: {
     left: 'prev,next today',
@@ -944,7 +1087,7 @@ onBeforeUnmount(() => {
                 {{ t('calendar.view.proposeSlot') }}
               </v-btn>
               <v-btn
-                v-if="authStore.hasAnyRole([UserRoleEnum.Coordinator])"
+                v-if="canCreateReservations"
                 color="primary"
                 prepend-icon="mdi-calendar-plus"
                 data-testid="calendar-new-reservation-button"
@@ -1062,6 +1205,12 @@ onBeforeUnmount(() => {
 
 :deep(.event-joinable) {
   box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.75);
+}
+
+:deep(.calendar-closed-slot) {
+  background-color: rgba(99, 102, 115, 0.18) !important;
+  color: #475569 !important;
+  pointer-events: none;
 }
 
 :deep(.event-reservation-public) {

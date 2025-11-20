@@ -205,7 +205,7 @@ const handleRecordSubmitted = () => {
 }
 
 onMounted(() => {
-  loadRangeSettings()
+  void loadRangeSettings(true)
 })
 </script>
 

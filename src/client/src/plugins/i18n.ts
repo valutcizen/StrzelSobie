@@ -86,6 +86,7 @@ const messages = {
         proposeSlot: 'Propose a slot',
         newReservation: 'New reservation',
         recordWithoutReservation: 'Log without reservation',
+        closedLabel: 'Closed',
       },
       fc: {
         today: 'Today',
@@ -396,6 +397,7 @@ const messages = {
         proposeSlot: 'Zaproponuj termin',
         newReservation: 'Nowa rezerwacja',
         recordWithoutReservation: 'Zapisz bez rezerwacji',
+        closedLabel: 'Zamknięte',
       },
       fc: {
         today: 'Dzisiaj',
