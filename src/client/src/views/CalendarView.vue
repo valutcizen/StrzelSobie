@@ -37,9 +37,11 @@ import { UserRoleEnum } from '@/types/auth'
 import type { PropositionDetailDto, ReservationDetailDto } from '@strzel-sobie/common'
 import { useI18n } from 'vue-i18n'
 import { useDisplay } from 'vuetify'
+import { useRangeStore } from '@/stores/range'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
+const rangeStore = useRangeStore()
 const route = useRoute()
 const { t, locale } = useI18n()
 const display = useDisplay()
@@ -417,6 +419,18 @@ const handleDatesSet = async (info: DatesSetArg) => {
   await loadEventsForRange(currentViewRange.value)
 }
 
+const loadRangeDetails = async () => {
+  if (!rangeSlug.value) {
+    return
+  }
+
+  try {
+    await rangeStore.fetchRangeDetails(rangeSlug.value)
+  } catch {
+    // If range metadata is unavailable, fall back to default calendar bounds.
+  }
+}
+
 const handleSlotSelect = (selectionInfo: DateSelectArg) => {
   const { start, end } = selectionInfo
 
@@ -498,12 +512,73 @@ const handleEventDidMount = (info: EventMountArg) => {
   info.el.setAttribute('data-event-id', info.event.id)
 }
 
+const parseTimeToMinutes = (value: string | null | undefined): number | null => {
+  if (!value || typeof value !== 'string') {
+    return null
+  }
+
+  const [hoursStr, minutesStr] = value.split(':')
+  const hours = Number(hoursStr)
+  const minutes = Number(minutesStr)
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return null
+  }
+
+  return hours * 60 + minutes
+}
+
+const formatMinutesAsTime = (totalMinutes: number): string => {
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  const paddedHours = String(Math.min(Math.max(hours, 0), 24)).padStart(2, '0')
+  const paddedMinutes = String(Math.min(Math.max(minutes, 0), 59)).padStart(2, '0')
+  return `${paddedHours}:${paddedMinutes}:00`
+}
+
+const calendarTimeBounds = computed(() => {
+  const operatingHours = rangeStore.currentRange?.operatingHours
+  if (!operatingHours) {
+    return null
+  }
+
+  let earliest: number | null = null
+  let latest: number | null = null
+
+  for (const entry of Object.values(operatingHours)) {
+    if (!entry) {
+      continue
+    }
+
+    const openMinutes = parseTimeToMinutes(entry.open)
+    const closeMinutes = parseTimeToMinutes(entry.close)
+
+    if (openMinutes === null || closeMinutes === null) {
+      continue
+    }
+
+    earliest = earliest === null ? openMinutes : Math.min(earliest, openMinutes)
+    latest = latest === null ? closeMinutes : Math.max(latest, closeMinutes)
+  }
+
+  if (earliest === null || latest === null) {
+    return null
+  }
+
+  return {
+    slotMinTime: formatMinutesAsTime(earliest),
+    slotMaxTime: formatMinutesAsTime(latest),
+  }
+})
+
 const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
   initialView: defaultView.value,
   locales: [plLocale],
   locale: locale.value,
   slotDuration: '00:30:00',
+  slotMinTime: calendarTimeBounds.value?.slotMinTime ?? '00:00:00',
+  slotMaxTime: calendarTimeBounds.value?.slotMaxTime ?? '24:00:00',
   allDaySlot: false,
   expandRows: true,
   firstDay: 1,
@@ -761,6 +836,7 @@ const handleRecordSubmitted = async () => {
 watch(
   () => rangeSlug.value,
   async () => {
+    await loadRangeDetails()
     calendarStore.clear()
     detailCache.clear()
     if (currentViewRange.value) {
@@ -780,6 +856,7 @@ onMounted(async () => {
   }
 
   // Ensure initial events load even before calendar emits datesSet
+  await loadRangeDetails()
   if (!currentViewRange.value) {
     const start = new Date()
     const end = new Date()
