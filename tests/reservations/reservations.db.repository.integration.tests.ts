@@ -64,8 +64,8 @@ describe('ReservationsDbRepository integration', () => {
     operatingHours = '{"monday":{"open":"09:00","close":"17:00"}}'
   ): Promise<number> => {
     const statement = dbHandle.d1.prepare(
-      `INSERT INTO ranges_shooting_ranges (slug, display_name, total_tracks, operating_hours)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, total_tracks, operating_hours)
+       VALUES (?, ?, 'club', 1, ?, ?)
        RETURNING id`
     );
     const record = await statement.bind(slug, displayName, totalTracks, operatingHours).first<{ id: number }>();

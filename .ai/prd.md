@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD) - Strzel Sobie
 
 ## 1. Product Overview
-Strzel Sobie is a specialized reservation management application for shooting ranges, designed to comply with Polish law, which mandates the presence of a licensed shooting coordinator for shooting events. The application facilitates a seamless booking process by connecting regular users with licensed coordinators. Users can propose a time for a shooting session, and available coordinators can accept these propositions, converting them into official reservations. The system is built around a robust role-based access control system, ensuring that different user types have appropriate permissions. The Minimum Viable Product (MVP) will focus on a single shooting range in Dobczyce, with an architecture designed for future expansion to multiple ranges.
+Strzel Sobie is a specialized reservation management application for shooting ranges, designed to comply with Polish law, which mandates the presence of a licensed shooting coordinator for shooting events. The application facilitates a seamless booking process by connecting regular users with licensed coordinators. Users can propose a time for a shooting session, and available coordinators can accept these propositions, converting them into official reservations. The system is built around a robust role-based access control system, ensuring that different user types have appropriate permissions. It now supports multiple shooting ranges created by Club/Community Administrators: club/community ranges with full reservations, ally ranges that are information-only, and coming-soon ranges that are visible publicly but do not yet allow reservations.
 
 ## 2. User Problem
 Standard booking and reservation applications available on the market do not address a key requirement of Polish law for operating shooting ranges: the mandatory presence and supervision of a person holding a shooting coordinator license ("prowadzący strzelanie"). This creates a logistical challenge for both shooting range users, who need to find and coordinate with a licensed individual, and for the coordinators themselves. Strzel Sobie directly solves this problem by integrating the coordinator into the booking workflow. It provides a platform where users can request a booking (a "proposition") and licensed coordinators can approve it, thereby ensuring legal compliance and simplifying the scheduling process for everyone involved.
@@ -47,11 +47,30 @@ Standard booking and reservation applications available on the market do not add
   - To a user when their proposition is converted into a reservation.
   - To a user when their reservation is canceled.
 
-### 3.6. Data Privacy and UI
+### 3.6. Multi-Range Directory, Map, and Public Access
+- Range types and capabilities:
+  - Each range stores a `type` (club/community, ally, coming-soon) and an explicit `allowsReservations` flag (club ranges: true; ally and coming-soon ranges: false).
+  - Basic range fields shared by all types: description (supports links), geolocation, opening hours (current format).
+  - Any range can additionally store a member-only description visible only to authenticated users with the Member role (or higher).
+- Public browsing:
+  - Range list and map are accessible without login; individual range basic info is public for all ranges.
+  - `/map` is the public entry for the map; range detail links remain the same as existing range URLs and are shareable.
+  - Landing on `/` with no deeper path redirects to the last opened range (stored in `localStorage` as `lastRangeId`) if it still exists; otherwise redirect to `/map`.
+  - Default map viewport uses a Poland bounding box; no geolocation is required to render the map.
+- List/map presentation:
+  - Map markers use distinct colors for club/community, ally, and coming-soon ranges, defined as separate tokens in the build.
+  - Range list is paginated and offers sorting (e.g., name A→Z, distance when location permission is granted, type priority).
+  - Type filtering is optional; searching is not required for this iteration.
+- Booking constraints for ally and coming-soon ranges:
+  - UI booking CTA is disabled on ally and coming-soon range pages with a clear message and link back to the range info.
+  - Direct navigation to booking routes for ally or coming-soon ranges redirects back to the range info view.
+  - API attempts to create reservations for ally or coming-soon ranges return `409 reservations_not_available_for_ally_range` (shared code for non-bookable ranges).
+
+### 3.7. Data Privacy and UI
 - Reservation visibility is role-dependent:
   - Guests can view the calendar, see all reservations, and only ever see anonymized reservation summaries without coordinator or participant details.
   - Members can view the calendar and see details for all reservations.
-  - All other user-generated content remains visible only to authenticated users.
+  - All other user-generated content remains visible only to authenticated users; public access is limited to the range directory/map and each range's basic info as described in 3.6.
 - Personal contact information (phone/email) will be visible only to Administrators and the specific Coordinator assigned to a reservation.
 - The User Interface will be in Polish.
 - The application will include a Privacy Policy compliant with Polish law.
@@ -59,7 +78,9 @@ Standard booking and reservation applications available on the market do not add
 
 ## 4. Product Boundaries
 ### 4.1. In Scope for MVP
-- A single shooting range (Dobczyce).
+- Multiple shooting ranges with a public directory: club/community ranges (with reservations), ally ranges (information-only), and coming-soon ranges (information-only), created and managed by Club/Community Administrators (no predefined ranges).
+- Public range list and map (no login required) with color-coded markers, pagination, and basic sorting; `/map` is the public entry, and `/` redirects to the last opened range or `/map`.
+- Public range detail for all ranges showing description (links allowed), geolocation, and opening hours; any range may also show member-only description to authenticated users with the Member role (or higher).
 - User roles: Guest, Member, Coordinator, Confirmator, Range Admin, Club/Community Admin.
 - Full lifecycle for propositions and reservations: creation, acceptance, modification by coordinator, cancellation.
 - Weekly calendar view with clear visual distinctions for different booking types.
@@ -70,12 +91,11 @@ Standard booking and reservation applications available on the market do not add
 - UI in Polish and inclusion of a privacy policy.
 
 ### 4.2. Out of Scope for MVP
-- Support for multiple shooting ranges in the UI (though the architecture will support it).
 - Splitting a single proposition among multiple coordinators.
 - Merging multiple propositions into a single reservation.
 - A formal waitlist system for fully booked time slots.
 - Maintenance of the official shooting range register book ("książka pobytu na strzelnicy").
-- Advanced range details (maps, photos, policies).
+- Advanced range assets beyond description/opening hours (e.g., rich media galleries, detailed policy documents).
 - In-app mechanism for users to join "Joinable Reservations."
 - Multi-language support.
 - A full event-sourcing implementation for the audit trail.
@@ -212,12 +232,49 @@ Standard booking and reservation applications available on the market do not add
   - I can define the range's operating hours for each day of the week.
   - I can set the total number of available tracks.
 
+- ID: US-016
+- Title: Browse Shooting Ranges (Public Map and List)
+- Description: As any visitor, I want to browse all shooting ranges on a public map or list so I can discover club, ally, and coming-soon locations without logging in.
+- Acceptance Criteria:
+  - `/map` is publicly accessible and loads a map centered on a Poland-wide bounding box.
+  - Map markers use distinct colors for club/community, ally, and coming-soon ranges.
+  - The range list is publicly accessible, paginated, and supports sorting (name A→Z as default; type priority; distance when geolocation permission is granted).
+  - Each range in the list links to its existing detail page URL; these links are shareable without authentication.
+  - Only ranges added by Club/Community Administrators appear.
+
+- ID: US-017
+- Title: View Range Detail with Member-Only Notes
+- Description: As a visitor or member, I want to view range details, with sensitive notes limited to members.
+- Acceptance Criteria:
+  - Public users can see basic info for any range: description (links allowed), geolocation, opening hours, range type, and whether reservations are allowed.
+  - Member-only description is shown only when the viewer is authenticated with the Member role (or higher).
+  - Ally and coming-soon ranges do not expose reservation actions or links beyond their info view.
+  - Range detail URLs remain unchanged and are directly shareable.
+  - Ranges are created and managed by Club/Community Administrators; there is no predefined seed range.
+
+- ID: US-018
+- Title: Redirect to Last Opened Range or Map
+- Description: As a returning visitor, I want the home page to take me back to the range I last viewed or to the map if that range is unavailable.
+- Acceptance Criteria:
+  - Visiting `/` with no deeper path reads `lastRangeId` from `localStorage`; if the range exists it redirects to that range detail, otherwise to `/map`.
+  - Viewing any range detail updates `lastRangeId`.
+  - If the stored range was removed or is otherwise unavailable, the user is redirected to `/map` without error.
+
+- ID: US-019
+- Title: Prevent Reservations on Ally or Coming-Soon Ranges
+- Description: As a user, I should not be able to attempt bookings on ally or coming-soon ranges.
+- Acceptance Criteria:
+  - On ally and coming-soon range pages, the booking CTA is disabled with a message directing the user to the info view.
+  - Direct navigation to a booking-specific route for ally or coming-soon ranges redirects back to the range info view.
+  - API calls that attempt to create reservations for ally or coming-soon ranges return HTTP 409 with code `reservations_not_available_for_ally_range` (code reused for non-bookable ranges).
+  - Club ranges retain full reservation flow.
+
 ## 6. Success Metrics
 The success of the Strzel Sobie MVP will be measured against the following key performance indicators:
 
-1. Primary Goal: Application Adoption
-   - Metric: 90% of all shooting sessions at the Dobczyce shooting range are reserved through the application.
-   - Formula: (Number of 'Reservations') / (Number of 'Reservations' + Number of 'Records') over a given time period.
+1. Primary Goal: Application Adoption at Club Ranges
+   - Metric: 90% of all shooting sessions at a managed club range are reserved through the application (tracked per range).
+   - Formula: (Number of 'Reservations') / (Number of 'Reservations' + Number of 'Records') over a given time period, calculated per club range.
    - 'Reservations' are bookings made via the app. 'Records' are manual entries by an admin for bookings made outside the app.
 
 2. Secondary Goal: Proposition Conversion Rate

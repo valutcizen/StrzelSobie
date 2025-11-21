@@ -97,7 +97,7 @@ export async function createTestDatabase(options: { includeMockData?: boolean } 
 
   if (includeMockData) {
     try {
-      const mockFiles = (await readdir(mockDataDir)).filter((file) => file.endsWith('.sql')).sort();
+  const mockFiles = (await readdir(mockDataDir)).filter((file) => file.endsWith('.sql')).sort();
       for (const file of mockFiles) {
         const filePath = join(mockDataDir, file);
         await executeSqlFile(adapter, filePath);

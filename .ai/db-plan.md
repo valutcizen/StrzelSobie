@@ -34,7 +34,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 **`users_roles`**
 
 *   **Owner**: `users`
-*   **Description**: Defines all possible roles within the system (e.g., Member, Coordinator).
+*   **Description**: Defines all possible roles within the system (e.g., Member, Coordinator). Roles are either global (Guest, Member, Coordinator, Confirmator, Club/Community Admin) or range-scoped (Range Admin).
 
 | Column Name | Data Type | Constraints | Description |
 | --- | --- | --- | --- |
@@ -56,7 +56,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 **`users_user_range_roles`**
 
 *   **Owner**: `users`
-*   **Description**: A join table assigning range-specific roles to users.
+*   **Description**: A join table assigning range-specific roles to users (currently used only for Range Admin assignments per shooting range).
 
 | Column Name | Data Type | Constraints | Description |
 | --- | --- | --- | --- |
@@ -68,15 +68,21 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 **`ranges_shooting_ranges`**
 
 *   **Owner**: `ranges`
-*   **Description**: Stores details about the shooting ranges managed by the system.
+*   **Description**: Stores details about the shooting ranges managed by the system. Ranges are created by Club/Community Administrators; there are no predefined/seed ranges.
 
 | Column Name | Data Type | Constraints | Description |
 | --- | --- | --- | --- |
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique identifier for the shooting range. |
 | `slug` | TEXT | NOT NULL, UNIQUE | A URL-friendly identifier (e.g., "dobczyce"). |
 | `display_name` | TEXT | NOT NULL | The human-readable name of the range. |
-| `total_tracks` | INTEGER | NOT NULL | The total number of shooting tracks available. |
+| `type` | TEXT | NOT NULL, CHECK (type IN ('club','ally','coming-soon')) | Range category: club/community (reservations enabled), ally (info only), coming-soon (info only). |
+| `allows_reservations` | INTEGER | NOT NULL, DEFAULT 0 | `1` if reservations can be made (club ranges), `0` otherwise (ally/coming-soon). |
+| `public_description` | TEXT | NULL | Public description; can contain links. |
+| `member_description` | TEXT | NULL | Member-only description, visible to authenticated users with Member role or higher. |
+| `latitude` | REAL | NOT NULL | Latitude coordinate for map display. |
+| `longitude` | REAL | NOT NULL | Longitude coordinate for map display. |
 | `operating_hours` | TEXT | NOT NULL | A JSON object defining the range's opening and closing times. |
+| `total_tracks` | INTEGER | NOT NULL | The total number of shooting tracks available (relevant for club ranges). |
 
 **`reservations_propositions`**
 
@@ -151,7 +157,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 - **Users and Credentials**: A one-to-one relationship (`users_users` 1-to-1 `auth_user_credentials`). Deleting a user from `users_users` will cascade and delete their credentials from `auth_user_credentials`.
 - **Users and Roles**: A many-to-many relationship implemented via two join tables:
   - `users_user_global_roles` for global roles.
-  - `users_user_range_roles` for range-specific roles.
+  - `users_user_range_roles` for range-specific roles (currently only Range Admin is range-scoped; Member/Coordinator/Confirmator are global).
   Deleting a user or role will cascade and remove the corresponding entries in these join tables.
 - **User and Proposition**: A one-to-many relationship (`users_users` 1-to-N `reservations_propositions`).
 - **Proposition and Reservation**: An optional one-to-one relationship (`reservations_propositions` 1-to-1 `reservations_reservations`).
@@ -176,3 +182,5 @@ The project uses Cloudflare D1, which does not natively support RLS. All data ac
 - **Data Seeding**: The `users_roles` table is pre-populated with the initial set of system roles required for the application to function correctly.
 - **Date and Time Storage**: `Date` (YYYY-MM-DD) and `Time` (HH:MM) are stored in separate `TEXT` columns to simplify indexing and queries, as all events are assumed to occur on a single day.
 - **Soft Deletes**: The `users_users` table uses an `is_deleted` flag to allow for deactivating users without losing historical data, preserving the integrity of audit logs and metrics.
+- **Range Creation**: Ranges are created and managed by Club/Community Administrators; there is no predefined or seeded range in the database.
+- **Range Types and Booking Capability**: `type` plus `allows_reservations` enforce booking rules (club ranges allow reservations; ally and coming-soon ranges are information-only); the member-only description is readable only to authenticated users with the Member role or higher.

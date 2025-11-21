@@ -34,6 +34,7 @@ INSERT INTO users_user_global_roles (user_id, role_id) VALUES (1, 6), (1, 2), (1
 INSERT INTO users_user_global_roles (user_id, role_id) VALUES (2, 3), (2, 2), (2, 1);
 
 -- Assign 'Shooting Range Administrator' (ID 5) for range 1 to the coordinator user (ID 2).
+-- Uncomment if you need a default range admin assignment in local mocks.
 -- INSERT INTO users_user_range_roles (user_id, role_id, range_id) VALUES (2, 5, 1);
 
 -- Assign 'Member' (ID 2) to the member user (ID 3).
