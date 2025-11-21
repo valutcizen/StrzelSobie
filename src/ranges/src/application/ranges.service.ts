@@ -21,6 +21,7 @@ export class RangesService implements IRangesService {
       id: range.id,
       slug: range.slug,
       displayName: range.displayName,
+      type: range.type,
     }));
 
     return Result.ok(ranges);
@@ -46,6 +47,12 @@ export class RangesService implements IRangesService {
       const dto: RangeDetailsDto = {
         ...range,
         operatingHours: JSON.parse(range.operatingHours),
+        allowsReservations: range.allowsReservations,
+        publicDescription: range.publicDescription,
+        memberDescription: range.memberDescription,
+        latitude: range.latitude,
+        longitude: range.longitude,
+        type: range.type,
       };
       return Result.ok(dto);
     } catch (error) {

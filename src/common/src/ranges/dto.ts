@@ -9,6 +9,7 @@ export type RangeSummaryDto = {
   id: ShootingRange['id'];
   slug: ShootingRange['slug'];
   displayName: ShootingRange['display_name'];
+  type: ShootingRange['type'];
 };
 
 /**
@@ -29,6 +30,12 @@ export type RangeDetailsDto = {
   displayName: ShootingRange['display_name'];
   totalTracks: ShootingRange['total_tracks'];
   operatingHours: OperatingHours;
+  type: ShootingRange['type'];
+  allowsReservations: boolean;
+  publicDescription?: ShootingRange['public_description'];
+  memberDescription?: ShootingRange['member_description'];
+  latitude?: ShootingRange['latitude'];
+  longitude?: ShootingRange['longitude'];
 };
 
 /**

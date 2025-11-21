@@ -6,8 +6,14 @@ import { ShootingRange } from '../domain/shooting-range.model';
 type ShootingRangeDb = {
   id: number;
   slug: string;
+  type: 'club' | 'ally' | 'coming-soon';
+  allows_reservations: number;
+  public_description: string | null;
+  member_description: string | null;
+  latitude: number;
+  longitude: number;
   display_name: string;
-  total_tracks: number;
+  total_tracks: number | null;
   operating_hours: string;
 };
 
@@ -15,12 +21,21 @@ export class RangesDbRepository implements IRangesRepository {
   constructor(private readonly db: IDatabase) {}
 
   public async findAll(): Promise<ShootingRange[]> {
-    const stmt = this.db.prepare('SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges');
+    const stmt = this.db.prepare(
+      `SELECT id, slug, type, allows_reservations, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+       FROM ranges_shooting_ranges`
+    );
     const { results } = await stmt.all<ShootingRangeDb>();
 
     const domainRanges = results.map((dbRange) => ({
       id: dbRange.id,
       slug: dbRange.slug,
+      type: dbRange.type ?? 'club',
+      allowsReservations: dbRange.allows_reservations === 1,
+      publicDescription: dbRange.public_description,
+      memberDescription: dbRange.member_description,
+      latitude: dbRange.latitude,
+      longitude: dbRange.longitude,
       displayName: dbRange.display_name,
       totalTracks: dbRange.total_tracks,
       operatingHours: dbRange.operating_hours,
@@ -38,7 +53,8 @@ export class RangesDbRepository implements IRangesRepository {
 
   public async findBySlug(slug: string): Promise<ShootingRange | null> {
     const stmt = this.db.prepare(
-      'SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges WHERE slug = ?'
+      `SELECT id, slug, type, allows_reservations, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+       FROM ranges_shooting_ranges WHERE slug = ?`
     );
     const result = await stmt.bind(slug).first<ShootingRangeDb>();
 
@@ -49,6 +65,12 @@ export class RangesDbRepository implements IRangesRepository {
     return {
       id: result.id,
       slug: result.slug,
+      type: result.type ?? 'club',
+      allowsReservations: result.allows_reservations === 1,
+      publicDescription: result.public_description,
+      memberDescription: result.member_description,
+      latitude: result.latitude,
+      longitude: result.longitude,
       displayName: result.display_name,
       totalTracks: result.total_tracks,
       operatingHours: result.operating_hours,
