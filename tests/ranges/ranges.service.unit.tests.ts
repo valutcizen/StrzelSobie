@@ -11,8 +11,10 @@ import {
   UpdateRangeCommand,
   ShootingRange,
   UserDto,
+  IAuditService,
+  UserRole,
+  Role,
 } from '@strzel-sobie/common/models';
-import type { IAuditService } from '@strzel-sobie/common/models';
 
 const asMock = <Args extends unknown[], Return>(fn: (...args: Args) => Return) =>
   fn as unknown as Mock<Args, Return>;
@@ -29,6 +31,13 @@ describe('RangesService contract', () => {
     displayName: 'Alpha Range',
     totalTracks: 6,
     operatingHours: JSON.stringify({ monday: { open: '09:00', close: '17:00' } }),
+    type: 'club',
+    allowsReservations: true,
+    isDeleted: false,
+    publicDescription: null,
+    memberDescription: null,
+    latitude: 0,
+    longitude: 0,
     ...overrides,
   });
 
@@ -49,6 +58,7 @@ describe('RangesService contract', () => {
       update: vi.fn(),
       getRangeIdBySlug: vi.fn(),
       existsRangeById: vi.fn(),
+      softDeleteById: vi.fn(),
     };
 
     auditService = {
@@ -74,8 +84,8 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue()).toEqual([
-      { id: 2, slug: 'beta', displayName: 'Beta Range' },
-      { id: 3, slug: 'gamma', displayName: 'Gamma Range' },
+      { id: 2, slug: 'beta', displayName: 'Beta Range', type: 'club' },
+      { id: 3, slug: 'gamma', displayName: 'Gamma Range', type: 'club' },
     ]);
   });
 
@@ -128,7 +138,7 @@ describe('RangesService contract', () => {
     const result = await service.getRangeDetails('alpha-range');
 
     expect(result.isSuccess).toBe(false);
-    expect(result.getError()).toEqual(new Error('Failed to parse operating hours'));
+    expect(result.getError()).toEqual(new Error('Failed to parse operating hours', { cause: expect.any(Error) }));
   });
 
   it('refuses updates for non-admin users', async () => {
@@ -230,5 +240,69 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(false);
     expect(result.getError()).toBe(failure);
+  });
+
+  describe('deleteRange', () => {
+    const range = (overrides: Partial<ShootingRange> = {}) =>
+      buildRange({ id: 77, slug: 'central', ...overrides });
+
+    const admin = (): UserDto =>
+      buildUser({
+        roles: [{ id: 1, name: UserRole.ClubCommunityAdministrator, scope: 'global' } as Role],
+      });
+
+    const rangeAdmin = (rangeId: number): UserDto =>
+      buildUser({
+        rangeRoles: {
+          [String(rangeId)]: [{ id: 2, name: 'Range Admin', scope: 'range' } as Role],
+        },
+      });
+
+    beforeEach(() => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    });
+
+    it('soft deletes range and frees slug for club admin', async () => {
+      asMock(rangesRepository.findBySlug).mockResolvedValue(range());
+      asMock(auditService.logAction).mockResolvedValue(Result.ok(undefined));
+
+      const result = await service.deleteRange('central', admin());
+
+      expect(result.isSuccess).toBe(true);
+      expect(rangesRepository.softDeleteById).toHaveBeenCalledWith(77, 'central__deleted_1700000000000');
+      expect(auditService.logAction).toHaveBeenCalled();
+    });
+
+    it('soft deletes range for range admin', async () => {
+      const existing = range();
+      asMock(rangesRepository.findBySlug).mockResolvedValue(existing);
+      asMock(auditService.logAction).mockResolvedValue(Result.ok(undefined));
+
+      const result = await service.deleteRange(existing.slug, rangeAdmin(existing.id));
+
+      expect(result.isSuccess).toBe(true);
+      expect(rangesRepository.softDeleteById).toHaveBeenCalledWith(existing.id, 'central__deleted_1700000000000');
+    });
+
+    it('returns forbidden for non-admin user', async () => {
+      asMock(rangesRepository.findBySlug).mockResolvedValue(range());
+      asMock(auditService.logAction).mockResolvedValue(Result.ok(undefined));
+
+      const result = await service.deleteRange('central', buildUser());
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ForbiddenError);
+      expect(rangesRepository.softDeleteById).not.toHaveBeenCalled();
+    });
+
+    it('returns not found when range missing', async () => {
+      asMock(rangesRepository.findBySlug).mockResolvedValue(null);
+
+      const result = await service.deleteRange('missing', admin());
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(RangeNotFoundError);
+      expect(rangesRepository.softDeleteById).not.toHaveBeenCalled();
+    });
   });
 });
