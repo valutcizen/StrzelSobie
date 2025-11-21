@@ -12,5 +12,6 @@ export interface IRangesService {
       user: UserDto
     ): Promise<Result<void>>;
   getRangeIdBySlug(rangeSlug: string): Promise<Result<number>>;
+  deleteRange(rangeSlug: string, user: UserDto): Promise<Result<void>>;
 }
   

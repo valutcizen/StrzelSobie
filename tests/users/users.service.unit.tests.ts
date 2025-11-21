@@ -82,6 +82,7 @@ const createTestContext = () => {
     getRangeDetails: vi.fn<IRangesService['getRangeDetails']>(),
     updateRangeDetails: vi.fn<IRangesService['updateRangeDetails']>(),
     getRangeIdBySlug: vi.fn<IRangesService['getRangeIdBySlug']>(),
+    deleteRange: vi.fn<IRangesService['deleteRange']>(),
   };
 
   const service = new UserService(

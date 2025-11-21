@@ -3,6 +3,7 @@ export type ShootingRange = {
   slug: string;
   type: 'club' | 'ally' | 'coming-soon';
   allowsReservations: boolean;
+  isDeleted: boolean;
   publicDescription?: string | null;
   memberDescription?: string | null;
   latitude?: number;

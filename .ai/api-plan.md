@@ -13,7 +13,7 @@ Example: `GET /api/v1/ranges`
 -   **Users**: Represents user accounts. Corresponds to `users_users`.
 -   **Roles**: Represents user roles. Corresponds to `users_roles`.
 -   **Auth**: Handles authentication tasks like registration, login, and session management.
--   **Ranges**: Represents shooting ranges. Corresponds to `ranges_shooting_ranges`.
+-   **Ranges**: Represents shooting ranges and the public directory/map. Corresponds to `ranges_shooting_ranges`.
 -   **Propositions**: Represents user-created booking proposals. Corresponds to `reservations_propositions`.
 -   **Reservations**: Represents confirmed bookings. Corresponds to `reservations_reservations`.
 -   **Records**: Represents manually logged, off-system bookings. Corresponds to `reservations_records`.
@@ -158,32 +158,53 @@ Example: `GET /api/v1/ranges`
 
 ---
 
-### Ranges
+### Ranges (Public directory + admin updates)
 
 #### `GET /api/v1/ranges`
 
--   **Description**: Retrieves a list of all shooting ranges.
+-   **Description**: Public range directory used for the list and map. Returns paginated results by default; supports bounding-box filtering for the map view. Default payload is lightweight (no long descriptions); clients can opt-in to descriptions when needed. Soft-deleted ranges are never returned.
+-   **Query Parameters**:
+    -   `page` (default `1`), `limit` (default `20`, max `50`)
+    -   `sort` (`name` default, `type_priority` for club → ally → coming-soon, `distance` when `lat`/`lng` are provided)
+    -   `lat`, `lng` (required when `sort=distance`)
+    -   `type` (optional, repeatable): `club`, `ally`, `coming-soon`
+    -   `bbox` (optional): `north,south,east,west` to constrain map markers to a viewport (default client uses Poland-wide box)
+    -   `view` (optional): `map` returns only id/slug/displayName/type/allowsReservations/lat/lng; default matches table needs.
+    -   `includeDescriptions` (optional, boolean): when `true`, includes `publicDescription` and `memberDescription`; for non-Member callers, `memberDescription` is `null` (or omitted) to enforce visibility.
 -   **Response Payload (Success)**:
     ```json
-    [
-      {
-        "id": 1,
-        "slug": "dobczyce",
-        "displayName": "Strzelnica Dobczyce"
-      }
-    ]
+    {
+      "data": [
+        {
+          "id": 1,
+          "slug": "dobczyce",
+          "displayName": "Strzelnica Dobczyce",
+          "type": "club",
+          "allowsReservations": true,
+          "latitude": 49.87,
+          "longitude": 20.09
+        }
+      ],
+      "pagination": { "total": 1, "page": 1, "limit": 20 }
+    }
     ```
 -   **Success Code**: `200 OK`
 
 #### `GET /api/v1/ranges/{rangeSlug}`
 
--   **Description**: Retrieves detailed information for a specific range.
+-   **Description**: Public range detail by slug (shareable URL). Returns member-only description only when caller has the Member role (or higher). Soft-deleted ranges return `404`.
 -   **Response Payload (Success)**:
     ```json
     {
       "id": 1,
       "slug": "dobczyce",
       "displayName": "Strzelnica Dobczyce",
+      "type": "club",
+      "allowsReservations": true,
+      "publicDescription": "Otwarte 10-18, linki do regulaminu dozwolone.",
+      "memberDescription": "Widoczne tylko dla członków.",
+      "latitude": 49.87,
+      "longitude": 20.09,
       "totalTracks": 10,
       "operatingHours": { "monday": { "open": "10:00", "close": "18:00" } }
     }
@@ -193,16 +214,28 @@ Example: `GET /api/v1/ranges`
 
 #### `PATCH /api/v1/ranges/{rangeSlug}`
 
--   **Description**: Updates settings for a shooting range. (Range Admin access).
+-   **Description**: Updates settings for a shooting range. (Range Admin access). Not allowed when the range is soft-deleted (returns `404`).
 -   **Request Payload**:
     ```json
     {
+      "displayName": "Strzelnica Dobczyce",
+      "type": "club",
+      "allowsReservations": true,
+      "publicDescription": "Aktualny opis z linkami.",
+      "memberDescription": "Uwagi dla klubowiczów.",
       "totalTracks": 12,
       "operatingHours": { "monday": { "open": "09:00", "close": "19:00" } }
     }
     ```
 -   **Success Code**: `200 OK`
 -   **Error Codes**: `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+
+#### `DELETE /api/v1/ranges/{rangeSlug}`
+
+-   **Description**: Soft-deletes a shooting range (hides it from directory/map). (Club/Community Admin or Range Admin).
+-   **Success Code**: `204 No Content`
+-   **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found` (already deleted or missing).
+-   **Implementation Note**: On delete the backend mutates the slug with a timestamp suffix to free the original slug for future reuse while keeping a unique key per row.
 
 ---
 
@@ -321,7 +354,7 @@ Example: `GET /api/v1/ranges`
     }
     ```
 -   **Success Code**: `201 Created`
--   **Error Codes**: `400 Bad Request` (Overlap warning can be part of this, requiring a `force=true` confirmation), `401 Unauthorized`, `403 Forbidden`.
+-   **Error Codes**: `400 Bad Request` (Overlap warning can be part of this, requiring a `force=true` confirmation), `401 Unauthorized`, `403 Forbidden`, `409 Conflict` (`reservations_not_available_for_ally_range` when `allowsReservations` is false).
 
 #### `DELETE /api/v1/reservations/{reservationId}`
 
@@ -353,6 +386,7 @@ Example: `GET /api/v1/ranges`
 -   **Mechanism**: Session-based authentication. After a successful `POST /auth/login`, the server will issue a session token stored in an `HttpOnly`, `Secure` cookie. Subsequent requests must include this cookie.
 -   **Session Store**: Cloudflare KV will be used as a distributed session cache, mapping session tokens to user IDs and roles.
 -   **Authorization**: A middleware in the Cloudflare Worker will run on every protected endpoint. It will validate the session token, retrieve user roles from the cache, and verify if the user has the required permissions for the requested action. Role checks will be performed against a predefined access control list (e.g., only users with the "Coordinator" role can access reservation creation).
+-   **Public Endpoints**: `GET /api/v1/ranges` and `GET /api/v1/ranges/{rangeSlug}` are unauthenticated; `memberDescription` is returned only when the caller is authenticated with the Member role (or higher).
 
 ## 5. Validation and Business Logic
 
@@ -364,6 +398,8 @@ Example: `GET /api/v1/ranges`
 
 -   **Business Logic Implementation**:
     -   **RBAC**: The authorization middleware is the primary enforcer of role-based permissions. The `GET /ranges/{rangeSlug}/events` endpoint will contain specific logic to filter the response based on the caller's role (Guest vs. Member).
+    -   **Range Soft Delete**: `DELETE /ranges/{rangeSlug}` sets `is_deleted = 1`; subsequent reads/updates return `404`, and directory/map queries always filter out deleted ranges.
+    -   **Booking Availability**: `POST /ranges/{rangeSlug}/reservations` first checks `allowsReservations`; ally and coming-soon ranges return `409 reservations_not_available_for_ally_range` (shared code for any non-bookable range).
     -   **Proposition Conversion**: The `POST /ranges/{rangeSlug}/reservations` endpoint will contain logic to handle both direct creation and conversion. If a `propositionId` is present, it will update the proposition's status to "converted" and copy its data into the new reservation, applying any modifications from the request payload.
     -   **Conflict Management**:
         -   The `POST /ranges/{rangeSlug}/propositions` endpoint will query existing reservations and propositions to check for time/track availability and return a `400 Bad Request` if a conflict exists.

@@ -6,4 +6,5 @@ export interface IRangesRepository {
   update(range: ShootingRange): Promise<void>;
   getRangeIdBySlug(slug: string): Promise<number | null>;
   existsRangeById(id: number): Promise<boolean>;
+  softDeleteById(id: number, deletedSlug: string): Promise<void>;
 }

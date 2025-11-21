@@ -77,6 +77,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | `display_name` | TEXT | NOT NULL | The human-readable name of the range. |
 | `type` | TEXT | NOT NULL, CHECK (type IN ('club','ally','coming-soon')) | Range category: club/community (reservations enabled), ally (info only), coming-soon (info only). |
 | `allows_reservations` | INTEGER | NOT NULL, DEFAULT 0 | `1` if reservations can be made (club ranges), `0` otherwise (ally/coming-soon). |
+| `is_deleted` | INTEGER | NOT NULL, DEFAULT 0 | Soft delete flag for ranges directory/map. `1` hides the range from all listings and lookups. |
 | `public_description` | TEXT | NULL | Public description; can contain links. |
 | `member_description` | TEXT | NULL | Member-only description, visible to authenticated users with Member role or higher. |
 | `latitude` | REAL | NOT NULL | Latitude coordinate for map display. |
@@ -171,6 +172,9 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
   - `CREATE INDEX idx_propositions_range_date ON reservations_propositions(range_id, event_date);`
   - `CREATE INDEX idx_reservations_range_date ON reservations_reservations(range_id, event_date);`
   - `CREATE INDEX idx_records_range_date ON reservations_records(range_id, event_date);`
+- **Indexes for Ranges Directory/Detail**:
+  - `CREATE INDEX idx_ranges_slug_not_deleted ON ranges_shooting_ranges(is_deleted, slug);`
+  - `CREATE INDEX idx_ranges_type_not_deleted ON ranges_shooting_ranges(is_deleted, type, id);`
 
 ### 6. Row-Level Security (RLS)
 
@@ -182,5 +186,6 @@ The project uses Cloudflare D1, which does not natively support RLS. All data ac
 - **Data Seeding**: The `users_roles` table is pre-populated with the initial set of system roles required for the application to function correctly.
 - **Date and Time Storage**: `Date` (YYYY-MM-DD) and `Time` (HH:MM) are stored in separate `TEXT` columns to simplify indexing and queries, as all events are assumed to occur on a single day.
 - **Soft Deletes**: The `users_users` table uses an `is_deleted` flag to allow for deactivating users without losing historical data, preserving the integrity of audit logs and metrics.
+- **Range Soft Deletes**: `ranges_shooting_ranges.is_deleted` hides ranges from public directory/map and lookups. On delete, the slug is mutated with a timestamp suffix to free the original slug for future reuse.
 - **Range Creation**: Ranges are created and managed by Club/Community Administrators; there is no predefined or seeded range in the database.
 - **Range Types and Booking Capability**: `type` plus `allows_reservations` enforce booking rules (club ranges allow reservations; ally and coming-soon ranges are information-only); the member-only description is readable only to authenticated users with the Member role or higher.

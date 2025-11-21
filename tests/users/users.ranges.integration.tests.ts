@@ -5,6 +5,7 @@ import {
   GetUsersOptions,
   IUserRepository,
   IAuditService,
+  IRangesService,
   Role,
   User,
   UserRole,
@@ -105,6 +106,7 @@ function createUserServiceContext(): {
     getRangeDetails: vi.fn(),
     updateRangeDetails: vi.fn(),
     getRangeIdBySlug: vi.fn(),
+    deleteRange: vi.fn(),
   };
 
   const service = new UserService(userRepository, rangesService);

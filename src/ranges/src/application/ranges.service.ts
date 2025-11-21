@@ -1,4 +1,4 @@
-import { AuditLogEntry, IAuditService, IRangesService } from '@strzel-sobie/common/models';
+import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-sobie/common/models';
 import {
   ForbiddenError,
   RangeDetailsDto,
@@ -71,14 +71,7 @@ export class RangesService implements IRangesService {
       return Result.fail(new RangeNotFoundError('Range not found'));
     }
 
-    const isGlobalAdmin = user.roles.some((role) => role.name === 'Club/Community Administrator');
-    const rangeId = range.id.toString();
-    const userRolesForRange = user.rangeRoles[rangeId] || [];
-    const isRangeAdmin = userRolesForRange.some((role) =>
-      ['Range Admin', 'Shooting Range Administrator'].includes(role.name)
-    );
-
-    if (!isGlobalAdmin && !isRangeAdmin) {
+    if (!this.canManageRange(range.id, user)) {
       return Result.fail(new ForbiddenError('User is not an admin for this range'));
     }
 
@@ -101,7 +94,10 @@ export class RangesService implements IRangesService {
         }
     };
 
-    await this.auditService.logAction(log);
+    const auditResult = await this.auditService.logAction(log);
+    if (!auditResult.isSuccess) {
+      return Result.fail(auditResult.getError());
+    }
 
     return Result.ok(undefined);
   }
@@ -115,5 +111,51 @@ export class RangesService implements IRangesService {
     } catch (error) {
       return Result.fail(error as Error);
     }
+  }
+
+  public async deleteRange(rangeSlug: string, user: UserDto): Promise<Result<void>> {
+    try {
+      const range = await this.rangesRepository.findBySlug(rangeSlug);
+
+      if (!range) {
+        return Result.fail(new RangeNotFoundError('Range not found'));
+      }
+
+      if (!this.canManageRange(range.id, user)) {
+        return Result.fail(new ForbiddenError('User is not an admin for this range'));
+      }
+
+      const deletedSlug = `${range.slug}__deleted_${Date.now()}`;
+      await this.rangesRepository.softDeleteById(range.id, deletedSlug);
+
+      const auditResult = await this.auditService.logAction({
+        action_type: 'RANGE_DELETE',
+        target_id: range.id,
+        details: {
+          userId: user.id,
+          rangeSlug,
+          newSlug: deletedSlug,
+        },
+      });
+
+      if (!auditResult.isSuccess) {
+        return Result.fail(auditResult.getError());
+      }
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  private canManageRange(rangeId: number, user: UserDto): boolean {
+    const globalRoles = user.roles.map((role) => role.name);
+    if (globalRoles.includes(UserRole.ClubCommunityAdministrator)) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    const rangeRoleNames = rangeRoles.map((role) => role.name);
+    return rangeRoleNames.includes(UserRole.ShootingRangeAdministrator) || rangeRoleNames.includes('Range Admin');
   }
 }
