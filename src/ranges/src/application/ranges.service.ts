@@ -99,6 +99,14 @@ export class RangesService implements IRangesService {
       range.memberDescription = command.memberDescription;
     }
 
+    if (command.latitude !== undefined) {
+      range.latitude = command.latitude;
+    }
+
+    if (command.longitude !== undefined) {
+      range.longitude = command.longitude;
+    }
+
     if (command.totalTracks !== undefined) {
       range.totalTracks = command.totalTracks;
     }
@@ -212,8 +220,13 @@ export class RangesService implements IRangesService {
     range: ShootingRange,
     user: UserDto | null
   ): string | null {
-    const isMember = user &&  user.roles.some((role) => role.name === UserRole.Member);
-    if (isMember) {
+    if (!user) {
+      return null;
+    }
+
+    const isMember = user.roles.some((role) => role.name === UserRole.Member);
+    const isRangeAdmin = this.canManageRange(range.id, user);
+    if (isMember || isRangeAdmin) {
       return range.memberDescription ?? null;
     }
 
@@ -227,13 +240,39 @@ export class RangesService implements IRangesService {
 
     try {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        return parsed as Record<string, { open: string; close: string } | null>;
+      if (!parsed || typeof parsed !== 'object') {
+        return {};
       }
-    } catch {
-      throw new Error('Failed to parse operating hours');
-    }
 
-    return {};
+      return Object.entries(parsed as Record<string, unknown>).reduce(
+        (acc, [day, value]) => {
+          if (value === null) {
+            acc[day] = null;
+            return acc;
+          }
+
+          if (typeof value === 'object' && value !== null) {
+            const entry = value as { open?: string; close?: string };
+            const openValue = entry.open ?? '';
+            const closeValue = entry.close ?? '';
+            const isClosed =
+              String(openValue).toLowerCase() === 'closed' ||
+              String(closeValue).toLowerCase() === 'closed';
+
+            acc[day] = isClosed
+              ? null
+              : { open: String(openValue), close: String(closeValue) };
+            return acc;
+          }
+
+          acc[day] = null;
+          return acc;
+        },
+        {} as Record<string, { open: string; close: string } | null>,
+      );
+    } catch {
+      // If legacy or malformed data exists, gracefully fall back to empty hours instead of throwing.
+      return {};
+    }
   }
 }

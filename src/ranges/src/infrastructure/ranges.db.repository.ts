@@ -102,15 +102,19 @@ export class RangesDbRepository implements IRangesRepository {
       display_name: range.displayName ?? existing.display_name,
       type: range.type ?? existing.type ?? 'club',
       allows_reservations: range.allowsReservations ?? (existing.allows_reservations === 1),
-      public_description: range.publicDescription ?? existing.public_description,
-      member_description: range.memberDescription ?? existing.member_description,
+      public_description:
+        range.publicDescription !== undefined ? range.publicDescription : existing.public_description,
+      member_description:
+        range.memberDescription !== undefined ? range.memberDescription : existing.member_description,
+      latitude: range.latitude !== undefined ? range.latitude : existing.latitude,
+      longitude: range.longitude !== undefined ? range.longitude : existing.longitude,
       total_tracks: range.totalTracks ?? existing.total_tracks,
       operating_hours: range.operatingHours ?? existing.operating_hours,
     };
 
     const stmt = this.db.prepare(
       `UPDATE ranges_shooting_ranges
-       SET display_name = ?, type = ?, allows_reservations = ?, public_description = ?, member_description = ?, total_tracks = ?, operating_hours = ?
+       SET display_name = ?, type = ?, allows_reservations = ?, public_description = ?, member_description = ?, latitude = ?, longitude = ?, total_tracks = ?, operating_hours = ?
        WHERE id = ?`
     );
     await stmt
@@ -120,6 +124,8 @@ export class RangesDbRepository implements IRangesRepository {
         merged.allows_reservations ? 1 : 0,
         merged.public_description ?? null,
         merged.member_description ?? null,
+        merged.latitude ?? null,
+        merged.longitude ?? null,
         merged.total_tracks,
         merged.operating_hours,
         range.id

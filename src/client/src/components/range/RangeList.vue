@@ -29,72 +29,57 @@
         {{ t('rangeDirectory.list.empty') }}
       </v-alert>
 
-      <v-list
+      <v-data-table
         v-else
-        nav
+        :headers="headers"
+        :items="ranges"
+        :items-per-page="itemsPerPage"
+        :items-per-page-options="itemsPerPageOptions"
+        :page="page"
+        hover
+        fixed-header
         density="comfortable"
-        class="range-list"
+        class="range-table"
+        item-value="slug"
+        :item-class="rowClass"
+        @click:row="handleRowClick"
+        @update:page="$emit('update:page', $event)"
       >
-        <v-list-item
-          v-for="range in paginatedRanges"
-          :key="range.slug"
-          :active="range.slug === selectedSlug"
-          :aria-label="range.displayName"
-          rounded="lg"
-          class="mb-2"
-          data-testid="range-list-item"
-          @click="$emit('select', range.slug)"
-        >
-          <template #prepend>
-            <v-avatar color="primary" size="36" class="mr-2">
-              <span class="text-button">{{ range.displayName.charAt(0).toUpperCase() }}</span>
-            </v-avatar>
-          </template>
-          <v-list-item-title class="font-weight-semibold">
-            {{ range.displayName }}
-          </v-list-item-title>
-          <v-list-item-subtitle class="d-flex flex-wrap align-center gap-2 mt-1">
-            <RangeTypeBadge :type="range.type" />
-            <v-chip
-              size="x-small"
-              variant="flat"
-              :color="range.allowsReservations ? 'success' : 'warning'"
-            >
-              {{
-                range.allowsReservations
-                  ? t('rangeDirectory.list.allowsReservations')
-                  : t('rangeDirectory.list.noReservations')
-              }}
-            </v-chip>
-          </v-list-item-subtitle>
-          <template #append>
-            <v-btn
-              variant="text"
-              color="primary"
-              prepend-icon="mdi-open-in-new"
-              data-testid="range-list-details-button"
-              @click.stop="$emit('select', range.slug)"
-            >
-              {{ t('rangeDirectory.list.detailsCta') }}
-            </v-btn>
-          </template>
-        </v-list-item>
-      </v-list>
-    </v-card-text>
+        <template #item.displayName="{ item }">
+          <span class="font-weight-semibold">{{ item.displayName }}</span>
+        </template>
 
-    <v-divider />
-    <v-card-actions
-      v-if="pageCount > 1"
-      class="justify-center"
-    >
-      <v-pagination
-        :model-value="page"
-        :length="pageCount"
-        total-visible="5"
-        density="comfortable"
-        @update:model-value="$emit('update:page', $event)"
-      />
-    </v-card-actions>
+        <template #item.type="{ item }">
+          <RangeTypeBadge :type="item.type" />
+        </template>
+
+        <template #item.allowsReservations="{ item }">
+          <v-chip
+            size="small"
+            :color="item.allowsReservations ? 'success' : 'warning'"
+            variant="tonal"
+          >
+            {{
+              item.allowsReservations
+                ? t('rangeDirectory.list.allowsReservations')
+                : t('rangeDirectory.list.noReservations')
+            }}
+          </v-chip>
+        </template>
+
+        <template #item.actions="{ item }">
+          <v-btn
+            variant="text"
+            color="primary"
+            prepend-icon="mdi-open-in-new"
+            data-testid="range-list-details-button"
+            @click.stop="$emit('select', item.slug)"
+          >
+            {{ t('rangeDirectory.list.detailsCta') }}
+          </v-btn>
+        </template>
+      </v-data-table>
+    </v-card-text>
   </v-card>
 </template>
 
@@ -109,28 +94,41 @@ interface Props {
   selectedSlug?: string | null
   page: number
   itemsPerPage: number
+  itemsPerPageOptions?: number[]
 }
 
-defineEmits<{
+const props = defineProps<Props>()
+const { t } = useI18n()
+const emit = defineEmits<{
   (event: 'select', slug: string): void
   (event: 'update:page', value: number): void
 }>()
 
-const props = defineProps<Props>()
-const { t } = useI18n()
+const itemsPerPageOptions = computed(() => props.itemsPerPageOptions ?? [10, 25, 50])
 
-const pageCount = computed(() => Math.max(1, Math.ceil(props.ranges.length / props.itemsPerPage)))
+const headers = computed(() => [
+  { title: t('rangeDirectory.list.headers.name'), key: 'displayName', sortable: false },
+  { title: t('rangeDirectory.list.headers.type'), key: 'type', sortable: false, width: 160 },
+  { title: t('rangeDirectory.list.headers.reservations'), key: 'allowsReservations', sortable: false, width: 200 },
+  { title: '', key: 'actions', sortable: false, width: 160 },
+])
 
-const paginatedRanges = computed(() => {
-  const currentPage = Math.min(props.page, pageCount.value)
-  const start = (currentPage - 1) * props.itemsPerPage
-  const end = start + props.itemsPerPage
-  return props.ranges.slice(start, end)
-})
+const handleRowClick = (_event: unknown, row: { item: RangeSummary }) => {
+  const slug = row?.item?.slug
+  if (slug) {
+    emit('select', slug)
+  }
+}
+
+const rowClass = (item: RangeSummary) => (item.slug === props.selectedSlug ? 'range-row-selected' : '')
 </script>
 
 <style scoped>
-.range-list :deep(.v-list-item--active) {
-  background-color: rgba(25, 118, 210, 0.08);
+.range-table :deep(thead) {
+  background-color: rgba(25, 118, 210, 0.06);
+}
+
+.range-table :deep(.range-row-selected) {
+  background-color: rgba(25, 118, 210, 0.08) !important;
 }
 </style>

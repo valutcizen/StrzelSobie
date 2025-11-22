@@ -59,5 +59,7 @@ export type UpdateRangeCommand = Partial<
     | 'memberDescription'
     | 'totalTracks'
     | 'operatingHours'
+    | 'latitude'
+    | 'longitude'
   >
 >;

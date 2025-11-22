@@ -5,42 +5,24 @@
     elevation="1"
     data-testid="range-map"
   >
-    <div class="range-map__canvas">
-      <div class="range-map__overlay" />
-      <div
-        v-for="marker in markers"
-        :key="marker.slug"
-        class="range-map__marker"
-        :class="[{ 'range-map__marker--selected': marker.slug === selectedSlug }, marker.className]"
-        :style="marker.style"
-      >
-        <v-btn
-          size="small"
-          icon="mdi-map-marker"
-          variant="flat"
-          :color="marker.color"
-          :aria-label="marker.label"
-          data-testid="range-map-marker"
-          @click="$emit('select', marker.slug)"
-        />
-        <div class="range-map__label">
-          {{ marker.label }}
-        </div>
-      </div>
-
-      <div
-        v-if="markers.length === 0"
-        class="range-map__empty"
-      >
-        {{ t('rangeDirectory.map.empty') }}
-      </div>
+    <div
+      ref="mapContainer"
+      class="range-map__frame"
+    />
+    <div
+      v-if="!hasMarkers"
+      class="range-map__empty"
+    >
+      {{ t('rangeDirectory.map.empty') }}
     </div>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import 'leaflet/dist/leaflet.css'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import L, { type DivIcon, type Map, type Marker } from 'leaflet'
 import type { RangeSummary } from '@/types/range'
 
 interface Props {
@@ -48,12 +30,16 @@ interface Props {
   selectedSlug?: string | null
 }
 
-defineEmits<{
+const emit = defineEmits<{
   (event: 'select', slug: string): void
 }>()
 
 const props = defineProps<Props>()
 const { t } = useI18n()
+
+const mapContainer = ref<HTMLDivElement | null>(null)
+const mapInstance = ref<Map | null>(null)
+const markers: Record<string, Marker> = {}
 
 const POLAND_BOUNDS = {
   latMin: 49.0,
@@ -62,86 +48,169 @@ const POLAND_BOUNDS = {
   lngMax: 24.15,
 }
 
-const typeColorMap: Record<string, string> = {
-  club: 'success',
-  ally: 'info',
-  'coming-soon': 'warning',
+const DEFAULT_CENTER: [number, number] = [(POLAND_BOUNDS.latMin + POLAND_BOUNDS.latMax) / 2, 19.5]
+
+const typeStyleMap: Record<string, { color: string; icon: string }> = {
+  club: { color: '#43a047', icon: 'mdi-target' },
+  ally: { color: '#0288d1', icon: 'mdi-handshake' },
+  'coming-soon': { color: '#f59e0b', icon: 'mdi-progress-clock' },
 }
 
-const markers = computed(() => {
-  const latRange = POLAND_BOUNDS.latMax - POLAND_BOUNDS.latMin
-  const lngRange = POLAND_BOUNDS.lngMax - POLAND_BOUNDS.lngMin
+const hasMarkers = computed(() => props.ranges.some((range) => isFinite(range.latitude ?? NaN) && isFinite(range.longitude ?? NaN)))
 
-  return props.ranges
+const createMap = () => {
+  if (mapInstance.value || !mapContainer.value) {
+    return
+  }
+
+  mapInstance.value = L.map(mapContainer.value, {
+    center: DEFAULT_CENTER,
+    zoom: 6,
+    worldCopyJump: true,
+  })
+
+  mapInstance.value.on('zoom', () => {
+    Object.values(markers).forEach((marker) => marker.update())
+  })
+
+  mapInstance.value.on('resize', () => {
+    mapInstance.value?.invalidateSize()
+  })
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    maxZoom: 18,
+  }).addTo(mapInstance.value as Map)
+
+  syncMarkers()
+}
+
+const clearMarkers = () => {
+  if (!mapInstance.value) return
+  Object.values(markers).forEach((marker) => marker.remove())
+  for (const key of Object.keys(markers)) {
+    delete markers[key]
+  }
+}
+
+const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
+  const style = typeStyleMap[range.type] ?? { color: '#1976d2', icon: 'mdi-map-marker' }
+  const size = 34
+  const border = '2px'
+  const shadow = isSelected ? '0 6px 14px rgba(0, 0, 0, 0.25)' : '0 4px 10px rgba(0, 0, 0, 0.18)'
+
+  const svg = `
+    <div style="width:${size}px;height:${size + 6}px;position: relative;">
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        background: white;
+        border:${border} solid ${style.color};
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        box-shadow:${shadow};
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">
+        <span style="
+          transform: rotate(45deg);
+          font-size:18px;
+          color:${style.color};
+          font-family: 'Material Design Icons';
+        " class="mdi ${style.icon}"></span>
+      </div>
+    </div>
+  `
+
+  return L.divIcon({
+    html: svg,
+    className: 'range-map__pin',
+    iconSize: [size, size + 6],
+    iconAnchor: [size / 2, size + 6],
+  })
+}
+
+const syncMarkers = () => {
+  if (!mapInstance.value) return
+
+  clearMarkers()
+
+  const bounds = L.latLngBounds([])
+
+  props.ranges
     .filter((range) => typeof range.latitude === 'number' && typeof range.longitude === 'number')
-    .map((range) => {
-      const x = ((range.longitude! - POLAND_BOUNDS.lngMin) / lngRange) * 100
-      const y = (1 - (range.latitude! - POLAND_BOUNDS.latMin) / latRange) * 100
+    .forEach((range) => {
+      const isSelected = range.slug === props.selectedSlug
+      const marker = L.marker([range.latitude as number, range.longitude as number], {
+        icon: createIcon(range, isSelected),
+      })
 
-      return {
-        slug: range.slug,
-        label: range.displayName,
-        color: typeColorMap[range.type] ?? 'primary',
-        className: `range-map__marker--${range.type}`,
-        style: {
-          left: `${x}%`,
-          top: `${y}%`,
-        },
-      }
+      marker.on('click', () => emit('select', range.slug))
+      marker.bindTooltip(range.displayName, {
+        direction: 'top',
+        offset: L.point(0, -4),
+        opacity: 0.95,
+        className: 'range-map__tooltip',
+        permanent: false,
+        sticky: false,
+      })
+      marker.addTo(mapInstance.value as Map)
+      marker.setZIndexOffset(isSelected ? 800 : 200)
+      markers[range.slug] = marker
+      bounds.extend([range.latitude as number, range.longitude as number])
     })
+
+  if (bounds.isValid()) {
+    mapInstance.value.fitBounds(bounds.pad(0.2), { maxZoom: 12 })
+  } else {
+    mapInstance.value.setView(DEFAULT_CENTER, 6)
+  }
+}
+
+onMounted(() => {
+  createMap()
 })
+
+onBeforeUnmount(() => {
+  mapInstance.value?.remove()
+  clearMarkers()
+})
+
+watch(
+  () => [props.ranges, props.selectedSlug],
+  () => {
+    if (!mapInstance.value) {
+      createMap()
+      return
+    }
+    mapInstance.value.invalidateSize()
+    syncMarkers()
+
+    if (props.selectedSlug && markers[props.selectedSlug]) {
+      const selectedMarker = markers[props.selectedSlug]
+      selectedMarker.setIcon(createIcon(props.ranges.find((r) => r.slug === props.selectedSlug)!, true))
+      selectedMarker.setZIndexOffset(1000)
+      mapInstance.value.setView(selectedMarker.getLatLng(), Math.max(mapInstance.value.getZoom(), 8))
+    }
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>
 .range-map {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #dbeafe, #f5f5f5);
   border: 1px solid rgba(25, 118, 210, 0.18);
 }
 
-.range-map__canvas {
+.range-map__frame {
   position: relative;
   width: 100%;
-  height: 420px;
-  background: radial-gradient(circle at 30% 30%, rgba(25, 118, 210, 0.14), transparent 38%),
-    radial-gradient(circle at 70% 60%, rgba(14, 165, 233, 0.18), transparent 42%);
-}
-
-.range-map__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(0deg, rgba(255, 255, 255, 0.25), transparent 35%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.16), transparent 30%);
-  pointer-events: none;
-}
-
-.range-map__marker {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  transition: transform 0.2s ease, filter 0.2s ease;
-}
-
-.range-map__marker--selected {
-  transform: translate(-50%, -50%) scale(1.06);
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.12));
-}
-
-.range-map__marker--coming-soon .v-btn {
-  animation: pulse 2.4s ease-in-out infinite;
-}
-
-.range-map__label {
-  margin-top: 4px;
-  padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1f2937;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  white-space: nowrap;
+  height: 520px;
+  z-index: 1;
 }
 
 .range-map__empty {
@@ -151,17 +220,19 @@ const markers = computed(() => {
   place-items: center;
   color: #4b5563;
   font-weight: 500;
+  pointer-events: none;
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.06);
-  }
-  100% {
-    transform: scale(1);
-  }
+:deep(.range-map__tooltip) {
+  background-color: rgba(31, 41, 55, 0.92);
+  color: white;
+  border-radius: 6px;
+  border: none;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
+
+:deep(.range-map__tooltip .leaflet-tooltip-tip) {
+  display: none;
+}
+
 </style>

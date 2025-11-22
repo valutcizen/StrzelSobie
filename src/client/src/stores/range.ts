@@ -68,9 +68,24 @@ export const useRangeStore = defineStore('range', {
         if (existing) {
           this.rangesBySlug[rangeSlug] = {
             ...existing,
+            ...(payload.displayName !== undefined ? { displayName: payload.displayName } : {}),
             ...(payload.totalTracks !== undefined ? { totalTracks: payload.totalTracks } : {}),
             ...(payload.operatingHours !== undefined ? { operatingHours: payload.operatingHours } : {}),
+            ...(payload.publicDescription !== undefined ? { publicDescription: payload.publicDescription } : {}),
+            ...(payload.memberDescription !== undefined ? { memberDescription: payload.memberDescription } : {}),
+            ...(payload.latitude !== undefined ? { latitude: payload.latitude } : {}),
+            ...(payload.longitude !== undefined ? { longitude: payload.longitude } : {}),
           }
+          this.directory = this.directory.map((range) =>
+            range.slug === rangeSlug
+              ? {
+                  ...range,
+                  ...(payload.displayName !== undefined ? { displayName: payload.displayName } : {}),
+                  ...(payload.latitude !== undefined ? { latitude: payload.latitude ?? undefined } : {}),
+                  ...(payload.longitude !== undefined ? { longitude: payload.longitude ?? undefined } : {}),
+                }
+              : range,
+          )
         } else {
           await this.fetchRangeDetails(rangeSlug, { force: true })
         }

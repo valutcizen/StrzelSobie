@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Field, Form, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
-import RecordFormDialog from '@/components/calendar/RecordFormDialog.vue'
+import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
 import type { OperatingHours, RangeDetails } from '@/types/range'
@@ -38,6 +38,13 @@ const createDefaultOperatingHours = (): FormOperatingHours =>
   }, {} as FormOperatingHours)
 
 type RangeSettingsFormValues = {
+  displayName: string
+  location: {
+    lat: number | null
+    lng: number | null
+  } | null
+  publicDescription: string | null
+  memberDescription: string | null
   totalTracks: number
   operatingHours: FormOperatingHours
 }
@@ -46,7 +53,6 @@ const formKey = ref(0)
 const isLoading = ref(false)
 const isSaving = ref(false)
 const lastError = ref<string | null>(null)
-const recordDialogOpen = ref(false)
 const snackbar = reactive({
   open: false,
   message: '',
@@ -54,6 +60,10 @@ const snackbar = reactive({
 })
 
 const initialValues = ref<RangeSettingsFormValues>({
+  displayName: '',
+  location: null,
+  publicDescription: null,
+  memberDescription: null,
   totalTracks: 1,
   operatingHours: createDefaultOperatingHours(),
 })
@@ -110,6 +120,15 @@ const daySchema = (dayLabel: string) =>
     )
 
 const schema = yup.object({
+  displayName: yup.string().required(t('admin.rangeSettings.validation.required')),
+  location: yup
+    .object({
+      lat: yup.number().nullable(),
+      lng: yup.number().nullable(),
+    })
+    .nullable(),
+  publicDescription: yup.string().nullable(),
+  memberDescription: yup.string().nullable(),
   totalTracks: yup
     .number()
     .typeError(t('admin.rangeSettings.validation.required'))
@@ -130,6 +149,13 @@ const showSnackbar = (message: string, color: 'success' | 'error' = 'success') =
 }
 
 const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => ({
+  displayName: range.displayName,
+  location:
+    typeof range.latitude === 'number' && typeof range.longitude === 'number'
+      ? { lat: range.latitude, lng: range.longitude }
+      : null,
+  publicDescription: range.publicDescription ?? null,
+  memberDescription: range.memberDescription ?? null,
   totalTracks: range.totalTracks ?? 1,
   operatingHours: dayOrder.reduce((acc, day) => {
     const entry = range.operatingHours?.[day] ?? null
@@ -170,6 +196,16 @@ const loadRangeSettings = async (force = false) => {
   }
 }
 
+const toNullableString = (value: string | null | undefined) => {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === '' ? null : trimmed
+}
+
+const toNullableNumber = (value: number | string | null | undefined) => {
+  const parsed = typeof value === 'string' ? Number(value) : value
+  return Number.isFinite(parsed as number) ? (parsed as number) : null
+}
+
 const submitSettings: SubmissionHandler = async (rawValues) => {
   const values = rawValues as RangeSettingsFormValues
   if (!rangeSlug.value) {
@@ -181,6 +217,11 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
 
   try {
     const payload = {
+      displayName: values.displayName.trim(),
+      latitude: toNullableNumber(values.location?.lat),
+      longitude: toNullableNumber(values.location?.lng),
+      publicDescription: toNullableString(values.publicDescription),
+      memberDescription: toNullableString(values.memberDescription),
       totalTracks: Number(values.totalTracks),
       operatingHours: mapFormToOperatingHours(values),
     }
@@ -197,11 +238,6 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
   } finally {
     isSaving.value = false
   }
-}
-
-const handleRecordSubmitted = () => {
-  showSnackbar(t('calendar.snackbar.recordSaved'))
-  recordDialogOpen.value = false
 }
 
 onMounted(() => {
@@ -280,32 +316,27 @@ onMounted(() => {
       >
         <template #default="{ values }">
           <v-card-text>
-            <v-row>
+            <v-row class="mb-4">
               <v-col
 
                 cols="12"
-
                 md="4"
               >
                 <Field
 
                   v-slot="{ field, errorMessage }"
 
-                  name="totalTracks"
+                  name="displayName"
                 >
                   <v-text-field
 
-                    :label="t('admin.rangeSettings.totalTracksLabel')"
-
-                    type="number"
-
-                    min="1"
+                    :label="t('admin.rangeSettings.displayNameLabel')"
 
                     :model-value="field.value"
 
                     :error-messages="errorMessage"
 
-                    data-testid="range-settings-total-tracks-input"
+                    data-testid="range-settings-display-name-input"
 
                     @update:model-value="field.onChange"
 
@@ -313,50 +344,99 @@ onMounted(() => {
                   />
                 </Field>
               </v-col>
-            </v-row>
 
+              <v-col
 
+                cols="12"
+                md="8"
+              >
+                <Field
 
-            <v-divider class="my-6" />
+                  v-slot="{ field }"
 
+                  name="location"
+                >
+                  <div>
+                    <div class="d-flex align-center justify-space-between mb-2 flex-wrap gap-2">
+                      <div>
+                        <h3 class="text-subtitle-1 font-weight-medium mb-1">
+                          {{ t('admin.rangeSettings.locationHeading') }}
+                        </h3>
+                        <p class="text-body-2 text-medium-emphasis mb-0">
+                          {{ t('admin.rangeSettings.locationHint') }}
+                        </p>
+                      </div>
+                      <v-btn
 
+                        variant="text"
 
-            <v-row>
-              <v-col cols="12">
-                <h3 class="text-subtitle-1 font-weight-medium">
-                  {{ t('admin.rangeSettings.operatingHoursHeading') }}
-                </h3>
+                        size="small"
+
+                        prepend-icon="mdi-map-marker-off-outline"
+
+                        data-testid="range-settings-clear-location-button"
+
+                        @click="field.onChange(null)"
+                      >
+                        {{ t('admin.rangeSettings.clearLocation') }}
+                      </v-btn>
+                    </div>
+
+                    <RangeLocationPicker
+
+                      :model-value="field.value"
+
+                      @update:model-value="field.onChange"
+                    />
+
+                    <div class="d-flex justify-space-between align-center mt-2 text-body-2">
+                      <span class="text-medium-emphasis">
+                        {{
+                          values.location
+                            ? t('admin.rangeSettings.locationCoordinates', {
+                                lat: values.location.lat?.toFixed(5) ?? '',
+                                lng: values.location.lng?.toFixed(5) ?? '',
+                              })
+                            : t('admin.rangeSettings.locationEmpty')
+                        }}
+                      </span>
+                    </div>
+                  </div>
+                </Field>
               </v-col>
             </v-row>
 
+            <v-divider class="my-6" />
 
+            <h3 class="text-subtitle-1 font-weight-medium mb-4">
+              {{ t('admin.rangeSettings.operatingHoursHeading') }}
+            </h3>
 
-            <v-row>
-              <v-col
+            <v-table
 
-                v-for="day in dayOrder"
+              density="compact"
 
-                :key="day"
+              class="operating-hours-table"
+            >
+              <thead>
+                <tr>
+                  <th>{{ t('admin.rangeSettings.dayColumn') }}</th>
+                  <th>{{ t('admin.rangeSettings.statusColumn') }}</th>
+                  <th>{{ t('admin.rangeSettings.openTimeLabel') }}</th>
+                  <th>{{ t('admin.rangeSettings.closeTimeLabel') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
 
-                cols="12"
+                  v-for="day in dayOrder"
 
-                md="6"
-              >
-                <v-sheet
-
-                  rounded="lg"
-
-                  class="pa-4"
-
-                  color="grey-lighten-4"
+                  :key="day"
                 >
-                  <div class="d-flex align-center justify-space-between mb-2">
-                    <span class="text-subtitle-2">
-
-                      {{ t(`rangeLanding.days.${day}`) }}
-
-                    </span>
-
+                  <td class="text-capitalize">
+                    {{ t(`rangeLanding.days.${day}`) }}
+                  </td>
+                  <td class="switch-cell">
                     <Field
 
                       v-slot="{ field }"
@@ -392,89 +472,181 @@ onMounted(() => {
                         @blur="field.onBlur"
                       />
                     </Field>
-                  </div>
+                  </td>
+                  <td>
+                    <Field
 
-                  <v-row
+                      v-slot="{ field, errorMessage }"
 
-                    class="mt-2"
+                      :name="`operatingHours.${day}.open`"
+                    >
+                      <v-text-field
 
-                    dense
-                  >
-                    <v-col cols="6">
-                      <Field
+                        type="time"
 
-                        v-slot="{ field, errorMessage }"
+                        density="compact"
 
-                        :name="`operatingHours.${day}.open`"
-                      >
-                        <v-text-field
+                        hide-details="auto"
 
-                          type="time"
+                        :model-value="field.value"
 
-                          :label="t('admin.rangeSettings.openTimeLabel')"
+                        :disabled="!values.operatingHours[day].isOpen"
 
-                          :model-value="field.value"
+                        :error-messages="errorMessage"
 
-                          :disabled="!values.operatingHours[day].isOpen"
+                        :data-testid="`range-settings-${day}-open-time-input`"
 
-                          :error-messages="errorMessage"
+                        class="time-input"
 
-                          :data-testid="`range-settings-${day}-open-time-input`"
+                        @update:model-value="field.onChange"
 
-                          @update:model-value="field.onChange"
+                        @blur="field.onBlur"
+                      />
+                    </Field>
+                  </td>
+                  <td>
+                    <Field
 
-                          @blur="field.onBlur"
-                        />
-                      </Field>
-                    </v-col>
+                      v-slot="{ field, errorMessage }"
 
-                    <v-col cols="6">
-                      <Field
+                      :name="`operatingHours.${day}.close`"
+                    >
+                      <v-text-field
 
-                        v-slot="{ field, errorMessage }"
+                        type="time"
 
-                        :name="`operatingHours.${day}.close`"
-                      >
-                        <v-text-field
+                        density="compact"
 
-                          type="time"
+                        hide-details="auto"
 
-                          :label="t('admin.rangeSettings.closeTimeLabel')"
+                        :model-value="field.value"
 
-                          :model-value="field.value"
+                        :disabled="!values.operatingHours[day].isOpen"
 
-                          :disabled="!values.operatingHours[day].isOpen"
+                        :error-messages="errorMessage"
 
-                          :error-messages="errorMessage"
+                        :data-testid="`range-settings-${day}-close-time-input`"
 
-                          :data-testid="`range-settings-${day}-close-time-input`"
+                        class="time-input"
 
-                          @update:model-value="field.onChange"
+                        @update:model-value="field.onChange"
 
-                          @blur="field.onBlur"
-                        />
-                      </Field>
-                    </v-col>
-                  </v-row>
-                </v-sheet>
+                        @blur="field.onBlur"
+                      />
+                    </Field>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+
+            <v-divider class="my-6" />
+
+            <v-row>
+              <v-col
+
+                cols="12"
+                md="4"
+              >
+                <Field
+
+                  v-slot="{ field, errorMessage }"
+
+                  name="totalTracks"
+                >
+                  <v-text-field
+
+                    :label="t('admin.rangeSettings.totalTracksLabel')"
+
+                    type="number"
+
+                    min="1"
+
+                    :model-value="field.value"
+
+                    :error-messages="errorMessage"
+
+                    data-testid="range-settings-total-tracks-input"
+
+                    @update:model-value="field.onChange"
+
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col
+
+                cols="12"
+                md="6"
+              >
+                <Field
+
+                  v-slot="{ field, errorMessage }"
+
+                  name="publicDescription"
+                >
+                  <v-textarea
+
+                    :label="t('admin.rangeSettings.publicDescriptionLabel')"
+
+                    :hint="t('admin.rangeSettings.publicDescriptionHint')"
+
+                    persistent-hint
+
+                    auto-grow
+
+                    :model-value="field.value ?? ''"
+
+                    :error-messages="errorMessage"
+
+                    data-testid="range-settings-public-description-textarea"
+
+                    @update:model-value="field.onChange"
+
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+
+              <v-col
+
+                cols="12"
+                md="6"
+              >
+                <Field
+
+                  v-slot="{ field, errorMessage }"
+
+                  name="memberDescription"
+                >
+                  <v-textarea
+
+                    :label="t('admin.rangeSettings.memberDescriptionLabel')"
+
+                    :hint="t('admin.rangeSettings.memberDescriptionHint')"
+
+                    persistent-hint
+
+                    auto-grow
+
+                    :model-value="field.value ?? ''"
+
+                    :error-messages="errorMessage"
+
+                    data-testid="range-settings-member-description-textarea"
+
+                    @update:model-value="field.onChange"
+
+                    @blur="field.onBlur"
+                  />
+                </Field>
               </v-col>
             </v-row>
           </v-card-text>
 
-          <v-card-actions class="justify-space-between flex-wrap">
-            <v-btn
-
-              variant="text"
-
-              prepend-icon="mdi-clipboard-plus"
-
-              data-testid="range-settings-record-action-button"
-
-              @click="recordDialogOpen = true"
-            >
-              {{ t('admin.rangeSettings.recordAction') }}
-            </v-btn>
-
+          <v-card-actions class="justify-end">
             <v-btn
 
               color="primary"
@@ -494,19 +666,6 @@ onMounted(() => {
 
 
 
-    <RecordFormDialog
-
-      :open="recordDialogOpen"
-
-      :range-slug="rangeSlug"
-
-      @update:open="recordDialogOpen = $event"
-
-      @submitted="handleRecordSubmitted"
-    />
-
-
-
     <v-snackbar
 
       v-model="snackbar.open"
@@ -521,3 +680,18 @@ onMounted(() => {
     </v-snackbar>
   </v-container>
 </template>
+
+<style scoped>
+.operating-hours-table th,
+.operating-hours-table td {
+  vertical-align: middle;
+}
+
+.switch-cell {
+  white-space: nowrap;
+}
+
+.time-input {
+  max-width: 140px;
+}
+</style>
