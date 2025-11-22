@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import L, { type DivIcon, type Map, type Marker } from 'leaflet'
 import type { RangeSummary } from '@/types/range'
@@ -58,40 +58,19 @@ const typeStyleMap: Record<string, { color: string; icon: string }> = {
 
 const hasMarkers = computed(() => props.ranges.some((range) => isFinite(range.latitude ?? NaN) && isFinite(range.longitude ?? NaN)))
 
-const createMap = () => {
-  if (mapInstance.value || !mapContainer.value) {
-    return
-  }
-
-  mapInstance.value = L.map(mapContainer.value, {
-    center: DEFAULT_CENTER,
-    zoom: 6,
-    worldCopyJump: true,
-  })
-
-  mapInstance.value.on('zoom', () => {
-    Object.values(markers).forEach((marker) => marker.update())
-  })
-
-  mapInstance.value.on('resize', () => {
-    mapInstance.value?.invalidateSize()
-  })
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-    maxZoom: 18,
-  }).addTo(mapInstance.value as Map)
-
-  syncMarkers()
-}
-
 const clearMarkers = () => {
-  if (!mapInstance.value) return
   Object.values(markers).forEach((marker) => marker.remove())
   for (const key of Object.keys(markers)) {
     delete markers[key]
   }
+}
+
+const destroyMap = () => {
+  if (!mapInstance.value) return
+  mapInstance.value.off()
+  mapInstance.value.remove()
+  mapInstance.value = null
+  clearMarkers()
 }
 
 const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
@@ -126,10 +105,42 @@ const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
 
   return L.divIcon({
     html: svg,
-    className: 'range-map__pin',
+    className: 'leaflet-div-icon range-map__pin',
     iconSize: [size, size + 6],
     iconAnchor: [size / 2, size + 6],
   })
+}
+
+const createMap = async () => {
+  if (mapInstance.value || !mapContainer.value) {
+    return
+  }
+
+  mapInstance.value = L.map(mapContainer.value, {
+    center: DEFAULT_CENTER,
+    zoom: 6,
+    worldCopyJump: true,
+    zoomAnimation: false,
+    markerZoomAnimation: false,
+  })
+
+  mapInstance.value.on('zoom', () => {
+    Object.values(markers).forEach((marker) => marker.update())
+  })
+
+  mapInstance.value.on('resize', () => {
+    mapInstance.value?.invalidateSize()
+  })
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    maxZoom: 18,
+  }).addTo(mapInstance.value as Map)
+
+  syncMarkers()
+  await nextTick()
+  requestAnimationFrame(() => mapInstance.value?.invalidateSize())
 }
 
 const syncMarkers = () => {
@@ -174,8 +185,11 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  mapInstance.value?.remove()
-  clearMarkers()
+  destroyMap()
+})
+
+onActivated(() => {
+  mapInstance.value?.invalidateSize()
 })
 
 watch(
@@ -233,6 +247,12 @@ watch(
 
 :deep(.range-map__tooltip .leaflet-tooltip-tip) {
   display: none;
+}
+
+:deep(.range-map__pin.leaflet-div-icon) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 </style>
