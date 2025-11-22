@@ -5,10 +5,38 @@
     elevation="1"
     data-testid="range-map"
   >
-    <div
-      ref="mapContainer"
-      class="range-map__frame"
-    />
+    <div class="range-map__frame">
+      <l-map
+        ref="mapRef"
+        v-model:zoom="zoom"
+        :center="center"
+        :use-global-leaflet="false"
+        :options="{ zoomAnimation: true, markerZoomAnimation: true }"
+        @ready="onMapReady"
+      >
+        <l-tile-layer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          layer-type="base"
+          name="OpenStreetMap"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+        />
+
+        <l-marker
+          v-for="range in validRanges"
+          :key="range.slug"
+          :lat-lng="[range.latitude, range.longitude]"
+          :icon="createIcon(range, range.slug === selectedSlug)"
+          :z-index-offset="getMarkerZIndex(range, range.slug === selectedSlug)"
+          @click="() => emit('select', range.slug)"
+        >
+          <l-tooltip
+            :options="{ direction: 'top', offset: L.point(0, -4), opacity: 0.95, className: 'range-map__tooltip', permanent: false, sticky: false }"
+          >
+            {{ range.displayName }}
+          </l-tooltip>
+        </l-marker>
+      </l-map>
+    </div>
     <div
       v-if="!hasMarkers"
       class="range-map__empty"
@@ -20,10 +48,16 @@
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
-import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import L, { type DivIcon, type Map, type Marker } from 'leaflet'
+import L, { type DivIcon, type Map } from 'leaflet'
 import type { RangeSummary } from '@/types/range'
+import {
+  LMap,
+  LTileLayer,
+  LMarker,
+  LTooltip,
+} from '@vue-leaflet/vue-leaflet'
 
 interface Props {
   ranges: RangeSummary[]
@@ -37,9 +71,8 @@ const emit = defineEmits<{
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const mapContainer = ref<HTMLDivElement | null>(null)
+const mapRef = ref<InstanceType<typeof LMap> | null>(null)
 const mapInstance = ref<Map | null>(null)
-const markers: Record<string, Marker> = {}
 
 const POLAND_BOUNDS = {
   latMin: 49.0,
@@ -48,7 +81,8 @@ const POLAND_BOUNDS = {
   lngMax: 24.15,
 }
 
-const DEFAULT_CENTER: [number, number] = [(POLAND_BOUNDS.latMin + POLAND_BOUNDS.latMax) / 2, 19.5]
+const zoom = ref(6)
+const center = ref<[number, number]>([(POLAND_BOUNDS.latMin + POLAND_BOUNDS.latMax) / 2, 19.5])
 
 const typeStyleMap: Record<string, { color: string; icon: string }> = {
   club: { color: '#43a047', icon: 'mdi-target' },
@@ -56,22 +90,10 @@ const typeStyleMap: Record<string, { color: string; icon: string }> = {
   'coming-soon': { color: '#f59e0b', icon: 'mdi-progress-clock' },
 }
 
-const hasMarkers = computed(() => props.ranges.some((range) => isFinite(range.latitude ?? NaN) && isFinite(range.longitude ?? NaN)))
-
-const clearMarkers = () => {
-  Object.values(markers).forEach((marker) => marker.remove())
-  for (const key of Object.keys(markers)) {
-    delete markers[key]
-  }
-}
-
-const destroyMap = () => {
-  if (!mapInstance.value) return
-  mapInstance.value.off()
-  mapInstance.value.remove()
-  mapInstance.value = null
-  clearMarkers()
-}
+const validRanges = computed(() =>
+  props.ranges.filter((range) => typeof range.latitude === 'number' && typeof range.longitude === 'number'),
+)
+const hasMarkers = computed(() => validRanges.value.length > 0)
 
 const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
   const style = typeStyleMap[range.type] ?? { color: '#1976d2', icon: 'mdi-map-marker' }
@@ -111,121 +133,57 @@ const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
   })
 }
 
-const createMap = async () => {
-  if (mapInstance.value || !mapContainer.value) {
+const getMarkerZIndex = (range: RangeSummary, isSelected: boolean): number => {
+  let baseZIndex = 0
+  switch (range.type) {
+    case 'club':
+      baseZIndex = 300
+      break
+    case 'ally':
+      baseZIndex = 200
+      break
+    case 'coming-soon':
+      baseZIndex = 100
+      break
+    default:
+      baseZIndex = 150 // Default for unknown types
+  }
+
+  return isSelected ? baseZIndex + 700 : baseZIndex // Selected marker always on top
+}
+
+const onMapReady = () => {
+  mapInstance.value = mapRef.value?.leafletObject ?? null
+  if (mapInstance.value) {
+    fitBoundsToMarkers()
+  }
+}
+
+const fitBoundsToMarkers = () => {
+  if (!mapInstance.value || validRanges.value.length === 0) {
     return
   }
-
-  mapInstance.value = L.map(mapContainer.value, {
-    center: DEFAULT_CENTER,
-    zoom: 6,
-    worldCopyJump: true,
-    zoomAnimation: false,
-    markerZoomAnimation: false,
-  })
-
-  mapInstance.value.on('resize', () => {
-    mapInstance.value?.invalidateSize()
-  })
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-    maxZoom: 18,
-  }).addTo(mapInstance.value as Map)
-
-  syncMarkers()
-  await nextTick()
-  requestAnimationFrame(() => mapInstance.value?.invalidateSize())
-}
-
-const syncMarkers = () => {
-  if (!mapInstance.value) return
-
-  clearMarkers()
-
-  const bounds = L.latLngBounds([])
-
-  props.ranges
-    .filter((range) => typeof range.latitude === 'number' && typeof range.longitude === 'number')
-    .forEach((range) => {
-      const isSelected = range.slug === props.selectedSlug
-      const marker = L.marker([range.latitude as number, range.longitude as number], {
-        icon: createIcon(range, isSelected),
-      })
-
-      marker.on('click', () => emit('select', range.slug))
-      marker.bindTooltip(range.displayName, {
-        direction: 'top',
-        offset: L.point(0, -4),
-        opacity: 0.95,
-        className: 'range-map__tooltip',
-        permanent: false,
-        sticky: false,
-      })
-      marker.addTo(mapInstance.value as Map)
-      marker.setZIndexOffset(isSelected ? 800 : 200)
-      markers[range.slug] = marker
-      bounds.extend([range.latitude as number, range.longitude as number])
-    })
-
+  const bounds = L.latLngBounds(validRanges.value.map((r) => [r.latitude as number, r.longitude as number]))
   if (bounds.isValid()) {
     mapInstance.value.fitBounds(bounds.pad(0.2), { maxZoom: 12 })
-  } else {
-    mapInstance.value.setView(DEFAULT_CENTER, 6)
   }
 }
 
-onMounted(() => {
-  createMap()
-})
-
-onBeforeUnmount(() => {
-  destroyMap()
-})
-
-onActivated(() => {
+watch(() => props.ranges, () => {
   nextTick(() => {
-    mapInstance.value?.invalidateSize()
+    fitBoundsToMarkers()
   })
+}, { deep: true })
+
+watch(() => props.selectedSlug, (newSlug) => {
+  if (!mapInstance.value || !newSlug) return
+
+  const range = validRanges.value.find((r) => r.slug === newSlug)
+  if (range) {
+    mapInstance.value.setView([range.latitude as number, range.longitude as number], Math.max(mapInstance.value.getZoom(), 8))
+  }
 })
 
-watch(
-  () => props.ranges,
-  () => {
-    if (!mapInstance.value) {
-      return
-    }
-    syncMarkers()
-  },
-  { deep: true },
-)
-
-watch(
-  () => props.selectedSlug,
-  (newSlug, oldSlug) => {
-    if (!mapInstance.value) {
-      return
-    }
-
-    if (oldSlug && markers[oldSlug]) {
-      const oldRange = props.ranges.find((r) => r.slug === oldSlug)
-      if (oldRange) {
-        markers[oldSlug].setIcon(createIcon(oldRange, false))
-        markers[oldSlug].setZIndexOffset(200)
-      }
-    }
-
-    if (newSlug && markers[newSlug]) {
-      const newRange = props.ranges.find((r) => r.slug === newSlug)
-      if (newRange) {
-        markers[newSlug].setIcon(createIcon(newRange, true))
-        markers[newSlug].setZIndexOffset(1000)
-        mapInstance.value.setView(markers[newSlug].getLatLng(), Math.max(mapInstance.value.getZoom(), 8))
-      }
-    }
-  },
-)
 </script>
 
 <style scoped>
@@ -269,5 +227,4 @@ watch(
   border: none;
   box-shadow: none;
 }
-
 </style>
