@@ -63,3 +63,20 @@ export type UpdateRangeCommand = Partial<
     | 'longitude'
   >
 >;
+
+/**
+ * Command model for creating a shooting range.
+ * Corresponds to the request payload for `POST /api/v1/ranges`.
+ */
+export type CreateRangeCommand = {
+  slug: ShootingRange['slug'];
+  displayName?: ShootingRange['display_name'];
+  type?: ShootingRange['type'];
+  allowsReservations?: boolean;
+  publicDescription?: ShootingRange['public_description'] | null;
+  memberDescription?: ShootingRange['member_description'] | null;
+  latitude?: ShootingRange['latitude'];
+  longitude?: ShootingRange['longitude'];
+  totalTracks?: ShootingRange['total_tracks'] | null;
+  operatingHours?: OperatingHours;
+};

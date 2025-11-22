@@ -212,12 +212,12 @@ const messages = {
         openCalendar: 'Open calendar',
       },
       publicDescription: {
-        title: 'Public description',
-        empty: 'No public description provided.',
+        title: 'Description',
+        empty: 'No description provided.',
       },
       memberDescription: {
-        title: 'Member-only notes',
-        empty: 'No member-only notes available.',
+        title: 'Additional description',
+        empty: 'No additional description available.',
       },
       operatingHours: {
         title: 'Operating hours',
@@ -326,6 +326,15 @@ const messages = {
         successMessage: 'Range settings saved.',
         errorMessage: 'Failed to save range settings.',
         recordSaved: 'Entry saved without reservation.',
+        slugHint: 'Set the range slug (used in the URL) to start configuring a range.',
+        slugRequired: 'Provide a range slug to manage settings.',
+        newRange: {
+          title: 'New range',
+          description: 'Enter the URL slug for the new range. This is the name shown in the address bar.',
+          slugLabel: 'Range slug (URL-safe)',
+          slugHint: 'Use lowercase letters, numbers, and dashes for the address bar name.',
+          cta: 'New range',
+        },
         validation: {
           required: 'This field is required.',
           invalidTime: 'Invalid time format (HH:MM).',
@@ -356,6 +365,11 @@ const messages = {
         unavailableGeneric: 'Bookings are disabled for this range.',
         openCalendar: 'View calendar',
         backToMap: 'Back to map',
+        locationLabel: 'Open in maps',
+        locationLinks: {
+          google: 'Google Maps',
+          osm: 'OpenStreetMap',
+        },
       },
     },
     rangeDirectory: {
@@ -587,12 +601,12 @@ const messages = {
         openCalendar: 'Przejdź do kalendarza',
       },
       publicDescription: {
-        title: 'Opis publiczny',
-        empty: 'Brak opisu publicznego.',
+        title: 'Opis',
+        empty: 'Brak opisu.',
       },
       memberDescription: {
-        title: 'Notatki dla członków',
-        empty: 'Brak informacji widocznych tylko dla członków.',
+        title: 'Opis dodatkowy',
+        empty: 'Brak dodatkowego opisu.',
       },
       operatingHours: {
         title: 'Godziny otwarcia',
@@ -701,6 +715,15 @@ const messages = {
         successMessage: 'Ustawienia strzelnicy zostały zapisane.',
         errorMessage: 'Nie udało się zapisać ustawień strzelnicy.',
         recordSaved: 'Zapisano termin bez rezerwacji.',
+        slugHint: 'Ustaw slug strzelnicy (nazwa w pasku adresu), aby rozpocząć konfigurację.',
+        slugRequired: 'Podaj slug strzelnicy, aby zarządzać ustawieniami.',
+        newRange: {
+          title: 'Nowa strzelnica',
+          description: 'Podaj slug (nazwę w pasku URL) dla nowej strzelnicy. Będzie używany w adresie strony.',
+          slugLabel: 'Slug strzelnicy (adres w URL)',
+          slugHint: 'Użyj małych liter, cyfr i myślników do nazwy w pasku adresu.',
+          cta: 'Nowa strzelnica',
+        },
         validation: {
           required: 'Pole jest wymagane.',
           invalidTime: 'Niepoprawny format godziny (HH:MM).',
@@ -731,6 +754,11 @@ const messages = {
         unavailableGeneric: 'Rezerwacje są wyłączone dla tej strzelnicy.',
         openCalendar: 'Zobacz kalendarz',
         backToMap: 'Wróć do mapy',
+        locationLabel: 'Otwórz w mapach',
+        locationLinks: {
+          google: 'Google Maps',
+          osm: 'OpenStreetMap',
+        },
       },
     },
     rangeDirectory: {

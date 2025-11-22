@@ -1,18 +1,28 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Field, Form, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
+import { useRoute } from 'vue-router'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
 import type { OperatingHours, RangeDetails } from '@/types/range'
 
 const { t } = useI18n()
+const route = useRoute()
 const authStore = useAuthStore()
 const rangeStore = useRangeStore()
 
-const rangeSlug = computed(() => authStore.defaultRangeSlug)
+const rangeSlug = computed(() => {
+  const querySlug = route.query.rangeSlug
+  if (typeof querySlug === 'string' && querySlug.trim().length > 0) {
+    return querySlug.trim()
+  }
+  return authStore.defaultRangeSlug
+})
+
+const hasRangeSlug = computed(() => Boolean(rangeSlug.value))
 const defaultOpenTime = '08:00'
 const defaultCloseTime = '20:00'
 const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
@@ -177,12 +187,14 @@ const mapFormToOperatingHours = (values: RangeSettingsFormValues): OperatingHour
   }, {} as OperatingHours)
 
 const loadRangeSettings = async (force = false) => {
-  if (!rangeSlug.value) {
-    return
-  }
-
   isLoading.value = true
   lastError.value = null
+
+  if (!rangeSlug.value) {
+    isLoading.value = false
+    lastError.value = t('admin.rangeSettings.slugRequired')
+    return
+  }
 
   try {
     const range = await rangeStore.fetchRangeDetails(rangeSlug.value, { force })
@@ -243,6 +255,14 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
 onMounted(() => {
   void loadRangeSettings(true)
 })
+
+watch(
+  () => route.query.rangeSlug,
+  () => {
+    lastError.value = null
+    void loadRangeSettings(true)
+  },
+)
 </script>
 
 <template>
@@ -264,7 +284,7 @@ onMounted(() => {
 
           prepend-icon="mdi-refresh"
 
-          :disabled="isLoading"
+          :disabled="isLoading || !hasRangeSlug"
 
           data-testid="range-settings-refresh-button"
 
@@ -304,7 +324,20 @@ onMounted(() => {
 
 
 
+      <v-alert
+        v-if="!hasRangeSlug && !isLoading"
+        type="info"
+        variant="tonal"
+        border="start"
+        class="mx-4 mt-4"
+      >
+        {{ t('admin.rangeSettings.slugHint') }}
+      </v-alert>
+
+
+
       <Form
+        v-if="hasRangeSlug"
 
         :key="formKey"
 

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { http } from '@/services/http'
-import type { RangeDetails, RangeSummary, UpdateRangePayload } from '@/types/range'
+import type { CreateRangePayload, RangeDetails, RangeSummary, UpdateRangePayload } from '@/types/range'
 
 interface FetchRangeOptions {
   force?: boolean
@@ -127,6 +127,25 @@ export const useRangeStore = defineStore('range', {
         throw error
       } finally {
         this.isDirectoryLoading = false
+      }
+    },
+
+    async createRange(payload: CreateRangePayload) {
+      if (!payload.slug) {
+        throw new Error('slug is required to create range')
+      }
+
+      try {
+        const { data } = await http.post<RangeDetails>('/ranges', payload)
+        this.rangesBySlug[payload.slug] = data
+        this.currentRangeSlug = payload.slug
+        return data
+      } catch (error) {
+        const message =
+          (error as { response?: { data?: { error?: string } } } | undefined)?.response?.data?.error ??
+          (error instanceof Error ? error.message : 'Nie udało się utworzyć strzelnicy.')
+        this.lastError = message
+        throw error
       }
     },
   },

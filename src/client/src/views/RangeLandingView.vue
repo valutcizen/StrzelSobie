@@ -30,6 +30,13 @@ const hasRangeData = computed(() => Boolean(rangeStore.currentRange))
 const lastError = computed(() => rangeStore.lastError)
 const isBookingUnavailableNotice = computed(() => route.query.booking === 'unavailable')
 const currentRange = computed(() => rangeStore.currentRange)
+const coordinates = computed(() => {
+  const range = rangeStore.currentRange
+  if (typeof range?.latitude !== 'number' || typeof range.longitude !== 'number') {
+    return null
+  }
+  return { lat: range.latitude, lng: range.longitude }
+})
 const canSeeMemberDescription = computed(() =>
   authStore.hasAnyRole([
     UserRoleEnum.Member,
@@ -170,33 +177,30 @@ watch(
 
             <div v-else-if="hasRangeData">
               <div class="d-flex flex-column gap-4 mb-6">
-                <div class="d-flex flex-column flex-md-row gap-3 align-md-center justify-space-between">
-                  <div class="d-flex align-center gap-3">
-                    <RangeTypeBadge :type="(currentRange?.type ?? 'club')" />
-                    <v-chip
-                      size="small"
-                      :color="currentRange?.allowsReservations ? 'success' : 'warning'"
-                      variant="tonal"
-                    >
-                      {{
-                        currentRange?.allowsReservations
-                          ? t('rangeLanding.bookingStatus.open')
-                          : t('rangeLanding.bookingStatus.closed')
-                      }}
-                    </v-chip>
-                  </div>
+                <div class="d-flex flex-wrap align-center gap-2 meta-row">
+                  <RangeTypeBadge
+                    class="meta-chip"
+                    :type="(currentRange?.type ?? 'club')"
+                  />
                   <v-chip
-                    v-if="currentRange?.latitude && currentRange?.longitude"
-                    variant="outlined"
-                    prepend-icon="mdi-crosshairs-gps"
+                    size="small"
+                    :color="currentRange?.allowsReservations ? 'success' : 'warning'"
+                    variant="elevated"
+                    class="meta-chip"
+                    :prepend-icon="currentRange?.allowsReservations ? 'mdi-check-circle' : 'mdi-alert-outline'"
                   >
-                    {{ t('rangeLanding.location', { lat: currentRange.latitude, lng: currentRange.longitude }) }}
+                    {{
+                      currentRange?.allowsReservations
+                        ? t('rangeLanding.bookingStatus.open')
+                        : t('rangeLanding.bookingStatus.closed')
+                    }}
                   </v-chip>
                 </div>
 
                 <RangeActionBar
                   :allows-reservations="currentRange?.allowsReservations ?? false"
                   :range-type="(currentRange?.type ?? 'club')"
+                  :coordinates="coordinates"
                   @open-calendar="handleOpenCalendar"
                   @back-to-map="handleBackToMap"
                 />
@@ -309,6 +313,16 @@ watch(
 <style scoped>
 .text-capitalize {
   text-transform: capitalize;
+}
+
+.meta-chip {
+  background: #f6f9ff;
+  border: 1px solid rgba(25, 118, 210, 0.16);
+  color: #0f3b68;
+}
+
+.meta-row {
+  align-items: center;
 }
 
 .range-description :deep(a) {

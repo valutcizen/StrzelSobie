@@ -3,7 +3,8 @@
     size="small"
     :color="chipColor"
     variant="tonal"
-    class="font-weight-semibold text-uppercase"
+    class="range-type-chip font-weight-semibold text-uppercase"
+    :prepend-icon="chipIcon"
     data-testid="range-type-badge"
   >
     {{ label }}
@@ -36,4 +37,23 @@ const chipColor = computed(() => {
       return 'primary'
   }
 })
+
+const chipIcon = computed(() => {
+  switch (props.type) {
+    case 'club':
+      return 'mdi-target'
+    case 'ally':
+      return 'mdi-handshake-outline'
+    case 'coming-soon':
+      return 'mdi-clock-outline'
+    default:
+      return 'mdi-map-marker'
+  }
+})
 </script>
+
+<style scoped>
+.range-type-chip {
+  letter-spacing: 0.04em;
+}
+</style>

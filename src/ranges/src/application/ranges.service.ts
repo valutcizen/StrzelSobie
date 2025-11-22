@@ -1,6 +1,8 @@
 import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-sobie/common/models';
 import {
+  CreateRangeCommand,
   ForbiddenError,
+  RangeAlreadyExistsError,
   RangeListResponseDto,
   RangeDetailsDto,
   RangeNotFoundError,
@@ -135,6 +137,52 @@ export class RangesService implements IRangesService {
     return Result.ok(dto);
   }
 
+  public async createRange(command: CreateRangeCommand, user: UserDto): Promise<Result<RangeDetailsDto>> {
+    if (!this.isGlobalAdmin(user)) {
+      return Result.fail(new ForbiddenError('User is not allowed to create ranges'));
+    }
+
+    const existing = await this.rangesRepository.findBySlug(command.slug);
+    if (existing) {
+      return Result.fail(new RangeAlreadyExistsError(command.slug));
+    }
+
+    const normalizedType = command.type ?? 'club';
+    const allowsReservations = normalizedType === 'club' ? command.allowsReservations ?? true : false;
+    const operatingHours = command.operatingHours ? JSON.stringify(command.operatingHours) : '{}';
+
+    const created = await this.rangesRepository.create({
+      slug: command.slug.trim(),
+      displayName: (command.displayName ?? command.slug).trim(),
+      type: normalizedType,
+      allowsReservations,
+      isDeleted: false,
+      publicDescription: command.publicDescription ?? null,
+      memberDescription: command.memberDescription ?? null,
+      latitude: command.latitude ?? 0,
+      longitude: command.longitude ?? 0,
+      totalTracks: command.totalTracks ?? null,
+      operatingHours,
+    });
+
+    const log: AuditLogEntry = {
+      action_type: 'RANGE_CREATE',
+      target_id: created.id,
+      details: {
+        user,
+        command,
+      },
+    };
+
+    const auditResult = await this.auditService.logAction(log);
+    if (!auditResult.isSuccess) {
+      return Result.fail(auditResult.getError());
+    }
+
+    const dto = this.buildRangeDetailsDto(created, user);
+    return Result.ok(dto);
+  }
+
   public async getRangeIdBySlug(rangeSlug: string): Promise<Result<number>> {
     try {
       const rangeId = await this.rangesRepository.getRangeIdBySlug(rangeSlug);
@@ -231,6 +279,11 @@ export class RangesService implements IRangesService {
     }
 
     return null;
+  }
+
+  private isGlobalAdmin(user: UserDto): boolean {
+    const globalRoles = user.roles.map((role) => role.name);
+    return globalRoles.includes(UserRole.ClubCommunityAdministrator);
   }
 
   private parseOperatingHours(raw: string): Record<string, { open: string; close: string } | null> {

@@ -1,6 +1,7 @@
 export type AuditActionType =
   | 'USER_REGISTRATION'
   | 'RANGE_UPDATE'
+  | 'RANGE_CREATE'
   | 'RANGE_DELETE'
   | 'PROPOSITION_CREATE'
   | 'PROPOSITION_CANCEL'

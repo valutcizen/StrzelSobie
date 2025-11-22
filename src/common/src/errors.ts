@@ -33,6 +33,13 @@ export class ForbiddenError extends Error {
   }
 }
 
+export class RangeAlreadyExistsError extends Error {
+  constructor(slug: string) {
+    super(`Range with slug ${slug} already exists`);
+    this.name = 'RangeAlreadyExistsError';
+  }
+}
+
 export class EmailAlreadyExistsError extends Error {
   constructor(email: string) {
     super(`User with email ${email} already exists`);

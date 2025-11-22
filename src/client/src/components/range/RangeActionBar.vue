@@ -1,8 +1,7 @@
 <template>
   <v-sheet
     class="range-action-bar px-4 py-4"
-    color="primary"
-    variant="tonal"
+    elevation="1"
     rounded="lg"
     data-testid="range-action-bar"
   >
@@ -29,12 +28,39 @@
           {{ t('range.actionBar.openCalendar') }}
         </v-btn>
         <v-btn
-          variant="text"
+          color="primary"
+          variant="outlined"
           prepend-icon="mdi-map-outline"
           data-testid="range-back-to-map-button"
           @click="$emit('back-to-map')"
         >
           {{ t('range.actionBar.backToMap') }}
+        </v-btn>
+      </div>
+    </div>
+
+    <div
+      v-if="locationLinks.length"
+      class="mt-4 location-links"
+    >
+      <p class="text-body-2 text-medium-emphasis mb-2">
+        {{ t('range.actionBar.locationLabel') }}
+      </p>
+      <div class="location-link-grid">
+        <v-btn
+          v-for="link in locationLinks"
+          :key="link.key"
+          :href="link.href"
+          target="_blank"
+          rel="noopener"
+          size="small"
+          color="primary"
+          variant="tonal"
+          :prepend-icon="link.icon"
+          :data-testid="`range-location-link-${link.key}`"
+          class="location-link-btn"
+        >
+          {{ t(`range.actionBar.locationLinks.${link.key}`) }}
         </v-btn>
       </div>
     </div>
@@ -59,6 +85,10 @@ import type { RangeDetails } from '@/types/range'
 interface Props {
   allowsReservations: boolean
   rangeType: RangeDetails['type']
+  coordinates?: {
+    lat: number
+    lng: number
+  } | null
 }
 
 defineEmits<{
@@ -86,10 +116,45 @@ const headline = computed(() => {
 
   return unavailableCopy.value
 })
+
+const locationLinks = computed(() => {
+  if (!props.coordinates) {
+    return []
+  }
+
+  const { lat, lng } = props.coordinates
+  return [
+    {
+      key: 'google',
+      href: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+      icon: 'mdi-google-maps',
+    },
+    {
+      key: 'osm',
+      href: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`,
+      icon: 'mdi-map',
+    },
+  ]
+})
 </script>
 
 <style scoped>
 .range-action-bar {
-  border: 1px solid rgba(25, 118, 210, 0.14);
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.12), rgba(25, 118, 210, 0.04));
+  border: 1px solid rgba(25, 118, 210, 0.18);
+}
+
+.location-links {
+  gap: 14px;
+}
+
+.location-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.location-link-btn {
+  min-width: 150px;
 }
 </style>

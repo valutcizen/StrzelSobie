@@ -115,6 +115,14 @@
           :roles="[UserRoleEnum.ClubCommunityAdministrator]"
           :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
         />
+        <v-list-item
+          v-if="canCreateRange"
+          prepend-icon="mdi-plus-circle"
+          data-testid="nav-create-range-button"
+          @click="openCreateRangeDialog"
+        >
+          <v-list-item-title>{{ t('admin.rangeSettings.newRange.cta') }}</v-list-item-title>
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
@@ -123,6 +131,55 @@
     </v-main>
 
     <AppFooter />
+
+    <v-dialog
+      v-model="isCreateRangeDialogOpen"
+      max-width="480"
+    >
+      <v-card>
+        <v-card-title>{{ t('admin.rangeSettings.newRange.title') }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 text-medium-emphasis mb-4">
+            {{ t('admin.rangeSettings.newRange.description') }}
+          </p>
+          <v-text-field
+            v-model="newRangeSlug"
+            :label="t('admin.rangeSettings.newRange.slugLabel')"
+            :hint="t('admin.rangeSettings.newRange.slugHint')"
+            prepend-inner-icon="mdi-link-variant"
+            persistent-hint
+            autocomplete="off"
+            data-testid="nav-create-range-slug-input"
+          />
+          <v-alert
+            v-if="createRangeError"
+            type="error"
+            variant="tonal"
+            border="start"
+            class="mt-2 mb-0"
+          >
+            {{ createRangeError }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="closeCreateRangeDialog"
+          >
+            {{ t('common.actions.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!newRangeSlug.trim() || isCreatingRange"
+            :loading="isCreatingRange"
+            @click="handleCreateRangeConfirm"
+          >
+            {{ t('common.actions.confirm') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -148,8 +205,13 @@ const isSmallScreen = computed(() => display.smAndDown.value)
 const drawer = ref(!isSmallScreen.value)
 // Keep the drawer expanded on small screens to show labels; allow rail only on larger viewports.
 const isRail = ref(false)
+const isCreateRangeDialogOpen = ref(false)
+const newRangeSlug = ref('')
+const isCreatingRange = ref(false)
+const createRangeError = ref<string | null>(null)
 
 const lastRangeSlug = computed(() => rangeStore.currentRangeSlug ?? getLastRangeId() ?? authStore.defaultRangeSlug)
+const canCreateRange = computed(() => authStore.hasAnyRole([UserRoleEnum.ClubCommunityAdministrator]))
 
 watch(
   isSmallScreen,
@@ -170,6 +232,42 @@ const toggleNav = () => {
     drawer.value = !drawer.value
   } else {
     isRail.value = !isRail.value
+  }
+}
+
+const openCreateRangeDialog = () => {
+  newRangeSlug.value = ''
+  createRangeError.value = null
+  isCreateRangeDialogOpen.value = true
+}
+
+const closeCreateRangeDialog = () => {
+  isCreateRangeDialogOpen.value = false
+}
+
+const handleCreateRangeConfirm = async () => {
+  const slug = newRangeSlug.value.trim()
+  if (!slug) {
+    return
+  }
+
+  isCreatingRange.value = true
+  createRangeError.value = null
+
+  try {
+    await rangeStore.createRange({ slug, displayName: slug })
+    await router.push({ name: 'RangeSettings', query: { rangeSlug: slug } })
+    isCreateRangeDialogOpen.value = false
+    if (isSmallScreen.value) {
+      drawer.value = false
+    }
+  } catch (error) {
+    const message =
+      (error as { response?: { data?: { error?: string } } } | undefined)?.response?.data?.error ??
+      (error instanceof Error ? error.message : t('common.feedback.operationFailed'))
+    createRangeError.value = message
+  } finally {
+    isCreatingRange.value = false
   }
 }
 </script>

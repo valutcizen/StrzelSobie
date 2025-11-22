@@ -87,6 +87,35 @@ export class RangesDbRepository implements IRangesRepository {
     return this.mapDbRange(result);
   }
 
+  public async create(range: Omit<ShootingRange, 'id'>): Promise<ShootingRange> {
+    const stmt = this.db.prepare(
+      `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, operating_hours, total_tracks)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`
+    );
+
+    await stmt
+      .bind(
+        range.slug,
+        range.displayName,
+        range.type,
+        range.allowsReservations ? 1 : 0,
+        range.publicDescription ?? null,
+        range.memberDescription ?? null,
+        range.latitude ?? 0,
+        range.longitude ?? 0,
+        range.operatingHours ?? '{}',
+        range.totalTracks ?? null
+      )
+      .run();
+
+    const created = await this.findBySlug(range.slug);
+    if (!created) {
+      throw new Error('Failed to create range');
+    }
+
+    return created;
+  }
+
   public async update(range: ShootingRange): Promise<void> {
     const existingStmt = this.db.prepare(
       `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours

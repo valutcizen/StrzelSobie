@@ -1,4 +1,5 @@
 import type {
+  CreateRangeCommand,
   OperatingHours as OperatingHoursDto,
   RangeDetailsDto,
   RangeSummaryDto,
@@ -8,4 +9,5 @@ import type {
 export type RangeSummary = RangeSummaryDto
 export type RangeDetails = RangeDetailsDto
 export type UpdateRangePayload = UpdateRangeCommand
+export type CreateRangePayload = CreateRangeCommand
 export type OperatingHours = OperatingHoursDto
