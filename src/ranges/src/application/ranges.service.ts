@@ -238,41 +238,42 @@ export class RangesService implements IRangesService {
       return {};
     }
 
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') {
-        return {};
-      }
-
-      return Object.entries(parsed as Record<string, unknown>).reduce(
-        (acc, [day, value]) => {
-          if (value === null) {
-            acc[day] = null;
-            return acc;
-          }
-
-          if (typeof value === 'object' && value !== null) {
-            const entry = value as { open?: string; close?: string };
-            const openValue = entry.open ?? '';
-            const closeValue = entry.close ?? '';
-            const isClosed =
-              String(openValue).toLowerCase() === 'closed' ||
-              String(closeValue).toLowerCase() === 'closed';
-
-            acc[day] = isClosed
-              ? null
-              : { open: String(openValue), close: String(closeValue) };
-            return acc;
-          }
-
-          acc[day] = null;
-          return acc;
-        },
-        {} as Record<string, { open: string; close: string } | null>,
-      );
+      parsed = JSON.parse(raw);
     } catch {
-      // If legacy or malformed data exists, gracefully fall back to empty hours instead of throwing.
+      throw new Error('Failed to parse operating hours');
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
       return {};
     }
+
+    return Object.entries(parsed as Record<string, unknown>).reduce(
+      (acc, [day, value]) => {
+        if (value === null) {
+          acc[day] = null;
+          return acc;
+        }
+
+        if (typeof value === 'object' && value !== null) {
+          const entry = value as { open?: string; close?: string };
+          const openValue = entry.open ?? '';
+          const closeValue = entry.close ?? '';
+          const isClosed =
+            String(openValue).toLowerCase() === 'closed' ||
+            String(closeValue).toLowerCase() === 'closed';
+
+          acc[day] = isClosed
+            ? null
+            : { open: String(openValue), close: String(closeValue) };
+          return acc;
+        }
+
+        acc[day] = null;
+        return acc;
+      },
+      {} as Record<string, { open: string; close: string } | null>,
+    );
   }
 }

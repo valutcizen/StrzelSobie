@@ -88,7 +88,9 @@ export class GetRange extends OpenAPIRoute {
       }
     }
 
-    const result = await rangesService.getRangeDetails(params.rangeSlug, user);
+    const result = user
+      ? await rangesService.getRangeDetails(params.rangeSlug, user)
+      : await rangesService.getRangeDetails(params.rangeSlug);
 
     if (!result.isSuccess) {
       const error = result.getError();

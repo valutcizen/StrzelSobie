@@ -5,6 +5,28 @@ import { http } from '../services/http'
 import { isUserRole, normalizeUserRoles } from '../utils/roles'
 import type { LoginUserDto, RegisterUserRequestDto, MeDto } from '@strzel-sobie/common'
 
+const UNAUTHORIZED_FLAG_KEY = 'authUnauthorized'
+
+const readUnauthorizedFlag = () => {
+  if (typeof localStorage === 'undefined') {
+    return false
+  }
+  return localStorage.getItem(UNAUTHORIZED_FLAG_KEY) === '1'
+}
+
+const persistUnauthorizedFlag = (isUnauthorized: boolean) => {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+
+  if (isUnauthorized) {
+    localStorage.setItem(UNAUTHORIZED_FLAG_KEY, '1')
+    return
+  }
+
+  localStorage.removeItem(UNAUTHORIZED_FLAG_KEY)
+}
+
 const dedupeRoles = (roles: string[]): UserRole[] => {
   const unique = new Set<UserRole>()
 
@@ -21,6 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthenticatedUser | null>(null)
   const isLoading = ref(false)
   const hasAttemptedFetch = ref(false)
+  const hasUnauthorizedSession = ref(readUnauthorizedFlag())
 
   const isAuthenticated = computed(() => user.value !== null)
   const defaultRangeSlug = computed(() => user.value?.defaultRangeSlug ?? 'dobczyce')
@@ -31,12 +54,24 @@ export const useAuthStore = defineStore('auth', () => {
     Object.values(user.value?.rangeRoles ?? {}).some((roles) => roles.includes(role))
   const hasAnyRangeRole = (roles: UserRole[]) => roles.some((role) => hasRangeRole(role))
 
-  const reset = () => {
+  const setUnauthorized = (value: boolean) => {
+    hasUnauthorizedSession.value = value
+    persistUnauthorizedFlag(value)
+  }
+
+  const reset = ({ preserveAttempt = false }: { preserveAttempt?: boolean } = {}) => {
     user.value = null
-    hasAttemptedFetch.value = false
+    if (!preserveAttempt) {
+      hasAttemptedFetch.value = false
+    }
   }
 
   const fetchUser = async (force = false) => {
+    if (!force && hasUnauthorizedSession.value) {
+      hasAttemptedFetch.value = true
+      return null
+    }
+
     if (!force && (user.value || hasAttemptedFetch.value)) {
       return user.value
     }
@@ -64,9 +99,14 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       user.value = normalizedUser
+      setUnauthorized(false)
       return normalizedUser
     } catch (error) {
-      reset()
+      const status = (error as { response?: { status?: number } } | undefined)?.response?.status
+      if (status === 401 || status === 403) {
+        setUnauthorized(true)
+      }
+      reset({ preserveAttempt: true })
       throw error
     } finally {
       isLoading.value = false
@@ -88,7 +128,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await http.post('/auth/logout')
     } finally {
-      reset()
+      setUnauthorized(true)
+      reset({ preserveAttempt: true })
     }
   }
 
@@ -97,11 +138,13 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     isAuthenticated,
     defaultRangeSlug,
+    hasUnauthorizedSession,
     fetchUser,
     login,
     register,
     logout,
     reset,
+    setUnauthorized,
     hasRole,
     hasAnyRole,
     hasRangeRole,

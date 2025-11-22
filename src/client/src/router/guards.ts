@@ -8,6 +8,7 @@ import type { AppRouteMeta } from './index'
 export const setupRouterGuards = (router: Router, pinia: Pinia) => {
   const authStore = useAuthStore(pinia)
   const rangeStore = useRangeStore(pinia)
+  const routesBypassingAuthRedirect = new Set(['RangeDirectory', 'RangeLanding', 'Calendar'])
 
   router.beforeEach(async (to) => {
     if (to.name === 'Root') {
@@ -21,6 +22,12 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
         }
       }
       return { name: 'RangeDirectory' }
+    }
+
+    try {
+      await authStore.fetchUser()
+    } catch {
+      // Swallow errors for public routes; protected routes handle redirects below.
     }
 
     if (to.name === 'Auth' && authStore.isAuthenticated) {
@@ -46,23 +53,19 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
       }
     }
 
+    const routeName = typeof to.name === 'string' ? to.name : null
     const requiresAuth = to.matched.some((record) => (record.meta as AppRouteMeta | undefined)?.requiresAuth)
+
+    if (requiresAuth && !authStore.isAuthenticated) {
+      if (routeName !== null && routesBypassingAuthRedirect.has(routeName)) {
+        return true
+      }
+
+      return { name: 'Auth', query: { redirect: to.fullPath } }
+    }
 
     if (!requiresAuth) {
       return true
-    }
-
-    try {
-      await authStore.fetchUser()
-    } catch {
-      if (to.name !== 'Auth') {
-        return { name: 'Auth', query: { redirect: to.fullPath } }
-      }
-      return true
-    }
-
-    if (!authStore.isAuthenticated) {
-      return { name: 'Auth', query: { redirect: to.fullPath } }
     }
 
     const requiredRoles = to.meta?.requiredRoles
