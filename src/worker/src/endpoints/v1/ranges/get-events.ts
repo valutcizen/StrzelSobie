@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { IReservationsService } from '@strzel-sobie/common/models';
 import { AppContext } from '../../../types';
 import { mapReservationsError } from '../../../utils/reservations-error-mapper';
+import { resolveOptionalUser } from '../../../utils/resolve-optional-user';
+import { mapUserDtoToUserProfile } from '../../../utils/user-profile-mapper';
 
 const ParamsSchema = z.object({
   rangeSlug: z.string(),
@@ -43,24 +45,12 @@ export class GetEvents extends OpenAPIRoute {
   public async handle(c: AppContext) {
     const reservationsService: IReservationsService = c.get('reservationsService');
     const { params, query } = await this.getValidatedData<{params: z.infer<typeof ParamsSchema>, query: z.infer<typeof QuerySchema>}>();
-    const user = c.get('user');
-
-    const result = await reservationsService.getCalendarEvents({
-      rangeSlug: params.rangeSlug,
-      startDate: query.startDate,
-      endDate: query.endDate,
-      user: {
-        id: user.id.toString(),
-        roles: user.roles.map((role) => role.name),
-        range_roles: Object.entries(user.rangeRoles ?? {}).reduce(
-          (acc, [rangeId, roles]) => {
-            acc[rangeId] = roles.map((role) => role.name);
-            return acc;
-          },
-          {} as Record<string, string[]>
-        ),
-      },
-    });
+    const { rangeSlug } = params as unknown as { rangeSlug: string };
+    const { startDate, endDate } = query as unknown as { startDate: string; endDate: string };
+    
+    const user = c.get('user') ?? (await resolveOptionalUser(c));
+    const userProfile = mapUserDtoToUserProfile(user);
+    const result = await reservationsService.getCalendarEvents({ rangeSlug, startDate, endDate, userProfile });
 
     if (result.isSuccess) {
       return c.json(result.getValue());

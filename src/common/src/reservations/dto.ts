@@ -92,7 +92,7 @@ export type RecordEventDto = {
 export type CalendarEventsDto = {
   propositions: PropositionEventDto[];
   reservations: ReservationEventDto[];
-  records: RecordEventDto[];
+  records?: RecordEventDto[];
 };
 
 export type GetCalendarEventsQuery = {

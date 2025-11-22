@@ -39,6 +39,7 @@ import {
   ReservationNotFoundError,
   Result,
   RangeClosedError,
+  RangeBookingNotAllowedError,
   UnauthorizedPropositionError,
   OperatingHours,
   UserDto,
@@ -411,7 +412,7 @@ export class ReservationsService implements IReservationsService {
     const totalTracks = rangeDetails.totalTracks ?? 0;
 
     if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
-      return Result.fail(new ForbiddenError('Reservations are not available for this range'));
+      return Result.fail(new RangeBookingNotAllowedError());
     }
 
     if (!this.canUserCreateProposition(user, rangeId)) {
@@ -556,7 +557,7 @@ export class ReservationsService implements IReservationsService {
   ): Promise<Result<CreatedReservationDto>> {
     const totalTracks = rangeDetails.totalTracks ?? 0;
     if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
-      return Result.fail(new ForbiddenError('Reservations are not available for this range'));
+      return Result.fail(new RangeBookingNotAllowedError());
     }
 
     const validationError = this.validateReservationCommand(command, totalTracks);

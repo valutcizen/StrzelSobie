@@ -2,19 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 import { RangesService } from '@strzel-sobie/ranges/src/application/ranges.service';
 import {
   Result,
-  CreateRangeDto,
-  UpdateRangeDto,
-  RangeDto,
-  IRangesRepository,
   RangeNotFoundError,
   ForbiddenError,
   UpdateRangeCommand,
-  ShootingRange,
   UserDto,
   IAuditService,
   UserRole,
   Role,
 } from '@strzel-sobie/common/models';
+import { IRangesRepository } from '@strzel-sobie/ranges/src/domain/ranges.repository';
+import { ShootingRange, ShootingRangeSummary } from '@strzel-sobie/ranges/src/domain/shooting-range.model';
 
 const asMock = <Args extends unknown[], Return>(fn: (...args: Args) => Return) =>
   fn as unknown as Mock<Args, Return>;
@@ -36,6 +33,17 @@ describe('RangesService contract', () => {
     isDeleted: false,
     publicDescription: null,
     memberDescription: null,
+    latitude: 0,
+    longitude: 0,
+    ...overrides,
+  });
+
+  const buildRangeSummary = (overrides: Partial<ShootingRangeSummary> = {}): ShootingRangeSummary => ({
+    id: 1,
+    slug: 'alpha-range',
+    displayName: 'Alpha Range',
+    type: 'club',
+    allowsReservations: true,
     latitude: 0,
     longitude: 0,
     ...overrides,
@@ -74,9 +82,9 @@ describe('RangesService contract', () => {
   });
 
   it('returns mapped summaries when ranges exist', async () => {
-    const ranges: ShootingRange[] = [
-      buildRange({ id: 2, slug: 'beta', displayName: 'Beta Range' }),
-      buildRange({ id: 3, slug: 'gamma', displayName: 'Gamma Range' }),
+    const ranges: ShootingRangeSummary[] = [
+      buildRangeSummary({ id: 2, slug: 'beta', displayName: 'Beta Range' }),
+      buildRangeSummary({ id: 3, slug: 'gamma', displayName: 'Gamma Range' }),
     ];
     asMock(rangesRepository.findAll).mockResolvedValue(ranges);
 
@@ -84,8 +92,8 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue()).toEqual([
-      { id: 2, slug: 'beta', displayName: 'Beta Range', type: 'club' },
-      { id: 3, slug: 'gamma', displayName: 'Gamma Range', type: 'club' },
+      { id: 2, slug: 'beta', displayName: 'Beta Range', type: 'club', allowsReservations: true, latitude: 0, longitude: 0 },
+      { id: 3, slug: 'gamma', displayName: 'Gamma Range', type: 'club', allowsReservations: true, latitude: 0, longitude: 0 },
     ]);
   });
 
@@ -117,6 +125,7 @@ describe('RangesService contract', () => {
     expect(result.isSuccess).toBe(true);
     expect(result.getValue()).toEqual({
       ...rawRange,
+      isDeleted: false,
       operatingHours: { monday: { open: '09:00', close: '17:00' } },
     });
   });
@@ -138,7 +147,7 @@ describe('RangesService contract', () => {
     const result = await service.getRangeDetails('alpha-range');
 
     expect(result.isSuccess).toBe(false);
-    expect(result.getError()).toEqual(new Error('Failed to parse operating hours', { cause: expect.any(Error) }));
+    expect(result.getError()).toEqual(new Error('Failed to parse operating hours'));
   });
 
   it('refuses updates for non-admin users', async () => {

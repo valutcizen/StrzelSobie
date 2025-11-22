@@ -14,10 +14,14 @@ const createContext = (rangesService: RangesServiceMock) => {
     }
     return undefined;
   });
+  const req = {
+    query: vi.fn().mockReturnValue({}),
+  };
 
   const ctx = {
     json,
     get,
+    req,
   };
 
   return {
@@ -44,8 +48,8 @@ describe('GetRangesRoute endpoint contract', () => {
   it('returns all ranges when the service succeeds', async () => {
     const endpoint = new GetRangesRoute();
     const ranges: RangeSummaryDto[] = [
-      { id: 1, slug: 'central-range', displayName: 'Central Range' },
-      { id: 2, slug: 'east-side-range', displayName: 'East Side Range' },
+      { id: 1, slug: 'central-range', displayName: 'Central Range', type: 'club', allowsReservations: true },
+      { id: 2, slug: 'east-side-range', displayName: 'East Side Range', type: 'club', allowsReservations: true },
     ];
     const rangesService = {
       getRanges: vi.fn().mockResolvedValue(Result.ok(ranges)),
@@ -66,7 +70,7 @@ describe('GetRangesRoute endpoint contract', () => {
     const endpoint = new GetRangesRoute();
     const error = new Error('database unavailable');
     const rangesService = {
-      getRanges: vi.fn().mockResolvedValue(Result.fail<RangeSummaryDto[]>(error)),
+      getRanges: vi.fn().mockResolvedValue(Result.fail(error)),
     };
 
     const { ctx, spies } = createContext(rangesService);

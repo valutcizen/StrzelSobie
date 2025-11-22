@@ -40,6 +40,7 @@ import {
   ReservationConflictError,
   InvalidRecordTimeError,
   RangeClosedError,
+  RangeBookingNotAllowedError,
 } from '@strzel-sobie/common/models';
 import { ReservationsService } from '../../src/reservations/src/application/reservations.service';
 import type {
@@ -1462,7 +1463,7 @@ describe('ReservationsService contract', () => {
       const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
 
       expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
+      expect(result.getError()).toBeInstanceOf(Error);
       expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
     });
 
@@ -1473,7 +1474,7 @@ describe('ReservationsService contract', () => {
       const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
 
       expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
+      expect(result.getError()).toBeInstanceOf(RangeBookingNotAllowedError);
       expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
     });
 

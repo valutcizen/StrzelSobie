@@ -1,6 +1,7 @@
 import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-sobie/common/models';
 import {
   ForbiddenError,
+  RangeListResponseDto,
   RangeDetailsDto,
   RangeNotFoundError,
   RangeSummaryDto,
@@ -9,22 +10,33 @@ import {
   UserDto,
 } from '@strzel-sobie/common';
 import { IRangesRepository } from '../domain/ranges.repository';
-import { ShootingRange } from '../domain/shooting-range.model';
+import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
 export class RangesService implements IRangesService {
   constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
-  public async getRanges(): Promise<Result<RangeSummaryDto[]>> {
-    const result = await this.rangesRepository.findAll();
+  public async getRanges(): Promise<Result<RangeListResponseDto>> {
 
-    const ranges = result.map((range: ShootingRange) => ({
-      id: range.id,
-      slug: range.slug,
-      displayName: range.displayName,
-      type: range.type,
-    }));
+    try {
+      const data = await this.rangesRepository.findAll();
 
-    return Result.ok(ranges);
+      const ranges = data.map((range: ShootingRangeSummary) => {
+        const base: RangeSummaryDto = {
+          id: range.id,
+          slug: range.slug,
+          displayName: range.displayName,
+          type: range.type,
+          allowsReservations: range.allowsReservations,
+          latitude: range.latitude,
+          longitude: range.longitude,
+        };
+        return base;
+      });
+
+      return Result.ok(ranges);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
   }
 
   public async existsRangeById(rangeId: number): Promise<Result<boolean>> {
@@ -36,7 +48,7 @@ export class RangesService implements IRangesService {
     }
   }
 
-  public async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto>> {
+  public async getRangeDetails(slug: string, user: UserDto | null = null): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(slug);
 
     if (!range) {
@@ -44,19 +56,11 @@ export class RangesService implements IRangesService {
     }
 
     try {
-      const dto: RangeDetailsDto = {
-        ...range,
-        operatingHours: JSON.parse(range.operatingHours),
-        allowsReservations: range.allowsReservations,
-        publicDescription: range.publicDescription,
-        memberDescription: range.memberDescription,
-        latitude: range.latitude,
-        longitude: range.longitude,
-        type: range.type,
-      };
+      const dto = this.buildRangeDetailsDto(range, user);
+
       return Result.ok(dto);
     } catch (error) {
-        return Result.fail(new Error("Failed to parse operating hours", { cause: error }));
+      return Result.fail(error as Error);
     }
   }
 
@@ -64,7 +68,7 @@ export class RangesService implements IRangesService {
     rangeSlug: string,
     command: UpdateRangeCommand,
     user: UserDto
-  ): Promise<Result<void>> {
+  ): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(rangeSlug);
 
     if (!range) {
@@ -73,6 +77,26 @@ export class RangesService implements IRangesService {
 
     if (!this.canManageRange(range.id, user)) {
       return Result.fail(new ForbiddenError('User is not an admin for this range'));
+    }
+
+    if (command.displayName !== undefined) {
+      range.displayName = command.displayName;
+    }
+
+    if (command.type !== undefined) {
+      range.type = command.type;
+    }
+
+    if (command.allowsReservations !== undefined) {
+      range.allowsReservations = command.allowsReservations;
+    }
+
+    if (command.publicDescription !== undefined) {
+      range.publicDescription = command.publicDescription;
+    }
+
+    if (command.memberDescription !== undefined) {
+      range.memberDescription = command.memberDescription;
     }
 
     if (command.totalTracks !== undefined) {
@@ -99,7 +123,8 @@ export class RangesService implements IRangesService {
       return Result.fail(auditResult.getError());
     }
 
-    return Result.ok(undefined);
+    const dto = this.buildRangeDetailsDto(range, user);
+    return Result.ok(dto);
   }
 
   public async getRangeIdBySlug(rangeSlug: string): Promise<Result<number>> {
@@ -157,5 +182,58 @@ export class RangesService implements IRangesService {
     const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
     const rangeRoleNames = rangeRoles.map((role) => role.name);
     return rangeRoleNames.includes(UserRole.ShootingRangeAdministrator) || rangeRoleNames.includes('Range Admin');
+  }
+
+  private buildRangeDetailsDto(
+    range: ShootingRange,
+    user: UserDto | null = null
+  ): RangeDetailsDto {
+    const operatingHours = this.parseOperatingHours(range.operatingHours);
+
+    const dto: RangeDetailsDto = {
+      id: range.id,
+      slug: range.slug,
+      displayName: range.displayName,
+      type: range.type,
+      allowsReservations: range.allowsReservations,
+      isDeleted: range.isDeleted,
+      publicDescription: range.publicDescription ?? null,
+      memberDescription: this.getMemberDescription(range, user),
+      latitude: range.latitude,
+      longitude: range.longitude,
+      totalTracks: range.totalTracks,
+      operatingHours,
+    };
+
+    return dto;
+  }
+
+  private getMemberDescription(
+    range: ShootingRange,
+    user: UserDto | null
+  ): string | null {
+    const isMember = user &&  user.roles.some((role) => role.name === UserRole.Member);
+    if (isMember) {
+      return range.memberDescription ?? null;
+    }
+
+    return null;
+  }
+
+  private parseOperatingHours(raw: string): Record<string, { open: string; close: string } | null> {
+    if (!raw) {
+      return {};
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return parsed as Record<string, { open: string; close: string } | null>;
+      }
+    } catch {
+      throw new Error('Failed to parse operating hours');
+    }
+
+    return {};
   }
 }

@@ -15,6 +15,7 @@ import {
   ReservationCancellationError,
   InvalidRecordTimeError,
   RecordCreationError,
+  RangeBookingNotAllowedError,
 } from '@strzel-sobie/common';
 
 type ErrorResponse = {
@@ -60,6 +61,13 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 400,
       body: { code: 'range_closed', message: error.message },
+    };
+  }
+
+  if (error instanceof RangeBookingNotAllowedError) {
+    return {
+      status: 409,
+      body: { code: 'reservations_not_available_for_ally_range', message: error.message },
     };
   }
 

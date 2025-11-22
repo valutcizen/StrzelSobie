@@ -10,6 +10,9 @@ export type RangeSummaryDto = {
   slug: ShootingRange['slug'];
   displayName: ShootingRange['display_name'];
   type: ShootingRange['type'];
+  allowsReservations: boolean;
+  latitude?: ShootingRange['latitude'];
+  longitude?: ShootingRange['longitude'];
 };
 
 /**
@@ -28,18 +31,33 @@ export type RangeDetailsDto = {
   id: ShootingRange['id'];
   slug: ShootingRange['slug'];
   displayName: ShootingRange['display_name'];
-  totalTracks: ShootingRange['total_tracks'];
-  operatingHours: OperatingHours;
   type: ShootingRange['type'];
   allowsReservations: boolean;
-  publicDescription?: ShootingRange['public_description'];
-  memberDescription?: ShootingRange['member_description'];
+  isDeleted?: boolean;
+  publicDescription?: ShootingRange['public_description'] | null;
+  memberDescription?: ShootingRange['member_description'] | null;
   latitude?: ShootingRange['latitude'];
   longitude?: ShootingRange['longitude'];
+  totalTracks: ShootingRange['total_tracks'];
+  operatingHours: OperatingHours;
 };
+
+export type RangeListResponseDto = RangeSummaryDto[];
+
 
 /**
  * Command model for updating a shooting range.
  * Corresponds to the request payload for `PATCH /api/v1/ranges/{rangeSlug}`.
  */
-export type UpdateRangeCommand = Partial<Pick<RangeDetailsDto, 'totalTracks' | 'operatingHours'>>;
+export type UpdateRangeCommand = Partial<
+  Pick<
+    RangeDetailsDto,
+    | 'displayName'
+    | 'type'
+    | 'allowsReservations'
+    | 'publicDescription'
+    | 'memberDescription'
+    | 'totalTracks'
+    | 'operatingHours'
+  >
+>;

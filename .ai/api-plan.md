@@ -162,31 +162,24 @@ Example: `GET /api/v1/ranges`
 
 #### `GET /api/v1/ranges`
 
--   **Description**: Public range directory used for the list and map. Returns paginated results by default; supports bounding-box filtering for the map view. Default payload is lightweight (no long descriptions); clients can opt-in to descriptions when needed. Soft-deleted ranges are never returned.
+-   **Description**: Public range directory used for the list and map. Returns all active ranges; supports bounding-box filtering for the map view. Payload is lightweight (no long descriptions). Soft-deleted ranges are never returned.
 -   **Query Parameters**:
-    -   `page` (default `1`), `limit` (default `20`, max `50`)
     -   `sort` (`name` default, `type_priority` for club → ally → coming-soon, `distance` when `lat`/`lng` are provided)
     -   `lat`, `lng` (required when `sort=distance`)
     -   `type` (optional, repeatable): `club`, `ally`, `coming-soon`
-    -   `bbox` (optional): `north,south,east,west` to constrain map markers to a viewport (default client uses Poland-wide box)
-    -   `view` (optional): `map` returns only id/slug/displayName/type/allowsReservations/lat/lng; default matches table needs.
-    -   `includeDescriptions` (optional, boolean): when `true`, includes `publicDescription` and `memberDescription`; for non-Member callers, `memberDescription` is `null` (or omitted) to enforce visibility.
 -   **Response Payload (Success)**:
     ```json
-    {
-      "data": [
-        {
-          "id": 1,
-          "slug": "dobczyce",
-          "displayName": "Strzelnica Dobczyce",
-          "type": "club",
-          "allowsReservations": true,
-          "latitude": 49.87,
-          "longitude": 20.09
-        }
-      ],
-      "pagination": { "total": 1, "page": 1, "limit": 20 }
-    }
+    [
+      {
+        "id": 1,
+        "slug": "dobczyce",
+        "displayName": "Strzelnica Dobczyce",
+        "type": "club",
+        "allowsReservations": true,
+        "latitude": 49.87,
+        "longitude": 20.09
+      }
+    ]
     ```
 -   **Success Code**: `200 OK`
 

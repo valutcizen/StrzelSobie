@@ -15,7 +15,24 @@ export class GetRange extends OpenAPIRoute {
     },
     responses: {
       "200": {
-        description: "Returns range details"
+        description: "Returns range details",
+        content: {
+          'application/json': {
+            schema: z.object({
+              id: z.number(),
+              slug: z.string(),
+              displayName: z.string(),
+              type: z.string(),
+              allowsReservations: z.boolean(),
+              publicDescription: z.string().nullable().optional(),
+              memberDescription: z.string().nullable().optional(),
+              latitude: z.number().nullable().optional(),
+              longitude: z.number().nullable().optional(),
+              totalTracks: z.number().nullable().optional(),
+              operatingHours: z.record(z.any()).optional(),
+            }),
+          },
+        },
       },
       "404": {
         description: "Range not found"

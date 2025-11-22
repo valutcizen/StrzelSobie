@@ -12,3 +12,8 @@ export type ShootingRange = {
   totalTracks: number | null;
   operatingHours: string; // JSON string
 };
+
+export type ShootingRangeSummary = Pick<
+  ShootingRange,
+  'id' | 'slug' | 'type' | 'allowsReservations' | 'latitude' | 'longitude' | 'displayName'
+>;

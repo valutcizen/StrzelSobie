@@ -1,6 +1,6 @@
 import { IDatabase } from '@strzel-sobie/common/models';
 import { IRangesRepository } from '../domain/ranges.repository';
-import { ShootingRange } from '../domain/shooting-range.model';
+import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
 // Represents the structure in the ranges_shooting_ranges table
 type ShootingRangeDb = {
@@ -18,18 +18,16 @@ type ShootingRangeDb = {
   operating_hours: string;
 };
 
+type ShootingRangeSummaryDb = Pick<
+  ShootingRangeDb,
+  'id' | 'slug' | 'type' | 'allows_reservations' | 'latitude' | 'longitude' | 'display_name'
+>;
+
 export class RangesDbRepository implements IRangesRepository {
   constructor(private readonly db: IDatabase) {}
 
-  public async findAll(): Promise<ShootingRange[]> {
-    const stmt = this.db.prepare(
-      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
-       FROM ranges_shooting_ranges
-       WHERE is_deleted = 0`
-    );
-    const { results } = await stmt.all<ShootingRangeDb>();
-
-    const domainRanges = results.map((dbRange) => ({
+  private mapDbRange(dbRange: ShootingRangeDb): ShootingRange {
+    return {
       id: dbRange.id,
       slug: dbRange.slug,
       type: dbRange.type ?? 'club',
@@ -42,9 +40,30 @@ export class RangesDbRepository implements IRangesRepository {
       displayName: dbRange.display_name,
       totalTracks: dbRange.total_tracks,
       operatingHours: dbRange.operating_hours,
-    }));
+    };
+  }
 
-    return domainRanges;
+  private mapDbRangeSummary(dbRange: ShootingRangeSummaryDb): ShootingRangeSummary {
+    return {
+      id: dbRange.id,
+      slug: dbRange.slug,
+      type: dbRange.type ?? 'club',
+      allowsReservations: dbRange.allows_reservations === 1,
+      latitude: dbRange.latitude,
+      longitude: dbRange.longitude,
+      displayName: dbRange.display_name,
+    };
+  }
+
+  public async findAll(): Promise<ShootingRangeSummary[]> {
+    const stmt = this.db.prepare(
+      `SELECT id, slug, type, allows_reservations, latitude, longitude, display_name
+       FROM ranges_shooting_ranges
+       WHERE is_deleted = 0`
+    );
+    const { results } = await stmt.all<ShootingRangeSummaryDb>();
+
+    return results.map((dbRange) => this.mapDbRangeSummary(dbRange));
   }
 
 
@@ -65,27 +84,47 @@ export class RangesDbRepository implements IRangesRepository {
       return null;
     }
 
-    return {
-      id: result.id,
-      slug: result.slug,
-      type: result.type ?? 'club',
-      allowsReservations: result.allows_reservations === 1,
-      isDeleted: result.is_deleted === 1,
-      publicDescription: result.public_description,
-      memberDescription: result.member_description,
-      latitude: result.latitude,
-      longitude: result.longitude,
-      displayName: result.display_name,
-      totalTracks: result.total_tracks,
-      operatingHours: result.operating_hours,
-    };
+    return this.mapDbRange(result);
   }
 
   public async update(range: ShootingRange): Promise<void> {
-    const stmt = this.db.prepare(
-      'UPDATE ranges_shooting_ranges SET total_tracks = ?, operating_hours = ? WHERE id = ?'
+    const existingStmt = this.db.prepare(
+      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+       FROM ranges_shooting_ranges WHERE id = ?`
     );
-    await stmt.bind(range.totalTracks, range.operatingHours, range.id).run();
+    const existing = await existingStmt.bind(range.id).first<ShootingRangeDb>();
+
+    if (!existing) {
+      throw new Error('Range not found');
+    }
+
+    const merged = {
+      display_name: range.displayName ?? existing.display_name,
+      type: range.type ?? existing.type ?? 'club',
+      allows_reservations: range.allowsReservations ?? (existing.allows_reservations === 1),
+      public_description: range.publicDescription ?? existing.public_description,
+      member_description: range.memberDescription ?? existing.member_description,
+      total_tracks: range.totalTracks ?? existing.total_tracks,
+      operating_hours: range.operatingHours ?? existing.operating_hours,
+    };
+
+    const stmt = this.db.prepare(
+      `UPDATE ranges_shooting_ranges
+       SET display_name = ?, type = ?, allows_reservations = ?, public_description = ?, member_description = ?, total_tracks = ?, operating_hours = ?
+       WHERE id = ?`
+    );
+    await stmt
+      .bind(
+        merged.display_name,
+        merged.type,
+        merged.allows_reservations ? 1 : 0,
+        merged.public_description ?? null,
+        merged.member_description ?? null,
+        merged.total_tracks,
+        merged.operating_hours,
+        range.id
+      )
+      .run();
   }
   
   public async getRangeIdBySlug(slug: string): Promise<number | null> {

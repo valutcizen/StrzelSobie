@@ -158,3 +158,10 @@ export class RangeClosedError extends Error {
     this.name = 'RangeClosedError';
   }
 }
+
+export class RangeBookingNotAllowedError extends Error {
+  constructor(message = 'Reservations are not available for this range') {
+    super(message);
+    this.name = 'RangeBookingNotAllowedError';
+  }
+}

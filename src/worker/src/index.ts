@@ -122,7 +122,7 @@ openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
 openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
 openapi.delete('/api/v1/ranges/:rangeSlug', authMiddleware, DeleteRange);
-openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
+openapi.get('/api/v1/ranges/:rangeSlug/events', GetEvents);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
 openapi.post('/api/v1/ranges/:rangeSlug/records', authMiddleware, CreateRecord);

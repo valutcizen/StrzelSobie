@@ -5,7 +5,7 @@ import {
   Result,
   IRangesService,
   getRangeRole
-} from '@strzel-sobie/common';
+} from '@strzel-sobie/common/models';
 import { IReservationsRepository, Proposition, Reservation } from '../domain/reservations.repository';
 
 export class ReservationsService implements IReservationsService {

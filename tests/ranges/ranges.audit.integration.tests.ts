@@ -4,7 +4,6 @@ import {
   CreateRangeDto,
   UpdateRangeDto,
   RangeDto,
-  IRangesRepository,
   IAuditService,
   User,
   Role,
@@ -76,6 +75,7 @@ function createRangesServiceContext(): {
     update: vi.fn(),
     getRangeIdBySlug: vi.fn(),
     existsRangeById: vi.fn(),
+    softDeleteById: vi.fn(),
   };
 
   const auditService: Mocked<IAuditService> = {
