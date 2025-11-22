@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import RangeMap from '@/components/range/RangeMap.vue'
@@ -50,15 +50,14 @@ const loadRanges = async () => {
   }
 }
 
+// Kick off loading immediately so the initial render shows the loading state.
+void loadRanges()
+
 const handleSelectRange = (slug: string) => {
   selectedSlug.value = slug
   setLastRangeId(slug)
   router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
 }
-
-onMounted(() => {
-  loadRanges()
-})
 
 watch(
   () => ranges.value.length,

@@ -1,7 +1,9 @@
 import { createI18n } from 'vue-i18n';
+import { en as vuetifyEn, pl as vuetifyPl } from 'vuetify/locale';
 
 const messages = {
   en: {
+    $vuetify: vuetifyEn,
     common: {
       actions: {
         cancel: 'Cancel',
@@ -376,6 +378,7 @@ const messages = {
     },
   },
   pl: {
+    $vuetify: vuetifyPl,
     common: {
       actions: {
         cancel: 'Anuluj',

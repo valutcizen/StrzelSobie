@@ -91,7 +91,9 @@ const typeStyleMap: Record<string, { color: string; icon: string }> = {
 }
 
 const validRanges = computed(() =>
-  props.ranges.filter((range) => typeof range.latitude === 'number' && typeof range.longitude === 'number'),
+  props.ranges.filter(
+    (range) => Number.isFinite(range.latitude) && Number.isFinite(range.longitude),
+  ),
 )
 const hasMarkers = computed(() => validRanges.value.length > 0)
 
