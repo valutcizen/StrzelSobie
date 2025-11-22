@@ -124,10 +124,6 @@ const createMap = async () => {
     markerZoomAnimation: false,
   })
 
-  mapInstance.value.on('zoom', () => {
-    Object.values(markers).forEach((marker) => marker.update())
-  })
-
   mapInstance.value.on('resize', () => {
     mapInstance.value?.invalidateSize()
   })
@@ -189,27 +185,46 @@ onBeforeUnmount(() => {
 })
 
 onActivated(() => {
-  mapInstance.value?.invalidateSize()
+  nextTick(() => {
+    mapInstance.value?.invalidateSize()
+  })
 })
 
 watch(
-  () => [props.ranges, props.selectedSlug],
+  () => props.ranges,
   () => {
     if (!mapInstance.value) {
-      createMap()
       return
     }
-    mapInstance.value.invalidateSize()
     syncMarkers()
-
-    if (props.selectedSlug && markers[props.selectedSlug]) {
-      const selectedMarker = markers[props.selectedSlug]
-      selectedMarker.setIcon(createIcon(props.ranges.find((r) => r.slug === props.selectedSlug)!, true))
-      selectedMarker.setZIndexOffset(1000)
-      mapInstance.value.setView(selectedMarker.getLatLng(), Math.max(mapInstance.value.getZoom(), 8))
-    }
   },
   { deep: true },
+)
+
+watch(
+  () => props.selectedSlug,
+  (newSlug, oldSlug) => {
+    if (!mapInstance.value) {
+      return
+    }
+
+    if (oldSlug && markers[oldSlug]) {
+      const oldRange = props.ranges.find((r) => r.slug === oldSlug)
+      if (oldRange) {
+        markers[oldSlug].setIcon(createIcon(oldRange, false))
+        markers[oldSlug].setZIndexOffset(200)
+      }
+    }
+
+    if (newSlug && markers[newSlug]) {
+      const newRange = props.ranges.find((r) => r.slug === newSlug)
+      if (newRange) {
+        markers[newSlug].setIcon(createIcon(newRange, true))
+        markers[newSlug].setZIndexOffset(1000)
+        mapInstance.value.setView(markers[newSlug].getLatLng(), Math.max(mapInstance.value.getZoom(), 8))
+      }
+    }
+  },
 )
 </script>
 
