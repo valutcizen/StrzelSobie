@@ -6,7 +6,7 @@ const SESSION_TTL_SECONDS = 3600;
 const PROLONGATION_INTERVAL_MS = 10 * 60 * 1000;
 
 type SessionMetadata = {
-  nextProlongAt: number;
+  lastProlongedAt: number;
 };
 
 export class SessionKvRepository implements ISessionRepository {
@@ -18,7 +18,7 @@ export class SessionKvRepository implements ISessionRepository {
 
     await this.kv.put(token, JSON.stringify(session), {
       expirationTtl: SESSION_TTL_SECONDS,
-      metadata: { nextProlongAt: now + PROLONGATION_INTERVAL_MS },
+      metadata: { lastProlongedAt: now },
     });
 
     return token;
@@ -37,7 +37,7 @@ export class SessionKvRepository implements ISessionRepository {
       const now = Date.now();
       await this.kv.put(token, sessionWithMetadata.value, {
         expirationTtl: SESSION_TTL_SECONDS,
-        metadata: { nextProlongAt: now + PROLONGATION_INTERVAL_MS },
+        metadata: { lastProlongedAt: now },
       });
     }
 
@@ -49,10 +49,10 @@ export class SessionKvRepository implements ISessionRepository {
   }
 
   private shouldProlong(metadata: SessionMetadata | null): boolean {
-    if (!metadata || typeof metadata.nextProlongAt !== 'number') {
+    if (!metadata || typeof metadata.lastProlongedAt !== 'number') {
       return true;
     }
 
-    return Date.now() >= metadata.nextProlongAt;
+    return Date.now() > metadata.lastProlongedAt + PROLONGATION_INTERVAL_MS;
   }
 }
