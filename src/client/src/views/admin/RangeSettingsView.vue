@@ -203,7 +203,7 @@ const toNullableString = (value: string | null | undefined) => {
 
 const toNullableNumber = (value: number | string | null | undefined) => {
   const parsed = typeof value === 'string' ? Number(value) : value
-  return Number.isFinite(parsed as number) ? (parsed as number) : null
+  return Number.isFinite(parsed as number) ? (parsed as number) : undefined
 }
 
 const submitSettings: SubmissionHandler = async (rawValues) => {

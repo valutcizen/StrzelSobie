@@ -358,12 +358,6 @@ const messages = {
     },
     rangeDirectory: {
       title: 'Range directory and map',
-      subtitle: 'Browse all ranges, filter by type, and jump into details.',
-      sort: {
-        label: '',
-        name: '',
-        type: '',
-      },
       list: {
         title: 'Range list',
         empty: 'No ranges to display.',
@@ -738,12 +732,6 @@ const messages = {
     },
     rangeDirectory: {
       title: 'Katalog i mapa strzelnic',
-      subtitle: 'Przeglądaj wszystkie strzelnice, filtruj po typie i przejdź do szczegółów.',
-      sort: {
-        label: '',
-        name: '',
-        type: '',
-      },
       list: {
         title: 'Lista strzelnic',
         empty: 'Brak strzelnic do wyświetlenia.',

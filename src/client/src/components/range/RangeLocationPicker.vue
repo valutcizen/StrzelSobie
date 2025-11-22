@@ -46,7 +46,7 @@ const createMap = () => {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
     maxZoom: 18,
-  }).addTo(mapInstance.value)
+  }).addTo(mapInstance.value as L.Map)
 
   mapInstance.value.on('click', (event) => {
     const { lat, lng } = event.latlng
@@ -54,7 +54,7 @@ const createMap = () => {
     setMarker(lat, lng)
   })
 
-  mapInstance.value.on('zoom', () => marker?.update())
+  mapInstance.value.on('zoom', () => { /* marker?.update() */ })
   mapInstance.value.on('resize', () => mapInstance.value?.invalidateSize())
 }
 
@@ -68,7 +68,7 @@ const setMarker = (lat: number, lng: number) => {
       if (!pos) return
       emit('update:modelValue', { lat: pos.lat, lng: pos.lng })
     })
-    marker.addTo(mapInstance.value)
+    marker.addTo(mapInstance.value as L.Map)
   } else {
     marker.setLatLng([lat, lng])
   }

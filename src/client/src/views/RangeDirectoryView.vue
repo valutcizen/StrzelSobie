@@ -87,9 +87,7 @@ watch(pageCount, (next) => {
         <h1 class="text-h5 font-weight-bold mb-1">
           {{ t('rangeDirectory.title') }}
         </h1>
-        <p class="text-body-2 text-medium-emphasis mb-0">
-          {{ t('rangeDirectory.subtitle') }}
-        </p>
+
       </v-col>
     </v-row>
 

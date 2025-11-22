@@ -24,8 +24,8 @@
         <l-marker
           v-for="range in validRanges"
           :key="range.slug"
-          :lat-lng="[range.latitude, range.longitude]"
-          :icon="createIcon(range, range.slug === selectedSlug)"
+          :lat-lng="[range.latitude!, range.longitude!]"
+          :icon="createIcon(range, range.slug === selectedSlug) as L.Icon"
           :z-index-offset="getMarkerZIndex(range, range.slug === selectedSlug)"
           @click="() => emit('select', range.slug)"
         >
@@ -153,7 +153,7 @@ const getMarkerZIndex = (range: RangeSummary, isSelected: boolean): number => {
 }
 
 const onMapReady = () => {
-  mapInstance.value = mapRef.value?.leafletObject ?? null
+  mapInstance.value = mapRef.value?.leafletObject as L.Map ?? null
   if (mapInstance.value) {
     fitBoundsToMarkers()
   }
