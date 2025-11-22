@@ -21,7 +21,7 @@
       >
         {{ authStore.user.email }}
       </span>
-      <v-menu>
+      <v-menu v-if="authStore.user">
         <template #activator="{ props }">
           <v-btn
             icon="mdi-account-circle"
@@ -48,6 +48,16 @@
           </v-list-item>
         </v-list>
       </v-menu>
+      <v-btn
+        v-else
+        color="secondary"
+        variant="text"
+        prepend-icon="mdi-login"
+        data-testid="login-button"
+        @click="router.push({ name: 'Auth' })"
+      >
+        {{ t('userMenu.login') }}
+      </v-btn>
     </v-app-bar>
 
     <v-navigation-drawer
@@ -65,14 +75,19 @@
         nav
       >
         <RoleBasedLink
+          icon="mdi-map"
+          :label="t('navigation.directory')"
+          :to="{ name: 'RangeDirectory' }"
+        />
+        <RoleBasedLink
           icon="mdi-target"
           :label="t('navigation.rangeInfo')"
-          :to="{ name: 'RangeLanding', params: { rangeSlug: authStore.defaultRangeSlug } }"
+          :to="{ name: 'RangeLanding', params: { rangeSlug: lastRangeSlug } }"
         />
         <RoleBasedLink
           icon="mdi-calendar"
           :label="t('navigation.calendar')"
-          :to="{ name: 'Calendar', params: { rangeSlug: authStore.defaultRangeSlug } }"
+          :to="{ name: 'Calendar', params: { rangeSlug: lastRangeSlug } }"
         />
         <RoleBasedLink
           icon="mdi-account-group"
@@ -120,16 +135,21 @@ import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRangeStore } from '@/stores/range'
 import { UserRoleEnum } from '@/types/auth'
+import { getLastRangeId } from '@/utils/lastRange'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const rangeStore = useRangeStore()
 const router = useRouter()
 const display = useDisplay()
 const isSmallScreen = computed(() => display.smAndDown.value)
 const drawer = ref(!isSmallScreen.value)
 // Keep the drawer expanded on small screens to show labels; allow rail only on larger viewports.
 const isRail = ref(false)
+
+const lastRangeSlug = computed(() => rangeStore.currentRangeSlug ?? getLastRangeId() ?? authStore.defaultRangeSlug)
 
 watch(
   isSmallScreen,

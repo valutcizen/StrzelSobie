@@ -130,7 +130,7 @@ const showSnackbar = (message: string, color: 'success' | 'error' = 'success') =
 }
 
 const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => ({
-  totalTracks: range.totalTracks,
+  totalTracks: range.totalTracks ?? 1,
   operatingHours: dayOrder.reduce((acc, day) => {
     const entry = range.operatingHours?.[day] ?? null
     acc[day] = {

@@ -1,17 +1,52 @@
 import type { Pinia } from 'pinia'
 import type { Router } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRangeStore } from '@/stores/range'
+import { getLastRangeId } from '@/utils/lastRange'
 import type { AppRouteMeta } from './index'
 
 export const setupRouterGuards = (router: Router, pinia: Pinia) => {
   const authStore = useAuthStore(pinia)
+  const rangeStore = useRangeStore(pinia)
 
   router.beforeEach(async (to) => {
-    const requiresAuth = to.matched.some((record) => (record.meta as AppRouteMeta | undefined)?.requiresAuth)
+    if (to.name === 'Root') {
+      const storedRange = getLastRangeId()
+      if (storedRange) {
+        try {
+          await rangeStore.fetchRangeDetails(storedRange)
+          return { name: 'RangeLanding', params: { rangeSlug: storedRange } }
+        } catch {
+          // Fall through to directory when stored range cannot be loaded.
+        }
+      }
+      return { name: 'RangeDirectory' }
+    }
 
     if (to.name === 'Auth' && authStore.isAuthenticated) {
-      return { name: 'RangeLanding', params: { rangeSlug: authStore.defaultRangeSlug } }
+      const targetRange = getLastRangeId() ?? authStore.defaultRangeSlug
+      return { name: 'RangeLanding', params: { rangeSlug: targetRange } }
     }
+
+    if (to.name === 'Calendar') {
+      const slugParam = to.params.rangeSlug
+      const rangeSlug = typeof slugParam === 'string' ? slugParam : getLastRangeId()
+
+      if (!rangeSlug) {
+        return { name: 'RangeDirectory' }
+      }
+
+      try {
+        const range = await rangeStore.fetchRangeDetails(rangeSlug)
+        if (!range.allowsReservations) {
+          return { name: 'RangeLanding', params: { rangeSlug }, query: { booking: 'unavailable' } }
+        }
+      } catch {
+        return { name: 'RangeDirectory' }
+      }
+    }
+
+    const requiresAuth = to.matched.some((record) => (record.meta as AppRouteMeta | undefined)?.requiresAuth)
 
     if (!requiresAuth) {
       return true

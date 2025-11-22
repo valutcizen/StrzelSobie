@@ -36,7 +36,14 @@ const messages = {
       shootingRangeAdmin: 'Shooting Range Administrator',
       clubCommunityAdmin: 'Club/Community Administrator',
     },
+    rangeTypes: {
+      club: 'Club range',
+      ally: 'Ally range',
+      'coming-soon': 'Coming soon',
+      unknown: 'Range',
+    },
     navigation: {
+      directory: 'Map & directory',
       rangeInfo: 'Range info',
       calendar: 'Calendar',
       profile: 'My profile',
@@ -49,6 +56,7 @@ const messages = {
       label: 'User menu',
       profile: 'My profile',
       logout: 'Logout',
+      login: 'Login',
     },
     language: 'Language',
     auth: {
@@ -191,9 +199,23 @@ const messages = {
       description: 'Learn the essentials about the range and available lanes.',
       totalTracks: 'Total lanes: {count}',
       emptyState: 'No range data available.',
+      bookingUnavailableNotice: 'Bookings are disabled for this range. See details below.',
+      bookingStatus: {
+        open: 'Bookings available',
+        closed: 'Bookings unavailable',
+      },
+      location: 'Lat {lat}, Lng {lng}',
       actions: {
         refresh: 'Refresh range data',
         openCalendar: 'Open calendar',
+      },
+      publicDescription: {
+        title: 'Public description',
+        empty: 'No public description provided.',
+      },
+      memberDescription: {
+        title: 'Member-only notes',
+        empty: 'No member-only notes available.',
       },
       operatingHours: {
         title: 'Operating hours',
@@ -302,7 +324,7 @@ const messages = {
       notFound: {
         title: 'Page not found',
         subtitle: 'The page you are looking for does not exist.',
-        backToCalendar: 'Return to calendar',
+        backToCalendar: 'Return to map',
       },
     },
     privacyPolicy: {
@@ -310,6 +332,36 @@ const messages = {
       description:
         'The Strzel Sobie application cares about user privacy. The full policy will be available in a future release. Meanwhile, all user data is used solely to provide the reservation features described in the product requirements.',
       contact: 'If you have any questions, contact the system administrator.',
+    },
+    range: {
+      actionBar: {
+        available: 'Bookings are available for this range.',
+        unavailableHint: 'Non-bookable ranges remain visible for information.',
+        unavailableAlly: 'Bookings are disabled for ally ranges.',
+        unavailableComingSoon: 'This range is coming soon; bookings are not yet enabled.',
+        unavailableGeneric: 'Bookings are disabled for this range.',
+        openCalendar: 'View calendar',
+        backToMap: 'Back to map',
+      },
+    },
+    rangeDirectory: {
+      title: 'Range directory and map',
+      subtitle: 'Browse all ranges, filter by type, and jump into details.',
+      sort: {
+        label: 'Sort by',
+        name: 'Name (A→Z)',
+        type: 'Type priority',
+      },
+      list: {
+        title: 'Range list',
+        empty: 'No ranges to display.',
+        allowsReservations: 'Bookings available',
+        noReservations: 'Bookings unavailable',
+        detailsCta: 'View details',
+      },
+      map: {
+        empty: 'No map data available.',
+      },
     },
   },
   pl: {
@@ -347,7 +399,14 @@ const messages = {
       shootingRangeAdmin: 'Administrator strzelnicy',
       clubCommunityAdmin: 'Administrator klubu/społeczności',
     },
+    rangeTypes: {
+      club: 'Strzelnica klubowa',
+      ally: 'Strzelnica partnerska',
+      'coming-soon': 'Wkrótce dostępna',
+      unknown: 'Strzelnica',
+    },
     navigation: {
+      directory: 'Mapa i katalog',
       rangeInfo: 'Strzelnica',
       calendar: 'Kalendarz',
       profile: 'Mój profil',
@@ -360,6 +419,7 @@ const messages = {
       label: 'Menu użytkownika',
       profile: 'Mój profil',
       logout: 'Wyloguj',
+      login: 'Zaloguj',
     },
     language: 'Język',
     auth: {
@@ -502,9 +562,23 @@ const messages = {
       description: 'Poznaj podstawowe informacje o strzelnicy i dostępnych torach.',
       totalTracks: 'Łączna liczba torów: {count}',
       emptyState: 'Brak danych o strzelnicy.',
+      bookingUnavailableNotice: 'Rezerwacje dla tej strzelnicy są wyłączone. Sprawdź szczegóły poniżej.',
+      bookingStatus: {
+        open: 'Rezerwacje dostępne',
+        closed: 'Rezerwacje niedostępne',
+      },
+      location: 'Szer. {lat}, dł. {lng}',
       actions: {
         refresh: 'Odśwież dane strzelnicy',
         openCalendar: 'Przejdź do kalendarza',
+      },
+      publicDescription: {
+        title: 'Opis publiczny',
+        empty: 'Brak opisu publicznego.',
+      },
+      memberDescription: {
+        title: 'Notatki dla członków',
+        empty: 'Brak informacji widocznych tylko dla członków.',
       },
       operatingHours: {
         title: 'Godziny otwarcia',
@@ -613,7 +687,7 @@ const messages = {
       notFound: {
         title: 'Nie znaleziono strony',
         subtitle: 'Strona, której szukasz, nie istnieje.',
-        backToCalendar: 'Wróć do kalendarza',
+        backToCalendar: 'Wróć do mapy',
       },
     },
     privacyPolicy: {
@@ -621,6 +695,36 @@ const messages = {
       description:
         'Aplikacja Strzel Sobie dba o prywatność użytkowników. Pełna polityka będzie dostępna w kolejnej iteracji projektu. W międzyczasie wszystkie dane są wykorzystywane wyłącznie do świadczenia funkcji rezerwacyjnych opisanych w wymaganiach produktu.',
       contact: 'W razie pytań skontaktuj się z administratorem systemu.',
+    },
+    range: {
+      actionBar: {
+        available: 'Rezerwacje są dostępne dla tej strzelnicy.',
+        unavailableHint: 'Strzelnice bez rezerwacji są widoczne informacyjnie.',
+        unavailableAlly: 'Rezerwacje są wyłączone dla strzelnic partnerskich.',
+        unavailableComingSoon: 'Ta strzelnica jest w przygotowaniu; rezerwacje nie są jeszcze dostępne.',
+        unavailableGeneric: 'Rezerwacje są wyłączone dla tej strzelnicy.',
+        openCalendar: 'Zobacz kalendarz',
+        backToMap: 'Wróć do mapy',
+      },
+    },
+    rangeDirectory: {
+      title: 'Katalog i mapa strzelnic',
+      subtitle: 'Przeglądaj wszystkie strzelnice, filtruj po typie i przejdź do szczegółów.',
+      sort: {
+        label: 'Sortowanie',
+        name: 'Nazwa (A→Z)',
+        type: 'Priorytet typu',
+      },
+      list: {
+        title: 'Lista strzelnic',
+        empty: 'Brak strzelnic do wyświetlenia.',
+        allowsReservations: 'Rezerwacje dostępne',
+        noReservations: 'Rezerwacje niedostępne',
+        detailsCta: 'Zobacz szczegóły',
+      },
+      map: {
+        empty: 'Brak danych do wyświetlenia na mapie.',
+      },
     },
   },
 };

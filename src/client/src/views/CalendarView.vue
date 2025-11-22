@@ -19,6 +19,7 @@ import { useCalendarEvents } from '@/views/calendar/useCalendarEvents'
 import { useEventDetails } from '@/views/calendar/useEventDetails'
 import { useCalendarDialogs } from '@/views/calendar/useCalendarDialogs'
 import CalendarHeaderActions from '@/views/calendar/CalendarHeaderActions.vue'
+import { setLastRangeId } from '@/utils/lastRange'
 
 const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
@@ -150,6 +151,7 @@ const loadRangeDetails = async () => {
 
   try {
     await rangeStore.fetchRangeDetails(rangeSlug.value)
+    setLastRangeId(rangeSlug.value)
   } catch {
     // If range metadata is unavailable, fall back to default calendar bounds.
   }
