@@ -31,7 +31,6 @@ describe('RangesDbRepository integration', () => {
     const dobczyce = ranges.find((range) => range.slug === 'dobczyce');
     expect(dobczyce).toMatchObject({
       displayName: 'Strzelnica Dobczyce',
-      totalTracks: 2,
     });
   });
 

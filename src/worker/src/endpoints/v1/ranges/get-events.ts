@@ -1,10 +1,9 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
-import { IReservationsService } from '@strzel-sobie/common/models';
+import { IReservationsService, UserDto } from '@strzel-sobie/common/models';
 import { AppContext } from '../../../types';
 import { mapReservationsError } from '../../../utils/reservations-error-mapper';
 import { resolveOptionalUser } from '../../../utils/resolve-optional-user';
-import { mapUserDtoToUserProfile } from '../../../utils/user-profile-mapper';
 
 const ParamsSchema = z.object({
   rangeSlug: z.string(),
@@ -49,8 +48,13 @@ export class GetEvents extends OpenAPIRoute {
     const { startDate, endDate } = query as unknown as { startDate: string; endDate: string };
     
     const user = c.get('user') ?? (await resolveOptionalUser(c));
-    const userProfile = mapUserDtoToUserProfile(user);
-    const result = await reservationsService.getCalendarEvents({ rangeSlug, startDate, endDate, userProfile });
+    const userPayload = this.normalizeUser(user);
+    const result = await reservationsService.getCalendarEvents({
+      rangeSlug,
+      startDate,
+      endDate,
+      user: userPayload,
+    });
 
     if (result.isSuccess) {
       return c.json(result.getValue());
@@ -60,5 +64,34 @@ export class GetEvents extends OpenAPIRoute {
     console.error('Error while fetching range events', error);
     const { status, body } = mapReservationsError(error);
     return c.json(body, status);
+  }
+
+  private normalizeUser(user: UserDto) {
+    const roles = (user.roles ?? [])
+      .map((role) => role?.name ?? '')
+      .filter((roleName) => roleName.length > 0);
+
+    const rangeRolesSource =
+      (user as { rangeRoles?: Record<string, unknown> }).rangeRoles ??
+      (user as { range_roles?: Record<string, unknown> }).range_roles ??
+      {};
+
+    const rangeRoles = Object.entries(rangeRolesSource as Record<string, Array<{ name?: string } | string> | undefined>).reduce((acc, [rangeId, roleList]) => {
+      const roleNames = (roleList ?? [])
+        .map((role) => (typeof role === 'string' ? role : role?.name ?? ''))
+        .filter((name) => name.length > 0);
+
+      if (roleNames.length > 0) {
+        acc[rangeId] = roleNames;
+      }
+
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    return {
+      id: user.id.toString(),
+      roles,
+      range_roles: rangeRoles,
+    };
   }
 }

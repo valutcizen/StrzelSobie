@@ -1,4 +1,5 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { z } from 'zod';
 import { Context } from '../../../types';
 
 export class GetRangesRoute extends OpenAPIRoute {
