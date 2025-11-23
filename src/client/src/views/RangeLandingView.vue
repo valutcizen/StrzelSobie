@@ -218,6 +218,7 @@ watch(
                     </v-card-title>
                     <v-divider />
                     <v-card-text data-testid="range-public-description">
+                      <!-- eslint-disable-next-line vue/no-v-html -->
                       <div
                         v-if="currentRange?.publicDescription"
                         class="range-description"
@@ -284,6 +285,7 @@ watch(
                 </v-card-title>
                 <v-divider />
                 <v-card-text data-testid="range-member-description">
+                  <!-- eslint-disable-next-line vue/no-v-html -->
                   <div
                     v-if="currentRange?.memberDescription"
                     class="range-description"

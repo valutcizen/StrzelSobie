@@ -11,7 +11,28 @@ INSERT INTO ranges_shooting_ranges (
   latitude,
   longitude,
   operating_hours,
-      8  (
+  total_tracks
+) VALUES (
+    1,
+    'strzel-sobie-krakow',
+    'Strzel Sobie Kraków',
+    'club',
+    1,
+    'Główna strzelnica klubowa. Zapraszamy wszystkich członków i gości. Pełna oferta i dostępność w kalendarzu.',
+    'Dla członków klubu dostępne są dodatkowe rabaty i rezerwacje na wyłączność. Skontaktuj się z koordynatorem.',
+    50.0519,
+    19.9232,
+    '{
+      "monday": {"open": "10:00", "close": "20:00"},
+      "tuesday": {"open": "10:00", "close": "20:00"},
+      "wednesday": {"open": "10:00", "close": "20:00"},
+      "thursday": {"open": "10:00", "close": "20:00"},
+      "friday": {"open": "10:00", "close": "22:00"},
+      "saturday": {"open": "09:00", "close": "22:00"},
+      "sunday": {"open": "09:00", "close": "20:00"}
+    }',
+    10
+  ), (
     2,
     'ally-krakow',
     'Allies Range Kraków',
@@ -28,11 +49,10 @@ INSERT INTO ranges_shooting_ranges (
       "thursday": {"open": "09:00", "close": "18:00"},
       "friday": {"open": "09:00", "close": "18:00"},
       "saturday": {"open": "09:00", "close": "16:00"},
-      "sunday": {"open": "closed", "close": "closed"}
+      "sunday": null
     }',
-    NULL
-  ),
-  (
+    5
+  ), (
     3,
     'coming-soon-podhale',
     'Strzelnica Podhale (wkrótce)',
@@ -42,14 +62,6 @@ INSERT INTO ranges_shooting_ranges (
     'Planowane zasady korzystania dla członków.',
     49.4830,
     20.0262,
-    '{
-      "monday": {"open": "closed", "close": "closed"},
-      "tuesday": {"open": "closed", "close": "closed"},
-      "wednesday": {"open": "closed", "close": "closed"},
-      "thursday": {"open": "closed", "close": "closed"},
-      "friday": {"open": "closed", "close": "closed"},
-      "saturday": {"open": "closed", "close": "closed"},
-      "sunday": {"open": "closed", "close": "closed"}
-    }',
+    '{}',
     NULL
   );

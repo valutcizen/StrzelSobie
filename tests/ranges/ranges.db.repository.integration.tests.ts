@@ -26,11 +26,12 @@ describe('RangesDbRepository integration', () => {
 
     const ranges = await repository.findAll();
     const slugs = ranges.map((range) => range.slug).sort();
-    expect(slugs).toEqual(['ally-krakow', 'coming-soon-podhale', 'dobczyce', 'krakow']);
+    expect(slugs).toEqual(['ally-krakow', 'coming-soon-podhale', 'krakow', 'strzel-sobie-krakow']);
 
-    const dobczyce = ranges.find((range) => range.slug === 'dobczyce');
-    expect(dobczyce).toMatchObject({
-      displayName: 'Strzelnica Dobczyce',
+    const strzelSobieKrakow = ranges.find((range) => range.slug === 'strzel-sobie-krakow');
+    expect(strzelSobieKrakow).toMatchObject({
+      displayName: 'Strzel Sobie Kraków',
+      allowsReservations: true,
     });
   });
 
@@ -45,12 +46,12 @@ describe('RangesDbRepository integration', () => {
   });
 
   it('findBySlug returns range when present', async () => {
-    const range = await repository.findBySlug('dobczyce');
+    const range = await repository.findBySlug('strzel-sobie-krakow');
     expect(range).toMatchObject({
       id: 1,
-      slug: 'dobczyce',
-      displayName: 'Strzelnica Dobczyce',
-      totalTracks: 2,
+      slug: 'strzel-sobie-krakow',
+      displayName: 'Strzel Sobie Kraków',
+      totalTracks: 10,
     });
     expect(range?.operatingHours).toContain('"monday"');
   });
@@ -63,13 +64,16 @@ describe('RangesDbRepository integration', () => {
   it('update modifies existing range values', async () => {
     await repository.update({
       id: 1,
-      slug: 'dobczyce',
-      displayName: 'Strzelnica Dobczyce',
+      slug: 'strzel-sobie-krakow',
+      displayName: 'Strzel Sobie Kraków',
       totalTracks: 12,
       operatingHours: '{"monday":{"open":"08:00","close":"16:00"}}',
+      type: 'club',
+      allowsReservations: true,
+      isDeleted: false,
     });
 
-    const stored = await repository.findBySlug('dobczyce');
+    const stored = await repository.findBySlug('strzel-sobie-krakow');
     expect(stored?.totalTracks).toBe(12);
     expect(stored?.operatingHours).toBe('{"monday":{"open":"08:00","close":"16:00"}}');
   });

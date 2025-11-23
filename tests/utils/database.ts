@@ -80,7 +80,7 @@ async function executeSqlFile(db: SqliteDatabaseAdapter, filePath: string): Prom
   if (sql.trim().length === 0) {
     return;
   }
-  await db.exec(sql);
+  db.exec(sql);
 }
 
 export async function createTestDatabase(options: { includeMockData?: boolean } = {}): Promise<TestDatabase> {
