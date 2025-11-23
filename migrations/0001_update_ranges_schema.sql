@@ -45,8 +45,8 @@ INSERT INTO ranges_shooting_ranges_new (
     0 AS is_deleted,
     '' AS public_description,
     NULL AS member_description,
-    0.0 AS latitude,
-    0.0 AS longitude,
+    NULL AS latitude,
+    NULL AS longitude,
     operating_hours,
     total_tracks
 FROM ranges_shooting_ranges;
