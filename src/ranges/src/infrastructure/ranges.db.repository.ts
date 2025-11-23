@@ -11,8 +11,8 @@ type ShootingRangeDb = {
   is_deleted: number;
   public_description: string | null;
   member_description: string | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   display_name: string;
   total_tracks: number | null;
   operating_hours: string;

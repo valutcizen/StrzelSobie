@@ -133,6 +133,7 @@ watch(
               class="mr-2"
               variant="elevated"
               prepend-icon="mdi-map-marker"
+              data-testid="range-slug-chip"
             >
               {{ currentRange.slug }}
             </v-chip>
@@ -163,6 +164,7 @@ watch(
               variant="tonal"
               border="start"
               class="mb-6"
+              data-testid="range-booking-unavailable-alert"
             >
               {{ t('rangeLanding.bookingUnavailableNotice') }}
             </v-alert>
@@ -181,6 +183,7 @@ watch(
                   <RangeTypeBadge
                     class="meta-chip"
                     :type="(currentRange?.type ?? 'club')"
+                    :data-range-slug="currentRange?.slug"
                   />
                   <v-chip
                     size="small"
@@ -188,6 +191,7 @@ watch(
                     variant="elevated"
                     class="meta-chip"
                     :prepend-icon="currentRange?.allowsReservations ? 'mdi-check-circle' : 'mdi-alert-outline'"
+                    data-testid="range-booking-status-chip"
                   >
                     {{
                       currentRange?.allowsReservations
@@ -213,7 +217,7 @@ watch(
                       {{ t('rangeLanding.publicDescription.title') }}
                     </v-card-title>
                     <v-divider />
-                    <v-card-text>
+                    <v-card-text data-testid="range-public-description">
                       <div
                         v-if="currentRange?.publicDescription"
                         class="range-description"
@@ -270,6 +274,7 @@ watch(
                 v-if="canSeeMemberDescription"
                 variant="outlined"
                 color="primary"
+                data-testid="range-member-description-card"
               >
                 <v-card-title class="text-subtitle-1 d-flex align-center gap-2">
                   <v-icon color="primary">
@@ -278,7 +283,7 @@ watch(
                   {{ t('rangeLanding.memberDescription.title') }}
                 </v-card-title>
                 <v-divider />
-                <v-card-text>
+                <v-card-text data-testid="range-member-description">
                   <div
                     v-if="currentRange?.memberDescription"
                     class="range-description"

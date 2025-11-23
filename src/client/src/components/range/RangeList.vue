@@ -42,15 +42,25 @@
         class="range-table"
         item-value="slug"
         :item-class="rowClass"
+        data-testid="range-list-table"
         @click:row="handleRowClick"
         @update:page="$emit('update:page', $event)"
       >
         <template #item.displayName="{ item }">
-          <span class="font-weight-semibold">{{ item.displayName }}</span>
+          <span
+            class="font-weight-semibold"
+            data-testid="range-list-name"
+            :data-range-slug="item.slug"
+          >
+            {{ item.displayName }}
+          </span>
         </template>
 
         <template #item.type="{ item }">
-          <RangeTypeBadge :type="item.type" />
+          <RangeTypeBadge
+            :type="item.type"
+            :data-range-slug="item.slug"
+          />
         </template>
 
         <template #item.allowsReservations="{ item }">
@@ -72,7 +82,7 @@
             variant="text"
             color="primary"
             prepend-icon="mdi-open-in-new"
-            data-testid="range-list-details-button"
+            :data-testid="`range-list-details-button-${item.slug}`"
             @click.stop="$emit('select', item.slug)"
           >
             {{ t('rangeDirectory.list.detailsCta') }}

@@ -6,8 +6,8 @@ export type ShootingRange = {
   isDeleted: boolean;
   publicDescription?: string | null;
   memberDescription?: string | null;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   displayName: string;
   totalTracks: number | null;
   operatingHours: string; // JSON string

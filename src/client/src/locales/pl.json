@@ -3,6 +3,7 @@
     "title": "Strzel Sobie"
   },
   "navigation": {
+    "directory": "Katalog i mapa",
     "rangeInfo": "Strzelnica",
     "calendar": "Kalendarz",
     "userManagement": "Zarządzanie użytkownikami",
@@ -19,14 +20,20 @@
     "profile": "Mój profil",
     "logout": "Wyloguj"
   },
-    "roles": {
-      "guest": "Gość",
-      "member": "Członek",
-      "coordinator": "Prowadzący strzelanie",
-      "confirmator": "Potwierdzający role",
-      "shootingRangeAdmin": "Administrator strzelnicy",
-      "clubCommunityAdmin": "Administrator klubu/społeczności"
-    },
+  "roles": {
+    "guest": "Gość",
+    "member": "Członek",
+    "coordinator": "Prowadzący strzelanie",
+    "confirmator": "Potwierdzający role",
+    "shootingRangeAdmin": "Administrator strzelnicy",
+    "clubCommunityAdmin": "Administrator klubu/społeczności"
+  },
+  "rangeTypes": {
+    "club": "Strzelnica klubowa",
+    "ally": "Strzelnica partnerska",
+    "coming-soon": "Wkrótce dostępna",
+    "unknown": "Strzelnica"
+  },
   "common": {
     "actions": {
       "save": "Zapisz",
@@ -136,18 +143,69 @@
       }
     }
   },
+  "range": {
+    "actionBar": {
+      "available": "Rezerwacje są dostępne dla tej strzelnicy.",
+      "unavailableHint": "Strzelnice bez rezerwacji są widoczne informacyjnie.",
+      "unavailableAlly": "Rezerwacje są wyłączone dla strzelnic partnerskich.",
+      "unavailableComingSoon": "Ta strzelnica jest w przygotowaniu; rezerwacje nie są jeszcze dostępne.",
+      "unavailableGeneric": "Rezerwacje są wyłączone dla tej strzelnicy.",
+      "openCalendar": "Zobacz kalendarz",
+      "backToMap": "Wróć do mapy",
+      "locationLabel": "Otwórz w mapach",
+      "locationLinks": {
+        "google": "Google Maps",
+        "osm": "OpenStreetMap"
+      }
+    }
+  },
+  "rangeDirectory": {
+    "title": "Katalog i mapa strzelnic",
+    "list": {
+      "title": "Lista strzelnic",
+      "empty": "Brak strzelnic do wyświetlenia.",
+      "allowsReservations": "Rezerwacje dostępne",
+      "noReservations": "Rezerwacje niedostępne",
+      "detailsCta": "Zobacz szczegóły",
+      "headers": {
+        "name": "Nazwa",
+        "type": "Typ",
+        "reservations": "Rezerwacje"
+      }
+    },
+    "map": {
+      "empty": "Brak danych do wyświetlenia na mapie."
+    }
+  },
   "rangeLanding": {
     "loadingTitle": "Ładujemy dane strzelnicy...",
     "description": "Poznaj podstawowe informacje o strzelnicy i dostępnych torach.",
     "totalTracks": "Łączna liczba torów: {count}",
     "emptyState": "Brak danych o strzelnicy.",
+    "bookingUnavailableNotice": "Rezerwacje dla tej strzelnicy są wyłączone. Sprawdź szczegóły poniżej.",
+    "bookingStatus": {
+      "open": "Rezerwacje dostępne",
+      "closed": "Rezerwacje niedostępne"
+    },
+    "location": "Szer. {lat}, dł. {lng}",
     "actions": {
       "refresh": "Odśwież dane strzelnicy",
       "openCalendar": "Przejdź do kalendarza"
     },
+    "publicDescription": {
+      "title": "Opis",
+      "empty": "Brak opisu."
+    },
+    "memberDescription": {
+      "title": "Opis dodatkowy",
+      "empty": "Brak dodatkowego opisu."
+    },
     "operatingHours": {
       "title": "Godziny otwarcia",
       "closed": "Zamknięte"
+    },
+    "errors": {
+      "fetchFailed": "Nie udało się pobrać danych strzelnicy."
     },
     "days": {
       "monday": "Poniedziałek",

@@ -11,22 +11,7 @@ INSERT INTO ranges_shooting_ranges (
   latitude,
   longitude,
   operating_hours,
-  total_tracks
-) VALUES
-  (
-    1,
-    'dobczyce',
-    'Strzelnica Dobczyce',
-    'club',
-    1,
-    'Klubowa strzelnica w Dobczycach. Rezerwacje dostępne online.',
-    'Dodatkowe informacje tylko dla członków klubu.',
-    49.8805,
-    20.0906,
-    '{\n  "monday": {"open": "06:00", "close": "22:00"},\n  "tuesday": {"open": "06:00", "close": "22:00"},\n  "wednesday": {"open": "06:00", "close": "22:00"},\n  "thursday": {"open": "06:00", "close": "22:00"},\n  "friday": {"open": "06:00", "close": "22:00"},\n  "saturday": {"open": "06:00", "close": "22:00"},\n  "sunday": {"open": "06:00", "close": "22:00"}\n}',
-    2
-  ),
-  (
+      8  (
     2,
     'ally-krakow',
     'Allies Range Kraków',

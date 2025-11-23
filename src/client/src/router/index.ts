@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { UserRoleEnum, type UserRole } from '@/types/auth'
+import { getLastRangeId } from '@/utils/lastRange'
 
 interface AppRouteMeta {
   requiresAuth?: boolean
@@ -14,7 +15,14 @@ const routes: AppRouteRecordRaw[] = [
   {
     path: '/',
     name: 'Root',
-    redirect: { name: 'RangeDirectory' },
+    redirect: () => {
+      const storedRange = getLastRangeId()
+      if (storedRange) {
+        return `/${storedRange}`
+      }
+
+      return { name: 'RangeDirectory' }
+    },
   },
   {
     path: '/auth',

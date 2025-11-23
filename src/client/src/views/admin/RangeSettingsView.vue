@@ -7,7 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
-import type { OperatingHours, RangeDetails } from '@/types/range'
+import type { OperatingHours, RangeDetails, UpdateRangePayload } from '@/types/range'
 import { UserRoleEnum } from '@/types/auth'
 
 const { t } = useI18n()
@@ -285,7 +285,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
     const latitude = values.location ? toNullableNumber(values.location.lat) ?? null : null
     const longitude = values.location ? toNullableNumber(values.location.lng) ?? null : null
 
-    const payload = {
+    const payload: UpdateRangePayload = {
       displayName: values.displayName.trim(),
       type: values.type,
       latitude,

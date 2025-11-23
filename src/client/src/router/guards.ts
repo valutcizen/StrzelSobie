@@ -11,19 +11,6 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
   const routesBypassingAuthRedirect = new Set(['RangeDirectory', 'RangeLanding', 'Calendar'])
 
   router.beforeEach(async (to) => {
-    if (to.name === 'Root') {
-      const storedRange = getLastRangeId()
-      if (storedRange) {
-        try {
-          await rangeStore.fetchRangeDetails(storedRange)
-          return { name: 'RangeLanding', params: { rangeSlug: storedRange } }
-        } catch {
-          // Fall through to directory when stored range cannot be loaded.
-        }
-      }
-      return { name: 'RangeDirectory' }
-    }
-
     try {
       await authStore.fetchUser()
     } catch {

@@ -71,6 +71,7 @@
       variant="tonal"
       border="start"
       class="mt-3 mb-0"
+      data-testid="range-action-alert"
     >
       {{ unavailableCopy }}
     </v-alert>
