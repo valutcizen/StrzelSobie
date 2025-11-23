@@ -256,7 +256,7 @@ test.describe('Users & Roles', () => {
     expect(reservationId).toBeDefined();
     const resolvedReservationId = reservationId!;
 
-    await page.goto('/dobczyce/reservations');
+    await page.goto('/dobczyce/calendar');
 
     const calendarResponse = await page.waitForResponse(
       (response) =>
@@ -419,7 +419,7 @@ test.describe('Users & Roles', () => {
 
     const { startTime, label: eventLabel } = selectedSlot;
 
-    await page.goto('/dobczyce/reservations');
+    await page.goto('/dobczyce/calendar');
 
     const eventsResponsePromise = page.waitForResponse((response) => {
       if (!response.url().includes('/api/v1/ranges/dobczyce/events')) {
