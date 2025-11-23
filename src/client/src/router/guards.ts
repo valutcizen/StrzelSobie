@@ -30,7 +30,7 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
       // Swallow errors for public routes; protected routes handle redirects below.
     }
 
-    if (to.name === 'RangeSettings') {
+    if (to.name === 'RangeSettings' || to.name === 'RangeUserManagement') {
       const querySlug = typeof to.query.rangeSlug === 'string' ? to.query.rangeSlug : null
       const storedRange = getLastRangeId() ?? authStore.defaultRangeSlug
 
