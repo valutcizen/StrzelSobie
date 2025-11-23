@@ -120,16 +120,16 @@ describe('SessionKvRepository integration', () => {
 
   it('prolongs session TTL when next prolongation time is reached', async () => {
     const token = await repository.createSession(session);
-    const initialMetadata = await kv.getWithMetadata<{ nextProlongAt: number }>(token);
-    expect(initialMetadata?.metadata?.nextProlongAt).toBe(now + 10 * 60 * 1000);
+    const initialMetadata = await kv.getWithMetadata<{ lastProlongedAt: number }>(token);
+    expect(initialMetadata?.metadata?.lastProlongedAt).toBe(now);
 
     vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
 
     const stored = await repository.getSession(token);
     expect(stored).toEqual(session);
 
-    const updatedMetadata = await kv.getWithMetadata<{ nextProlongAt: number }>(token);
-    expect(updatedMetadata?.metadata?.nextProlongAt).toBe(Date.now() + 10 * 60 * 1000);
+    const updatedMetadata = await kv.getWithMetadata<{ lastProlongedAt: number }>(token);
+    expect(updatedMetadata?.metadata?.lastProlongedAt).toBe(Date.now());
   });
 
   it('returns null when session token expired even if prolongation interval passed', async () => {

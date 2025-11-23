@@ -146,8 +146,12 @@ describe('RangesService contract', () => {
 
     const result = await service.getRangeDetails('alpha-range');
 
-    expect(result.isSuccess).toBe(false);
-    expect(result.getError()).toEqual(new Error('Failed to parse operating hours'));
+    expect(result.isSuccess).toBe(true);
+    expect(result.getValue()).toEqual({
+      ...buildRange({ operatingHours: 'not-json' }),
+      isDeleted: false,
+      operatingHours: {},
+    });
   });
 
   it('refuses updates for non-admin users', async () => {
