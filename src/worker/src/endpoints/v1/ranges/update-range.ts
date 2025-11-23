@@ -26,6 +26,8 @@ const updateRangeCommandSchema = z.object({
   memberDescription: z.string().optional().nullable(),
   totalTracks: z.number().int().min(0).optional().nullable(),
   operatingHours: operatingHoursSchema.optional(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided for update',
 });

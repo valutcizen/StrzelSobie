@@ -12,8 +12,8 @@ CREATE TABLE ranges_shooting_ranges_new (
     is_deleted INTEGER NOT NULL DEFAULT 0,
     public_description TEXT,
     member_description TEXT,
-    latitude REAL NOT NULL DEFAULT 0.0,
-    longitude REAL NOT NULL DEFAULT 0.0,
+    latitude REAL,
+    longitude REAL,
     operating_hours TEXT NOT NULL,
     total_tracks INTEGER,
     CHECK (

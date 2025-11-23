@@ -81,16 +81,17 @@ export class RangesService implements IRangesService {
       return Result.fail(new ForbiddenError('User is not an admin for this range'));
     }
 
+    const nextType = command.type ?? range.type;
+    const nextAllowsReservations =
+      nextType === 'club'
+        ? command.allowsReservations ?? range.allowsReservations ?? true
+        : false;
+
+    range.type = nextType;
+    range.allowsReservations = nextAllowsReservations;
+
     if (command.displayName !== undefined) {
       range.displayName = command.displayName;
-    }
-
-    if (command.type !== undefined) {
-      range.type = command.type;
-    }
-
-    if (command.allowsReservations !== undefined) {
-      range.allowsReservations = command.allowsReservations;
     }
 
     if (command.publicDescription !== undefined) {
@@ -102,11 +103,11 @@ export class RangesService implements IRangesService {
     }
 
     if (command.latitude !== undefined) {
-      range.latitude = command.latitude;
+      range.latitude = command.latitude ?? null;
     }
 
     if (command.longitude !== undefined) {
-      range.longitude = command.longitude;
+      range.longitude = command.longitude ?? null;
     }
 
     if (command.totalTracks !== undefined) {
@@ -286,19 +287,30 @@ export class RangesService implements IRangesService {
     return globalRoles.includes(UserRole.ClubCommunityAdministrator);
   }
 
-  private parseOperatingHours(raw: string): Record<string, { open: string; close: string } | null> {
+  private parseOperatingHours(raw: unknown): Record<string, { open: string; close: string } | null> {
     if (!raw) {
+      return {};
+    }
+
+    const source =
+      typeof raw === 'string'
+        ? raw
+        : typeof raw === 'object' && !Array.isArray(raw)
+          ? JSON.stringify(raw)
+          : null;
+
+    if (!source) {
       return {};
     }
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(source);
     } catch {
-      throw new Error('Failed to parse operating hours');
+      return {};
     }
 
-    if (!parsed || typeof parsed !== 'object') {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return {};
     }
 
@@ -309,7 +321,7 @@ export class RangesService implements IRangesService {
           return acc;
         }
 
-        if (typeof value === 'object' && value !== null) {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           const entry = value as { open?: string; close?: string };
           const openValue = entry.open ?? '';
           const closeValue = entry.close ?? '';

@@ -30,6 +30,19 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
       // Swallow errors for public routes; protected routes handle redirects below.
     }
 
+    if (to.name === 'RangeSettings') {
+      const querySlug = typeof to.query.rangeSlug === 'string' ? to.query.rangeSlug : null
+      const storedRange = getLastRangeId() ?? authStore.defaultRangeSlug
+
+      if (!querySlug) {
+        if (storedRange) {
+          return { ...to, query: { ...to.query, rangeSlug: storedRange } }
+        }
+
+        return { name: 'RangeDirectory' }
+      }
+    }
+
     if (to.name === 'Auth' && authStore.isAuthenticated) {
       const targetRange = getLastRangeId() ?? authStore.defaultRangeSlug
       return { name: 'RangeLanding', params: { rangeSlug: targetRange } }

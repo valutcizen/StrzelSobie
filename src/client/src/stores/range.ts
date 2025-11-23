@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { http } from '@/services/http'
+import { clearLastRangeId } from '@/utils/lastRange'
 import type { CreateRangePayload, RangeDetails, RangeSummary, UpdateRangePayload } from '@/types/range'
 
 interface FetchRangeOptions {
@@ -69,6 +70,7 @@ export const useRangeStore = defineStore('range', {
           this.rangesBySlug[rangeSlug] = {
             ...existing,
             ...(payload.displayName !== undefined ? { displayName: payload.displayName } : {}),
+            ...(payload.type !== undefined ? { type: payload.type } : {}),
             ...(payload.totalTracks !== undefined ? { totalTracks: payload.totalTracks } : {}),
             ...(payload.operatingHours !== undefined ? { operatingHours: payload.operatingHours } : {}),
             ...(payload.publicDescription !== undefined ? { publicDescription: payload.publicDescription } : {}),
@@ -145,6 +147,25 @@ export const useRangeStore = defineStore('range', {
           (error as { response?: { data?: { error?: string } } } | undefined)?.response?.data?.error ??
           (error instanceof Error ? error.message : 'Nie udało się utworzyć strzelnicy.')
         this.lastError = message
+        throw error
+      }
+    },
+
+    async deleteRange(rangeSlug: string) {
+      if (!rangeSlug) {
+        throw new Error('rangeSlug is required to delete range')
+      }
+
+      try {
+        await http.delete(`/ranges/${rangeSlug}`)
+        delete this.rangesBySlug[rangeSlug]
+        this.directory = this.directory.filter((range) => range.slug !== rangeSlug)
+        if (this.currentRangeSlug === rangeSlug) {
+          this.currentRangeSlug = null
+        }
+        clearLastRangeId()
+      } catch (error) {
+        this.lastError = error instanceof Error ? error.message : 'Nie udało się usunąć strzelnicy.'
         throw error
       }
     },

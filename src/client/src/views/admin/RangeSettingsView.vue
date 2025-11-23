@@ -3,14 +3,16 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Field, Form, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
 import type { OperatingHours, RangeDetails } from '@/types/range'
+import { UserRoleEnum } from '@/types/auth'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const rangeStore = useRangeStore()
 
@@ -49,6 +51,7 @@ const createDefaultOperatingHours = (): FormOperatingHours =>
 
 type RangeSettingsFormValues = {
   displayName: string
+  type: RangeDetails['type']
   location: {
     lat: number | null
     lng: number | null
@@ -62,6 +65,7 @@ type RangeSettingsFormValues = {
 const formKey = ref(0)
 const isLoading = ref(false)
 const isSaving = ref(false)
+const isDeleting = ref(false)
 const lastError = ref<string | null>(null)
 const snackbar = reactive({
   open: false,
@@ -69,8 +73,17 @@ const snackbar = reactive({
   color: 'success' as 'success' | 'error',
 })
 
+const rangeTypeOptions = computed(() => [
+  { value: 'club', label: t('rangeTypes.club') },
+  { value: 'ally', label: t('rangeTypes.ally') },
+  { value: 'coming-soon', label: t('rangeTypes.coming-soon') },
+])
+
+const canDeleteRange = computed(() => authStore.hasRole(UserRoleEnum.ClubCommunityAdministrator))
+
 const initialValues = ref<RangeSettingsFormValues>({
   displayName: '',
+  type: 'club',
   location: null,
   publicDescription: null,
   memberDescription: null,
@@ -131,6 +144,10 @@ const daySchema = (dayLabel: string) =>
 
 const schema = yup.object({
   displayName: yup.string().required(t('admin.rangeSettings.validation.required')),
+  type: yup
+    .mixed<RangeDetails['type']>()
+    .oneOf(['club', 'ally', 'coming-soon'])
+    .required(t('admin.rangeSettings.validation.required')),
   location: yup
     .object({
       lat: yup.number().nullable(),
@@ -160,6 +177,7 @@ const showSnackbar = (message: string, color: 'success' | 'error' = 'success') =
 
 const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => ({
   displayName: range.displayName,
+  type: range.type ?? 'club',
   location:
     typeof range.latitude === 'number' && typeof range.longitude === 'number'
       ? { lat: range.latitude, lng: range.longitude }
@@ -214,8 +232,44 @@ const toNullableString = (value: string | null | undefined) => {
 }
 
 const toNullableNumber = (value: number | string | null | undefined) => {
-  const parsed = typeof value === 'string' ? Number(value) : value
-  return Number.isFinite(parsed as number) ? (parsed as number) : undefined
+  if (value === undefined) {
+    return undefined
+  }
+
+  const normalized =
+    typeof value === 'string'
+      ? value.trim() === ''
+        ? null
+        : Number(value)
+      : value
+
+  if (normalized === null) {
+    return null
+  }
+
+  return Number.isFinite(normalized as number) ? (normalized as number) : undefined
+}
+
+const updateLocationCoordinate = (
+  current: RangeSettingsFormValues['location'],
+  key: 'lat' | 'lng',
+  rawValue: string | number | null,
+) => {
+  const normalized =
+    typeof rawValue === 'string'
+      ? rawValue.trim() === ''
+        ? null
+        : Number(rawValue)
+      : Number.isFinite(rawValue as number)
+        ? (rawValue as number)
+        : null
+  const next = {
+    lat: current?.lat ?? null,
+    lng: current?.lng ?? null,
+    [key]: normalized,
+  }
+
+  return next.lat === null && next.lng === null ? null : (next as RangeSettingsFormValues['location'])
 }
 
 const submitSettings: SubmissionHandler = async (rawValues) => {
@@ -228,10 +282,14 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
   lastError.value = null
 
   try {
+    const latitude = values.location ? toNullableNumber(values.location.lat) ?? null : null
+    const longitude = values.location ? toNullableNumber(values.location.lng) ?? null : null
+
     const payload = {
       displayName: values.displayName.trim(),
-      latitude: toNullableNumber(values.location?.lat),
-      longitude: toNullableNumber(values.location?.lng),
+      type: values.type,
+      latitude,
+      longitude,
       publicDescription: toNullableString(values.publicDescription),
       memberDescription: toNullableString(values.memberDescription),
       totalTracks: Number(values.totalTracks),
@@ -242,13 +300,39 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
     const updated = await rangeStore.fetchRangeDetails(rangeSlug.value, { force: true })
     initialValues.value = mapRangeToFormValues(updated)
     formKey.value += 1
-    showSnackbar(t('admin.rangeSettings.successMessage'))
-  } catch (error) {
-    lastError.value =
-      error instanceof Error ? error.message : t('admin.rangeSettings.errorMessage')
-    showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
+  showSnackbar(t('admin.rangeSettings.successMessage'))
+} catch (error) {
+  lastError.value =
+    error instanceof Error ? error.message : t('admin.rangeSettings.errorMessage')
+  showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
   } finally {
     isSaving.value = false
+  }
+}
+
+const deleteRange = async () => {
+  if (!rangeSlug.value || !canDeleteRange.value) {
+    return
+  }
+
+  const confirmed = window.confirm(t('admin.rangeSettings.deleteConfirm'))
+  if (!confirmed) {
+    return
+  }
+
+  isDeleting.value = true
+  lastError.value = null
+
+  try {
+    await rangeStore.deleteRange(rangeSlug.value)
+    showSnackbar(t('admin.rangeSettings.deleteSuccess'))
+    await router.push({ name: 'RangeDirectory' })
+  } catch (error) {
+    lastError.value =
+      error instanceof Error ? error.message : t('admin.rangeSettings.deleteError')
+    showSnackbar(t('admin.rangeSettings.deleteError'), 'error')
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -381,7 +465,72 @@ watch(
               <v-col
 
                 cols="12"
-                md="8"
+                md="4"
+              >
+                <Field
+
+                  v-slot="{ field, errorMessage }"
+
+                  name="type"
+                >
+                  <v-select
+
+                    :label="t('admin.rangeSettings.rangeTypeLabel')"
+
+                    :items="rangeTypeOptions"
+
+                    item-title="label"
+
+                    item-value="value"
+
+                    :model-value="field.value"
+
+                    :error-messages="errorMessage"
+
+                    data-testid="range-settings-range-type-select"
+
+                    @update:model-value="field.onChange"
+                  />
+                </Field>
+              </v-col>
+
+              <v-col
+
+                cols="12"
+                md="4"
+              >
+                <Field
+
+                  v-slot="{ field, errorMessage }"
+
+                  name="totalTracks"
+                >
+                  <v-text-field
+
+                    :label="t('admin.rangeSettings.totalTracksLabel')"
+
+                    type="number"
+
+                    min="1"
+
+                    :model-value="field.value"
+
+                    :error-messages="errorMessage"
+
+                    data-testid="range-settings-total-tracks-input"
+
+                    @update:model-value="field.onChange"
+
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+            </v-row>
+
+            <v-row class="mb-4">
+              <v-col
+
+                cols="12"
               >
                 <Field
 
@@ -422,18 +571,33 @@ watch(
                       @update:model-value="field.onChange"
                     />
 
-                    <div class="d-flex justify-space-between align-center mt-2 text-body-2">
-                      <span class="text-medium-emphasis">
-                        {{
-                          values.location
-                            ? t('admin.rangeSettings.locationCoordinates', {
-                                lat: values.location.lat?.toFixed(5) ?? '',
-                                lng: values.location.lng?.toFixed(5) ?? '',
-                              })
-                            : t('admin.rangeSettings.locationEmpty')
-                        }}
-                      </span>
-                    </div>
+                    <v-row class="mt-3" dense>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          :label="t('admin.rangeSettings.latitudeLabel')"
+                          type="number"
+                          inputmode="decimal"
+                          :model-value="values.location?.lat ?? ''"
+                          data-testid="range-settings-latitude-input"
+                          @update:model-value="
+                            (val) => field.onChange(updateLocationCoordinate(field.value, 'lat', val))
+                          "
+                        />
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          :label="t('admin.rangeSettings.longitudeLabel')"
+                          type="number"
+                          inputmode="decimal"
+                          :model-value="values.location?.lng ?? ''"
+                          data-testid="range-settings-longitude-input"
+                          @update:model-value="
+                            (val) => field.onChange(updateLocationCoordinate(field.value, 'lng', val))
+                          "
+                        />
+                      </v-col>
+                    </v-row>
+
                   </div>
                 </Field>
               </v-col>
@@ -578,40 +742,6 @@ watch(
               <v-col
 
                 cols="12"
-                md="4"
-              >
-                <Field
-
-                  v-slot="{ field, errorMessage }"
-
-                  name="totalTracks"
-                >
-                  <v-text-field
-
-                    :label="t('admin.rangeSettings.totalTracksLabel')"
-
-                    type="number"
-
-                    min="1"
-
-                    :model-value="field.value"
-
-                    :error-messages="errorMessage"
-
-                    data-testid="range-settings-total-tracks-input"
-
-                    @update:model-value="field.onChange"
-
-                    @blur="field.onBlur"
-                  />
-                </Field>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col
-
-                cols="12"
                 md="6"
               >
                 <Field
@@ -680,6 +810,25 @@ watch(
           </v-card-text>
 
           <v-card-actions class="justify-end">
+            <v-btn
+
+              v-if="canDeleteRange"
+
+              color="error"
+
+              variant="text"
+
+              :loading="isDeleting"
+
+              :disabled="isSaving || isDeleting || !hasRangeSlug"
+
+              data-testid="range-settings-delete-button"
+
+              @click="deleteRange"
+            >
+              {{ t('admin.rangeSettings.deleteAction') }}
+            </v-btn>
+
             <v-btn
 
               color="primary"
