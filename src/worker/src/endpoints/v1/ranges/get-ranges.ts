@@ -11,7 +11,17 @@ export class GetRangesRoute extends OpenAPIRoute {
         description: 'A list of shooting ranges',
         content: {
           'application/json': {
-            schema: undefined,
+            schema: z.array(
+              z.object({
+                id: z.number(),
+                slug: z.string(),
+                displayName: z.string(),
+                type: z.string(),
+                allowsReservations: z.boolean(),
+                latitude: z.number().nullable().optional(),
+                longitude: z.number().nullable().optional(),
+              })
+            ),
           },
         },
       },

@@ -23,6 +23,8 @@ import { DeleteReservation } from './endpoints/v1/reservations/delete-reservatio
 import { GetPropositionDetail } from './endpoints/v1/propositions/get-proposition';
 import { GetReservationDetail } from './endpoints/v1/reservations/get-reservation';
 import { Env, Variables } from './types';
+import { EMBED_MAP_HTML, EMBED_MAP_JS } from '@strzel-sobie/embed-map';
+import { GetMapRangesRoute } from './endpoints/v1/ranges/get-map-ranges';
 import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
 import {
   AuthDbRepository,
@@ -33,6 +35,31 @@ import { UserDbRepository, UserService } from '@strzel-sobie/users';
 import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/reservations';
 import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
+
+const cacheEmbedResponse = async (
+  cacheKey: string,
+  body: string,
+  contentType: string
+): Promise<Response> => {
+  const cache = caches.default;
+  const request = new Request(cacheKey);
+
+  const cached = await cache.match(request);
+  if (cached) {
+    return cached;
+  }
+
+  const response = new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+
+  await cache.put(request, response.clone());
+  return response;
+};
 
 const parseAllowedOrigins = (rawOrigins?: string): string[] =>
   (rawOrigins ?? '')
@@ -120,10 +147,12 @@ openapi.post('/api/v1/users/:userId/roles', authMiddleware, SetUserRoleRoute);
 openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUserRoleRoute);
 
 openapi.get('/api/v1/ranges', GetRangesRoute);
+openapi.get('/api/v1/map-ranges', GetMapRangesRoute);
 openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
 openapi.post('/api/v1/ranges', authMiddleware, CreateRange);
 openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
 openapi.delete('/api/v1/ranges/:rangeSlug', authMiddleware, DeleteRange);
+
 openapi.get('/api/v1/ranges/:rangeSlug/events', GetEvents);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
@@ -137,5 +166,16 @@ openapi.delete(
   authMiddleware,
   DeleteReservation
 );
+
+app.get('/embed/map', async (c) => {
+  // Cache by path only (ignore query params like parentOrigin)
+  const cacheKey = 'https://cache.strzel-sobie/embed/map';
+  return cacheEmbedResponse(cacheKey, EMBED_MAP_HTML, 'text/html; charset=utf-8');
+});
+
+app.get('/embed/map.js', async (c) => {
+  const cacheKey = 'https://cache.strzel-sobie/embed/map.js';
+  return cacheEmbedResponse(cacheKey, EMBED_MAP_JS, 'application/javascript; charset=utf-8');
+});
 
 export default app;
