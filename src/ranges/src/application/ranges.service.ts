@@ -162,7 +162,7 @@ export class RangesService implements IRangesService {
       memberDescription: command.memberDescription ?? null,
       latitude: command.latitude ?? 0,
       longitude: command.longitude ?? 0,
-      totalTracks: command.totalTracks ?? null,
+      totalTracks: command.totalTracks ?? 0,
       operatingHours,
     });
 
