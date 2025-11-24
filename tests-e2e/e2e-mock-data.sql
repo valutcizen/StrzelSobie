@@ -60,7 +60,7 @@ INSERT INTO ranges_shooting_ranges (
     50.0647,
     19.945,
     '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"}}',
-    NULL
+    0
   ),
   (
     101,
@@ -73,7 +73,7 @@ INSERT INTO ranges_shooting_ranges (
     49.483,
     20.0262,
     '{"monday":{"open":"closed","close":"closed"},"tuesday":{"open":"closed","close":"closed"},"wednesday":{"open":"closed","close":"closed"},"thursday":{"open":"closed","close":"closed"},"friday":{"open":"closed","close":"closed"}}',
-    NULL
+    0
   );
 
 -- =============================================================================

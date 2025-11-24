@@ -63,5 +63,5 @@ INSERT INTO ranges_shooting_ranges (
     49.4830,
     20.0262,
     '{}',
-    NULL
+    0
   );
