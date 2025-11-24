@@ -377,12 +377,12 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
       </v-alert>
 
       <v-data-table-server
+        v-model:page="tableState.page"
+        v-model:items-per-page="tableState.itemsPerPage"
         :headers="headers"
         :items="adminStore.users"
         :items-length="totalUsers"
         :loading="adminStore.isLoadingUsers"
-        v-model:page="tableState.page"
-        v-model:items-per-page="tableState.itemsPerPage"
         :sort-by="tableSortBy"
         class="elevation-0"
         data-testid="range-user-management-table"

@@ -41,12 +41,14 @@ const cacheEmbedResponse = async (
   body: string,
   contentType: string
 ): Promise<Response> => {
-  const cache = caches.default;
+  const cache = globalThis.caches?.default;
   const request = new Request(cacheKey);
 
-  const cached = await cache.match(request);
-  if (cached) {
-    return cached;
+  if (cache) {
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
+    }
   }
 
   const response = new Response(body, {
@@ -57,7 +59,9 @@ const cacheEmbedResponse = async (
     },
   });
 
-  await cache.put(request, response.clone());
+  if (cache) {
+    await cache.put(request, response.clone());
+  }
   return response;
 };
 
@@ -167,13 +171,13 @@ openapi.delete(
   DeleteReservation
 );
 
-app.get('/embed/map', async (c) => {
+app.get('/embed/map', async (_c) => {
   // Cache by path only (ignore query params like parentOrigin)
   const cacheKey = 'https://cache.strzel-sobie/embed/map';
   return cacheEmbedResponse(cacheKey, EMBED_MAP_HTML, 'text/html; charset=utf-8');
 });
 
-app.get('/embed/map.js', async (c) => {
+app.get('/embed/map.js', async (_c) => {
   const cacheKey = 'https://cache.strzel-sobie/embed/map.js';
   return cacheEmbedResponse(cacheKey, EMBED_MAP_JS, 'application/javascript; charset=utf-8');
 });
