@@ -244,6 +244,7 @@ function createReservationsContext(): {
     getRangeDetails: vi.fn(),
     updateRangeDetails: vi.fn(),
     getRangeIdBySlug: vi.fn(),
+    deleteRange: vi.fn(),
   };
 
   const auditService: Mocked<IAuditService> = {

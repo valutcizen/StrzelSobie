@@ -29,14 +29,13 @@ test.describe('Unauthenticated user', () => {
     await expect(authPage.logoutButton).toBeVisible();
   });
 
-  test('should redirect unauthenticated users to the login page when accessing protected routes', async ({ page }) => {
-    const authPage = new AuthPage(page);
+  test('allows unauthenticated users to view public range details', async ({ page }) => {
     await page.goto('/dobczyce');
 
-    // Router guard should redirect unauthenticated users to the auth view with redirect query
-    await page.waitForURL((url) => url.pathname === '/auth' && url.searchParams.get('redirect') === '/dobczyce');
-    await expect(authPage.loginTab).toBeVisible();
-    await expect(authPage.emailInput).toBeVisible();
-    await expect(authPage.loginButton).toBeDisabled();
+    await expect(page).toHaveURL('/dobczyce');
+
+    const rangeTitle = page.getByTestId('range-landing-title');
+    await expect(rangeTitle).toBeVisible();
+    await expect(rangeTitle).toContainText('E2E Test Range');
   });
 });

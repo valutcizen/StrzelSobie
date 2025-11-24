@@ -11,8 +11,8 @@ describe('GET /api/v1/ranges', () => {
     const rangesService = {
       getRanges: vi.fn().mockResolvedValue(
         Result.ok([
-          { id: 1, slug: 'downtown', displayName: 'Downtown Range' },
-          { id: 2, slug: 'lakeside', displayName: 'Lakeside Range' },
+          { id: 1, slug: 'downtown', displayName: 'Downtown Range', type: 'club', allowsReservations: true },
+          { id: 2, slug: 'lakeside', displayName: 'Lakeside Range', type: 'club', allowsReservations: true },
         ]),
       ),
     };
@@ -29,8 +29,8 @@ describe('GET /api/v1/ranges', () => {
     expect(rangesService.getRanges).toHaveBeenCalledOnce();
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual([
-      { id: 1, slug: 'downtown', displayName: 'Downtown Range' },
-      { id: 2, slug: 'lakeside', displayName: 'Lakeside Range' },
+      { id: 1, slug: 'downtown', displayName: 'Downtown Range', type: 'club', allowsReservations: true },
+      { id: 2, slug: 'lakeside', displayName: 'Lakeside Range', type: 'club', allowsReservations: true },
     ]);
   });
 

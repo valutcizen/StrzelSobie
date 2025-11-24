@@ -9,6 +9,10 @@ export type RangeSummaryDto = {
   id: ShootingRange['id'];
   slug: ShootingRange['slug'];
   displayName: ShootingRange['display_name'];
+  type: ShootingRange['type'];
+  allowsReservations: boolean;
+  latitude?: ShootingRange['latitude'] | null;
+  longitude?: ShootingRange['longitude'] | null;
 };
 
 /**
@@ -27,12 +31,52 @@ export type RangeDetailsDto = {
   id: ShootingRange['id'];
   slug: ShootingRange['slug'];
   displayName: ShootingRange['display_name'];
+  type: ShootingRange['type'];
+  allowsReservations: boolean;
+  isDeleted?: boolean;
+  publicDescription?: ShootingRange['public_description'] | null;
+  memberDescription?: ShootingRange['member_description'] | null;
+  latitude?: ShootingRange['latitude'] | null;
+  longitude?: ShootingRange['longitude'] | null;
   totalTracks: ShootingRange['total_tracks'];
   operatingHours: OperatingHours;
 };
+
+export type RangeListResponseDto = RangeSummaryDto[];
+
 
 /**
  * Command model for updating a shooting range.
  * Corresponds to the request payload for `PATCH /api/v1/ranges/{rangeSlug}`.
  */
-export type UpdateRangeCommand = Partial<Pick<RangeDetailsDto, 'totalTracks' | 'operatingHours'>>;
+export type UpdateRangeCommand = Partial<
+  Pick<
+    RangeDetailsDto,
+    | 'displayName'
+    | 'type'
+    | 'allowsReservations'
+    | 'publicDescription'
+    | 'memberDescription'
+    | 'totalTracks'
+    | 'operatingHours'
+    | 'latitude'
+    | 'longitude'
+  >
+>;
+
+/**
+ * Command model for creating a shooting range.
+ * Corresponds to the request payload for `POST /api/v1/ranges`.
+ */
+export type CreateRangeCommand = {
+  slug: ShootingRange['slug'];
+  displayName?: ShootingRange['display_name'];
+  type?: ShootingRange['type'];
+  allowsReservations?: boolean;
+  publicDescription?: ShootingRange['public_description'] | null;
+  memberDescription?: ShootingRange['member_description'] | null;
+  latitude?: ShootingRange['latitude'];
+  longitude?: ShootingRange['longitude'];
+  totalTracks?: ShootingRange['total_tracks'] | null;
+  operatingHours?: OperatingHours;
+};

@@ -18,32 +18,21 @@ describe('RangesDbRepository integration', () => {
   it('findAll maps database rows to domain objects', async () => {
     await dbHandle.d1
       .prepare(
-        `INSERT INTO ranges_shooting_ranges (slug, display_name, total_tracks, operating_hours)
-         VALUES (?, ?, ?, ?)`
+        `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, total_tracks, operating_hours)
+         VALUES (?, ?, 'club', 1, ?, ?)`
       )
       .bind('krakow', 'Strzelnica Kraków', 6, '{"monday":{"open":"08:00","close":"18:00"}}')
       .run();
 
     const ranges = await repository.findAll();
-    expect(ranges).toEqual(
-      expect.arrayContaining([
-        {
-          id: 1,
-          slug: 'dobczyce',
-          displayName: 'Strzelnica Dobczyce',
-          totalTracks: 2,
-          operatingHours:
-            '{\n  "monday": {"open": "06:00", "close": "22:00"},\n  "tuesday": {"open": "06:00", "close": "22:00"},\n  "wednesday": {"open": "06:00", "close": "22:00"},\n  "thursday": {"open": "06:00", "close": "22:00"},\n  "friday": {"open": "06:00", "close": "22:00"},\n  "saturday": {"open": "06:00", "close": "22:00"},\n  "sunday": {"open": "06:00", "close": "22:00"}\n}',
-        },
-        {
-          id: 2,
-          slug: 'krakow',
-          displayName: 'Strzelnica Kraków',
-          totalTracks: 6,
-          operatingHours: '{"monday":{"open":"08:00","close":"18:00"}}',
-        },
-      ])
-    );
+    const slugs = ranges.map((range) => range.slug).sort();
+    expect(slugs).toEqual(['ally-krakow', 'coming-soon-podhale', 'krakow', 'strzel-sobie-krakow']);
+
+    const strzelSobieKrakow = ranges.find((range) => range.slug === 'strzel-sobie-krakow');
+    expect(strzelSobieKrakow).toMatchObject({
+      displayName: 'Strzel Sobie Kraków',
+      allowsReservations: true,
+    });
   });
 
   it('existsRangeById returns true for existing range', async () => {
@@ -57,15 +46,14 @@ describe('RangesDbRepository integration', () => {
   });
 
   it('findBySlug returns range when present', async () => {
-    const range = await repository.findBySlug('dobczyce');
-    expect(range).toEqual({
+    const range = await repository.findBySlug('strzel-sobie-krakow');
+    expect(range).toMatchObject({
       id: 1,
-      slug: 'dobczyce',
-      displayName: 'Strzelnica Dobczyce',
-      totalTracks: 2,
-      operatingHours:
-        '{\n  "monday": {"open": "06:00", "close": "22:00"},\n  "tuesday": {"open": "06:00", "close": "22:00"},\n  "wednesday": {"open": "06:00", "close": "22:00"},\n  "thursday": {"open": "06:00", "close": "22:00"},\n  "friday": {"open": "06:00", "close": "22:00"},\n  "saturday": {"open": "06:00", "close": "22:00"},\n  "sunday": {"open": "06:00", "close": "22:00"}\n}',
+      slug: 'strzel-sobie-krakow',
+      displayName: 'Strzel Sobie Kraków',
+      totalTracks: 10,
     });
+    expect(range?.operatingHours).toContain('"monday"');
   });
 
   it('findBySlug returns null when range missing', async () => {
@@ -76,13 +64,16 @@ describe('RangesDbRepository integration', () => {
   it('update modifies existing range values', async () => {
     await repository.update({
       id: 1,
-      slug: 'dobczyce',
-      displayName: 'Strzelnica Dobczyce',
+      slug: 'strzel-sobie-krakow',
+      displayName: 'Strzel Sobie Kraków',
       totalTracks: 12,
       operatingHours: '{"monday":{"open":"08:00","close":"16:00"}}',
+      type: 'club',
+      allowsReservations: true,
+      isDeleted: false,
     });
 
-    const stored = await repository.findBySlug('dobczyce');
+    const stored = await repository.findBySlug('strzel-sobie-krakow');
     expect(stored?.totalTracks).toBe(12);
     expect(stored?.operatingHours).toBe('{"monday":{"open":"08:00","close":"16:00"}}');
   });
@@ -90,8 +81,8 @@ describe('RangesDbRepository integration', () => {
   it('getRangeIdBySlug returns identifier or null', async () => {
     await dbHandle.d1
       .prepare(
-        `INSERT INTO ranges_shooting_ranges (slug, display_name, total_tracks, operating_hours)
-         VALUES (?, ?, ?, ?)`
+        `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, total_tracks, operating_hours)
+         VALUES (?, ?, 'club', 1, ?, ?)`
       )
       .bind('zakopane', 'Strzelnica Zakopane', 4, '{"monday":{"open":"10:00","close":"17:00"}}')
       .run();

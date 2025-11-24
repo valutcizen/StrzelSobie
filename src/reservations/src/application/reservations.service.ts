@@ -39,6 +39,7 @@ import {
   ReservationNotFoundError,
   Result,
   RangeClosedError,
+  RangeBookingNotAllowedError,
   UnauthorizedPropositionError,
   OperatingHours,
   UserDto,
@@ -408,12 +409,17 @@ export class ReservationsService implements IReservationsService {
     }
     const rangeDetails = rangeDetailsResult.getValue();
     const rangeId = rangeDetails.id;
+    const totalTracks = rangeDetails.totalTracks ?? 0;
+
+    if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
+      return Result.fail(new RangeBookingNotAllowedError());
+    }
 
     if (!this.canUserCreateProposition(user, rangeId)) {
       return Result.fail(new UnauthorizedPropositionError());
     }
 
-    const validationError = this.validatePropositionCommand(command, rangeDetails.totalTracks);
+    const validationError = this.validatePropositionCommand(command, totalTracks);
     if (validationError) {
       return Result.fail(validationError);
     }
@@ -437,7 +443,7 @@ export class ReservationsService implements IReservationsService {
       );
 
       const totalTracksUsed = usage.propositions_tracks + usage.reservations_tracks;
-      if (totalTracksUsed + command.tracksRequested > rangeDetails.totalTracks) {
+      if (totalTracksUsed + command.tracksRequested > totalTracks) {
         return Result.fail(new PropositionConflictError());
       }
 
@@ -549,7 +555,12 @@ export class ReservationsService implements IReservationsService {
     force: boolean,
     user: UserDto
   ): Promise<Result<CreatedReservationDto>> {
-    const validationError = this.validateReservationCommand(command, rangeDetails.totalTracks);
+    const totalTracks = rangeDetails.totalTracks ?? 0;
+    if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
+      return Result.fail(new RangeBookingNotAllowedError());
+    }
+
+    const validationError = this.validateReservationCommand(command, totalTracks);
     if (validationError) {
       return Result.fail(validationError);
     }
@@ -668,6 +679,11 @@ export class ReservationsService implements IReservationsService {
     const numParticipants = command.numParticipants ?? proposition.num_participants;
     const isPublic = typeof command.isPublic === 'boolean' ? command.isPublic : false;
     const isJoinable = typeof command.isJoinable === 'boolean' ? command.isJoinable : false;
+    const totalTracks = rangeDetails.totalTracks ?? 0;
+
+    if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
+      return Result.fail(new ForbiddenError('Reservations are not available for this range'));
+    }
 
     const validationError = this.validateReservationCommand(
       {
@@ -679,7 +695,7 @@ export class ReservationsService implements IReservationsService {
         isPublic,
         isJoinable,
       },
-      rangeDetails.totalTracks
+      totalTracks
     );
     if (validationError) {
       return Result.fail(validationError);

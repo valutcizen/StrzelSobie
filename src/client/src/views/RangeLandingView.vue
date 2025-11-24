@@ -2,8 +2,12 @@
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import RangeActionBar from '@/components/range/RangeActionBar.vue'
+import RangeTypeBadge from '@/components/range/RangeTypeBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
+import { UserRoleEnum } from '@/types/auth'
+import { setLastRangeId } from '@/utils/lastRange'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -24,6 +28,23 @@ const rangeSlug = computed(() => {
 const isLoading = computed(() => rangeStore.isLoading && rangeStore.currentRangeSlug === rangeSlug.value)
 const hasRangeData = computed(() => Boolean(rangeStore.currentRange))
 const lastError = computed(() => rangeStore.lastError)
+const isBookingUnavailableNotice = computed(() => route.query.booking === 'unavailable')
+const currentRange = computed(() => rangeStore.currentRange)
+const coordinates = computed(() => {
+  const range = rangeStore.currentRange
+  if (typeof range?.latitude !== 'number' || typeof range.longitude !== 'number') {
+    return null
+  }
+  return { lat: range.latitude, lng: range.longitude }
+})
+const canSeeMemberDescription = computed(() =>
+  authStore.hasAnyRole([
+    UserRoleEnum.Member,
+    UserRoleEnum.Coordinator,
+    UserRoleEnum.ShootingRangeAdministrator,
+    UserRoleEnum.ClubCommunityAdministrator,
+  ]),
+)
 
 const operatingHoursRows = computed(() => {
   const range = rangeStore.currentRange
@@ -31,9 +52,7 @@ const operatingHoursRows = computed(() => {
     return []
   }
 
-  const keys = Array.from(
-    new Set([...dayOrder, ...Object.keys(range.operatingHours ?? {})]),
-  )
+  const keys = Array.from(new Set([...dayOrder, ...Object.keys(range.operatingHours ?? {})]))
 
   return keys.map((key) => {
     const entry = range.operatingHours?.[key] ?? null
@@ -54,6 +73,7 @@ const fetchRange = async (slug: string, force = false) => {
 
   try {
     await rangeStore.fetchRangeDetails(slug, { force })
+    setLastRangeId(slug)
   } catch (error) {
     console.error(t('rangeLanding.errors.fetchFailed'), error)
   }
@@ -71,6 +91,10 @@ const handleOpenCalendar = () => {
   }
 
   router.push({ name: 'Calendar', params: { rangeSlug: rangeSlug.value } })
+}
+
+const handleBackToMap = () => {
+  router.push({ name: 'RangeDirectory' })
 }
 
 watch(
@@ -93,7 +117,7 @@ watch(
     <v-row justify="center">
       <v-col
         cols="12"
-        lg="8"
+        lg="9"
       >
         <v-card>
           <v-toolbar
@@ -101,9 +125,18 @@ watch(
             density="comfortable"
           >
             <v-toolbar-title data-testid="range-landing-title">
-              {{ rangeStore.currentRange?.displayName ?? t('rangeLanding.loadingTitle') }}
+              {{ currentRange?.displayName ?? t('rangeLanding.loadingTitle') }}
             </v-toolbar-title>
             <v-spacer />
+            <v-chip
+              v-if="currentRange"
+              class="mr-2"
+              variant="elevated"
+              prepend-icon="mdi-map-marker"
+              data-testid="range-slug-chip"
+            >
+              {{ currentRange.slug }}
+            </v-chip>
             <v-btn
               icon="mdi-refresh"
               variant="text"
@@ -125,6 +158,17 @@ watch(
               {{ lastError }}
             </v-alert>
 
+            <v-alert
+              v-if="isBookingUnavailableNotice"
+              type="info"
+              variant="tonal"
+              border="start"
+              class="mb-6"
+              data-testid="range-booking-unavailable-alert"
+            >
+              {{ t('rangeLanding.bookingUnavailableNotice') }}
+            </v-alert>
+
             <div v-if="isLoading">
               <v-skeleton-loader
                 type="heading, paragraph"
@@ -134,61 +178,125 @@ watch(
             </div>
 
             <div v-else-if="hasRangeData">
-              <div class="d-flex flex-column flex-md-row align-md-center justify-space-between mb-6">
-                <div>
-                  <p class="text-subtitle-1 mb-2">
-                    {{ t('rangeLanding.totalTracks', { count: rangeStore.currentRange?.totalTracks ?? 0 }) }}
-                  </p>
-                  <p class="text-body-2 text-medium-emphasis mb-0">
-                    {{ t('rangeLanding.description') }}
-                  </p>
+              <div class="d-flex flex-column gap-4 mb-6">
+                <div class="d-flex flex-wrap align-center gap-2 meta-row">
+                  <RangeTypeBadge
+                    class="meta-chip"
+                    :type="(currentRange?.type ?? 'club')"
+                    :data-range-slug="currentRange?.slug"
+                  />
+                  <v-chip
+                    size="small"
+                    :color="currentRange?.allowsReservations ? 'success' : 'warning'"
+                    variant="elevated"
+                    class="meta-chip"
+                    :prepend-icon="currentRange?.allowsReservations ? 'mdi-check-circle' : 'mdi-alert-outline'"
+                    data-testid="range-booking-status-chip"
+                  >
+                    {{
+                      currentRange?.allowsReservations
+                        ? t('rangeLanding.bookingStatus.open')
+                        : t('rangeLanding.bookingStatus.closed')
+                    }}
+                  </v-chip>
                 </div>
-                <v-btn
-                  color="primary"
-                  prepend-icon="mdi-calendar-clock"
-                  class="mt-4 mt-md-0"
-                  data-testid="range-landing-open-calendar-button"
-                  @click="handleOpenCalendar"
-                >
-                  {{ t('rangeLanding.actions.openCalendar') }}
-                </v-btn>
+
+                <RangeActionBar
+                  :allows-reservations="currentRange?.allowsReservations ?? false"
+                  :range-type="(currentRange?.type ?? 'club')"
+                  :coordinates="coordinates"
+                  @open-calendar="handleOpenCalendar"
+                  @back-to-map="handleBackToMap"
+                />
               </div>
 
+              <v-row class="mb-4" dense>
+                <v-col cols="12" md="7">
+                  <v-card variant="tonal">
+                    <v-card-title class="text-subtitle-1">
+                      {{ t('rangeLanding.publicDescription.title') }}
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text data-testid="range-public-description">
+                      <!-- eslint-disable-next-line vue/no-v-html -->
+                      <div
+                        v-if="currentRange?.publicDescription"
+                        class="range-description"
+                        v-html="currentRange.publicDescription"
+                      />
+                      <p
+                        v-else
+                        class="text-medium-emphasis mb-0"
+                      >
+                        {{ t('rangeLanding.publicDescription.empty') }}
+                      </p>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+                <v-col cols="12" md="5">
+                  <v-card variant="outlined">
+                    <v-card-title class="text-subtitle-1">
+                      {{ t('rangeLanding.operatingHours.title') }}
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text>
+                      <v-table
+                        density="comfortable"
+                        data-testid="range-landing-operating-hours-table"
+                      >
+                        <tbody>
+                          <tr
+                            v-for="row in operatingHoursRows"
+                            :key="row.key"
+                          >
+                            <td class="text-capitalize">
+                              {{ row.label }}
+                            </td>
+                            <td>
+                              <span v-if="row.isOpen">
+                                {{ row.open }} – {{ row.close }}
+                              </span>
+                              <span
+                                v-else
+                                class="text-medium-emphasis"
+                              >
+                                {{ t('rangeLanding.operatingHours.closed') }}
+                              </span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </v-table>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+
               <v-card
-                variant="tonal"
-                class="mb-6"
+                v-if="canSeeMemberDescription"
+                variant="outlined"
+                color="primary"
+                data-testid="range-member-description-card"
               >
-                <v-card-title class="text-subtitle-1">
-                  {{ t('rangeLanding.operatingHours.title') }}
+                <v-card-title class="text-subtitle-1 d-flex align-center gap-2">
+                  <v-icon color="primary">
+                    mdi-shield-account
+                  </v-icon>
+                  {{ t('rangeLanding.memberDescription.title') }}
                 </v-card-title>
                 <v-divider />
-                <v-card-text>
-                  <v-table
-                    density="comfortable"
-                    data-testid="range-landing-operating-hours-table"
+                <v-card-text data-testid="range-member-description">
+                  <!-- eslint-disable-next-line vue/no-v-html -->
+                  <div
+                    v-if="currentRange?.memberDescription"
+                    class="range-description"
+                    v-html="currentRange.memberDescription"
+                  />
+                  <p
+                    v-else
+                    class="text-medium-emphasis mb-0"
                   >
-                    <tbody>
-                      <tr
-                        v-for="row in operatingHoursRows"
-                        :key="row.key"
-                      >
-                        <td class="text-capitalize">
-                          {{ row.label }}
-                        </td>
-                        <td>
-                          <span v-if="row.isOpen">
-                            {{ row.open }} – {{ row.close }}
-                          </span>
-                          <span
-                            v-else
-                            class="text-medium-emphasis"
-                          >
-                            {{ t('rangeLanding.operatingHours.closed') }}
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </v-table>
+                    {{ t('rangeLanding.memberDescription.empty') }}
+                  </p>
                 </v-card-text>
               </v-card>
             </div>
@@ -212,5 +320,20 @@ watch(
 <style scoped>
 .text-capitalize {
   text-transform: capitalize;
+}
+
+.meta-chip {
+  background: #f6f9ff;
+  border: 1px solid rgba(25, 118, 210, 0.16);
+  color: #0f3b68;
+}
+
+.meta-row {
+  align-items: center;
+}
+
+.range-description :deep(a) {
+  color: #1976d2;
+  text-decoration: underline;
 }
 </style>

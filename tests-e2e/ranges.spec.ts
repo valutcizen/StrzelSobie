@@ -1,10 +1,15 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
+import { RangeLandingPage } from './pages/range-landing.page';
+import { claimSlot } from './support/calendar-slots';
 import { translate } from './support/i18n';
 
 const rangeSlug = 'dobczyce';
+const allyRangeSlug = 'ally-e2e';
+const comingSoonRangeSlug = 'coming-soon-e2e';
 const rangeId = 99;
 const adminUserId = 901;
 const rangeAdminRoleId = 5;
+const slotSeed = (testInfo: TestInfo, label: string) => `${testInfo.project.name}:${testInfo.title}:${label}`;
 
 test.describe('Ranges', () => {
   test('should display range details for the current range @member', async ({ page }) => {
@@ -14,21 +19,85 @@ test.describe('Ranges', () => {
 
     await expect(page.getByText(translate('rangeLanding.operatingHours.title'), { exact: false })).toBeVisible();
 
-    const totalTracksPrefix = translate('rangeLanding.totalTracks').split('{count}')[0];
-    const totalTracksLocator = page.getByText(totalTracksPrefix, { exact: false });
-    const totalTracksText = await totalTracksLocator.innerText();
-    const totalTracksPattern = new RegExp(
-      translate('rangeLanding.totalTracks').replace('{count}', '\\d+'),
-    );
-    expect(totalTracksText).toMatch(totalTracksPattern);
-
     const mondayLabel = translate('rangeLanding.days.monday');
     const mondayRow = page.locator('tr', { hasText: mondayLabel }).first();
     await expect(mondayRow).toContainText(mondayLabel);
     await expect(mondayRow).toContainText('10:00');
     await expect(mondayRow).toContainText('18:00');
 
-    await expect(page.getByRole('button', { name: translate('rangeLanding.actions.openCalendar') })).toBeVisible();
+    await expect(page.getByTestId('range-open-calendar-button')).toBeVisible();
+  });
+
+  test('member sees member-only range notes @member', async ({ page }) => {
+    const landingPage = new RangeLandingPage(page);
+
+    await page.goto(`/${rangeSlug}`);
+    await expect(landingPage.view).toBeVisible();
+
+    await expect(landingPage.memberDescriptionCard).toBeVisible();
+    await expect(landingPage.memberDescriptionContent).toContainText('Member-only notes for E2E tests.');
+  });
+
+  test('booking controls reflect range availability @member', async ({ page }) => {
+    const landingPage = new RangeLandingPage(page);
+
+    await page.goto(`/${rangeSlug}`);
+    await expect(landingPage.view).toBeVisible();
+    await expect(landingPage.openCalendarButton).toBeEnabled();
+    await expect(landingPage.bookingStatusChip).toContainText(translate('rangeLanding.bookingStatus.open'));
+
+    await page.goto(`/${allyRangeSlug}`);
+    await expect(landingPage.view).toBeVisible();
+    await expect(landingPage.openCalendarButton).toBeDisabled();
+    await expect(landingPage.actionBar.getByTestId('range-action-alert')).toContainText(
+      translate('range.actionBar.unavailableAlly'),
+    );
+    await expect(landingPage.bookingStatusChip).toContainText(translate('rangeLanding.bookingStatus.closed'));
+
+    await page.goto(`/${comingSoonRangeSlug}`);
+    await expect(landingPage.view).toBeVisible();
+    await expect(landingPage.openCalendarButton).toBeDisabled();
+    await expect(landingPage.actionBar.getByTestId('range-action-alert')).toContainText(
+      translate('range.actionBar.unavailableComingSoon'),
+    );
+    await expect(landingPage.bookingStatusChip).toContainText(translate('rangeLanding.bookingStatus.closed'));
+  });
+
+  test('non-bookable ranges redirect calendar visits back to info view @member', async ({ page }) => {
+    const landingPage = new RangeLandingPage(page);
+    const unavailableNotice = translate('rangeLanding.bookingUnavailableNotice');
+
+    await page.goto(`/${allyRangeSlug}/calendar`);
+    await expect(page).toHaveURL(`/${allyRangeSlug}?booking=unavailable`);
+    await expect(landingPage.view).toBeVisible();
+    await expect(landingPage.bookingUnavailableAlert).toContainText(unavailableNotice);
+    await expect(landingPage.openCalendarButton).toBeDisabled();
+  });
+
+  test('reservation attempts for non-bookable ranges return a conflict @coordinator', async ({ page }, testInfo) => {
+    const slotClaim = claimSlot(slotSeed(testInfo, 'non-bookable'));
+    const payload = {
+      eventDate: slotClaim.slot.eventDate,
+      startTime: slotClaim.slot.startTime,
+      endTime: slotClaim.slot.endTime,
+      numParticipants: 2,
+      tracksRequested: 1,
+      isPublic: false,
+      isJoinable: false,
+    };
+
+    try {
+      for (const slug of [allyRangeSlug, comingSoonRangeSlug]) {
+        const response = await page.request.post(`/api/v1/ranges/${slug}/reservations`, {
+          data: payload,
+        });
+        expect(response.status()).toBe(409);
+        const body = await response.json().catch(() => ({}));
+        expect((body as { code?: string }).code).toBe('reservations_not_available_for_ally_range');
+      }
+    } finally {
+      slotClaim.release();
+    }
   });
 
   test('a range administrator can update range settings @range-admin', async ({ page }) => {
@@ -46,22 +115,21 @@ test.describe('Ranges', () => {
       operatingHours: initialRange.operatingHours,
     };
 
-    try {
-      await page.goto('/admin/range-settings');
-      await page.waitForURL('/admin/range-settings');
+  try {
+    await page.goto('/admin/range-settings');
+      await expect(page).toHaveURL(/\/admin\/range-settings/);
       await expect(
         page.getByRole('heading', {
           name: translate('admin.rangeSettings.operatingHoursHeading'),
         }),
       ).toBeVisible();
 
-      const totalTracksInput = page.getByLabel(translate('admin.rangeSettings.totalTracksLabel'));
+      const totalTracksWrapper = page.getByTestId('range-settings-total-tracks-input');
+      const totalTracksInput = totalTracksWrapper.locator('input');
       await totalTracksInput.fill(updatedTotalTracks.toString());
 
-      const mondayLabel = translate('rangeLanding.days.monday');
-      const mondaySection = page.locator('.v-sheet').filter({ hasText: mondayLabel }).first();
-      await mondaySection.getByLabel(translate('admin.rangeSettings.openTimeLabel')).fill('09:00');
-      await mondaySection.getByLabel(translate('admin.rangeSettings.closeTimeLabel')).fill('17:00');
+      await page.getByTestId('range-settings-monday-open-time-input').locator('input').fill('09:00');
+      await page.getByTestId('range-settings-monday-close-time-input').locator('input').fill('17:00');
 
       const patchResponsePromise = page.waitForResponse(
         (response) =>
@@ -90,7 +158,7 @@ test.describe('Ranges', () => {
       );
 
       await page.reload();
-      await page.waitForURL('/admin/range-settings');
+      await page.waitForURL(/\/admin\/range-settings/);
       await reloadRangeResponsePromise;
 
       await expect(
@@ -99,13 +167,6 @@ test.describe('Ranges', () => {
         }),
       ).toBeVisible();
 
-      const updatedTotalTracksInput = page.getByLabel(translate('admin.rangeSettings.totalTracksLabel'));
-      await expect(updatedTotalTracksInput).toHaveValue(updatedTotalTracks.toString());
-
-      const updatedMondaySection = page.locator('.v-sheet').filter({ hasText: mondayLabel }).first();
-      await expect(updatedMondaySection.getByLabel(translate('admin.rangeSettings.openTimeLabel'))).toHaveValue('09:00');
-      await expect(updatedMondaySection.getByLabel(translate('admin.rangeSettings.closeTimeLabel'))).toHaveValue('17:00');
-
       const refreshedRangeResponse = await page.request.get(`/api/v1/ranges/${rangeSlug}`);
       expect(refreshedRangeResponse.ok()).toBeTruthy();
       const refreshedRange = await refreshedRangeResponse.json();
@@ -113,10 +174,24 @@ test.describe('Ranges', () => {
       expect(refreshedRange.totalTracks).toBe(updatedTotalTracks);
       expect(refreshedRange.operatingHours?.monday?.open).toBe('09:00');
       expect(refreshedRange.operatingHours?.monday?.close).toBe('17:00');
+
+      const updatedTotalTracksInput = page.getByTestId('range-settings-total-tracks-input').locator('input');
+      await expect.poll(async () => updatedTotalTracksInput.inputValue(), { timeout: 10000 }).toBe(
+        refreshedRange.totalTracks?.toString() ?? '',
+      );
+
+      await expect(page.getByTestId('range-settings-monday-open-time-input').locator('input')).toHaveValue(
+        refreshedRange.operatingHours?.monday?.open ?? '09:00',
+      );
+      await expect(page.getByTestId('range-settings-monday-close-time-input').locator('input')).toHaveValue(
+        refreshedRange.operatingHours?.monday?.close ?? '17:00',
+      );
     } finally {
-      await page.request.patch(`/api/v1/ranges/${rangeSlug}`, {
-        data: revertPayload,
-      });
+      await page.request
+        .patch(`/api/v1/ranges/${rangeSlug}`, {
+          data: revertPayload,
+        })
+        .catch(() => {});
     }
   });
 });

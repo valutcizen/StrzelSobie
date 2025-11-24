@@ -8,6 +8,7 @@ export const http = axios.create({
 })
 
 let interceptorsConfigured = false
+const routesBypassingAuthRedirect = new Set(['RangeDirectory', 'RangeLanding', 'Calendar'])
 
 export const setupHttpInterceptors = (router: Router, authStore: AuthStore) => {
   if (interceptorsConfigured) {
@@ -21,18 +22,17 @@ export const setupHttpInterceptors = (router: Router, authStore: AuthStore) => {
     async (error) => {
       const status = error.response?.status
 
-      if (status === 401 && error.config?.url === '/auth/me') {
-        try {
-          await http.post('/auth/logout')
-        } catch (e) {
-          console.error('Failed to logout', e)
-        }
-      }
-
       if (status === 401 || status === 403) {
-        authStore.reset()
+        authStore.setUnauthorized(true)
+        authStore.reset({ preserveAttempt: true })
 
-        if (router.currentRoute.value.name !== 'Auth') {
+        const currentRoute = router.currentRoute.value
+        const requiresAuth = currentRoute.matched.some(
+          (record) => (record.meta as { requiresAuth?: boolean } | undefined)?.requiresAuth,
+        )
+        const routeName = typeof currentRoute.name === 'string' ? currentRoute.name : null
+
+        if (requiresAuth && currentRoute.name !== 'Auth' && (!routeName || !routesBypassingAuthRedirect.has(routeName))) {
           await router.push({ name: 'Auth' })
         }
       }

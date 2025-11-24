@@ -9,7 +9,7 @@ import { claimSlot, type SlotCandidate } from './support/calendar-slots';
 import { translate } from './support/i18n';
 
 const rangeSlug = 'dobczyce';
-const calendarPath = `/${rangeSlug}/reservations`;
+const calendarPath = `/${rangeSlug}/calendar`;
 const apiBaseUrl = 'http://localhost:5173';
 
 const slotSeed = (testInfo: TestInfo, label: string) => `${testInfo.project.name}:${testInfo.title}:${label}`;

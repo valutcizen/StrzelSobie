@@ -19,8 +19,17 @@ const operatingHoursSchema = z.record(
 );
 
 const updateRangeCommandSchema = z.object({
-  totalTracks: z.number().optional(),
+  displayName: z.string().trim().min(1).optional(),
+  type: z.enum(['club', 'ally', 'coming-soon']).optional(),
+  allowsReservations: z.boolean().optional(),
+  publicDescription: z.string().optional().nullable(),
+  memberDescription: z.string().optional().nullable(),
+  totalTracks: z.number().int().min(0).optional().nullable(),
   operatingHours: operatingHoursSchema.optional(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field must be provided for update',
 });
 
 export class UpdateRange extends OpenAPIRoute {
@@ -44,7 +53,17 @@ export class UpdateRange extends OpenAPIRoute {
         content: {
           'application/json': {
             schema: z.object({
-              success: z.boolean().default(true),
+              id: z.number(),
+              slug: z.string(),
+              displayName: z.string(),
+              type: z.string(),
+              allowsReservations: z.boolean(),
+              publicDescription: z.string().nullable().optional(),
+              memberDescription: z.string().nullable().optional(),
+              totalTracks: z.number().nullable().optional(),
+              operatingHours: operatingHoursSchema,
+              latitude: z.number().nullable().optional(),
+              longitude: z.number().nullable().optional(),
             }),
           },
         },

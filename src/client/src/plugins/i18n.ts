@@ -1,7 +1,9 @@
 import { createI18n } from 'vue-i18n';
+import { en as vuetifyEn, pl as vuetifyPl } from 'vuetify/locale';
 
 const messages = {
   en: {
+    $vuetify: vuetifyEn,
     common: {
       actions: {
         cancel: 'Cancel',
@@ -36,7 +38,14 @@ const messages = {
       shootingRangeAdmin: 'Shooting Range Administrator',
       clubCommunityAdmin: 'Club/Community Administrator',
     },
+    rangeTypes: {
+      club: 'Club range',
+      ally: 'Ally range',
+      'coming-soon': 'Coming soon',
+      unknown: 'Range',
+    },
     navigation: {
+      directory: 'Map & directory',
       rangeInfo: 'Range info',
       calendar: 'Calendar',
       profile: 'My profile',
@@ -49,6 +58,7 @@ const messages = {
       label: 'User menu',
       profile: 'My profile',
       logout: 'Logout',
+      login: 'Login',
     },
     language: 'Language',
     auth: {
@@ -191,9 +201,23 @@ const messages = {
       description: 'Learn the essentials about the range and available lanes.',
       totalTracks: 'Total lanes: {count}',
       emptyState: 'No range data available.',
+      bookingUnavailableNotice: 'Bookings are disabled for this range. See details below.',
+      bookingStatus: {
+        open: 'Bookings available',
+        closed: 'Bookings unavailable',
+      },
+      location: 'Lat {lat}, Lng {lng}',
       actions: {
         refresh: 'Refresh range data',
         openCalendar: 'Open calendar',
+      },
+      publicDescription: {
+        title: 'Description',
+        empty: 'No description provided.',
+      },
+      memberDescription: {
+        title: 'Additional description',
+        empty: 'No additional description available.',
       },
       operatingHours: {
         title: 'Operating hours',
@@ -279,6 +303,21 @@ const messages = {
       rangeSettings: {
         title: 'Range settings',
         totalTracksLabel: 'Total number of lanes',
+        dayColumn: 'Day',
+        statusColumn: 'Status',
+        displayNameLabel: 'Display name',
+        locationHeading: 'Location',
+        locationHint: 'Click the map to set coordinates for the range.',
+        locationEmpty: 'No location selected.',
+        locationCoordinates: 'Lat: {lat}, Lng: {lng}',
+        clearLocation: 'Clear location',
+        latitudeLabel: 'Latitude',
+        longitudeLabel: 'Longitude',
+        rangeTypeLabel: 'Range type',
+        publicDescriptionLabel: 'Public description',
+        publicDescriptionHint: 'Visible to everyone on the range page. Supports basic HTML.',
+        memberDescriptionLabel: 'Members-only description',
+        memberDescriptionHint: 'Visible only to logged-in members. Supports basic HTML.',
         operatingHoursHeading: 'Operating hours',
         openLabel: 'Open',
         closedLabel: 'Closed',
@@ -290,6 +329,19 @@ const messages = {
         successMessage: 'Range settings saved.',
         errorMessage: 'Failed to save range settings.',
         recordSaved: 'Entry saved without reservation.',
+        slugHint: 'Set the range slug (used in the URL) to start configuring a range.',
+        slugRequired: 'Provide a range slug to manage settings.',
+        deleteAction: 'Delete range',
+        deleteConfirm: 'Are you sure you want to delete this range? This action cannot be undone.',
+        deleteSuccess: 'Range deleted.',
+        deleteError: 'Failed to delete range.',
+        newRange: {
+          title: 'New range',
+          description: 'Enter the URL slug for the new range. This is the name shown in the address bar.',
+          slugLabel: 'Range slug (URL-safe)',
+          slugHint: 'Use lowercase letters, numbers, and dashes for the address bar name.',
+          cta: 'New range',
+        },
         validation: {
           required: 'This field is required.',
           invalidTime: 'Invalid time format (HH:MM).',
@@ -302,7 +354,7 @@ const messages = {
       notFound: {
         title: 'Page not found',
         subtitle: 'The page you are looking for does not exist.',
-        backToCalendar: 'Return to calendar',
+        backToCalendar: 'Return to map',
       },
     },
     privacyPolicy: {
@@ -311,8 +363,43 @@ const messages = {
         'The Strzel Sobie application cares about user privacy. The full policy will be available in a future release. Meanwhile, all user data is used solely to provide the reservation features described in the product requirements.',
       contact: 'If you have any questions, contact the system administrator.',
     },
+    range: {
+      actionBar: {
+        available: 'Bookings are available for this range.',
+        unavailableHint: 'Non-bookable ranges remain visible for information.',
+        unavailableAlly: 'Bookings are disabled for ally ranges.',
+        unavailableComingSoon: 'This range is coming soon; bookings are not yet enabled.',
+        unavailableGeneric: 'Bookings are disabled for this range.',
+        openCalendar: 'View calendar',
+        backToMap: 'Back to map',
+        locationLabel: 'Open in maps',
+        locationLinks: {
+          google: 'Google Maps',
+          osm: 'OpenStreetMap',
+        },
+      },
+    },
+    rangeDirectory: {
+      title: 'Range directory and map',
+      list: {
+        title: 'Range list',
+        empty: 'No ranges to display.',
+        allowsReservations: 'Bookings available',
+        noReservations: 'Bookings unavailable',
+        detailsCta: 'View details',
+        headers: {
+          name: 'Name',
+          type: 'Type',
+          reservations: 'Bookings',
+        },
+      },
+      map: {
+        empty: 'No map data available.',
+      },
+    },
   },
   pl: {
+    $vuetify: vuetifyPl,
     common: {
       actions: {
         cancel: 'Anuluj',
@@ -347,7 +434,14 @@ const messages = {
       shootingRangeAdmin: 'Administrator strzelnicy',
       clubCommunityAdmin: 'Administrator klubu/społeczności',
     },
+    rangeTypes: {
+      club: 'Strzelnica klubowa',
+      ally: 'Strzelnica partnerska',
+      'coming-soon': 'Wkrótce dostępna',
+      unknown: 'Strzelnica',
+    },
     navigation: {
+      directory: 'Mapa i katalog',
       rangeInfo: 'Strzelnica',
       calendar: 'Kalendarz',
       profile: 'Mój profil',
@@ -360,6 +454,7 @@ const messages = {
       label: 'Menu użytkownika',
       profile: 'Mój profil',
       logout: 'Wyloguj',
+      login: 'Zaloguj',
     },
     language: 'Język',
     auth: {
@@ -502,9 +597,23 @@ const messages = {
       description: 'Poznaj podstawowe informacje o strzelnicy i dostępnych torach.',
       totalTracks: 'Łączna liczba torów: {count}',
       emptyState: 'Brak danych o strzelnicy.',
+      bookingUnavailableNotice: 'Rezerwacje dla tej strzelnicy są wyłączone. Sprawdź szczegóły poniżej.',
+      bookingStatus: {
+        open: 'Rezerwacje dostępne',
+        closed: 'Rezerwacje niedostępne',
+      },
+      location: 'Szer. {lat}, dł. {lng}',
       actions: {
         refresh: 'Odśwież dane strzelnicy',
         openCalendar: 'Przejdź do kalendarza',
+      },
+      publicDescription: {
+        title: 'Opis',
+        empty: 'Brak opisu.',
+      },
+      memberDescription: {
+        title: 'Opis dodatkowy',
+        empty: 'Brak dodatkowego opisu.',
       },
       operatingHours: {
         title: 'Godziny otwarcia',
@@ -590,6 +699,21 @@ const messages = {
       rangeSettings: {
         title: 'Ustawienia strzelnicy',
         totalTracksLabel: 'Łączna liczba torów',
+        dayColumn: 'Dzień',
+        statusColumn: 'Status',
+        displayNameLabel: 'Nazwa wyświetlana',
+        locationHeading: 'Lokalizacja',
+        locationHint: 'Kliknij na mapę, aby ustawić współrzędne strzelnicy.',
+        locationEmpty: 'Brak wybranej lokalizacji.',
+        locationCoordinates: 'Szer.: {lat}, Dł.: {lng}',
+        clearLocation: 'Wyczyść lokalizację',
+        latitudeLabel: 'Szerokość geograficzna',
+        longitudeLabel: 'Długość geograficzna',
+        rangeTypeLabel: 'Typ strzelnicy',
+        publicDescriptionLabel: 'Opis publiczny',
+        publicDescriptionHint: 'Widoczny dla wszystkich na stronie strzelnicy. Obsługuje podstawowy HTML.',
+        memberDescriptionLabel: 'Opis dla członków',
+        memberDescriptionHint: 'Widoczny tylko dla zalogowanych członków. Obsługuje podstawowy HTML.',
         operatingHoursHeading: 'Godziny otwarcia',
         openLabel: 'Otwarte',
         closedLabel: 'Zamknięte',
@@ -601,6 +725,19 @@ const messages = {
         successMessage: 'Ustawienia strzelnicy zostały zapisane.',
         errorMessage: 'Nie udało się zapisać ustawień strzelnicy.',
         recordSaved: 'Zapisano termin bez rezerwacji.',
+        slugHint: 'Ustaw slug strzelnicy (nazwa w pasku adresu), aby rozpocząć konfigurację.',
+        slugRequired: 'Podaj slug strzelnicy, aby zarządzać ustawieniami.',
+        deleteAction: 'Usuń strzelnicę',
+        deleteConfirm: 'Czy na pewno chcesz usunąć tę strzelnicę? Tej operacji nie da się cofnąć.',
+        deleteSuccess: 'Strzelnica została usunięta.',
+        deleteError: 'Nie udało się usunąć strzelnicy.',
+        newRange: {
+          title: 'Nowa strzelnica',
+          description: 'Podaj slug (nazwę w pasku URL) dla nowej strzelnicy. Będzie używany w adresie strony.',
+          slugLabel: 'Slug strzelnicy (adres w URL)',
+          slugHint: 'Użyj małych liter, cyfr i myślników do nazwy w pasku adresu.',
+          cta: 'Nowa strzelnica',
+        },
         validation: {
           required: 'Pole jest wymagane.',
           invalidTime: 'Niepoprawny format godziny (HH:MM).',
@@ -613,7 +750,7 @@ const messages = {
       notFound: {
         title: 'Nie znaleziono strony',
         subtitle: 'Strona, której szukasz, nie istnieje.',
-        backToCalendar: 'Wróć do kalendarza',
+        backToCalendar: 'Wróć do mapy',
       },
     },
     privacyPolicy: {
@@ -621,6 +758,40 @@ const messages = {
       description:
         'Aplikacja Strzel Sobie dba o prywatność użytkowników. Pełna polityka będzie dostępna w kolejnej iteracji projektu. W międzyczasie wszystkie dane są wykorzystywane wyłącznie do świadczenia funkcji rezerwacyjnych opisanych w wymaganiach produktu.',
       contact: 'W razie pytań skontaktuj się z administratorem systemu.',
+    },
+    range: {
+      actionBar: {
+        available: 'Rezerwacje są dostępne dla tej strzelnicy.',
+        unavailableHint: 'Strzelnice bez rezerwacji są widoczne informacyjnie.',
+        unavailableAlly: 'Rezerwacje są wyłączone dla strzelnic partnerskich.',
+        unavailableComingSoon: 'Ta strzelnica jest w przygotowaniu; rezerwacje nie są jeszcze dostępne.',
+        unavailableGeneric: 'Rezerwacje są wyłączone dla tej strzelnicy.',
+        openCalendar: 'Zobacz kalendarz',
+        backToMap: 'Wróć do mapy',
+        locationLabel: 'Otwórz w mapach',
+        locationLinks: {
+          google: 'Google Maps',
+          osm: 'OpenStreetMap',
+        },
+      },
+    },
+    rangeDirectory: {
+      title: 'Katalog i mapa strzelnic',
+      list: {
+        title: 'Lista strzelnic',
+        empty: 'Brak strzelnic do wyświetlenia.',
+        allowsReservations: 'Rezerwacje dostępne',
+        noReservations: 'Rezerwacje niedostępne',
+        detailsCta: 'Zobacz szczegóły',
+        headers: {
+          name: 'Nazwa',
+          type: 'Typ',
+          reservations: 'Rezerwacje',
+        },
+      },
+      map: {
+        empty: 'Brak danych do wyświetlenia na mapie.',
+      },
     },
   },
 };

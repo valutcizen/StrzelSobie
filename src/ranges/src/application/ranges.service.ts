@@ -1,6 +1,9 @@
-import { AuditLogEntry, IAuditService, IRangesService } from '@strzel-sobie/common/models';
+import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-sobie/common/models';
 import {
+  CreateRangeCommand,
   ForbiddenError,
+  RangeAlreadyExistsError,
+  RangeListResponseDto,
   RangeDetailsDto,
   RangeNotFoundError,
   RangeSummaryDto,
@@ -9,21 +12,33 @@ import {
   UserDto,
 } from '@strzel-sobie/common';
 import { IRangesRepository } from '../domain/ranges.repository';
-import { ShootingRange } from '../domain/shooting-range.model';
+import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
 export class RangesService implements IRangesService {
   constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
-  public async getRanges(): Promise<Result<RangeSummaryDto[]>> {
-    const result = await this.rangesRepository.findAll();
+  public async getRanges(): Promise<Result<RangeListResponseDto>> {
 
-    const ranges = result.map((range: ShootingRange) => ({
-      id: range.id,
-      slug: range.slug,
-      displayName: range.displayName,
-    }));
+    try {
+      const data = await this.rangesRepository.findAll();
 
-    return Result.ok(ranges);
+      const ranges = data.map((range: ShootingRangeSummary) => {
+        const base: RangeSummaryDto = {
+          id: range.id,
+          slug: range.slug,
+          displayName: range.displayName,
+          type: range.type,
+          allowsReservations: range.allowsReservations,
+          latitude: range.latitude,
+          longitude: range.longitude,
+        };
+        return base;
+      });
+
+      return Result.ok(ranges);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
   }
 
   public async existsRangeById(rangeId: number): Promise<Result<boolean>> {
@@ -35,7 +50,7 @@ export class RangesService implements IRangesService {
     }
   }
 
-  public async getRangeDetails(slug: string): Promise<Result<RangeDetailsDto>> {
+  public async getRangeDetails(slug: string, user: UserDto | null = null): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(slug);
 
     if (!range) {
@@ -43,13 +58,11 @@ export class RangesService implements IRangesService {
     }
 
     try {
-      const dto: RangeDetailsDto = {
-        ...range,
-        operatingHours: JSON.parse(range.operatingHours),
-      };
+      const dto = this.buildRangeDetailsDto(range, user);
+
       return Result.ok(dto);
     } catch (error) {
-        return Result.fail(new Error("Failed to parse operating hours", { cause: error }));
+      return Result.fail(error as Error);
     }
   }
 
@@ -57,22 +70,44 @@ export class RangesService implements IRangesService {
     rangeSlug: string,
     command: UpdateRangeCommand,
     user: UserDto
-  ): Promise<Result<void>> {
+  ): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(rangeSlug);
 
     if (!range) {
       return Result.fail(new RangeNotFoundError('Range not found'));
     }
 
-    const isGlobalAdmin = user.roles.some((role) => role.name === 'Club/Community Administrator');
-    const rangeId = range.id.toString();
-    const userRolesForRange = user.rangeRoles[rangeId] || [];
-    const isRangeAdmin = userRolesForRange.some((role) =>
-      ['Range Admin', 'Shooting Range Administrator'].includes(role.name)
-    );
-
-    if (!isGlobalAdmin && !isRangeAdmin) {
+    if (!this.canManageRange(range.id, user)) {
       return Result.fail(new ForbiddenError('User is not an admin for this range'));
+    }
+
+    const nextType = command.type ?? range.type;
+    const nextAllowsReservations =
+      nextType === 'club'
+        ? command.allowsReservations ?? range.allowsReservations ?? true
+        : false;
+
+    range.type = nextType;
+    range.allowsReservations = nextAllowsReservations;
+
+    if (command.displayName !== undefined) {
+      range.displayName = command.displayName;
+    }
+
+    if (command.publicDescription !== undefined) {
+      range.publicDescription = command.publicDescription;
+    }
+
+    if (command.memberDescription !== undefined) {
+      range.memberDescription = command.memberDescription;
+    }
+
+    if (command.latitude !== undefined) {
+      range.latitude = command.latitude ?? null;
+    }
+
+    if (command.longitude !== undefined) {
+      range.longitude = command.longitude ?? null;
     }
 
     if (command.totalTracks !== undefined) {
@@ -94,9 +129,59 @@ export class RangesService implements IRangesService {
         }
     };
 
-    await this.auditService.logAction(log);
+    const auditResult = await this.auditService.logAction(log);
+    if (!auditResult.isSuccess) {
+      return Result.fail(auditResult.getError());
+    }
 
-    return Result.ok(undefined);
+    const dto = this.buildRangeDetailsDto(range, user);
+    return Result.ok(dto);
+  }
+
+  public async createRange(command: CreateRangeCommand, user: UserDto): Promise<Result<RangeDetailsDto>> {
+    if (!this.isGlobalAdmin(user)) {
+      return Result.fail(new ForbiddenError('User is not allowed to create ranges'));
+    }
+
+    const existing = await this.rangesRepository.findBySlug(command.slug);
+    if (existing) {
+      return Result.fail(new RangeAlreadyExistsError(command.slug));
+    }
+
+    const normalizedType = command.type ?? 'club';
+    const allowsReservations = normalizedType === 'club' ? command.allowsReservations ?? true : false;
+    const operatingHours = command.operatingHours ? JSON.stringify(command.operatingHours) : '{}';
+
+    const created = await this.rangesRepository.create({
+      slug: command.slug.trim(),
+      displayName: (command.displayName ?? command.slug).trim(),
+      type: normalizedType,
+      allowsReservations,
+      isDeleted: false,
+      publicDescription: command.publicDescription ?? null,
+      memberDescription: command.memberDescription ?? null,
+      latitude: command.latitude ?? 0,
+      longitude: command.longitude ?? 0,
+      totalTracks: command.totalTracks ?? null,
+      operatingHours,
+    });
+
+    const log: AuditLogEntry = {
+      action_type: 'RANGE_CREATE',
+      target_id: created.id,
+      details: {
+        user,
+        command,
+      },
+    };
+
+    const auditResult = await this.auditService.logAction(log);
+    if (!auditResult.isSuccess) {
+      return Result.fail(auditResult.getError());
+    }
+
+    const dto = this.buildRangeDetailsDto(created, user);
+    return Result.ok(dto);
   }
 
   public async getRangeIdBySlug(rangeSlug: string): Promise<Result<number>> {
@@ -108,5 +193,152 @@ export class RangesService implements IRangesService {
     } catch (error) {
       return Result.fail(error as Error);
     }
+  }
+
+  public async deleteRange(rangeSlug: string, user: UserDto): Promise<Result<void>> {
+    try {
+      const range = await this.rangesRepository.findBySlug(rangeSlug);
+
+      if (!range) {
+        return Result.fail(new RangeNotFoundError('Range not found'));
+      }
+
+      if (!this.canManageRange(range.id, user)) {
+        return Result.fail(new ForbiddenError('User is not an admin for this range'));
+      }
+
+      const deletedSlug = `${range.slug}__deleted_${Date.now()}`;
+      await this.rangesRepository.softDeleteById(range.id, deletedSlug);
+
+      const auditResult = await this.auditService.logAction({
+        action_type: 'RANGE_DELETE',
+        target_id: range.id,
+        details: {
+          userId: user.id,
+          rangeSlug,
+          newSlug: deletedSlug,
+        },
+      });
+
+      if (!auditResult.isSuccess) {
+        return Result.fail(auditResult.getError());
+      }
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  private canManageRange(rangeId: number, user: UserDto): boolean {
+    const globalRoles = user.roles.map((role) => role.name);
+    if (globalRoles.includes(UserRole.ClubCommunityAdministrator)) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    const rangeRoleNames = rangeRoles.map((role) => role.name);
+    return rangeRoleNames.includes(UserRole.ShootingRangeAdministrator) || rangeRoleNames.includes('Range Admin');
+  }
+
+  private buildRangeDetailsDto(
+    range: ShootingRange,
+    user: UserDto | null = null
+  ): RangeDetailsDto {
+    const operatingHours = this.parseOperatingHours(range.operatingHours);
+
+    const dto: RangeDetailsDto = {
+      id: range.id,
+      slug: range.slug,
+      displayName: range.displayName,
+      type: range.type,
+      allowsReservations: range.allowsReservations,
+      isDeleted: range.isDeleted,
+      publicDescription: range.publicDescription ?? null,
+      memberDescription: this.getMemberDescription(range, user),
+      latitude: range.latitude,
+      longitude: range.longitude,
+      totalTracks: range.totalTracks,
+      operatingHours,
+    };
+
+    return dto;
+  }
+
+  private getMemberDescription(
+    range: ShootingRange,
+    user: UserDto | null
+  ): string | null {
+    if (!user) {
+      return null;
+    }
+
+    const isMember = user.roles.some((role) => role.name === UserRole.Member);
+    const isRangeAdmin = this.canManageRange(range.id, user);
+    if (isMember || isRangeAdmin) {
+      return range.memberDescription ?? null;
+    }
+
+    return null;
+  }
+
+  private isGlobalAdmin(user: UserDto): boolean {
+    const globalRoles = user.roles.map((role) => role.name);
+    return globalRoles.includes(UserRole.ClubCommunityAdministrator);
+  }
+
+  private parseOperatingHours(raw: unknown): Record<string, { open: string; close: string } | null> {
+    if (!raw) {
+      return {};
+    }
+
+    const source =
+      typeof raw === 'string'
+        ? raw
+        : typeof raw === 'object' && !Array.isArray(raw)
+          ? JSON.stringify(raw)
+          : null;
+
+    if (!source) {
+      return {};
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(source);
+    } catch {
+      return {};
+    }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.entries(parsed as Record<string, unknown>).reduce(
+      (acc, [day, value]) => {
+        if (value === null) {
+          acc[day] = null;
+          return acc;
+        }
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const entry = value as { open?: string; close?: string };
+          const openValue = entry.open ?? '';
+          const closeValue = entry.close ?? '';
+          const isClosed =
+            String(openValue).toLowerCase() === 'closed' ||
+            String(closeValue).toLowerCase() === 'closed';
+
+          acc[day] = isClosed
+            ? null
+            : { open: String(openValue), close: String(closeValue) };
+          return acc;
+        }
+
+        acc[day] = null;
+        return acc;
+      },
+      {} as Record<string, { open: string; close: string } | null>,
+    );
   }
 }

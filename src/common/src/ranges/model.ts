@@ -1,8 +1,15 @@
 export interface ShootingRange {
   id: number;
   slug: string;
+  type: 'club' | 'ally' | 'coming-soon';
+  allows_reservations: number;
+  is_deleted: number;
+  public_description: string | null;
+  member_description: string | null;
+  latitude: number;
+  longitude: number;
   display_name: string;
-  total_tracks: number;
+  total_tracks: number | null;
   operating_hours: string; // JSON object
 }
 

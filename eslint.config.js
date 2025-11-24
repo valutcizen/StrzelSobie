@@ -99,6 +99,8 @@ export default [
         btoa: true,
         Node: true,
         HTMLElement: true,
+        HTMLDivElement: true,
+        localStorage: true,
         PointerEvent: true,
         ShadowRoot: true,
         HTMLTextAreaElement: true,

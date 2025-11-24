@@ -32,17 +32,12 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
-const authStore = useAuthStore()
 const { t } = useI18n()
 
 const goHome = () => {
-  router.push({
-    name: 'RangeLanding',
-    params: { rangeSlug: authStore.defaultRangeSlug ?? import.meta.env.VITE_DEFAULT_RANGE_SLUG },
-  })
+  router.push({ name: 'RangeDirectory' })
 }
 </script>

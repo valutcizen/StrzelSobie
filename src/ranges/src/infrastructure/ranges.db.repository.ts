@@ -1,44 +1,82 @@
 import { IDatabase } from '@strzel-sobie/common/models';
 import { IRangesRepository } from '../domain/ranges.repository';
-import { ShootingRange } from '../domain/shooting-range.model';
+import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
 // Represents the structure in the ranges_shooting_ranges table
 type ShootingRangeDb = {
   id: number;
   slug: string;
+  type: 'club' | 'ally' | 'coming-soon';
+  allows_reservations: number;
+  is_deleted: number;
+  public_description: string | null;
+  member_description: string | null;
+  latitude: number | null;
+  longitude: number | null;
   display_name: string;
-  total_tracks: number;
+  total_tracks: number | null;
   operating_hours: string;
 };
+
+type ShootingRangeSummaryDb = Pick<
+  ShootingRangeDb,
+  'id' | 'slug' | 'type' | 'allows_reservations' | 'latitude' | 'longitude' | 'display_name'
+>;
 
 export class RangesDbRepository implements IRangesRepository {
   constructor(private readonly db: IDatabase) {}
 
-  public async findAll(): Promise<ShootingRange[]> {
-    const stmt = this.db.prepare('SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges');
-    const { results } = await stmt.all<ShootingRangeDb>();
-
-    const domainRanges = results.map((dbRange) => ({
+  private mapDbRange(dbRange: ShootingRangeDb): ShootingRange {
+    return {
       id: dbRange.id,
       slug: dbRange.slug,
+      type: dbRange.type ?? 'club',
+      allowsReservations: dbRange.allows_reservations === 1,
+      isDeleted: dbRange.is_deleted === 1,
+      publicDescription: dbRange.public_description,
+      memberDescription: dbRange.member_description,
+      latitude: dbRange.latitude,
+      longitude: dbRange.longitude,
       displayName: dbRange.display_name,
       totalTracks: dbRange.total_tracks,
       operatingHours: dbRange.operating_hours,
-    }));
+    };
+  }
 
-    return domainRanges;
+  private mapDbRangeSummary(dbRange: ShootingRangeSummaryDb): ShootingRangeSummary {
+    return {
+      id: dbRange.id,
+      slug: dbRange.slug,
+      type: dbRange.type ?? 'club',
+      allowsReservations: dbRange.allows_reservations === 1,
+      latitude: dbRange.latitude,
+      longitude: dbRange.longitude,
+      displayName: dbRange.display_name,
+    };
+  }
+
+  public async findAll(): Promise<ShootingRangeSummary[]> {
+    const stmt = this.db.prepare(
+      `SELECT id, slug, type, allows_reservations, latitude, longitude, display_name
+       FROM ranges_shooting_ranges
+       WHERE is_deleted = 0`
+    );
+    const { results } = await stmt.all<ShootingRangeSummaryDb>();
+
+    return results.map((dbRange) => this.mapDbRangeSummary(dbRange));
   }
 
 
   public async existsRangeById(rangeId: number): Promise<boolean> {
-    const stmt = this.db.prepare('SELECT 1 FROM ranges_shooting_ranges WHERE id = ?');
+    const stmt = this.db.prepare('SELECT 1 FROM ranges_shooting_ranges WHERE id = ? AND is_deleted = 0');
     const result = await stmt.bind(rangeId).first<number>();
     return result ? true : false;
   }
 
   public async findBySlug(slug: string): Promise<ShootingRange | null> {
     const stmt = this.db.prepare(
-      'SELECT id, slug, display_name, total_tracks, operating_hours FROM ranges_shooting_ranges WHERE slug = ?'
+      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+       FROM ranges_shooting_ranges WHERE slug = ? AND is_deleted = 0`
     );
     const result = await stmt.bind(slug).first<ShootingRangeDb>();
 
@@ -46,25 +84,87 @@ export class RangesDbRepository implements IRangesRepository {
       return null;
     }
 
-    return {
-      id: result.id,
-      slug: result.slug,
-      displayName: result.display_name,
-      totalTracks: result.total_tracks,
-      operatingHours: result.operating_hours,
-    };
+    return this.mapDbRange(result);
+  }
+
+  public async create(range: Omit<ShootingRange, 'id'>): Promise<ShootingRange> {
+    const stmt = this.db.prepare(
+      `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, operating_hours, total_tracks)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`
+    );
+
+    await stmt
+      .bind(
+        range.slug,
+        range.displayName,
+        range.type,
+        range.allowsReservations ? 1 : 0,
+        range.publicDescription ?? null,
+        range.memberDescription ?? null,
+        range.latitude ?? 0,
+        range.longitude ?? 0,
+        range.operatingHours ?? '{}',
+        range.totalTracks ?? null
+      )
+      .run();
+
+    const created = await this.findBySlug(range.slug);
+    if (!created) {
+      throw new Error('Failed to create range');
+    }
+
+    return created;
   }
 
   public async update(range: ShootingRange): Promise<void> {
-    const stmt = this.db.prepare(
-      'UPDATE ranges_shooting_ranges SET total_tracks = ?, operating_hours = ? WHERE id = ?'
+    const existingStmt = this.db.prepare(
+      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+       FROM ranges_shooting_ranges WHERE id = ?`
     );
-    await stmt.bind(range.totalTracks, range.operatingHours, range.id).run();
+    const existing = await existingStmt.bind(range.id).first<ShootingRangeDb>();
+
+    if (!existing) {
+      throw new Error('Range not found');
+    }
+
+    const merged = {
+      display_name: range.displayName ?? existing.display_name,
+      type: range.type ?? existing.type ?? 'club',
+      allows_reservations: range.allowsReservations ?? (existing.allows_reservations === 1),
+      public_description:
+        range.publicDescription !== undefined ? range.publicDescription : existing.public_description,
+      member_description:
+        range.memberDescription !== undefined ? range.memberDescription : existing.member_description,
+      latitude: range.latitude !== undefined ? range.latitude : existing.latitude,
+      longitude: range.longitude !== undefined ? range.longitude : existing.longitude,
+      total_tracks: range.totalTracks ?? existing.total_tracks,
+      operating_hours: range.operatingHours ?? existing.operating_hours,
+    };
+
+    const stmt = this.db.prepare(
+      `UPDATE ranges_shooting_ranges
+       SET display_name = ?, type = ?, allows_reservations = ?, public_description = ?, member_description = ?, latitude = ?, longitude = ?, total_tracks = ?, operating_hours = ?
+       WHERE id = ?`
+    );
+    await stmt
+      .bind(
+        merged.display_name,
+        merged.type,
+        merged.allows_reservations ? 1 : 0,
+        merged.public_description ?? null,
+        merged.member_description ?? null,
+        merged.latitude ?? null,
+        merged.longitude ?? null,
+        merged.total_tracks,
+        merged.operating_hours,
+        range.id
+      )
+      .run();
   }
   
   public async getRangeIdBySlug(slug: string): Promise<number | null> {
     const stmt = this.db.prepare(
-      'SELECT id FROM ranges_shooting_ranges WHERE slug = ?'
+      'SELECT id FROM ranges_shooting_ranges WHERE slug = ? AND is_deleted = 0'
     );
     const result = await stmt.bind(slug).first<{ id : number }>();
 
@@ -73,5 +173,10 @@ export class RangesDbRepository implements IRangesRepository {
     }
 
     return result.id;
+  }
+
+  public async softDeleteById(id: number, deletedSlug: string): Promise<void> {
+    const stmt = this.db.prepare('UPDATE ranges_shooting_ranges SET is_deleted = 1, slug = ? WHERE id = ?');
+    await stmt.bind(deletedSlug, id).run();
   }
 }

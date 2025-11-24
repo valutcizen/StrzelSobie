@@ -4,7 +4,7 @@
 
 The user interface will be a single-page application (SPA) built using **Vue.js with TypeScript**. The **Vuetify** component library will be used for a consistent and responsive Material Design look and feel. State management will be handled by **Pinia**, with dedicated stores for authentication, calendar data, and administration.
 
-The core of the application is a calendar-centric interface, with most user interactions (creating propositions, viewing event details) handled through **`v-dialog` modals** to maintain context. The layout is a standard app shell with a persistent navigation drawer, a top app bar, a main content area, and a footer.
+The core of the application is a calendar-centric interface, supplemented by a public multi-range directory and map. Most user interactions (creating propositions, viewing event details) are handled through **`v-dialog` modals** to maintain context. The layout is a standard app shell with a persistent navigation drawer, a top app bar, a main content area, and a footer. Landing on `/` will check `localStorage.lastRangeId`; if it points to an existing range the user is redirected to that range, otherwise to `/map`.
 
 Client-side validation will be implemented using **VeeValidate** and **yup** for immediate user feedback on forms. All user-facing text will be managed by **vue-i18n** (defaulting to Polish), and a date library like `date-fns` will be used for consistent date/time formatting.
 
@@ -26,27 +26,59 @@ Client-side validation will be implemented using **VeeValidate** and **yup** for
     - Accessibility: All form fields will have associated `<label>` elements.
     - Security: The view will handle the `POST /api/v1/auth/register` and `POST /api/v1/auth/login` API calls. Upon successful login, the app will immediately call `GET /api/v1/auth/me` to populate the user state.
 
-### 2. Calendar View
+### 2. Range Directory & Map View
+- **View Name**: Range Directory & Map
+- **View Path**: `/map`
+- **Main Purpose**: Public entry point to browse all ranges, combining a map and paginated list.
+- **Key Information to Display**:
+    - Map markers color-coded by range type (club/community, ally, coming-soon) pulled from `GET /api/v1/ranges`.
+    - Paginated list of ranges with display name, type badge, allowsReservations flag, and distance when location permission is granted.
+    - Sorting options (name A→Z default; distance when lat/lng available; type priority).
+- **Key View Components**:
+    - `RangeMap` component with a Poland bounding box default viewport and marker color tokens per type.
+    - `RangeList` with pagination controls, sort dropdown, and optional type filter chips.
+    - `RangeTypeBadge` indicating type and whether reservations are allowed.
+    - "Wybierz" buttons routing to `/:rangeSlug` while writing `lastRangeId` to `localStorage`.
+- **UX, Accessibility, and Security Considerations**:
+    - UX: Map and list share the same data set; selecting a list row focuses the marker and vice versa. No login required.
+    - Accessibility: List rows and map markers expose accessible labels with range name and type.
+    - Security: All data is public; when distance sorting is chosen, geolocation permission is explicitly requested and errors are handled gracefully.
+
+### 3. Range Detail View
+- **View Name**: Range Detail
+- **View Path**: `/:rangeSlug` (shareable public URL)
+- **Main Purpose**: To show range information and funnel users toward booking when available.
+- **Key Information to Display**:
+    - Range name, type badge, `allowsReservations` status, public description (links allowed), latitude/longitude (embedded mini-map pin), opening hours, total tracks.
+    - Member-only description shown only when the authenticated user has the Member role or higher.
+- **Key View Components**:
+    - `RangeHero` header with type/availability badges and a CTA block.
+    - `RangeDescription` sections for public and member-only copy (member section collapses for unauthenticated/Guest users).
+    - `RangeActionBar` with primary CTA "Zobacz kalendarz" when `allowsReservations` is true; otherwise a disabled button with a tooltip/banner explaining bookings are unavailable and a secondary link back to `/map`.
+- **UX, Accessibility, and Security Considerations**:
+    - UX: The view updates `lastRangeId` on load to support the `/` redirect rule.
+    - Accessibility: Descriptions sanitize and preserve links; action buttons remain focusable even when disabled with explanatory text.
+    - Security: Member-only description is requested conditionally; non-bookable ranges never show booking CTAs as enabled.
+
+### 4. Calendar View (Range Schedule)
 - **View Name**: Calendar
-- **View Path**: `/:rangeSlug` (e.g., `/dobczyce`)
-- **Main Purpose**: To provide a comprehensive weekly overview of range availability, propositions, and reservations for a specific range. This is the main user dashboard.
+- **View Path**: `/:rangeSlug/calendar` (routed from Range Detail CTA)
+- **Main Purpose**: To provide a weekly overview of availability, propositions, and reservations for ranges that allow bookings.
 - **Key Information to Display**:
     - Events (propositions, reservations) fetched from `GET /api/v1/ranges/{rangeSlug}/events`.
-    - Visual distinction between event types (e.g., propositions are one color, reservations another).
-    - Reservations marked as "Open for Joining" will have a distinct color (e.g., green) to encourage participation.
-    - Badges for propositions made by "Members".
+    - Visual distinction between event types; reservations marked "Open for Joining"; badges for propositions made by "Members".
 - **Key View Components**:
     - `FullCalendar` component configured for a week view.
     - `v-skeleton-loader` to show while events are loading.
-    - "Empty state" message with a "Propose a time" CTA button when no events are present.
+    - "Empty state" message with a "Zaproponuj termin" CTA when no events are present.
     - `EventDetailDialog` (custom component) opened on event click.
     - `PropositionFormDialog` (custom component) opened on clicking an empty time slot.
 - **UX, Accessibility, and Security Considerations**:
-    - UX: The calendar will be pannable and zoomable on mobile. Event details will be loaded into non-blocking dialogs.
+    - UX: If a user navigates here for an ally or coming-soon range, a route guard redirects them back to `/:rangeSlug` with a toast/banner explaining bookings are unavailable.
     - Accessibility: Events on the calendar should be keyboard-navigable.
-    - Security: The data displayed is role-dependent. The API response from `/events` will filter details for Guests, and the UI will render what it receives.
+    - Security: Data is role-dependent. The API response from `/events` filters details for Guests, and the UI renders what it receives.
 
-### 3. My Profile View
+### 5. My Profile View
 - **View Name**: My Profile
 - **View Path**: `/profile`
 - **Main Purpose**: To allow the logged-in user to see their own account details.
@@ -60,7 +92,7 @@ Client-side validation will be implemented using **VeeValidate** and **yup** for
     - UX: This is a simple, read-only view.
     - Security: Data is fetched from the `GET /api/v1/auth/me` endpoint and stored in the Pinia auth store.
 
-### 4. User Management View
+### 6. User Management View
 - **View Name**: User Management
 - **View Path**: `/admin/users`
 - **Main Purpose**: For Club/Community Administrators to manage all users and their roles.
@@ -69,12 +101,11 @@ Client-side validation will be implemented using **VeeValidate** and **yup** for
     - User email, creation date, and current roles.
 - **Key View Components**:
     - `v-data-table` to list users with sorting and filtering.
-    - A dialog for editing a user's roles, using `v-select` or `v-chip-group` to assign/unassign roles based on `POST /api/v1/users/{userId}/roles` and `DELETE /api/v1/users/{userId}/roles/{roleId}`.
 - **UX, Accessibility, and Security Considerations**:
     - UX: A clean, powerful interface for managing a potentially large list of users.
-    - Security: This view is strictly limited to users with the "Club/Community Administrator" role.
+    - Security: This view is strictly limited to users with the "Club/Community Administrator" role. Role changes are handled through dialogs calling `POST /api/v1/users/{userId}/roles` and `DELETE /api/v1/users/{userId}/roles/{roleId}`.
 
-### 5. User Verification View
+### 7. User Verification View
 - **View Name**: User Verification
 - **View Path**: `/admin/verify-users`
 - **Main Purpose**: For "Confirmators" to approve "Guest" users, upgrading them to "Member" or "Coordinator".
@@ -82,12 +113,11 @@ Client-side validation will be implemented using **VeeValidate** and **yup** for
     - A filtered list of users with the "Guest" role who are awaiting verification.
 - **Key View Components**:
     - `v-list` or `v-data-table` showing "Guest" users.
-    - Buttons on each user row to "Promote to Member" or "Promote to Coordinator", which trigger API calls to assign the new role.
 - **UX, Accessibility, and Security Considerations**:
     - UX: A streamlined workflow for the verification process.
-    - Security: This view is strictly limited to users with the "Confirmator" role.
+    - Security: This view is strictly limited to users with the "Confirmator" role. Promote actions call the role assignment endpoint.
 
-### 6. Range Settings View
+### 8. Range Settings View
 - **View Name**: Range Settings
 - **View Path**: `/admin/range-settings`
 - **Main Purpose**: For Range Administrators to manage their range's configuration.
@@ -102,36 +132,42 @@ Client-side validation will be implemented using **VeeValidate** and **yup** for
 
 ## 3. User Journey Map
 
-**Main Use Case: Guest Creates a Proposition, Coordinator Accepts It**
+**Main Use Case: Guest browses the directory, creates a proposition, Coordinator accepts it**
 
-1.  **Landing & Login**: A new user arrives at the site and is presented with the **Authentication View** (`/auth`).
-2.  **Registration**: The user navigates to the "Registration" tab, enters their email and password, and submits the form (`POST /auth/register`). They are now a "Guest" and are automatically logged in.
-3.  **View Calendar**: The user is redirected to the main **Calendar View** for the default range (e.g., `/dobczyce`). They see the weekly schedule. As a Guest, they can only see details for "Public" reservations; other bookings appear as opaque "Busy" blocks.
-4.  **Initiate Proposition**: The user clicks on an empty time slot. This opens the `PropositionFormDialog`.
-5.  **Create Proposition**: The user fills in the number of participants and desired tracks and submits the form (`POST /ranges/{rangeSlug}/propositions`). A `v-snackbar` confirms "Proposition created." The new proposition appears on their calendar.
-6.  **Coordinator View**: A "Coordinator" logs in. They also land on the **Calendar View**. They see the new proposition, visually marked as being from a non-member.
-7.  **Review Proposition**: The Coordinator clicks the proposition event, opening the `EventDetailDialog`, which shows who created it and the requested details.
-8.  **Accept Proposition**: The dialog contains an "Accept" button. The Coordinator clicks it. This triggers a `POST /ranges/{rangeSlug}/reservations` call with the `propositionId`.
-9.  **Confirmation**: The API confirms the creation. The event on the calendar changes color to indicate it is now a confirmed "Reservation". The original user receives a confirmation email.
+1.  **Landing & Discovery**: A visitor hits `/`. If `localStorage.lastRangeId` points to a valid range they are redirected to that range; otherwise they land on **Range Directory & Map** (`/map`), seeing Poland-centered markers and a paginated list.
+2.  **Select a Range**: The visitor clicks a marker or list item, opening the **Range Detail** (`/:rangeSlug`) and updating `lastRangeId`. If the range is ally/coming-soon, the booking CTA is disabled with a clear message and a link back to `/map`.
+3.  **Authenticate**: From the Range Detail CTA or calendar "Propose" action, unauthenticated visitors are sent to **Authentication** (`/auth`) and then redirected back to the target range.
+4.  **View Calendar**: For bookable ranges, the user lands on **Calendar** (`/:rangeSlug/calendar`). As a Guest, they see reservations in anonymized form; Members (or higher) see full details and "Open for Joining" markers. If someone tries to open the calendar for an ally/coming-soon range, a guard returns them to the Range Detail with an explanation.
+5.  **Create Proposition**: The user clicks an empty slot to open the `PropositionFormDialog`, fills in participants/tracks, and submits (`POST /ranges/{rangeSlug}/propositions`). A `v-snackbar` confirms creation and the event appears on the calendar.
+6.  **Coordinator Review**: A Coordinator views the same calendar, sees a badge indicating the proposer is not a Member, and opens the `EventDetailDialog` to review details.
+7.  **Accept Proposition**: The Coordinator clicks "Accept", triggering `POST /ranges/{rangeSlug}/reservations` with `propositionId`. The event changes color to a reservation, and the original user receives confirmation.
 
 ## 4. Layout and Navigation Structure
 
 The application will use a consistent layout managed by Vuetify's layout components.
 
 -   **`v-app-bar`**: A top bar that is always visible. It will contain:
-    -   The application title ("Strzel Sobie").
-    -   The logged-in user's email.
+    -   The application title ("Strzel Sobie") linking to `/map`.
+    -   The logged-in user's email when available.
     -   A user menu (`v-menu`) with links to "My Profile" (`/profile`) and a "Logout" button.
 -   **`v-navigation-drawer`**: A persistent side menu for primary navigation. The links displayed will be dynamically rendered based on the user's roles fetched from `GET /api/v1/auth/me`.
-    -   **All Users**: "Kalendarz" (Calendar).
+    -   **All Users**: "Mapa i katalog" (`/map`); when `lastRangeId` is known, show quick links to "Szczegóły strzelnicy" (`/:rangeSlug`) and "Kalendarz" (`/:rangeSlug/calendar`) if bookings are allowed.
     -   **Admins**: Links to "Zarządzanie Użytkownikami" (User Management), "Weryfikacja Użytkowników" (User Verification), or "Ustawienia Strzelnicy" (Range Settings) depending on their specific admin role.
--   **`v-main`**: The central content area where the Vue Router will render the component for the current route (e.g., Calendar View, Profile View).
+-   **`v-main`**: The central content area where the Vue Router will render the component for the current route (e.g., Directory, Range Detail, Calendar View, Profile View).
 -   **`v-footer`**: A simple footer containing a link to the "Polityka Prywatności" (Privacy Policy) page.
+-   **Route Guards**:
+    -   `/` redirects to `/:rangeSlug` if `lastRangeId` is valid; otherwise to `/map`.
+    -   `/:rangeSlug/calendar` checks `allowsReservations`; ally or coming-soon ranges are redirected to `/:rangeSlug` with a toast explaining bookings are unavailable.
 
 ## 5. Key Components
 
 These are custom, reusable components that will be built to handle specific, repeated functionalities.
 
+-   **`RangeMap`**: Map view with Poland bounding box, colored markers per range type, and list/map selection sync.
+-   **`RangeList`**: Paginated list with sorting (name, distance, type priority) and optional type filters; emits selection events to center the map and route to detail.
+-   **`RangeTypeBadge`**: Visual badge for club/community, ally, and coming-soon types, carrying color tokens shared with map markers.
+-   **`RangeActionBar`**: CTA block on the Range Detail page showing booking availability; disables and displays info for ally/coming-soon ranges.
+-   **`RangeAvailabilityGuard`**: Router/route-aware helper that redirects non-bookable ranges away from the calendar and surfaces the proper toast/banner.
 -   **`EventDetailDialog`**: A `v-dialog` that displays the details of a proposition or reservation. It will show different actions (e.g., "Accept", "Cancel") depending on the event type and user's role.
 -   **`PropositionFormDialog`**: A `v-dialog` containing a `v-form` for creating or editing a proposition. It will use VeeValidate for validation.
 -   **`ReservationFormDialog`**: A `v-dialog` for Coordinators to create a reservation directly. Includes toggles for "Public" and "Open for Joining".

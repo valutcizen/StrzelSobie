@@ -40,6 +40,7 @@ import {
   ReservationConflictError,
   InvalidRecordTimeError,
   RangeClosedError,
+  RangeBookingNotAllowedError,
 } from '@strzel-sobie/common/models';
 import { ReservationsService } from '../../src/reservations/src/application/reservations.service';
 import type {
@@ -119,6 +120,12 @@ const createRangeDetails = (overrides: Partial<RangeDetailsDto> = {}): RangeDeta
   displayName: 'Alpha Range',
   totalTracks: 6,
   operatingHours: defaultOperatingHours,
+  type: 'club',
+  allowsReservations: true,
+  publicDescription: null,
+  memberDescription: null,
+  latitude: 0,
+  longitude: 0,
   ...overrides,
 });
 
@@ -1447,6 +1454,28 @@ describe('ReservationsService contract', () => {
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(UnauthorizedPropositionError);
+    });
+
+    it('rejects propositions when range does not allow reservations', async () => {
+      const ctx = createTestContext({ allowsReservations: false });
+      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
+
+      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(Error);
+      expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
+    });
+
+    it('rejects propositions when capacity is zero or unknown', async () => {
+      const ctx = createTestContext({ totalTracks: null });
+      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
+
+      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(RangeBookingNotAllowedError);
+      expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
     });
 
     const invalidPropositionCases: Array<[string, PropositionCommandOverrideFactory]> = [

@@ -1,5 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { RangeNotFoundError } from '@strzel-sobie/common';
+import { type UserDto, type Role } from '@strzel-sobie/common/models';
+import { getCookie } from 'hono/cookie';
 import { Context } from '../../../types';
 import { z } from 'zod';
 
@@ -15,7 +17,24 @@ export class GetRange extends OpenAPIRoute {
     },
     responses: {
       "200": {
-        description: "Returns range details"
+        description: "Returns range details",
+        content: {
+          'application/json': {
+            schema: z.object({
+              id: z.number(),
+              slug: z.string(),
+              displayName: z.string(),
+              type: z.string(),
+              allowsReservations: z.boolean(),
+              publicDescription: z.string().nullable().optional(),
+              memberDescription: z.string().nullable().optional(),
+              latitude: z.number().nullable().optional(),
+              longitude: z.number().nullable().optional(),
+              totalTracks: z.number().nullable().optional(),
+              operatingHours: z.record(z.any()).optional(),
+            }),
+          },
+        },
       },
       "404": {
         description: "Range not found"
@@ -27,7 +46,51 @@ export class GetRange extends OpenAPIRoute {
     const { params }: { params: { rangeSlug: string } } =
       await this.getValidatedData<{ params: { rangeSlug: string } }>();
     const rangesService = c.get('rangesService');
-    const result = await rangesService.getRangeDetails(params.rangeSlug);
+    const authService = c.get('authService');
+    const userService = c.get('userService');
+
+    let user: UserDto | null = null;
+    const sessionToken = getCookie(c, 'session_token');
+    if (sessionToken) {
+      const sessionResult = await authService.validateSession(sessionToken);
+      if (sessionResult.isSuccess) {
+        const session = sessionResult.getValue();
+        const userResult = await userService.getFullUserProfile(session.userId);
+        const rolesResult = await userService.getRoles();
+
+        if (userResult.isSuccess && rolesResult.isSuccess) {
+          const profile = userResult.getValue();
+          const allRoles = rolesResult.getValue();
+          const roleMap = new Map(allRoles.map((role) => [role.name, role]));
+
+          const rangeRoles = Object.entries(profile.rangeRoles ?? {}).reduce(
+            (acc, [rangeId, roleNames]) => {
+              acc[rangeId] = roleNames
+                .map((roleName) => roleMap.get(roleName))
+                .filter((role): role is Role => Boolean(role));
+              return acc;
+            },
+            {} as Record<string, Role[]>
+          );
+
+          user = {
+            id: profile.id,
+            email: profile.email,
+            isDeleted: 0,
+            createdAt: new Date().toISOString(),
+            roles: profile.roles
+              .map((roleName) => roleMap.get(roleName))
+              .filter((role): role is Role => Boolean(role)),
+            rangeRoles,
+            range_roles: rangeRoles,
+          };
+        }
+      }
+    }
+
+    const result = user
+      ? await rangesService.getRangeDetails(params.rangeSlug, user)
+      : await rangesService.getRangeDetails(params.rangeSlug);
 
     if (!result.isSuccess) {
       const error = result.getError();

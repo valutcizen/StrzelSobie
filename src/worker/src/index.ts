@@ -11,7 +11,9 @@ import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
 import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges';
 import { GetRange } from './endpoints/v1/ranges/get-range';
+import { CreateRange } from './endpoints/v1/ranges/create-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
+import { DeleteRange } from './endpoints/v1/ranges/delete-range';
 import { GetEvents } from './endpoints/v1/ranges/get-events';
 import { CreateProposition } from './endpoints/v1/ranges/create-proposition';
 import { CreateRecord } from './endpoints/v1/ranges/create-record';
@@ -119,8 +121,10 @@ openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUser
 
 openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/ranges/:rangeSlug', GetRange);
+openapi.post('/api/v1/ranges', authMiddleware, CreateRange);
 openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
-openapi.get('/api/v1/ranges/:rangeSlug/events', authMiddleware, GetEvents);
+openapi.delete('/api/v1/ranges/:rangeSlug', authMiddleware, DeleteRange);
+openapi.get('/api/v1/ranges/:rangeSlug/events', GetEvents);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
 openapi.post('/api/v1/ranges/:rangeSlug/records', authMiddleware, CreateRecord);

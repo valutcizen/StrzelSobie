@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { format } from 'date-fns'
 import { enUS, pl as plLocale } from 'date-fns/locale'
+import { useRoute } from 'vue-router'
 import EditUserRolesDialog from '@/components/admin/EditUserRolesDialog.vue'
 import { useAdminStore } from '@/stores/admin'
 import { useAuthStore } from '@/stores/auth'
@@ -25,6 +26,7 @@ type TableOptionsSnapshot = {
 
 const adminStore = useAdminStore()
 const authStore = useAuthStore()
+const route = useRoute()
 
 const rangeId = ref<number | null>(null)
 const rangeName = ref<string>('')
@@ -79,7 +81,13 @@ const formatDate = (value: string) => {
   }
 }
 
-const currentRangeSlug = computed(() => authStore.defaultRangeSlug)
+const currentRangeSlug = computed(() => {
+  const slug = route.query.rangeSlug
+  if (typeof slug === 'string' && slug.trim().length > 0) {
+    return slug.trim()
+  }
+  return authStore.defaultRangeSlug
+})
 
 const fetchRangeMetadata = async () => {
   lastError.value = null

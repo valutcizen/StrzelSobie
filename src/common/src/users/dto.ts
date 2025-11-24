@@ -1,5 +1,6 @@
 import { Role } from '../auth/model';
 import { User, UserGlobalRole, UserRangeRole } from './model';
+import { PaginatedQueryOptions, PaginatedResponse } from '../pagination';
 
 export type UserIdentifierDto = {
   id: User['id'];
@@ -21,18 +22,6 @@ export type UserDto = {
 };
 
 /**
- * Represents a paginated response for any given type `T`.
- */
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-  };
-}
-
-/**
  * DTO for a paginated list of users.
  * Corresponds to the response payload for `GET /api/v1/users`.
  */
@@ -47,10 +36,4 @@ export type AssignRoleCommand = {
   rangeId: UserRangeRole['range_id'] | null;
 };
 
-export type GetUsersOptions = {
-  page?: number;
-  limit?: number;
-  sortBy?: 'id' | 'email' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
-  filter?: string;
-};
+export type GetUsersOptions = PaginatedQueryOptions<'id' | 'email' | 'createdAt'>;

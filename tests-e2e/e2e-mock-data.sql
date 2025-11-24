@@ -23,8 +23,58 @@ PRAGMA foreign_keys = ON;
 -- =============================================================================
 -- Ranges
 -- =============================================================================
-INSERT INTO ranges_shooting_ranges (id, slug, display_name, total_tracks, operating_hours)
-VALUES (99, 'dobczyce', 'E2E Test Range', 8, '{"monday":{"open":"10:00","close":"18:00"},"tuesday":{"open":"10:00","close":"18:00"},"wednesday":{"open":"10:00","close":"18:00"},"thursday":{"open":"10:00","close":"18:00"},"friday":{"open":"10:00","close":"18:00"}}');
+INSERT INTO ranges_shooting_ranges (
+  id,
+  slug,
+  display_name,
+  type,
+  allows_reservations,
+  public_description,
+  member_description,
+  latitude,
+  longitude,
+  operating_hours,
+  total_tracks
+) VALUES
+  (
+    99,
+    'dobczyce',
+    'E2E Test Range',
+    'club',
+    1,
+    'E2E test club range with active reservations.',
+    'Member-only notes for E2E tests.',
+    49.8805,
+    20.0906,
+    '{"monday":{"open":"10:00","close":"18:00"},"tuesday":{"open":"10:00","close":"18:00"},"wednesday":{"open":"10:00","close":"18:00"},"thursday":{"open":"10:00","close":"18:00"},"friday":{"open":"10:00","close":"18:00"}}',
+    8
+  ),
+  (
+    100,
+    'ally-e2e',
+    'E2E Ally Range',
+    'ally',
+    0,
+    'Information-only ally range for E2E coverage.',
+    'Member-only notes for ally range behavior.',
+    50.0647,
+    19.945,
+    '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"}}',
+    NULL
+  ),
+  (
+    101,
+    'coming-soon-e2e',
+    'E2E Coming-Soon Range',
+    'coming-soon',
+    0,
+    'Planned location for coming-soon E2E coverage.',
+    'Member-only notes for coming-soon behavior.',
+    49.483,
+    20.0262,
+    '{"monday":{"open":"closed","close":"closed"},"tuesday":{"open":"closed","close":"closed"},"wednesday":{"open":"closed","close":"closed"},"thursday":{"open":"closed","close":"closed"},"friday":{"open":"closed","close":"closed"}}',
+    NULL
+  );
 
 -- =============================================================================
 -- Users & Credentials
