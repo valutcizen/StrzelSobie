@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { Pinia } from 'pinia'
 import type { Router } from 'vue-router'
 import { useAuthDialogStore } from '@/stores/authDialog'
 import { getLastRangeId } from '@/utils/lastRange'
@@ -12,13 +13,13 @@ export const http = axios.create({
 let interceptorsConfigured = false
 const routesBypassingAuthRedirect = new Set(['RangeDirectory', 'RangeLanding', 'Calendar'])
 
-export const setupHttpInterceptors = (router: Router, authStore: AuthStore) => {
+export const setupHttpInterceptors = (router: Router, pinia: Pinia, authStore: AuthStore) => {
   if (interceptorsConfigured) {
     return
   }
 
   interceptorsConfigured = true
-  const authDialogStore = useAuthDialogStore(authStore.$pinia)
+  const authDialogStore = useAuthDialogStore(pinia)
 
   http.interceptors.response.use(
     (response) => response,

@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { RangeParkingLocation } from '@strzel-sobie/common'
 import RangeLocationPicker from './RangeLocationPicker.vue'
 
-type ParkingLocation = {
-  latitude: number | null
-  longitude: number | null
-}
+type ParkingLocation = RangeParkingLocation
 
 type PickerLocation = {
   lat: number | null

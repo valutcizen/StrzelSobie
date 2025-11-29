@@ -343,13 +343,13 @@ const parkingLocation = computed(() => {
   const parking =
     rangeStore.currentRange?.parkingLocation ?? rangeStore.currentRange?.extras?.parkingLocation ?? null
 
-  if (!parking) {
+  if (!parking || parking.latitude === null || parking.longitude === null) {
     return null
   }
 
   return {
-    latitude: parking.latitude ?? null,
-    longitude: parking.longitude ?? null,
+    latitude: parking.latitude,
+    longitude: parking.longitude,
   }
 })
 

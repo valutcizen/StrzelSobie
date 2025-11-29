@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia'
 import { http } from '@/services/http'
 import { clearLastRangeId } from '@/utils/lastRange'
-import type { CreateRangePayload, RangeDetails, RangeSummary, UpdateRangePayload } from '@/types/range'
+import type {
+  CreateRangePayload,
+  RangeDetails,
+  RangeSummary,
+  UpdateRangePayload,
+} from '@/types/range'
+import type { RangeParkingLocation } from '@strzel-sobie/common'
 
 interface FetchRangeOptions {
   force?: boolean
@@ -107,7 +113,7 @@ export const useRangeStore = defineStore('range', {
     },
     async updateParkingLocation(
       rangeSlug: string,
-      parkingLocation: { latitude: number; longitude: number } | null,
+      parkingLocation: RangeParkingLocation | null,
     ) {
       const payload: UpdateRangePayload = {
         parkingLocation,

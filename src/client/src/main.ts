@@ -17,7 +17,7 @@ const authStore = useAuthStore(pinia)
 
 setupValidation()
 setupRouterGuards(router, pinia)
-setupHttpInterceptors(router, authStore)
+setupHttpInterceptors(router, pinia, authStore)
 
 app
   .use(pinia)
