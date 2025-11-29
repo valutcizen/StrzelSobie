@@ -136,7 +136,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-main class="bg-grey-lighten-5 flex-grow-1">
+    <v-main class="bg-white flex-grow-1">
       <slot />
     </v-main>
 
