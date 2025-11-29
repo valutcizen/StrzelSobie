@@ -316,8 +316,7 @@ const handleCreateRangeConfirm = async () => {
 }
 
 const openLoginDialog = () => {
-  const redirectPath = router.currentRoute.value.fullPath
-  authDialogStore.open({ tab: 'login', redirectPath })
+  authDialogStore.open({ tab: 'login' })
 }
 </script>
 

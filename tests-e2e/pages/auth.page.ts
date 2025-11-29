@@ -13,6 +13,8 @@ export class AuthPage {
   readonly registerPasswordInput: Locator;
   readonly registerPasswordConfirmationInput: Locator;
   readonly registerButton: Locator;
+  readonly authDialog: Locator;
+  readonly topLoginCta: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -29,16 +31,27 @@ export class AuthPage {
       .getByTestId('register-password-confirmation-input')
       .locator('input');
     this.registerButton = page.getByTestId('register-submit-button');
+    this.authDialog = page.getByTestId('auth-dialog');
+    this.topLoginCta = page.getByTestId('login-button');
   }
 
-  async goto() {
-    await this.page.goto('/auth');
+  async gotoPublicEntry() {
+    await this.page.goto('/map');
   }
 
   async login(email: string, password_val: string) {
+    await this.ensureDialogOpen();
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password_val);
     await this.loginButton.click();
+  }
+
+  async ensureDialogOpen() {
+    if (await this.authDialog.isVisible().catch(() => false)) {
+      return;
+    }
+    await this.topLoginCta.click();
+    await this.authDialog.waitFor({ state: 'visible' });
   }
 
   async logout() {

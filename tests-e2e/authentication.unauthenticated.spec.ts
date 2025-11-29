@@ -8,8 +8,9 @@ test.describe('Unauthenticated user', () => {
     const password = `password-123`;
     const authPage = new AuthPage(page);
 
-    // Navigate to the authentication page
-    await authPage.goto();
+    // Open the authentication dialog from a public route
+    await authPage.gotoPublicEntry();
+    await authPage.ensureDialogOpen();
 
     // Complete registration via the register tab
     await authPage.registerTab.click();

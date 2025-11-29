@@ -15,8 +15,9 @@ test.describe('Authenticated user', () => {
     // Open the user menu and log out
     await authPage.logout();
 
-    // Verify the user is taken back to the login view
-    await page.waitForURL('/auth');
+    // Verify the user is taken back to a public view with auth dialog shown
+    await page.waitForURL('/map');
+    await authPage.ensureDialogOpen();
     await expect(authPage.loginButton).toBeVisible();
   });
 });
