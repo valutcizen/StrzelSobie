@@ -1,7 +1,11 @@
 <template>
   <div
     class="d-flex flex-column"
-    style="height: 100vh;"
+    :style="{
+      height: '100vh',
+      '--app-bar-height': `${appBarHeight}px`,
+      '--app-footer-height': `${FOOTER_HEIGHT}px`,
+    }"
   >
     <v-app-bar
       color="primary"
@@ -213,6 +217,7 @@ const router = useRouter()
 const display = useDisplay()
 const isSmallScreen = computed(() => display.smAndDown.value)
 const isScrolled = ref(false)
+const FOOTER_HEIGHT = 48
 const appBarHeight = computed(() => {
   if (display.mdAndUp.value) {
     return isScrolled.value ? 72 : 128

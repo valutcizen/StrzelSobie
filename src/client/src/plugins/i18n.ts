@@ -382,6 +382,9 @@ const messages = {
     },
     rangeDirectory: {
       title: 'Range directory and map',
+      actions: {
+        skipToList: 'Go to range list',
+      },
       list: {
         title: 'Range list',
         empty: 'No ranges to display.',
@@ -779,6 +782,9 @@ const messages = {
     },
     rangeDirectory: {
       title: 'Katalog i mapa strzelnic',
+      actions: {
+        skipToList: 'Przejdź do listy strzelnic',
+      },
       list: {
         title: 'Lista strzelnic',
         empty: 'Brak strzelnic do wyświetlenia.',

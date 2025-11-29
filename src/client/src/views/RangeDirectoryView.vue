@@ -14,6 +14,7 @@ const rangeStore = useRangeStore()
 
 const page = ref(1)
 const selectedSlug = ref<string | null>(getLastRangeId())
+const listSectionRef = ref<HTMLElement | null>(null)
 
 const isLoading = computed(() => rangeStore.isDirectoryLoading)
 const loadError = computed(() => rangeStore.directoryError)
@@ -57,6 +58,10 @@ const handleSelectRange = (slug: string) => {
   selectedSlug.value = slug
   setLastRangeId(slug)
   router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
+}
+
+const handleSkipToList = () => {
+  listSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 watch(
@@ -113,22 +118,28 @@ watch(pageCount, (next) => {
           :ranges="sortedRanges"
           :selected-slug="selectedSlug"
           @select="handleSelectRange"
+          @skip-to-list="handleSkipToList"
         />
       </v-col>
     </v-row>
 
-    <v-row>
-      <v-col cols="12">
-        <RangeList
-          :ranges="sortedRanges"
-          :selected-slug="selectedSlug"
-          :page="currentPage"
-          :items-per-page="itemsPerPage"
-          :items-per-page-options="[10, 25, 50]"
-          @select="handleSelectRange"
-          @update:page="page = $event"
-        />
-      </v-col>
-    </v-row>
+    <div
+      id="range-directory-list"
+      ref="listSectionRef"
+    >
+      <v-row>
+        <v-col cols="12">
+          <RangeList
+            :ranges="sortedRanges"
+            :selected-slug="selectedSlug"
+            :page="currentPage"
+            :items-per-page="itemsPerPage"
+            :items-per-page-options="[10, 25, 50]"
+            @select="handleSelectRange"
+            @update:page="page = $event"
+          />
+        </v-col>
+      </v-row>
+    </div>
   </v-container>
 </template>
