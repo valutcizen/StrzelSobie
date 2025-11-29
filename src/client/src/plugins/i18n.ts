@@ -29,6 +29,7 @@ const messages = {
     },
     app: {
       title: 'Strzel Sobie',
+      subtitle: 'Shooting range reservation system for your club',
     },
     roles: {
       guest: 'Guest',
@@ -425,6 +426,7 @@ const messages = {
     },
     app: {
       title: 'Strzel Sobie',
+      subtitle: 'System rezerwacji strzelnic dla twojego klubu',
     },
     roles: {
       guest: 'Gość',
