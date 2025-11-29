@@ -195,7 +195,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
@@ -213,8 +213,19 @@ const rangeStore = useRangeStore()
 const router = useRouter()
 const display = useDisplay()
 const isSmallScreen = computed(() => display.smAndDown.value)
-const appBarHeight = computed(() => (display.mdAndUp.value ? 128 : 80))
-const logoHeight = computed(() => (display.mdAndUp.value ? 120 : 64))
+const isScrolled = ref(false)
+const appBarHeight = computed(() => {
+  if (display.mdAndUp.value) {
+    return isScrolled.value ? 72 : 128
+  }
+  return isScrolled.value ? 56 : 80
+})
+const logoHeight = computed(() => {
+  if (display.mdAndUp.value) {
+    return isScrolled.value ? 64 : 120
+  }
+  return isScrolled.value ? 44 : 64
+})
 const drawer = ref(!isSmallScreen.value)
 // Keep the drawer expanded on small screens to show labels; allow rail only on larger viewports.
 const isRail = ref(false)
@@ -234,6 +245,19 @@ watch(
   },
   { immediate: true },
 )
+
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 8
+}
+
+onMounted(() => {
+  handleScroll()
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 
 const handleLogout = async () => {
   await authStore.logout()
@@ -292,6 +316,7 @@ const handleCreateRangeConfirm = async () => {
   max-height: 100%;
   width: auto;
   display: block;
+  transition: height 150ms ease;
 }
 
 .app-title {
@@ -311,6 +336,7 @@ const handleCreateRangeConfirm = async () => {
   font-size: 0.95rem;
   line-height: 1.2;
   font-weight: 500;
+  transition: color 150ms ease, opacity 150ms ease;
 }
 
 .app-shell-navigation {
