@@ -7,6 +7,7 @@
       color="primary"
       app
       :height="appBarHeight"
+      class="app-shell__app-bar"
     >
       <v-app-bar-nav-icon
         variant="text"
@@ -342,6 +343,10 @@ const handleCreateRangeConfirm = async () => {
 .app-shell-navigation {
   border-right: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.92);
+}
+
+.app-shell__app-bar {
+  background-image: linear-gradient(to bottom, #6ACEFF 0%, #0076B1 2px, #12A3EB 92px, #12A3EB 100%) !important;
 }
 
 .app-shell-navigation :deep(.v-list) {
