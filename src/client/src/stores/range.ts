@@ -77,6 +77,15 @@ export const useRangeStore = defineStore('range', {
             ...(payload.memberDescription !== undefined ? { memberDescription: payload.memberDescription } : {}),
             ...(payload.latitude !== undefined ? { latitude: payload.latitude } : {}),
             ...(payload.longitude !== undefined ? { longitude: payload.longitude } : {}),
+            ...(payload.parkingLocation !== undefined ? { parkingLocation: payload.parkingLocation ?? null } : {}),
+            ...(payload.parkingLocation !== undefined
+              ? {
+                  extras: {
+                    ...(existing.extras ?? {}),
+                    parkingLocation: payload.parkingLocation ?? null,
+                  },
+                }
+              : {}),
           }
           this.directory = this.directory.map((range) =>
             range.slug === rangeSlug
@@ -95,6 +104,15 @@ export const useRangeStore = defineStore('range', {
         this.lastError = error instanceof Error ? error.message : 'Nie udało się zapisać danych strzelnicy.'
         throw error
       }
+    },
+    async updateParkingLocation(
+      rangeSlug: string,
+      parkingLocation: { latitude: number; longitude: number } | null,
+    ) {
+      const payload: UpdateRangePayload = {
+        parkingLocation,
+      }
+      await this.updateRange(rangeSlug, payload)
     },
     clearRange(rangeSlug?: string) {
       if (rangeSlug) {

@@ -72,6 +72,7 @@ export type UpdateRangeCommand = Partial<
     | 'operatingHours'
     | 'latitude'
     | 'longitude'
+    | 'parkingLocation'
   >
 >;
 

@@ -112,6 +112,17 @@ export class RangesService implements IRangesService {
       range.longitude = command.longitude ?? null;
     }
 
+    if (command.parkingLocation !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.parkingLocation = command.parkingLocation
+        ? {
+            latitude: command.parkingLocation.latitude,
+            longitude: command.parkingLocation.longitude,
+          }
+        : null;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.totalTracks !== undefined) {
       range.totalTracks = command.totalTracks;
     }
@@ -295,6 +306,21 @@ export class RangesService implements IRangesService {
   }
 
   private parseExtras(raw: unknown): RangeExtras {
+    const extras = this.parseExtrasObject(raw);
+    const parkingLocation = this.parseParkingLocation(extras.parkingLocation);
+
+    if (parkingLocation) {
+      return { parkingLocation };
+    }
+
+    if (Object.prototype.hasOwnProperty.call(extras, 'parkingLocation')) {
+      return { parkingLocation: null };
+    }
+
+    return {};
+  }
+
+  private parseExtrasObject(raw: unknown): Record<string, unknown> {
     if (!raw) {
       return {};
     }
@@ -310,22 +336,16 @@ export class RangesService implements IRangesService {
       return {};
     }
 
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(source);
+      const parsed = JSON.parse(source);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
     } catch {
       return {};
     }
 
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return {};
-    }
-
-    const parkingLocation = this.parseParkingLocation(
-      (parsed as Record<string, unknown>).parkingLocation
-    );
-
-    return parkingLocation ? { parkingLocation } : {};
+    return {};
   }
 
   private parseParkingLocation(raw: unknown): RangeParkingLocation | null {

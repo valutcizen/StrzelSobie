@@ -5,6 +5,7 @@ import { Field, Form, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
 import { useRoute, useRouter } from 'vue-router'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
+import RangeParkingLocationModal from '@/components/range/RangeParkingLocationModal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
 import type { OperatingHours, RangeDetails, UpdateRangePayload } from '@/types/range'
@@ -65,8 +66,10 @@ type RangeSettingsFormValues = {
 const formKey = ref(0)
 const isLoading = ref(false)
 const isSaving = ref(false)
+const isSavingParking = ref(false)
 const isDeleting = ref(false)
 const lastError = ref<string | null>(null)
+const isParkingModalOpen = ref(false)
 const snackbar = reactive({
   open: false,
   message: '',
@@ -300,11 +303,11 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
     const updated = await rangeStore.fetchRangeDetails(rangeSlug.value, { force: true })
     initialValues.value = mapRangeToFormValues(updated)
     formKey.value += 1
-  showSnackbar(t('admin.rangeSettings.successMessage'))
-} catch (error) {
-  lastError.value =
-    error instanceof Error ? error.message : t('admin.rangeSettings.errorMessage')
-  showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
+    showSnackbar(t('admin.rangeSettings.successMessage'))
+  } catch (error) {
+    lastError.value =
+      error instanceof Error ? error.message : t('admin.rangeSettings.errorMessage')
+    showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
   } finally {
     isSaving.value = false
   }
@@ -333,6 +336,40 @@ const deleteRange = async () => {
     showSnackbar(t('admin.rangeSettings.deleteError'), 'error')
   } finally {
     isDeleting.value = false
+  }
+}
+
+const parkingLocation = computed(() => {
+  const parking =
+    rangeStore.currentRange?.parkingLocation ?? rangeStore.currentRange?.extras?.parkingLocation ?? null
+
+  if (!parking) {
+    return null
+  }
+
+  return {
+    latitude: parking.latitude ?? null,
+    longitude: parking.longitude ?? null,
+  }
+})
+
+const handleParkingSave = async (location: { latitude: number; longitude: number } | null) => {
+  if (!rangeSlug.value) {
+    return
+  }
+
+  isSavingParking.value = true
+
+  try {
+    await rangeStore.updateParkingLocation(rangeSlug.value, location)
+    showSnackbar(t('admin.rangeSettings.parking.successMessage'))
+    isParkingModalOpen.value = false
+  } catch (error) {
+    lastError.value =
+      error instanceof Error ? error.message : t('admin.rangeSettings.parking.errorMessage')
+    showSnackbar(t('admin.rangeSettings.parking.errorMessage'), 'error')
+  } finally {
+    isSavingParking.value = false
   }
 }
 
@@ -603,6 +640,54 @@ watch(
               </v-col>
             </v-row>
 
+            <v-row class="mb-4">
+              <v-col cols="12">
+                <v-sheet
+                  border
+                  rounded="lg"
+                  class="pa-4"
+                  data-testid="range-settings-parking-section"
+                >
+                  <div class="d-flex align-start justify-space-between flex-wrap gap-2">
+                    <div>
+                      <h3 class="text-subtitle-1 font-weight-medium mb-1">
+                        {{ t('admin.rangeSettings.parking.heading') }}
+                      </h3>
+                      <p class="text-body-2 text-medium-emphasis mb-2">
+                        {{ t('admin.rangeSettings.parking.hint') }}
+                      </p>
+                      <p
+                        class="text-body-2 mb-0"
+                        data-testid="range-settings-parking-summary"
+                      >
+                        <template v-if="parkingLocation">
+                          {{
+                            t('admin.rangeSettings.parking.coordinates', {
+                              lat: parkingLocation.latitude,
+                              lng: parkingLocation.longitude,
+                            })
+                          }}
+                        </template>
+                        <template v-else>
+                          {{ t('admin.rangeSettings.parking.empty') }}
+                        </template>
+                      </p>
+                    </div>
+
+                    <v-btn
+                      color="primary"
+                      variant="outlined"
+                      :disabled="isLoading || isSavingParking || !hasRangeSlug"
+                      data-testid="range-settings-parking-open-modal"
+                      @click="isParkingModalOpen = true"
+                    >
+                      {{ t('admin.rangeSettings.parking.editAction') }}
+                    </v-btn>
+                  </div>
+                </v-sheet>
+              </v-col>
+            </v-row>
+
             <v-divider class="my-6" />
 
             <h3 class="text-subtitle-1 font-weight-medium mb-4">
@@ -846,7 +931,12 @@ watch(
       </Form>
     </v-card>
 
-
+    <RangeParkingLocationModal
+      v-model="isParkingModalOpen"
+      :initial-location="parkingLocation"
+      :saving="isSavingParking"
+      @save="handleParkingSave"
+    />
 
     <v-snackbar
 

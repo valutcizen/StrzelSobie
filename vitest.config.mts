@@ -1,6 +1,7 @@
 import { defineProject, defineConfig, configDefaults } from 'vitest/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vue from '@vitejs/plugin-vue';
 
 const includePatterns = ['**/*.test.ts', '**/*.spec.ts', '**/*.tests.ts'];
 const customExcludePatterns = ['tests-e2e/**'];
@@ -36,6 +37,12 @@ const projects = [
 
 export default defineConfig({
   root: rootDir,
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': path.join(rootDir, 'src', 'client', 'src'),
+    },
+  },
   test: {
     include: includePatterns,
     exclude: testExcludePatterns,

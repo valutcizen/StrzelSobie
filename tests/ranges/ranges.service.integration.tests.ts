@@ -86,4 +86,39 @@ describe('RangesService integration', () => {
     expect(result.isSuccess).toBe(false);
     expect(result.getError().message).toContain('already exists');
   });
+
+  it('should update parking location and persist it in extras', async () => {
+    await rangesService.createRange(
+      {
+        slug: 'with-parking',
+        displayName: 'With Parking',
+      },
+      adminUser,
+    );
+
+    const updateResult = await rangesService.updateRangeDetails(
+      'with-parking',
+      { parkingLocation: { latitude: 50.1234, longitude: 19.9876 } },
+      adminUser,
+    );
+
+    expect(updateResult.isSuccess).toBe(true);
+    const updated = updateResult.getValue();
+    expect(updated.parkingLocation).toEqual({ latitude: 50.1234, longitude: 19.9876 });
+    expect(updated.extras.parkingLocation).toEqual({ latitude: 50.1234, longitude: 19.9876 });
+
+    const fetched = await rangesService.getRangeDetails('with-parking', adminUser);
+    expect(fetched.isSuccess).toBe(true);
+    expect(fetched.getValue().parkingLocation).toEqual({ latitude: 50.1234, longitude: 19.9876 });
+
+    const clearResult = await rangesService.updateRangeDetails(
+      'with-parking',
+      { parkingLocation: null },
+      adminUser,
+    );
+
+    expect(clearResult.isSuccess).toBe(true);
+    expect(clearResult.getValue().parkingLocation).toBeNull();
+    expect(clearResult.getValue().extras.parkingLocation).toBeNull();
+  });
 });
