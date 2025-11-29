@@ -1,24 +1,30 @@
 {
+  "common": {
+    "actions": {
+      "cancel": "Anuluj",
+      "confirm": "Potwierdź",
+      "close": "Zamknij",
+      "save": "Zapisz",
+      "submit": "Wyślij",
+      "send": "Wyślij",
+      "retry": "Ponów próbę",
+      "accept": "Akceptuj",
+      "refresh": "Odśwież"
+    },
+    "feedback": {
+      "operationFailed": "Operacja nie powiodła się."
+    },
+    "localeLabels": {
+      "en": "English",
+      "pl": "Polski"
+    },
+    "labels": {
+      "userWithId": "Użytkownik #{id}"
+    }
+  },
   "app": {
-    "title": "Strzel Sobie"
-  },
-  "navigation": {
-    "directory": "Katalog i mapa",
-    "rangeInfo": "Strzelnica",
-    "calendar": "Kalendarz",
-    "userManagement": "Zarządzanie użytkownikami",
-    "userVerification": "Weryfikacja użytkowników",
-    "rangeSettings": "Ustawienia strzelnicy",
-    "rangeUserManagement": "Zarządzanie rolami strzelnicy"
-  },
-  "auth": {
-    "login": "Zaloguj",
-    "register": "Zarejestruj"
-  },
-  "userMenu": {
-    "label": "Menu użytkownika",
-    "profile": "Mój profil",
-    "logout": "Wyloguj"
+    "title": "Strzel Sobie",
+    "subtitle": "System rezerwacji strzelnic dla twojego klubu"
   },
   "roles": {
     "guest": "Gość",
@@ -34,15 +40,51 @@
     "coming-soon": "Wkrótce dostępna",
     "unknown": "Strzelnica"
   },
-  "common": {
+  "navigation": {
+    "directory": "Katalog i mapa",
+    "rangeInfo": "Strzelnica",
+    "calendar": "Kalendarz",
+    "profile": "Mój profil",
+    "userManagement": "Zarządzanie użytkownikami",
+    "rangeUserManagement": "Zarządzanie rolami strzelnicy",
+    "userVerification": "Weryfikacja użytkowników",
+    "rangeSettings": "Ustawienia strzelnicy"
+  },
+  "userMenu": {
+    "label": "Menu użytkownika",
+    "profile": "Mój profil",
+    "logout": "Wyloguj",
+    "login": "Zaloguj"
+  },
+  "language": "Język",
+  "auth": {
+    "title": "Strzel Sobie",
+    "subtitle": "Zaloguj lub stwórz konto, aby uzyskać dostęp do systemu rezerwacji",
+    "login": "Zaloguj",
+    "register": "Zarejestruj",
+    "operationFailed": "Operacja nie powiodła się.",
+    "invalidCredentials": "Nieprawidłowy email lub hasło.",
+    "invalidBody": "Nieprawidłowe dane formularza.",
     "actions": {
-      "save": "Zapisz",
-      "close": "Zamknij",
-      "retry": "Spróbuj ponownie"
+      "login": "Zaloguj",
+      "register": "Zarejestruj"
     },
-    "labels": {
-      "userWithId": "Użytkownik #{id}"
+    "form": {
+      "emailLabel": "Email",
+      "passwordLabel": "Hasło",
+      "passwordConfirmationLabel": "Potwierdź hasło"
+    },
+    "validation": {
+      "emailInvalid": "Nieprawidłowy format email.",
+      "emailRequired": "Email jest wymagany.",
+      "passwordRequired": "Hasło jest wymagane.",
+      "passwordMinLength": "Hasło musi mieć co najmniej 8 znaków.",
+      "passwordConfirmationRequired": "Potwierdzenie hasła jest wymagane.",
+      "passwordsMustMatch": "Hasła muszą być takie same."
     }
+  },
+  "footer": {
+    "privacyPolicy": "Polityka prywatności"
   },
   "calendar": {
       "view": {
@@ -59,6 +101,9 @@
     },
     "errors": {
       "rangeClosed": "Strzelnica jest zamknięta w wybranym czasie."
+    },
+    "alerts": {
+      "detailsFetchFailed": "Nie udało się pobrać szczegółów wydarzenia."
     },
     "snackbar": {
       "propositionSubmitted": "Propozycja została zgłoszona.",
@@ -135,47 +180,16 @@
       "labels": {
         "createdAt": "Data utworzenia",
         "submittedAt": "Data zgłoszenia",
+        "notes": "Notatki",
         "tracksDemand": "Zapotrzebowanie: {count} torów",
         "participants": "Uczestnicy: {count}"
+      },
+      "actions": {
+        "retry": "Ponów próbę"
       },
       "errors": {
         "loadFailed": "Nie udało się pobrać szczegółów wydarzenia."
       }
-    }
-  },
-  "range": {
-    "actionBar": {
-      "available": "Rezerwacje są dostępne dla tej strzelnicy.",
-      "unavailableHint": "Strzelnice bez rezerwacji są widoczne informacyjnie.",
-      "unavailableAlly": "Rezerwacje są wyłączone dla strzelnic partnerskich.",
-      "unavailableComingSoon": "Ta strzelnica jest w przygotowaniu; rezerwacje nie są jeszcze dostępne.",
-      "unavailableGeneric": "Rezerwacje są wyłączone dla tej strzelnicy.",
-      "openCalendar": "Zobacz kalendarz",
-      "backToMap": "Wróć do mapy",
-      "locationLabel": "Otwórz w mapach",
-      "parkingLabel": "Lokalizacja parkingu",
-      "locationLinks": {
-        "google": "Google Maps",
-        "osm": "OpenStreetMap"
-      }
-    }
-  },
-  "rangeDirectory": {
-    "title": "Katalog i mapa strzelnic",
-    "list": {
-      "title": "Lista strzelnic",
-      "empty": "Brak strzelnic do wyświetlenia.",
-      "allowsReservations": "Rezerwacje dostępne",
-      "noReservations": "Rezerwacje niedostępne",
-      "detailsCta": "Zobacz szczegóły",
-      "headers": {
-        "name": "Nazwa",
-        "type": "Typ",
-        "reservations": "Rezerwacje"
-      }
-    },
-    "map": {
-      "empty": "Brak danych do wyświetlenia na mapie."
     }
   },
   "rangeLanding": {
@@ -205,9 +219,6 @@
       "title": "Godziny otwarcia",
       "closed": "Zamknięte"
     },
-    "errors": {
-      "fetchFailed": "Nie udało się pobrać danych strzelnicy."
-    },
     "days": {
       "monday": "Poniedziałek",
       "tuesday": "Wtorek",
@@ -216,19 +227,17 @@
       "friday": "Piątek",
       "saturday": "Sobota",
       "sunday": "Niedziela"
+    },
+    "errors": {
+      "fetchFailed": "Nie udało się pobrać danych strzelnicy."
     }
   },
   "profile": {
     "title": "Mój profil",
+    "emailLabel": "Email",
     "rolesHeading": "Role użytkownika"
   },
   "admin": {
-    "users": {
-      "title": "Zarządzanie użytkownikami",
-      "refresh": "Odśwież",
-      "snackbarSuccess": "Role użytkownika zostały zaktualizowane.",
-      "snackbarError": "Nie udało się zaktualizować ról."
-    },
     "userRoles": {
       "guestImmutableHint": "Rola {role} jest przypisana każdemu użytkownikowi.",
       "currentRolesLabel": "Przypisane role",
@@ -241,9 +250,56 @@
       "editTitle": "Edytuj role użytkownika",
       "selectRolesLabel": "Role"
     },
+    "users": {
+      "title": "Zarządzanie użytkownikami",
+      "refresh": "Odśwież",
+      "snackbarSuccess": "Role użytkownika zostały zaktualizowane.",
+      "snackbarError": "Nie udało się zaktualizować ról.",
+      "deleteTitle": "Usuń użytkownika?",
+      "deleteDescription": "Czy na pewno chcesz usunąć użytkownika {email}? Ta akcja jest nieodwracalna.",
+      "deleteConfirm": "Usuń użytkownika",
+      "deleteSuccess": "Użytkownik został usunięty.",
+      "deleteError": "Nie udało się usunąć użytkownika.",
+      "table": {
+        "email": "Email",
+        "createdAt": "Utworzony",
+        "roles": "Role",
+        "actions": "Akcje",
+        "empty": "Brak użytkowników do wyświetlenia."
+    },
+      "errors": {
+        "fetch": "Nie udało się pobrać listy użytkowników.",
+        "fetchRoles": "Nie udało się pobrać dostępnych ról."
+      }
+    },
+    "rangeUsers": {
+      "title": "Zarządzanie rolami dla strzelnicy",
+      "refresh": "Odśwież",
+      "snackbarSuccess": "Role użytkownika zostały zaktualizowane.",
+      "snackbarError": "Nie udało się zaktualizować ról użytkownika.",
+      "table": {
+        "email": "Email",
+        "createdAt": "Utworzony",
+        "roles": "Role",
+        "actions": "Akcje",
+        "empty": "Brak użytkowników do wyświetlenia.",
+        "noRoles": "Brak przypisanych ról."
+      },
+      "errors": {
+        "fetchUsers": "Nie udało się pobrać listy użytkowników strzelnicy.",
+        "fetchRoles": "Nie udało się pobrać dostępnych ról strzelnicy.",
+        "fetchRange": "Nie udało się pobrać danych strzelnicy."
+      }
+    },
     "verification": {
       "title": "Weryfikacja użytkowników",
-      "refresh": "Odśwież"
+      "refresh": "Odśwież",
+      "empty": "Brak oczekujących użytkowników do weryfikacji.",
+      "snackbarError": "Nie udało się zaktualizować statusu weryfikacji użytkownika.",
+      "submittedAt": "Zgłoszony przed: {timeAgo}",
+      "errors": {
+        "fetch": "Nie udało się pobrać listy użytkowników do weryfikacji."
+      }
     },
     "rangeSettings": {
       "title": "Ustawienia strzelnicy",
@@ -256,6 +312,8 @@
       "locationEmpty": "Brak wybranej lokalizacji.",
       "locationCoordinates": "Szer.: {lat}, Dł.: {lng}",
       "clearLocation": "Wyczyść lokalizację",
+      "latitudeLabel": "Szerokość geograficzna",
+      "longitudeLabel": "Długość geograficzna",
       "parking": {
         "heading": "Lokalizacja parkingu",
         "hint": "Ustaw osobny punkt parkingu widoczny na stronie strzelnicy.",
@@ -270,6 +328,7 @@
         "successMessage": "Lokalizacja parkingu zapisana.",
         "errorMessage": "Nie udało się zapisać lokalizacji parkingu."
       },
+      "rangeTypeLabel": "Typ strzelnicy",
       "publicDescriptionLabel": "Opis publiczny",
       "publicDescriptionHint": "Widoczny dla wszystkich na stronie strzelnicy. Obsługuje podstawowy HTML.",
       "memberDescriptionLabel": "Opis dla członków",
@@ -283,7 +342,77 @@
       "submitAction": "Zapisz zmiany",
       "refreshAction": "Odśwież",
       "successMessage": "Ustawienia strzelnicy zostały zapisane.",
-      "errorMessage": "Nie udało się zapisać ustawień strzelnicy."
+      "errorMessage": "Nie udało się zapisać ustawień strzelnicy.",
+      "recordSaved": "Zapisano termin bez rezerwacji.",
+      "slugHint": "Unikalny identyfikator URL strzelnicy, używany w adresie strony strzelnicy.",
+      "slugRequired": "Slug strzelnicy jest wymagany.",
+      "deleteAction": "Usuń strzelnicę",
+      "deleteConfirm": "Czy na pewno chcesz usunąć tę strzelnicę? Ta akcja jest nieodwracalna.",
+      "deleteSuccess": "Strzelnica została usunięta.",
+      "deleteError": "Nie udało się usunąć strzelnicy.",
+      "newRange": {
+        "title": "Utwórz nową strzelnicę",
+        "description": "Wprowadź nazwę (końcówka adresu URL) nowej strzelnicy.",
+        "slugLabel": "Nazwa strzelnicy (adres URL)",
+        "slugHint": "Użyj małych liter, cyfr i myślników.",
+        "cta": "Nowa strzelnica"
+    },
+      "validation": {
+        "required": "To pole jest wymagane.",
+        "invalidTime": "Nieprawidłowy format godziny (HH:MM).",
+        "closeAfterOpen": "Godzina zamknięcia musi być późniejsza niż godzina otwarcia ({day}).",
+        "minTracks": "Liczba torów musi być co najmniej 1."
+      }
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Nie znaleziono strony",
+      "subtitle": "Przepraszamy, ale strona, której szukasz, nie istnieje.",
+      "backToCalendar": "Wróć do mapy"
+    }
+  },
+  "privacyPolicy": {
+    "title": "Polityka prywatności",
+    "description": "Szanujemy Twoją prywatność i zobowiązujemy się do ochrony Twoich danych osobowych. Niniejsza polityka prywatności wyjaśnia, jakie informacje zbieramy, jak je wykorzystujemy i jakie masz prawa w związku z tymi danymi.",
+    "contact": "Jeśli masz pytania, skontaktuj się z administratorem"
+  },
+  "range": {
+    "actionBar": {
+      "available": "Rezerwacje są dostępne dla tej strzelnicy.",
+      "unavailableHint": "Strzelnice bez rezerwacji są widoczne informacyjnie.",
+      "unavailableAlly": "Rezerwacje są wyłączone dla strzelnic partnerskich.",
+      "unavailableComingSoon": "Ta strzelnica jest w przygotowaniu; rezerwacje nie są jeszcze dostępne.",
+      "unavailableGeneric": "Rezerwacje są wyłączone dla tej strzelnicy.",
+      "openCalendar": "Zobacz kalendarz",
+      "backToMap": "Wróć do mapy",
+      "locationLabel": "Otwórz w mapach",
+      "parkingLabel": "Lokalizacja parkingu",
+      "locationLinks": {
+        "google": "Google Maps",
+        "osm": "OpenStreetMap"
+      }
+    }
+  },
+  "rangeDirectory": {
+    "title": "Katalog i mapa strzelnic",
+    "actions": {
+      "skipToList": "Przejdź do listy strzelnic"
+    },
+    "list": {
+      "title": "Lista strzelnic",
+      "empty": "Brak strzelnic do wyświetlenia.",
+      "allowsReservations": "Rezerwacje dostępne",
+      "noReservations": "Rezerwacje niedostępne",
+      "detailsCta": "Zobacz szczegóły",
+      "headers": {
+        "name": "Nazwa",
+        "type": "Typ",
+        "reservations": "Rezerwacje"
+      }
+    },
+    "map": {
+      "empty": "Brak danych do wyświetlenia na mapie."
     }
   }
 }

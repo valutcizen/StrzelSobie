@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <AuthDialog />
     <component :is="layoutComponent">
       <router-view />
     </component>
@@ -11,6 +12,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppShell from '@/layouts/AppShell.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import AuthDialog from '@/components/auth/AuthDialog.vue'
 import '@mdi/font/css/materialdesignicons.css'
 
 const route = useRoute()

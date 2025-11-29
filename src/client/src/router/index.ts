@@ -25,12 +25,6 @@ const routes: AppRouteRecordRaw[] = [
     },
   },
   {
-    path: '/auth',
-    name: 'Auth',
-    component: () => import('@/views/AuthView.vue'),
-    meta: { layout: 'auth', requiresAuth: false },
-  },
-  {
     path: '/map',
     name: 'RangeDirectory',
     component: () => import('@/views/RangeDirectoryView.vue'),

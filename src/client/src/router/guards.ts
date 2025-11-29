@@ -1,12 +1,14 @@
 import type { Pinia } from 'pinia'
 import type { Router } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAuthDialogStore } from '@/stores/authDialog'
 import { useRangeStore } from '@/stores/range'
 import { getLastRangeId } from '@/utils/lastRange'
 import type { AppRouteMeta } from './index'
 
 export const setupRouterGuards = (router: Router, pinia: Pinia) => {
   const authStore = useAuthStore(pinia)
+  const authDialogStore = useAuthDialogStore(pinia)
   const rangeStore = useRangeStore(pinia)
   const routesBypassingAuthRedirect = new Set(['RangeDirectory', 'RangeLanding', 'Calendar'])
 
@@ -28,11 +30,6 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
 
         return { name: 'RangeDirectory' }
       }
-    }
-
-    if (to.name === 'Auth' && authStore.isAuthenticated) {
-      const targetRange = getLastRangeId() ?? authStore.defaultRangeSlug
-      return { name: 'RangeLanding', params: { rangeSlug: targetRange } }
     }
 
     if (to.name === 'Calendar') {
@@ -61,7 +58,16 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
         return true
       }
 
-      return { name: 'Auth', query: { redirect: to.fullPath } }
+      authDialogStore.open({ tab: 'login', redirectPath: to.fullPath })
+
+      const fallbackRange = getLastRangeId() ?? authStore.defaultRangeSlug
+      const rangeSlug = typeof to.params.rangeSlug === 'string' ? to.params.rangeSlug : fallbackRange
+
+      if (rangeSlug) {
+        return { name: 'RangeLanding', params: { rangeSlug } }
+      }
+
+      return { name: 'RangeDirectory' }
     }
 
     if (!requiresAuth) {

@@ -13,11 +13,13 @@ This package contains the Vue 3 + TypeScript single-page application for Strzel 
 
 ## Source Structure
 
-- `src/layouts` — Shared app/auth layout shells
-- `src/views` — Route-aligned views (`/auth`, `/profile`, admin dashboards, etc.)
-- `src/components` — Reusable UI elements (calendar dialogs, navigation helpers)
+- `src/layouts` — Shared layout shells
+- `src/views` — Route-aligned views (`/profile`, admin dashboards, range pages, etc.)
+- `src/components` — Reusable UI elements (auth dialog, calendar dialogs, navigation helpers)
 - `src/stores` — Pinia stores for auth, calendar, and admin use cases
 - `src/plugins` — Vuetify, i18n, and VeeValidate setup modules
 - `src/services/http.ts` — Axios instance with global auth error handling
+
+Authentication and registration are presented in the `AuthDialog` modal (triggered from the top app bar or guards) instead of a dedicated `/auth` route.
 
 Run builds or dev servers via workspace scripts, e.g. `npm run dev -w src/client`.

@@ -70,7 +70,7 @@
         variant="text"
         prepend-icon="mdi-login"
         data-testid="login-button"
-        @click="router.push({ name: 'Auth' })"
+        @click="openLoginDialog"
       >
         {{ t('userMenu.login') }}
       </v-btn>
@@ -206,12 +206,14 @@ import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAuthDialogStore } from '@/stores/authDialog'
 import { useRangeStore } from '@/stores/range'
 import { UserRoleEnum } from '@/types/auth'
 import { getLastRangeId } from '@/utils/lastRange'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const authDialogStore = useAuthDialogStore()
 const rangeStore = useRangeStore()
 const router = useRouter()
 const display = useDisplay()
@@ -265,7 +267,8 @@ onBeforeUnmount(() => {
 
 const handleLogout = async () => {
   await authStore.logout()
-  await router.push({ name: 'Auth' })
+  authDialogStore.open({ tab: 'login' })
+  await router.push({ name: 'RangeDirectory' })
 }
 
 const toggleNav = () => {
@@ -310,6 +313,11 @@ const handleCreateRangeConfirm = async () => {
   } finally {
     isCreatingRange.value = false
   }
+}
+
+const openLoginDialog = () => {
+  const redirectPath = router.currentRoute.value.fullPath
+  authDialogStore.open({ tab: 'login', redirectPath })
 }
 </script>
 

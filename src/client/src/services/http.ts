@@ -1,5 +1,7 @@
 import axios from 'axios'
 import type { Router } from 'vue-router'
+import { useAuthDialogStore } from '@/stores/authDialog'
+import { getLastRangeId } from '@/utils/lastRange'
 import type { AuthStore } from '../stores/auth'
 
 export const http = axios.create({
@@ -16,6 +18,7 @@ export const setupHttpInterceptors = (router: Router, authStore: AuthStore) => {
   }
 
   interceptorsConfigured = true
+  const authDialogStore = useAuthDialogStore(authStore.$pinia)
 
   http.interceptors.response.use(
     (response) => response,
@@ -32,8 +35,18 @@ export const setupHttpInterceptors = (router: Router, authStore: AuthStore) => {
         )
         const routeName = typeof currentRoute.name === 'string' ? currentRoute.name : null
 
-        if (requiresAuth && currentRoute.name !== 'Auth' && (!routeName || !routesBypassingAuthRedirect.has(routeName))) {
-          await router.push({ name: 'Auth' })
+        if (requiresAuth && (!routeName || !routesBypassingAuthRedirect.has(routeName))) {
+          authDialogStore.open({ redirectPath: currentRoute.fullPath })
+
+          const fallbackRange = typeof currentRoute.params?.rangeSlug === 'string'
+            ? (currentRoute.params.rangeSlug as string)
+            : getLastRangeId() ?? authStore.defaultRangeSlug
+
+          if (fallbackRange) {
+            await router.push({ name: 'RangeLanding', params: { rangeSlug: fallbackRange } })
+          } else {
+            await router.push({ name: 'RangeDirectory' })
+          }
         }
       }
 
