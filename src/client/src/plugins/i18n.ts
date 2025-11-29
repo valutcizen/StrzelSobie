@@ -260,6 +260,11 @@ const messages = {
         refresh: 'Refresh',
         snackbarSuccess: 'User roles have been updated.',
         snackbarError: 'Failed to update user roles.',
+        deleteTitle: 'Delete user?',
+        deleteDescription: 'This will remove {email} and free the email for future registration.',
+        deleteConfirm: 'Delete user',
+        deleteSuccess: 'User deleted.',
+        deleteError: 'Failed to delete user.',
         table: {
           email: 'Email',
           createdAt: 'Created at',
@@ -660,6 +665,11 @@ const messages = {
         refresh: 'Odśwież',
         snackbarSuccess: 'Role użytkownika zostały zaktualizowane.',
         snackbarError: 'Nie udało się zaktualizować ról.',
+        deleteTitle: 'Usunąć użytkownika?',
+        deleteDescription: 'To działanie usunie {email} i zwolni e-mail do ponownej rejestracji.',
+        deleteConfirm: 'Usuń użytkownika',
+        deleteSuccess: 'Użytkownik został usunięty.',
+        deleteError: 'Nie udało się usunąć użytkownika.',
         table: {
           email: 'Email',
           createdAt: 'Data utworzenia',

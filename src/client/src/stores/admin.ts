@@ -43,6 +43,7 @@ const mapUserDtoToRow = (user: UserDto): UserRow => {
   return {
     id: String(user.id),
     email: user.email,
+    isDeleted: user.isDeleted ?? 0,
     createdAt: user.createdAt,
     globalRoles,
     globalRoleNames: normalizeUserRoles(globalRoles.map((role) => role.name)),
@@ -193,6 +194,9 @@ export const useAdminStore = defineStore('admin', {
     async revokeRole(userId: string, roleId: number, rangeId: number | null = null) {
       const query = rangeId !== null ? `?rangeId=${rangeId}` : ''
       await http.delete(`/users/${userId}/roles/${roleId}${query}`)
+    },
+    async deleteUser(userId: string) {
+      await http.delete(`/users/${userId}`)
     },
     async promotePendingUser(userId: string, role: UserRole) {
       await this.fetchRoles()

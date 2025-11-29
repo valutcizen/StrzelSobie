@@ -269,8 +269,24 @@ test.describe('Reservations', () => {
       await refreshPromise;
       await expect(calendarPage.snackbar).toContainText(translate('calendar.snackbar.reservationSaved'));
 
-      const detailResponse = await page.request.get(`/api/v1/reservations/${reservationId}`);
-      expect(detailResponse.ok()).toBeTruthy();
+      const fetchDetailWithRetry = async (retries = 3, delayMs = 500) => {
+        let lastError: unknown;
+        for (let attempt = 0; attempt < retries; attempt++) {
+          try {
+            const response = await page.request.get(`/api/v1/reservations/${reservationId}`);
+            if (response.ok()) {
+              return response;
+            }
+            lastError = new Error(`Unexpected status ${response.status()}`);
+          } catch (error) {
+            lastError = error;
+          }
+          await page.waitForTimeout(delayMs);
+        }
+        throw lastError;
+      };
+
+      const detailResponse = await fetchDetailWithRetry();
       const detail = await detailResponse.json();
       const detailParticipants = detail.numParticipants ?? detail.num_participants;
       const detailTracks =

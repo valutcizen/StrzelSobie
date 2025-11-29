@@ -8,12 +8,17 @@ import {
   RoleNotFoundError,
   RoleScopeError,
   RangeNotFoundError,
+  IAuditService,
 } from '@strzel-sobie/common/models';
-import { Result, GetUsersOptions, MeDto, UserDto, UserIdentifierDto, PaginatedUsersDto } from '@strzel-sobie/common';
+import { Result, GetUsersOptions, MeDto, UserDto, UserIdentifierDto, PaginatedUsersDto, DeleteUserCommand } from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: IUserRepository, private readonly rangesService: IRangesService) {}
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly rangesService: IRangesService,
+    private readonly auditService: IAuditService
+  ) {}
 
   async findUserByEmail(email: string): Promise<Result<UserIdentifierDto>> {
     try {
@@ -259,6 +264,47 @@ export class UserService implements IUserService {
         await this.userRepository.removeGlobalRole(targetUserId, roleId);
       } else {
         await this.userRepository.removeRangeRole(targetUserId, roleId, rangeId as number);
+      }
+
+      return Result.ok(undefined);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  async deleteUser(command: DeleteUserCommand): Promise<Result<void>> {
+    try {
+      const { targetUserId, requester } = command;
+      const requesterProfile = await this.userRepository.getFullUserProfile(requester.id);
+      const requesterRoles = requesterProfile?.roles ?? [];
+      const isAdmin = requesterRoles.includes('Club/Community Administrator');
+
+      if (!isAdmin) {
+        return Result.fail(new ForbiddenError('Forbidden'));
+      }
+
+      const user = await this.userRepository.getById(targetUserId);
+      if (!user) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+
+      const timestamp = new Date().toISOString();
+      const updatedEmail = `${user.email} ${timestamp}`;
+
+      await this.userRepository.deleteUser(targetUserId, updatedEmail);
+
+      const auditLogResult = await this.auditService.logAction({
+        action_type: 'USER_DELETED',
+        target_id: targetUserId,
+        details: {
+          previousEmail: user.email,
+          updatedEmail,
+          deletedBy: requester.id,
+        },
+      });
+
+      if (!auditLogResult.isSuccess) {
+        return Result.fail(auditLogResult.getError());
       }
 
       return Result.ok(undefined);

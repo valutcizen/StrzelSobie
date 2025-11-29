@@ -164,4 +164,33 @@ describe('UserDbRepository integration', () => {
 
     expect(record).toBeNull();
   });
+
+  it('deleteUser marks the record as deleted, rewrites the email, and clears role assignments', async () => {
+    await repository.assignRangeRole(3, 5, 1);
+
+    const updatedEmail = 'member@example.com 2024-02-02T10:00:00.000Z';
+    await repository.deleteUser(3, updatedEmail);
+
+    const userRow = await dbHandle.d1
+      .prepare('SELECT email, is_deleted FROM users_users WHERE id = ?')
+      .bind(3)
+      .first<{ email: string; is_deleted: number }>();
+
+    expect(userRow).toEqual({ email: updatedEmail, is_deleted: 1 });
+
+    const hasGlobalRoles = await dbHandle.d1
+      .prepare('SELECT 1 FROM users_user_global_roles WHERE user_id = ?')
+      .bind(3)
+      .first<number>();
+    expect(hasGlobalRoles).toBeNull();
+
+    const hasRangeRoles = await dbHandle.d1
+      .prepare('SELECT 1 FROM users_user_range_roles WHERE user_id = ?')
+      .bind(3)
+      .first<number>();
+    expect(hasRangeRoles).toBeNull();
+
+    const lookup = await repository.findByEmail('member@example.com');
+    expect(lookup).toBeNull();
+  });
 });

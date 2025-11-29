@@ -36,4 +36,9 @@ export type AssignRoleCommand = {
   rangeId: UserRangeRole['range_id'] | null;
 };
 
+export type DeleteUserCommand = {
+  targetUserId: User['id'];
+  requester: UserDto;
+};
+
 export type GetUsersOptions = PaginatedQueryOptions<'id' | 'email' | 'createdAt'>;

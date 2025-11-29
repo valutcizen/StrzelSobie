@@ -8,7 +8,8 @@ export type AuditActionType =
   | 'RESERVATION_CREATE'
   | 'RESERVATION_CONVERT'
   | 'RESERVATION_CANCEL'
-  | 'RECORD_CREATE';
+  | 'RECORD_CREATE'
+  | 'USER_DELETED';
 
 export type AuditLogEntry = {
   action_type: AuditActionType;

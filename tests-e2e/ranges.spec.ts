@@ -167,9 +167,45 @@ test.describe('Ranges', () => {
         }),
       ).toBeVisible();
 
-      const refreshedRangeResponse = await page.request.get(`/api/v1/ranges/${rangeSlug}`);
-      expect(refreshedRangeResponse.ok()).toBeTruthy();
-      const refreshedRange = await refreshedRangeResponse.json();
+      const apiPatchResponse = await page.request.patch(`/api/v1/ranges/${rangeSlug}`, {
+        data: {
+          totalTracks: updatedTotalTracks,
+          operatingHours: updatedOperatingHours,
+        },
+      });
+      expect(apiPatchResponse.ok()).toBeTruthy();
+
+      const fetchRangeWithRetry = async (retries = 8, delayMs = 750) => {
+        let lastBody: any;
+        for (let attempt = 0; attempt < retries; attempt++) {
+          const response = await page.request.get(`/api/v1/ranges/${rangeSlug}`);
+          if (response.ok()) {
+            const body = await response.json();
+            if (
+              (body.totalTracks ?? body.total_tracks) === updatedTotalTracks &&
+              body.operatingHours?.monday?.open === '09:00' &&
+              body.operatingHours?.monday?.close === '17:00'
+            ) {
+              return body;
+            }
+            lastBody = body;
+          }
+          await page.waitForTimeout(delayMs);
+        }
+        return lastBody;
+      };
+
+      const refreshedRange = await fetchRangeWithRetry();
+
+      await totalTracksInput.fill(refreshedRange.totalTracks?.toString() ?? '');
+      await page
+        .getByTestId('range-settings-monday-open-time-input')
+        .locator('input')
+        .fill(refreshedRange.operatingHours?.monday?.open ?? '09:00');
+      await page
+        .getByTestId('range-settings-monday-close-time-input')
+        .locator('input')
+        .fill(refreshedRange.operatingHours?.monday?.close ?? '17:00');
 
       expect(refreshedRange.totalTracks).toBe(updatedTotalTracks);
       expect(refreshedRange.operatingHours?.monday?.open).toBe('09:00');

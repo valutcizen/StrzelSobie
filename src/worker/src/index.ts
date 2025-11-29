@@ -9,6 +9,7 @@ import { GetRoles } from './endpoints/v1/user/roles';
 import { GetUsers } from './endpoints/v1/user/get-users';
 import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
+import { DeleteUserRoute } from './endpoints/v1/user/delete-user';
 import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges';
 import { GetRange } from './endpoints/v1/ranges/get-range';
 import { CreateRange } from './endpoints/v1/ranges/create-range';
@@ -118,7 +119,7 @@ app.use('*', async (c, next) => {
   // Services
   const auditService = new AuditService(auditRepository);
   const rangesService = new RangesService(rangesRepository, auditService);
-  const userService = new UserService(userRepository, rangesService);
+  const userService = new UserService(userRepository, rangesService, auditService);
   const authService = new AuthService(
     authRepository,
     sessionRepository,
@@ -149,6 +150,7 @@ openapi.get('/api/v1/users', authMiddleware, GetUsers);
 openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
 openapi.post('/api/v1/users/:userId/roles', authMiddleware, SetUserRoleRoute);
 openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUserRoleRoute);
+openapi.delete('/api/v1/users/:userId', authMiddleware, DeleteUserRoute);
 
 openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/map-ranges', GetMapRangesRoute);

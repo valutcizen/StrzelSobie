@@ -1,6 +1,6 @@
 import { MeDto } from '../auth/dto';
 import { Role } from '../auth/model';
-import { GetUsersOptions, PaginatedUsersDto, UserDto, UserIdentifierDto } from './dto';
+import { DeleteUserCommand, GetUsersOptions, PaginatedUsersDto, UserDto, UserIdentifierDto } from './dto';
 import { Result } from '../result';
 import { User } from './model';
 
@@ -24,4 +24,5 @@ export interface IUserService {
     rangeId: number | null;
     requester: UserDto;
   }): Promise<Result<void>>;
+  deleteUser(command: DeleteUserCommand): Promise<Result<void>>;
 }

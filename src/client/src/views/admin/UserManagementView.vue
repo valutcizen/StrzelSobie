@@ -25,6 +25,11 @@ const adminStore = useAdminStore()
 const selectedUser = ref<UserRow | null>(null)
 const isDialogOpen = ref(false)
 const isSavingRoles = ref(false)
+const deleteDialogState = reactive({
+  open: false,
+  user: null as UserRow | null,
+  isDeleting: false,
+})
 const snackbarState = reactive({
   open: false,
   message: '',
@@ -146,6 +151,16 @@ const closeDialog = () => {
   isDialogOpen.value = false
 }
 
+const openDeleteDialog = (user: UserRow) => {
+  deleteDialogState.user = user
+  deleteDialogState.open = true
+}
+
+const closeDeleteDialog = () => {
+  deleteDialogState.user = null
+  deleteDialogState.open = false
+}
+
 watch(
   () => isDialogOpen.value,
   (isOpen) => {
@@ -212,6 +227,27 @@ const syncRolesForUser = async (updatedRoles: UserRole[]) => {
     showSnackbar(t('admin.users.snackbarError'), 'error')
   } finally {
     isSavingRoles.value = false
+  }
+}
+
+const confirmDelete = async () => {
+  if (!deleteDialogState.user) {
+    return
+  }
+
+  deleteDialogState.isDeleting = true
+  lastError.value = null
+
+  try {
+    await adminStore.deleteUser(deleteDialogState.user.id)
+    await fetchUsers()
+    showSnackbar(t('admin.users.deleteSuccess'))
+  } catch (error) {
+    lastError.value = error instanceof Error ? error.message : t('admin.users.deleteError')
+    showSnackbar(t('admin.users.deleteError'), 'error')
+  } finally {
+    deleteDialogState.isDeleting = false
+    closeDeleteDialog()
   }
 }
 
@@ -339,6 +375,16 @@ const handleTableOptionsUpdate = (options: DataTableOptions) => {
           <v-btn
             icon
             variant="text"
+            color="error"
+            :disabled="item.isDeleted === 1 || deleteDialogState.isDeleting"
+            :data-testid="`user-management-delete-button-${item.id}`"
+            @click="openDeleteDialog(item)"
+          >
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+          <v-btn
+            icon
+            variant="text"
             color="primary"
             :data-testid="`user-management-edit-button-${item.id}`"
             @click="openEditDialog(item)"
@@ -372,6 +418,36 @@ const handleTableOptionsUpdate = (options: DataTableOptions) => {
       @update:open="isDialogOpen = $event"
       @save="syncRolesForUser"
     />
+
+    <v-dialog
+      v-model="deleteDialogState.open"
+      max-width="480"
+    >
+      <v-card>
+        <v-card-title>{{ t('admin.users.deleteTitle') }}</v-card-title>
+        <v-card-text>
+          {{ t('admin.users.deleteDescription', { email: deleteDialogState.user?.email ?? '' }) }}
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn
+            variant="text"
+            :disabled="deleteDialogState.isDeleting"
+            @click="closeDeleteDialog"
+          >
+            {{ t('common.actions.cancel') }}
+          </v-btn>
+          <v-btn
+            color="error"
+            variant="flat"
+            :loading="deleteDialogState.isDeleting"
+            data-testid="user-management-confirm-delete-button"
+            @click="confirmDelete"
+          >
+            {{ t('admin.users.deleteConfirm') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-snackbar
       v-model="snackbarState.open"

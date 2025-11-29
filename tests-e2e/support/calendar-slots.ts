@@ -36,7 +36,9 @@ const hashSeed = (seed: string): number => {
 
 const buildWeekSlots = (weekStart: Date): SlotCandidate[] => {
   const dayOffsets = [0, 1, 2, 3, 4]; // Monday–Friday
-  const hours = Array.from({ length: 8 }, (_, index) => 10 + index); // 10:00–17:30
+  // Keep end times within the tightest known range closing time (17:00) to avoid RangeClosed errors
+  // when other tests adjust operating hours.
+  const hours = Array.from({ length: 7 }, (_, index) => 10 + index); // 10:00–16:30 starts
   const minutes = [0, 30];
 
   const slots: SlotCandidate[] = [];

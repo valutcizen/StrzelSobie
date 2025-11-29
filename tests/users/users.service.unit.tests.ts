@@ -22,6 +22,10 @@ type MockedRangesService = {
   [K in keyof IRangesService]: ReturnType<typeof vi.fn<IRangesService[K]>>;
 };
 
+type MockedAuditService = {
+  [K in keyof IAuditService]: ReturnType<typeof vi.fn<IAuditService[K]>>;
+};
+
 const adminRoleName = 'Club/Community Administrator';
 
 const makeUserModel = (overrides: Partial<UserModel> = {}): UserModel => ({
@@ -71,6 +75,7 @@ const createTestContext = () => {
     assignRangeRole: vi.fn<IUserRepository['assignRangeRole']>(),
     removeGlobalRole: vi.fn<IUserRepository['removeGlobalRole']>(),
     removeRangeRole: vi.fn<IUserRepository['removeRangeRole']>(),
+    deleteUser: vi.fn<IUserRepository['deleteUser']>(),
     getByEmail: vi.fn<IUserRepository['getByEmail']>(),
     add: vi.fn<IUserRepository['add']>(),
     update: vi.fn<IUserRepository['update']>(),
@@ -85,12 +90,19 @@ const createTestContext = () => {
     deleteRange: vi.fn<IRangesService['deleteRange']>(),
   };
 
+  const auditService: MockedAuditService = {
+    logAction: vi.fn<IAuditService['logAction']>(),
+  };
+
+  auditService.logAction.mockResolvedValue(Result.ok(undefined));
+
   const service = new UserService(
     userRepository as unknown as IUserRepository,
-    rangesService as unknown as IRangesService
+    rangesService as unknown as IRangesService,
+    auditService as unknown as IAuditService
   );
 
-  return { service, userRepository, rangesService };
+  return { service, userRepository, rangesService, auditService };
 };
 
 describe('UserService contract', () => {
@@ -736,6 +748,64 @@ describe('UserService contract', () => {
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBe(failure);
+    });
+  });
+
+  describe('deleteUser', () => {
+    const requester = makeUserDto({ id: 99 });
+    const adminProfile = makeProfile({ id: requester.id, roles: [adminRoleName] });
+
+    it('fails when requester is not an administrator', async () => {
+      const { service, userRepository, auditService } = createTestContext();
+      userRepository.getFullUserProfile.mockResolvedValue(makeProfile({ roles: ['Member'] }));
+
+      const result = await service.deleteUser({ targetUserId: 7, requester });
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ForbiddenError);
+      expect(userRepository.deleteUser).not.toHaveBeenCalled();
+      expect(auditService.logAction).not.toHaveBeenCalled();
+    });
+
+    it('fails when the target user is missing', async () => {
+      const { service, userRepository } = createTestContext();
+      userRepository.getFullUserProfile.mockResolvedValue(adminProfile);
+      userRepository.getById.mockResolvedValue(null);
+
+      const result = await service.deleteUser({ targetUserId: 404, requester });
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(UserNotFoundError);
+    });
+
+    it('marks user as deleted, rewrites email with timestamp, and logs audit entry', async () => {
+      vi.useFakeTimers();
+      const fixedDate = new Date('2024-04-01T12:00:00.000Z');
+      vi.setSystemTime(fixedDate);
+
+      try {
+        const { service, userRepository, auditService } = createTestContext();
+        const targetUser = makeUserModel({ id: 55, email: 'delete-me@example.com' });
+        userRepository.getFullUserProfile.mockResolvedValue(adminProfile);
+        userRepository.getById.mockResolvedValue(targetUser);
+
+        const result = await service.deleteUser({ targetUserId: targetUser.id, requester });
+
+        expect(result.isSuccess).toBe(true);
+        const updatedEmail = `${targetUser.email} ${fixedDate.toISOString()}`;
+        expect(userRepository.deleteUser).toHaveBeenCalledWith(targetUser.id, updatedEmail);
+        expect(auditService.logAction).toHaveBeenCalledWith({
+          action_type: 'USER_DELETED',
+          target_id: targetUser.id,
+          details: {
+            previousEmail: targetUser.email,
+            updatedEmail,
+            deletedBy: requester.id,
+          },
+        });
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

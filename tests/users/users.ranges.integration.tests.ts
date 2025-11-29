@@ -82,6 +82,7 @@ describe('UserService ↔ Ranges module integration', () => {
 function createUserServiceContext(): {
   userRepository: Mocked<IUserRepository>;
   rangesService: Mocked<IRangesService>;
+  auditService: Mocked<IAuditService>;
   service: UserService;
 } {
   const userRepository: Mocked<IUserRepository> = {
@@ -98,6 +99,7 @@ function createUserServiceContext(): {
     assignRangeRole: vi.fn(),
     removeGlobalRole: vi.fn(),
     removeRangeRole: vi.fn(),
+    deleteUser: vi.fn(),
   };
 
   const rangesService: Mocked<IRangesService> = {
@@ -109,9 +111,14 @@ function createUserServiceContext(): {
     deleteRange: vi.fn(),
   };
 
-  const service = new UserService(userRepository, rangesService);
+  const auditService: Mocked<IAuditService> = {
+    logAction: vi.fn(),
+  };
+  auditService.logAction.mockResolvedValue(Result.ok(undefined));
 
-  return { userRepository, rangesService, service };
+  const service = new UserService(userRepository, rangesService, auditService);
+
+  return { userRepository, rangesService, auditService, service };
 }
 
 function createUserDto(id: number, email: string, roles: Role[]): UserDto {

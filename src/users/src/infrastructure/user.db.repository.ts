@@ -6,7 +6,7 @@ export class UserDbRepository implements IUserRepository {
   constructor(private readonly db: IDatabase) {}
 
   async findByEmail(email: string): Promise<UserIdentifierDto | null> {
-    const stmt = this.db.prepare('SELECT id, email FROM users_users WHERE email = ?');
+    const stmt = this.db.prepare('SELECT id, email FROM users_users WHERE email = ? AND is_deleted = 0');
     const result = await stmt.bind(email).first<{ id: number; email: string }>();
 
     if (!result) {
@@ -30,10 +30,10 @@ export class UserDbRepository implements IUserRepository {
 
   async getFullUserProfile(userId: number): Promise<MeDto | null> {
     // 1. Get user basic info
-    const userStmt = this.db.prepare('SELECT id, email, phone_number FROM users_users WHERE id = ?');
-    const userResult = await userStmt.bind(userId).first<{ id: number; email: string; phone_number: string | null }>();
+    const userStmt = this.db.prepare('SELECT id, email, phone_number, is_deleted FROM users_users WHERE id = ?');
+    const userResult = await userStmt.bind(userId).first<{ id: number; email: string; phone_number: string | null; is_deleted: number }>();
 
-    if (!userResult) {
+    if (!userResult || userResult.is_deleted === 1) {
       return null;
     }
 
@@ -106,11 +106,11 @@ export class UserDbRepository implements IUserRepository {
     const safeLimit = toPositiveInt(limit, 10);
     const offset = (safePage - 1) * safeLimit;
 
-    let whereClause = '';
+    let whereClause = 'WHERE is_deleted = 0';
     const params: (string | number)[] = [];
 
     if (filter) {
-      whereClause = 'WHERE email LIKE ?';
+      whereClause += ' AND email LIKE ?';
       params.push(`%${filter}%`);
     }
 
@@ -159,5 +159,16 @@ export class UserDbRepository implements IUserRepository {
   async removeRangeRole(userId: number, roleId: number, rangeId: number): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM users_user_range_roles WHERE user_id = ? AND role_id = ? AND range_id = ?');
     await stmt.bind(userId, roleId, rangeId).run();
+  }
+
+  async deleteUser(userId: number, updatedEmail: string): Promise<void> {
+    const updateStmt = this.db.prepare('UPDATE users_users SET email = ?, is_deleted = 1 WHERE id = ?');
+    await updateStmt.bind(updatedEmail, userId).run();
+
+    const deleteGlobalRolesStmt = this.db.prepare('DELETE FROM users_user_global_roles WHERE user_id = ?');
+    const deleteRangeRolesStmt = this.db.prepare('DELETE FROM users_user_range_roles WHERE user_id = ?');
+
+    await deleteGlobalRolesStmt.bind(userId).run();
+    await deleteRangeRolesStmt.bind(userId).run();
   }
 }

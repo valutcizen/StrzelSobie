@@ -11,6 +11,7 @@ export interface RoleAssignment extends RoleDefinition {
 export interface UserRow {
   id: string
   email: string
+  isDeleted: 0 | 1
   createdAt: string
   globalRoles: RoleAssignment[]
   globalRoleNames: UserRole[]

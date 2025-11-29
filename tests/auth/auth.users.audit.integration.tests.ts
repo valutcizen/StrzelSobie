@@ -110,6 +110,7 @@ function createAuthServiceContext(): {
     getUsers: vi.fn(),
     assignRoleToUser: vi.fn(),
     removeRoleFromUser: vi.fn(),
+    deleteUser: vi.fn(),
   };
 
   const auditService: Mocked<IAuditService> = {
