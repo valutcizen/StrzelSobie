@@ -35,6 +35,7 @@ describe('RangesService contract', () => {
     memberDescription: null,
     latitude: 0,
     longitude: 0,
+    extras: '{}',
     ...overrides,
   });
 
@@ -124,9 +125,50 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue()).toEqual({
-      ...rawRange,
+      id: rawRange.id,
+      slug: rawRange.slug,
+      displayName: rawRange.displayName,
+      type: rawRange.type,
+      allowsReservations: rawRange.allowsReservations,
       isDeleted: false,
+      publicDescription: rawRange.publicDescription,
+      memberDescription: rawRange.memberDescription,
+      latitude: rawRange.latitude,
+      longitude: rawRange.longitude,
+      totalTracks: rawRange.totalTracks,
       operatingHours: { monday: { open: '09:00', close: '17:00' } },
+      extras: {},
+      parkingLocation: null,
+    });
+  });
+
+  it('maps parking location from extras JSON', async () => {
+    const rawRange = buildRange({
+      extras: JSON.stringify({ parkingLocation: { latitude: 50.1234, longitude: 19.9876 } }),
+    });
+    asMock(rangesRepository.findBySlug).mockResolvedValue(rawRange);
+
+    const result = await service.getRangeDetails(rawRange.slug);
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.getValue()).toMatchObject({
+      extras: { parkingLocation: { latitude: 50.1234, longitude: 19.9876 } },
+      parkingLocation: { latitude: 50.1234, longitude: 19.9876 },
+    });
+  });
+
+  it('omits parking location when extras payload is invalid', async () => {
+    const rawRange = buildRange({
+      extras: '{"parkingLocation":{"latitude":"bad","longitude":null}}',
+    });
+    asMock(rangesRepository.findBySlug).mockResolvedValue(rawRange);
+
+    const result = await service.getRangeDetails(rawRange.slug);
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.getValue()).toMatchObject({
+      extras: {},
+      parkingLocation: null,
     });
   });
 
@@ -140,17 +182,27 @@ describe('RangesService contract', () => {
   });
 
   it('fails when operating hours JSON cannot be parsed', async () => {
-    asMock(rangesRepository.findBySlug).mockResolvedValue(
-      buildRange({ operatingHours: 'not-json' })
-    );
+    const storedRange = buildRange({ operatingHours: 'not-json' });
+    asMock(rangesRepository.findBySlug).mockResolvedValue(storedRange);
 
     const result = await service.getRangeDetails('alpha-range');
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue()).toEqual({
-      ...buildRange({ operatingHours: 'not-json' }),
+      id: storedRange.id,
+      slug: storedRange.slug,
+      displayName: storedRange.displayName,
+      type: storedRange.type,
+      allowsReservations: storedRange.allowsReservations,
       isDeleted: false,
+      publicDescription: storedRange.publicDescription,
+      memberDescription: storedRange.memberDescription,
+      latitude: storedRange.latitude,
+      longitude: storedRange.longitude,
+      totalTracks: storedRange.totalTracks,
       operatingHours: {},
+      extras: {},
+      parkingLocation: null,
     });
   });
 

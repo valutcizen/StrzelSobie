@@ -20,16 +20,34 @@ import {
 import { ReservationsService } from '@strzel-sobie/reservations/src/application/reservations.service';
 import type { IReservationsRepository, Proposition, Reservation, RecordEntity } from '@strzel-sobie/reservations/src/domain/reservations.repository';
 
+const buildRangeDetails = (overrides: Partial<RangeDetailsDto>): RangeDetailsDto => ({
+  id: 1,
+  slug: 'range',
+  displayName: 'Range',
+  type: 'club',
+  allowsReservations: true,
+  isDeleted: false,
+  publicDescription: null,
+  memberDescription: null,
+  latitude: 0,
+  longitude: 0,
+  totalTracks: 0,
+  operatingHours: {},
+  extras: {},
+  parkingLocation: null,
+  ...overrides,
+});
+
 describe('ReservationsService ↔ Ranges & Audit module integration', () => {
   it('requests range details from the ranges module when building calendar events', async () => {
     const ctx = createReservationsContext();
-    const rangeDetails: RangeDetailsDto = {
+    const rangeDetails = buildRangeDetails({
       id: 5,
       slug: 'central-range',
       displayName: 'Central Range',
       totalTracks: 12,
       operatingHours: { monday: { open: '08:00', close: '18:00' } },
-    };
+    });
     const memberRole: Role = { id: 1, name: UserRole.Member, scope: 'global' };
     const query: GetCalendarEventsQuery = {
       rangeSlug: rangeDetails.slug,
@@ -92,7 +110,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
 
   it('logs reservation creation through the audit module after confirming range permissions', async () => {
     const ctx = createReservationsContext();
-    const rangeDetails: RangeDetailsDto = {
+    const rangeDetails = buildRangeDetails({
       id: 9,
       slug: 'north-range',
       displayName: 'North Range',
@@ -101,7 +119,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
         monday: { open: '08:00', close: '20:00' },
         tuesday: { open: '09:00', close: '17:00' },
       },
-    };
+    });
     const adminRole: Role = { id: 10, name: UserRole.ClubCommunityAdministrator, scope: 'global' };
     const user: UserDto = {
       id: 4,
@@ -160,13 +178,13 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
 
   it('records manual range usage and forwards details to the audit module', async () => {
     const ctx = createReservationsContext();
-    const rangeDetails: RangeDetailsDto = {
+    const rangeDetails = buildRangeDetails({
       id: 2,
       slug: 'west-field',
       displayName: 'West Field',
       totalTracks: 8,
       operatingHours: { friday: { open: '10:00', close: '20:00' } },
-    };
+    });
     const adminRole: Role = { id: 12, name: UserRole.ClubCommunityAdministrator, scope: 'global' };
     const user: UserDto = {
       id: 20,

@@ -11,6 +11,7 @@ export type ShootingRange = {
   displayName: string;
   totalTracks: number | null;
   operatingHours: string; // JSON string
+  extras?: string | null;
 };
 
 export type ShootingRangeSummary = Pick<

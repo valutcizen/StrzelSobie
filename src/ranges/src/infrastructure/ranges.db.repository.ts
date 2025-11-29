@@ -16,6 +16,7 @@ type ShootingRangeDb = {
   display_name: string;
   total_tracks: number | null;
   operating_hours: string;
+  extras: string | null;
 };
 
 type ShootingRangeSummaryDb = Pick<
@@ -40,6 +41,7 @@ export class RangesDbRepository implements IRangesRepository {
       displayName: dbRange.display_name,
       totalTracks: dbRange.total_tracks,
       operatingHours: dbRange.operating_hours,
+      extras: dbRange.extras ?? '{}',
     };
   }
 
@@ -75,7 +77,7 @@ export class RangesDbRepository implements IRangesRepository {
 
   public async findBySlug(slug: string): Promise<ShootingRange | null> {
     const stmt = this.db.prepare(
-      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours, extras
        FROM ranges_shooting_ranges WHERE slug = ? AND is_deleted = 0`
     );
     const result = await stmt.bind(slug).first<ShootingRangeDb>();
@@ -89,8 +91,8 @@ export class RangesDbRepository implements IRangesRepository {
 
   public async create(range: Omit<ShootingRange, 'id'>): Promise<ShootingRange> {
     const stmt = this.db.prepare(
-      `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, operating_hours, total_tracks)
-       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO ranges_shooting_ranges (slug, display_name, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, operating_hours, total_tracks, extras)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`
     );
 
     await stmt
@@ -104,7 +106,8 @@ export class RangesDbRepository implements IRangesRepository {
         range.latitude ?? 0,
         range.longitude ?? 0,
         range.operatingHours ?? '{}',
-        range.totalTracks ?? null
+        range.totalTracks ?? null,
+        range.extras ?? '{}'
       )
       .run();
 
@@ -118,7 +121,7 @@ export class RangesDbRepository implements IRangesRepository {
 
   public async update(range: ShootingRange): Promise<void> {
     const existingStmt = this.db.prepare(
-      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours
+      `SELECT id, slug, type, allows_reservations, is_deleted, public_description, member_description, latitude, longitude, display_name, total_tracks, operating_hours, extras
        FROM ranges_shooting_ranges WHERE id = ?`
     );
     const existing = await existingStmt.bind(range.id).first<ShootingRangeDb>();
@@ -139,11 +142,12 @@ export class RangesDbRepository implements IRangesRepository {
       longitude: range.longitude !== undefined ? range.longitude : existing.longitude,
       total_tracks: range.totalTracks ?? existing.total_tracks,
       operating_hours: range.operatingHours ?? existing.operating_hours,
+      extras: range.extras ?? existing.extras,
     };
 
     const stmt = this.db.prepare(
       `UPDATE ranges_shooting_ranges
-       SET display_name = ?, type = ?, allows_reservations = ?, public_description = ?, member_description = ?, latitude = ?, longitude = ?, total_tracks = ?, operating_hours = ?
+       SET display_name = ?, type = ?, allows_reservations = ?, public_description = ?, member_description = ?, latitude = ?, longitude = ?, total_tracks = ?, operating_hours = ?, extras = ?
        WHERE id = ?`
     );
     await stmt
@@ -157,6 +161,7 @@ export class RangesDbRepository implements IRangesRepository {
         merged.longitude ?? null,
         merged.total_tracks,
         merged.operating_hours,
+        merged.extras ?? '{}',
         range.id
       )
       .run();

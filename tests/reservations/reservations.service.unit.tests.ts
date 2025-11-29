@@ -126,6 +126,8 @@ const createRangeDetails = (overrides: Partial<RangeDetailsDto> = {}): RangeDeta
   memberDescription: null,
   latitude: 0,
   longitude: 0,
+  parkingLocation: null,
+  extras: {},
   ...overrides,
 });
 

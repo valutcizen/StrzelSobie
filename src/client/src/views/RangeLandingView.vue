@@ -37,6 +37,20 @@ const coordinates = computed(() => {
   }
   return { lat: range.latitude, lng: range.longitude }
 })
+const parkingCoordinates = computed(() => {
+  const parking =
+    rangeStore.currentRange?.parkingLocation ?? rangeStore.currentRange?.extras?.parkingLocation ?? null
+
+  if (!parking) {
+    return null
+  }
+
+  if (typeof parking.latitude !== 'number' || typeof parking.longitude !== 'number') {
+    return null
+  }
+
+  return { lat: parking.latitude, lng: parking.longitude }
+})
 const canSeeMemberDescription = computed(() =>
   authStore.hasAnyRole([
     UserRoleEnum.Member,
@@ -205,6 +219,7 @@ watch(
                   :allows-reservations="currentRange?.allowsReservations ?? false"
                   :range-type="(currentRange?.type ?? 'club')"
                   :coordinates="coordinates"
+                  :parking-coordinates="parkingCoordinates"
                   @open-calendar="handleOpenCalendar"
                   @back-to-map="handleBackToMap"
                 />

@@ -22,6 +22,15 @@ export type OperatingHours = {
   [day: string]: { open: string; close: string } | null;
 };
 
+export type RangeParkingLocation = {
+  latitude: ShootingRange['latitude'];
+  longitude: ShootingRange['longitude'];
+};
+
+export type RangeExtras = {
+  parkingLocation?: RangeParkingLocation | null;
+};
+
 /**
  * DTO for detailed shooting range information.
  * Corresponds to the response payload for `GET /api/v1/ranges/{rangeSlug}`.
@@ -40,6 +49,8 @@ export type RangeDetailsDto = {
   longitude?: ShootingRange['longitude'] | null;
   totalTracks: ShootingRange['total_tracks'];
   operatingHours: OperatingHours;
+  extras: RangeExtras;
+  parkingLocation: RangeParkingLocation | null;
 };
 
 export type RangeListResponseDto = RangeSummaryDto[];

@@ -5,6 +5,8 @@ import {
   RangeAlreadyExistsError,
   RangeListResponseDto,
   RangeDetailsDto,
+  RangeExtras,
+  RangeParkingLocation,
   RangeNotFoundError,
   RangeSummaryDto,
   Result,
@@ -164,6 +166,7 @@ export class RangesService implements IRangesService {
       longitude: command.longitude ?? 0,
       totalTracks: command.totalTracks ?? 0,
       operatingHours,
+      extras: '{}',
     });
 
     const log: AuditLogEntry = {
@@ -246,6 +249,8 @@ export class RangesService implements IRangesService {
     user: UserDto | null = null
   ): RangeDetailsDto {
     const operatingHours = this.parseOperatingHours(range.operatingHours);
+    const extras = this.parseExtras(range.extras);
+    const parkingLocation = extras.parkingLocation ?? null;
 
     const dto: RangeDetailsDto = {
       id: range.id,
@@ -260,6 +265,8 @@ export class RangesService implements IRangesService {
       longitude: range.longitude,
       totalTracks: range.totalTracks,
       operatingHours,
+      extras,
+      parkingLocation,
     };
 
     return dto;
@@ -285,6 +292,74 @@ export class RangesService implements IRangesService {
   private isGlobalAdmin(user: UserDto): boolean {
     const globalRoles = user.roles.map((role) => role.name);
     return globalRoles.includes(UserRole.ClubCommunityAdministrator);
+  }
+
+  private parseExtras(raw: unknown): RangeExtras {
+    if (!raw) {
+      return {};
+    }
+
+    const source =
+      typeof raw === 'string'
+        ? raw
+        : typeof raw === 'object' && !Array.isArray(raw)
+          ? JSON.stringify(raw)
+          : null;
+
+    if (!source) {
+      return {};
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(source);
+    } catch {
+      return {};
+    }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    const parkingLocation = this.parseParkingLocation(
+      (parsed as Record<string, unknown>).parkingLocation
+    );
+
+    return parkingLocation ? { parkingLocation } : {};
+  }
+
+  private parseParkingLocation(raw: unknown): RangeParkingLocation | null {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return null;
+    }
+
+    const { latitude, longitude } = raw as { latitude?: unknown; longitude?: unknown };
+    const lat = this.parseCoordinate(latitude);
+    const lng = this.parseCoordinate(longitude);
+
+    if (lat === null || lng === null) {
+      return null;
+    }
+
+    return { latitude: lat, longitude: lng };
+  }
+
+  private parseCoordinate(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
+    }
+
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 
   private parseOperatingHours(raw: unknown): Record<string, { open: string; close: string } | null> {

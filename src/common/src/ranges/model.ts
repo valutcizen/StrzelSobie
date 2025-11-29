@@ -11,6 +11,7 @@ export interface ShootingRange {
   display_name: string;
   total_tracks: number | null;
   operating_hours: string; // JSON object
+  extras: string; // JSON blob for optional range data
 }
 
 export interface AuditLog {

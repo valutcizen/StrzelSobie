@@ -153,6 +153,7 @@
       "openCalendar": "Zobacz kalendarz",
       "backToMap": "Wróć do mapy",
       "locationLabel": "Otwórz w mapach",
+      "parkingLabel": "Lokalizacja parkingu",
       "locationLinks": {
         "google": "Google Maps",
         "osm": "OpenStreetMap"

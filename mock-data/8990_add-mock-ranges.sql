@@ -11,7 +11,8 @@ INSERT INTO ranges_shooting_ranges (
   latitude,
   longitude,
   operating_hours,
-  total_tracks
+  total_tracks,
+  extras
 ) VALUES (
     1,
     'strzel-sobie-krakow',
@@ -31,7 +32,8 @@ INSERT INTO ranges_shooting_ranges (
       "saturday": {"open": "09:00", "close": "22:00"},
       "sunday": {"open": "09:00", "close": "20:00"}
     }',
-    10
+    10,
+    '{"parkingLocation":{"latitude":50.0525,"longitude":19.9212}}'
   ), (
     2,
     'ally-krakow',
@@ -51,7 +53,8 @@ INSERT INTO ranges_shooting_ranges (
       "saturday": {"open": "09:00", "close": "16:00"},
       "sunday": null
     }',
-    5
+    5,
+    '{}'
   ), (
     3,
     'coming-soon-podhale',
@@ -63,5 +66,6 @@ INSERT INTO ranges_shooting_ranges (
     49.4830,
     20.0262,
     '{}',
-    0
+    0,
+    '{}'
   );

@@ -32,6 +32,24 @@ export class GetRange extends OpenAPIRoute {
               longitude: z.number().nullable().optional(),
               totalTracks: z.number().nullable().optional(),
               operatingHours: z.record(z.any()).optional(),
+              parkingLocation: z
+                .object({
+                  latitude: z.number(),
+                  longitude: z.number(),
+                })
+                .nullable()
+                .optional(),
+              extras: z
+                .object({
+                  parkingLocation: z
+                    .object({
+                      latitude: z.number(),
+                      longitude: z.number(),
+                    })
+                    .nullable()
+                    .optional(),
+                })
+                .optional(),
             }),
           },
         },
