@@ -87,10 +87,10 @@ const testId = computed(() => {
 }
 
 .role-based-link:hover {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(16, 82, 137, 0.08);
 }
 
 .role-based-link.v-list-item--active {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(16, 82, 137, 0.12);
 }
 </style>

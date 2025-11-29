@@ -77,9 +77,7 @@
       :rail="isRail"
       :permanent="!isSmallScreen"
       :temporary="isSmallScreen"
-      color="primary"
       class="app-shell-navigation"
-      theme="dark"
       app
     >
       <v-list
@@ -341,8 +339,9 @@ const handleCreateRangeConfirm = async () => {
 }
 
 .app-shell-navigation {
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.92);
+  border-right: 1px solid rgba(16, 82, 137, 0.16);
+  color: rgb(16, 82, 137);
+  background-color: rgb(238, 245, 249);
 }
 
 .app-shell__app-bar {
@@ -360,11 +359,11 @@ const handleCreateRangeConfirm = async () => {
 }
 
 .app-shell-navigation :deep(.v-list-item:hover) {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(16, 82, 137, 0.08);
 }
 
 .app-shell-navigation :deep(.v-list-item--active) {
-  background-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(16, 82, 137, 0.12);
 }
 
 .app-shell-navigation :deep(.v-list-item-title),
