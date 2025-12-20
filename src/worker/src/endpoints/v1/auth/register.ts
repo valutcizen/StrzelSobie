@@ -1,8 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
 import { Context } from '../../../types';
-import { AuthService } from '@strzel-sobie/auth';
-import { EmailAlreadyExistsError } from '@strzel-sobie/common';
+import { IAuthService } from '@strzel-sobie/common/models';
+import { EmailAlreadyExistsError, ForbiddenError } from '@strzel-sobie/common';
 
 // Schemas
 const RegisterUserRequestSchema = z.object({
@@ -53,7 +53,7 @@ export class Register extends OpenAPIRoute {
 
   async handle(c: Context) {
     const data = await this.getValidatedData<typeof RegisterUserRequestSchema>();
-    const authService: AuthService = c.get('authService');
+    const authService: IAuthService = c.get('authService');
 
     const sourceIp = c.req.header('cf-connecting-ip') || 'unknown';
     const proxiedIp = c.req.header('x-forwarded-for') || 'unknown';
@@ -68,8 +68,10 @@ export class Register extends OpenAPIRoute {
     console.error(error);
     if (error instanceof EmailAlreadyExistsError) {
       return c.json({ message: error.message }, 409);
-    } else {
-      return c.json({ message: 'Internal Server Error' }, 500);
     }
+    if (error instanceof ForbiddenError) {
+      return c.json({ message: error.message }, 403);
+    }
+    return c.json({ message: 'Internal Server Error' }, 500);
   }
 }

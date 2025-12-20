@@ -1,12 +1,11 @@
 
 import { getCookie } from 'hono/cookie';
-import { AuthService } from '@strzel-sobie/auth';
 import { MiddlewareHandler } from 'hono';
-import { IUserService, Role, UserDto } from '@strzel-sobie/common/models';
+import { IAuthService, IUserService, Role, UserDto } from '@strzel-sobie/common/models';
 
 
 export const authMiddleware: MiddlewareHandler = async (c, next) => {
-  const authService: AuthService = c.get('authService');
+  const authService: IAuthService = c.get('authService');
   const sessionToken = getCookie(c, 'session_token');
 
   if (!sessionToken) {

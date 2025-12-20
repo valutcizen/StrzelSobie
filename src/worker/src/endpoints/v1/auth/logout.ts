@@ -2,7 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
 import { getCookie, setCookie } from 'hono/cookie';
 import { Context } from '../../../types';
-import { AuthService } from '@strzel-sobie/auth';
+import { IAuthService } from '@strzel-sobie/common/models';
 
 export class Logout extends OpenAPIRoute {
   schema: OpenAPIRouteSchema = {
@@ -39,7 +39,7 @@ export class Logout extends OpenAPIRoute {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const authService: AuthService = c.get('authService');
+    const authService: IAuthService = c.get('authService');
     await authService.logout(sessionToken);
 
     setCookie(c, 'session_token', '', {

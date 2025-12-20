@@ -3,6 +3,7 @@ export * from './audit/service';
 export * from './auth/model';
 export * from './auth/service';
 export * from './auth/dto';
+export * from './auth/module';
 export * from './ranges/model';
 export * from './ranges/service';
 export * from './ranges/dto';
