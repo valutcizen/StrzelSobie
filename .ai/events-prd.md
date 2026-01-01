@@ -132,3 +132,12 @@ The Events Module is an extension for the Strzel Sobie application designed to m
 - **Recurring Events:** The ability to create event series (e.g., every Friday) is not included. Each event is a one-off.
 - **Advanced Ticketing:** Complex ticket types (e.g., VIP, Standard) are not supported.
 - **Public Sign-ups:** Users must be authenticated to sign up for any event. There is no fully-public, anonymous registration.
+
+## 5. Meetup Place Range Type
+- **Definition**: A new type of range called `meetup` can be configured by administrators. It is intended for event-based activities rather than bookable time slots.
+- **Behavior**:
+    - These ranges do not have a calendar for reservations or propositions. All attempts to create them from the backend should be blocked.
+    - A `meetup` range has a dedicated description page.
+    - This page displays a list of all past and upcoming events for that range.
+    - Clicking on an event in the list navigates the user to that event's detail page.
+    - The page includes a "Create Event" button, visible only to authorized users, which links to the event creation form.

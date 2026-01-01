@@ -67,6 +67,41 @@ The Events module will be integrated into the existing Vue.js, Vuetify, and Pini
 - The toggles for `isPublic` and `isJoinable` will be **removed**.
 - The form will now only contain the essential fields for blocking time: `eventDate`, `startTime`, `endTime`, and `tracksRequested`.
 
+## 5. UI for Meetup Ranges
+
+### 1. Updated: Range Landing View (`/{rangeSlug}` or similar)
+- **View Name**: Range Landing View
+- **Main Purpose**: To serve as the primary descriptive page for a shooting range.
+- **Key Changes**:
+    - This existing view will be updated to conditionally display content based on the `type`.
+    - If `type` is `meetup`:
+        - It will display the range's standard description and information.
+        - It will fetch and display a list of all events for this range (using `GET /api/v1/ranges/{rangeSlug}/events`). Each list item will link to that event's detail page.
+        - A "Create New Event" `v-btn` will be visible to authorized users, linking to the `EventFormView`.
+        - Standard calendar/reservation-related UI elements will be hidden or disabled.
+    - If `type` is `standard`, the view will function as it currently does.
+
+### 2. Updated: Range Directory View
+- **View Name**: Range Directory
+- **View Path**: `/`
+- **Key Changes**:
+    - The action button for each range will be conditional based on `type`:
+        - For a `standard` range, the button will read "View Calendar" and link to `/{rangeSlug}/calendar`.
+        - For a `meetup` range, the button will read "View Details" or "View Events" and link to the existing `Range Landing View` (e.g., `/{rangeSlug}`).
+
+### 3. Updated: Calendar View (`/:rangeSlug/calendar`)
+- A navigation guard will remain on this view's route.
+- **Logic**: It will prevent access for any range where `type` is `meetup`, redirecting the user away (e.g., to the main range directory or the `Range Landing View`).
+
+### 4. Updated: Range Settings View (`/admin/range-settings`)
+- The form for editing a range's details will be updated.
+- **Logic**: It will include a `v-select` or `v-radio-group` to allow administrators to set the `type` to either `standard` or `meetup`.
+
+### 5. Updated: Range Map Component (`src/client/src/components/range/RangeMap.vue`)
+- **Key Changes**:
+    - The `typeStyleMap` object within the component will be updated to include a new entry for the `meetup` type. This will provide a distinct color and/or icon for meetup ranges on the map, distinguishing them from standard `club` ranges.
+
+
 ## 4. New User Journeys
 
 ### Journey 1: Admin Creates a Competition Event

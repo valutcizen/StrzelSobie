@@ -182,5 +182,41 @@ All new endpoints will be versioned under `/api/v1`.
       "guests": 1
     }
     ```
--   **Success Code**: `200 OK`
+- **Success Code**: `200 OK`
 -   **Error Codes**: `400 Bad Request` (Not enough slots for additional guests), `401 Unauthorized`, `404 Not Found`.
+
+---
+## 4. Related API Changes in Other Modules
+
+### `ranges` module
+
+#### `GET /api/v1/ranges` (Update)
+
+-   **Description**: This endpoint will be updated to include the `type` for each range.
+-   **Response Payload (Updated item)**:
+    ```json
+    {
+      "id": 2,
+      "name": "Community Hub",
+      "slug": "community-hub",
+      "type": "meetup"
+    }
+    ```
+
+#### `POST /api/v1/ranges` & `PATCH /api/v1/ranges/{rangeSlug}` (Update)
+
+-   **Description**: These endpoints will be updated to allow setting the `type` on creation and update.
+-   **Request Payload (New field)**:
+    ```json
+    {
+      "name": "Community Hub",
+      "slug": "community-hub",
+      "type": "meetup"
+    }
+    ```
+
+### `reservations` module
+
+-   **Behavioral Change**: The services for creating propositions and reservations will be modified.
+-   **Description**: Any attempt to create a proposition or reservation on a range where `type` is `meetup` will be rejected with a `400 Bad Request` error.
+
