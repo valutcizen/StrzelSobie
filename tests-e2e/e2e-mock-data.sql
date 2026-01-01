@@ -149,21 +149,21 @@ INSERT INTO users_user_global_roles (user_id, role_id) VALUES (908, 2), (908, 1)
 -- =============================================================================
 
 -- Proposition from a member (903) - for testing highlighting and acceptance
-INSERT INTO reservations_propositions (id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
-VALUES (1001, 903, 99, 'open', '2025-11-10', '12:00', '13:00', 2, 2);
+INSERT INTO reservations_propositions (id, user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
+VALUES (1001, 903, 99, 'open', '2025-11-10', '12:00', '13:00', 2);
 
 -- Proposition from a guest (904) - for testing basic acceptance
-INSERT INTO reservations_propositions (id, user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
-VALUES (1002, 904, 99, 'open', '2025-11-11', '14:00', '15:00', 1, 1);
+INSERT INTO reservations_propositions (id, user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
+VALUES (1002, 904, 99, 'open', '2025-11-11', '14:00', '15:00', 1);
 
--- A confirmed public, joinable reservation for calendar checks
-INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable)
-VALUES (2001, 902, 99, '2025-11-12', '10:00', '12:00', 5, 3, 1, 1);
+-- A confirmed reservation for calendar checks
+INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
+VALUES (2001, 902, 99, '2025-11-12', '10:00', '12:00', 3);
 
--- A confirmed private, non-joinable reservation for calendar checks
-INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable)
-VALUES (2002, 902, 99, '2025-11-13', '11:00', '12:30', 3, 2, 0, 0);
+-- A confirmed reservation for calendar checks
+INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
+VALUES (2002, 902, 99, '2025-11-13', '11:00', '12:30', 2);
 
--- A confirmed private, joinable reservation for testing the "Joinable" badge
-INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable)
-VALUES (2003, 902, 99, '2025-11-14', '16:00', '17:00', 2, 1, 0, 1);
+-- A confirmed reservation for calendar checks
+INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
+VALUES (2003, 902, 99, '2025-11-14', '16:00', '17:00', 1);

@@ -103,7 +103,7 @@ All new endpoints will be versioned under `/api/v1`.
 
 #### `GET /api/v1/ranges/{rangeSlug}/events`
 
--   **Description**: This existing endpoint will be updated to include `events` in its response, alongside `propositions` and `reservations`, to provide a complete view of the calendar.
+-   **Description**: This existing endpoint will be updated to include `events` in its response, alongside `propositions` and `reservations`, to provide a complete view of the calendar. Propositions will no longer include any participant count field.
 -   **Response Payload (Updated)**:
     ```json
     {
@@ -184,4 +184,3 @@ All new endpoints will be versioned under `/api/v1`.
     ```
 -   **Success Code**: `200 OK`
 -   **Error Codes**: `400 Bad Request` (Not enough slots for additional guests), `401 Unauthorized`, `404 Not Found`.
-

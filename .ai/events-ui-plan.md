@@ -41,6 +41,7 @@ The Events module will be integrated into the existing Vue.js, Vuetify, and Pini
 - **Visual Changes**:
     - Events will be rendered with a distinct color and style to differentiate them from `propositions` and `reservations`.
     - Clicking an event on the calendar will no longer open a dialog, but will instead navigate the user to the new `EventDetailView` at `/ranges/{rangeSlug}/events/{eventId}`.
+    - Proposition entries should no longer display or expect a participant count.
 
 ### 4. Updated: Range Settings View (`/admin/range-settings`)
 - A `v-switch` component will be added to this view to control the `membersCanCreateEvents` setting for the range. The value will be updated via the `PATCH /api/v1/ranges/{rangeSlug}` endpoint.
