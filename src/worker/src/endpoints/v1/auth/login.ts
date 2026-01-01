@@ -1,8 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
 import { Context } from '../../../types';
-import { AuthService } from '@strzel-sobie/auth';
 import { setCookie } from 'hono/cookie';
+import { IAuthService } from '@strzel-sobie/common/models';
 import { LoginUserDto } from '@strzel-sobie/common';
 
 // Schemas
@@ -56,7 +56,7 @@ export class Login extends OpenAPIRoute {
     }
 
     const data = validationResult.data as LoginUserDto;
-    const authService: AuthService = c.get('authService');
+    const authService: IAuthService = c.get('authService');
 
     const result = await authService.login(data);
 

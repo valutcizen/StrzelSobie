@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/users -w src/reservations -w src/ranges -w src/notifications -w src/audit && npm run build -w src/embed-map && npm run build -w src/worker",
+    "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/auth-simple -w src/users -w src/reservations -w src/ranges -w src/notifications -w src/audit && npm run build -w src/embed-map && npm run build -w src/worker",
     "build:embed": "npm run build -w src/embed-map",
     "build:frontend": "npm run build -w src/client",
     "dev:frontend": "npm run dev -w @strzel-sobie/client",
@@ -19,6 +19,7 @@
     "db:reset": "node scripts/generate-db-mock.mjs --regenerate",
     "db:e2e": "node scripts/generate-db-mock.mjs --no-mock-data --regenerate --file tests-e2e/e2e-mock-data.sql",
     "dev:backend": "npm run dev -w @strzel-sobie/worker",
+    "dev:backend:simpleauth": "npm run dev -w @strzel-sobie/worker -- --var AUTH_MODULE:simple",
     "dev:backend:embed": "npm run build:embed && npm run dev:backend",
     "dev:embed": "concurrently \"npm:dev:backend\" \"npm:dev:embed-page\"",
     "dev:embed-page": "serve tests-dev -l 3000",

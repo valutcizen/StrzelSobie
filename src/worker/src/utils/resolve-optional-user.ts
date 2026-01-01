@@ -1,6 +1,5 @@
 import { getCookie } from 'hono/cookie';
-import { AuthService } from '@strzel-sobie/auth';
-import { IUserService, Role, UserDto } from '@strzel-sobie/common/models';
+import { IAuthService, IUserService, Role, UserDto } from '@strzel-sobie/common/models';
 import { Context } from '../types';
 
 const createAnonymousUser = (): UserDto => ({
@@ -22,7 +21,7 @@ export const resolveOptionalUser = async (c: Context): Promise<UserDto> => {
       return createAnonymousUser();
     }
 
-    const authService: AuthService = c.get('authService');
+    const authService: IAuthService = c.get('authService');
     const sessionResult = await authService.validateSession(sessionToken);
     if (!sessionResult.isSuccess) {
       return createAnonymousUser();

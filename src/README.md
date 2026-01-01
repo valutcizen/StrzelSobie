@@ -16,6 +16,11 @@ Below is a description of each module within the `src` directory.
 -   **Description:** Handles user authentication (login, passwords, sessions) and authorization (permissions).
 -   [Go to module](./auth/README.md)
 
+### `auth-simple`
+
+-   **Description:** Simple, hardcoded auth module for local testing and demos (no registration).
+-   [Go to module](./auth-simple/README.md)
+
 ### `client`
 
 -   **Description:** The Vue.js frontend application that users interact with.

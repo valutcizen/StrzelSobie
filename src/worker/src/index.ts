@@ -29,13 +29,13 @@ import { GetMapRangesRoute } from './endpoints/v1/ranges/get-map-ranges';
 import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
 import {
   AuthDbRepository,
-  AuthService,
   SessionKvRepository,
 } from '@strzel-sobie/auth';
 import { UserDbRepository, UserService } from '@strzel-sobie/users';
 import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/reservations';
 import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
+import { resolveAuthModule } from './auth/module-registry';
 
 const cacheEmbedResponse = async (
   cacheKey: string,
@@ -120,12 +120,13 @@ app.use('*', async (c, next) => {
   const auditService = new AuditService(auditRepository);
   const rangesService = new RangesService(rangesRepository, auditService);
   const userService = new UserService(userRepository, rangesService, auditService);
-  const authService = new AuthService(
+  const authModule = resolveAuthModule(c.env.AUTH_MODULE);
+  const authService = authModule.createAuthService({
     authRepository,
     sessionRepository,
     userService,
-    auditService
-  );
+    auditService,
+  });
   const reservationsService = new ReservationsService(rangesService, reservationsRepository, auditService);
 
   c.set('authService', authService);
