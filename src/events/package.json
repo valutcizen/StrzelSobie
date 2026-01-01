@@ -1,0 +1,12 @@
+{
+  "name": "@strzel-sobie/events",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
+  }
+}
