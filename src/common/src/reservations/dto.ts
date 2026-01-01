@@ -10,10 +10,7 @@ export type CreateReservationCommand = {
   eventDate: Reservation['event_date'];
   startTime: Reservation['start_time'];
   endTime: Reservation['end_time'];
-  numParticipants: Reservation['num_participants'];
   tracksRequested: Reservation['tracks_requested'];
-  isPublic: boolean;
-  isJoinable: boolean;
 };
 
 /**
@@ -26,9 +23,6 @@ export type CreateReservationFromPropositionCommand = {
   startTime?: Reservation['start_time'];
   endTime?: Reservation['end_time'];
   tracksRequested?: Reservation['tracks_requested'];
-  numParticipants?: Reservation['num_participants'];
-  isPublic?: boolean;
-  isJoinable?: boolean;
 };
 
 /**
@@ -70,11 +64,8 @@ export type ReservationEventDto = {
   startTime: string;
   endTime: string;
   tracksRequested: number | null;
-  isPublic: boolean;
-  isJoinable: boolean | null;
   details: {
     coordinatorId: number;
-    numParticipants: number;
   } | null;
   proposition: PropositionDetailDto | null;
 }
@@ -89,9 +80,18 @@ export type RecordEventDto = {
   createdAt: RangeRecord['created_at'];
 };
 
+export type RangeEventSummaryDto = {
+  id: number;
+  name: string;
+  startTime: string;
+  endTime: string;
+  audience: 'Public' | 'MembersOnly';
+};
+
 export type CalendarEventsDto = {
   propositions: PropositionEventDto[];
   reservations: ReservationEventDto[];
+  events: RangeEventSummaryDto[];
   records?: RecordEventDto[];
 };
 
@@ -110,7 +110,6 @@ export type CreatePropositionCommand = {
   eventDate: Proposition['event_date'];
   startTime: Proposition['start_time'];
   endTime: Proposition['end_time'];
-  numParticipants: Proposition['num_participants'];
   tracksRequested: Proposition['tracks_requested'];
 };
 
@@ -164,7 +163,6 @@ export type PropositionDetailDto = {
   eventDate: Proposition['event_date'];
   startTime: Proposition['start_time'];
   endTime: Proposition['end_time'];
-  numParticipants: Proposition['num_participants'];
   tracksRequested: Proposition['tracks_requested'];
   createdAt: string | null;
   requester: PersonSummaryDto | null;
@@ -180,10 +178,7 @@ export type ReservationDetailDto = {
   eventDate: Reservation['event_date'];
   startTime: Reservation['start_time'];
   endTime: Reservation['end_time'];
-  numParticipants: Reservation['num_participants'];
   tracksRequested: Reservation['tracks_requested'];
-  isPublic: boolean;
-  isJoinable: boolean;
   createdAt: string | null;
   coordinator: PersonSummaryDto | null;
   notes?: string | null;

@@ -42,25 +42,12 @@ const DirectReservationBodySchema = z
       ),
     startTime: TimeSchema,
     endTime: TimeSchema,
-    numParticipants: z.coerce
-      .number({
-        invalid_type_error: 'Number of participants must be a number',
-      })
-      .int('Number of participants must be an integer')
-      .min(1, 'At least one participant is required')
-      .max(50, 'Number of participants cannot exceed 50'),
     tracksRequested: z.coerce
       .number({
         invalid_type_error: 'Tracks requested must be a number',
       })
       .int('Tracks requested must be an integer')
       .min(1, 'At least one track must be requested'),
-    isPublic: z.boolean({
-      required_error: 'isPublic flag is required',
-    }),
-    isJoinable: z.boolean({
-      required_error: 'isJoinable flag is required',
-    }),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -138,17 +125,6 @@ const FromPropositionBodySchema = z
       .int('tracksRequested must be an integer')
       .min(1, 'At least one track must be requested')
       .optional(),
-    numParticipants: z
-      .coerce
-      .number({
-        invalid_type_error: 'Number of participants must be a number',
-      })
-      .int('Number of participants must be an integer')
-      .min(1, 'At least one participant is required')
-      .max(50, 'Number of participants cannot exceed 50')
-      .optional(),
-    isPublic: z.boolean().optional(),
-    isJoinable: z.boolean().optional(),
   })
   .strict()
   .refine(
@@ -248,9 +224,6 @@ export class CreateReservation extends OpenAPIRoute {
         startTime: requestBody.startTime,
         endTime: requestBody.endTime,
         tracksRequested: requestBody.tracksRequested,
-        numParticipants: requestBody.numParticipants,
-        isPublic: requestBody.isPublic,
-        isJoinable: requestBody.isJoinable,
       };
       command = propositionCommand;
     } else {
@@ -258,10 +231,7 @@ export class CreateReservation extends OpenAPIRoute {
         eventDate: requestBody.eventDate,
         startTime: requestBody.startTime,
         endTime: requestBody.endTime,
-        numParticipants: requestBody.numParticipants,
         tracksRequested: requestBody.tracksRequested,
-        isPublic: requestBody.isPublic,
-        isJoinable: requestBody.isJoinable,
       };
       command = directCommand;
     }

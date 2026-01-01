@@ -133,8 +133,6 @@
     },
     "reservationDialog": {
       "title": "New reservation",
-      "isPublic": "Public",
-      "isOpenForJoining": "Open for joining",
       "forceLabel": "Force save despite conflicts",
       "forceHint": "Check to force the save even if conflicts exist.",
       "forceSuggestion": "If needed, try saving with force or adjust the parameters.",
@@ -144,6 +142,14 @@
     "recordDialog": {
       "title": "Log without reservation"
     },
+    "eventTitles": {
+      "proposition": {
+        "member": "Member proposition",
+        "guest": "Guest proposition"
+      },
+      "reservation": "Reservation",
+      "record": "Log without reservation"
+    },
     "eventDetail": {
       "summary": {
         "tracks": "{count} lanes",
@@ -152,19 +158,6 @@
       "proposition": {
         "member": "Member submission",
         "guest": "Guest submission"
-      },
-      "reservation": {
-        "public": "Public reservation",
-        "private": "Private reservation"
-      },
-      "joinable": {
-        "open": "Open for joining",
-        "closed": "Invite-only"
-      },
-      "visibility": {
-        "label": "Visibility: {value}",
-        "public": "public",
-        "private": "private"
       },
       "sections": {
         "reservation": "Reservation",

@@ -21,7 +21,6 @@ type PropositionDb = {
   event_date: string;
   start_time: string;
   end_time: string;
-  num_participants: number;
   tracks_requested: number;
   is_member: number;
 };
@@ -41,9 +40,6 @@ type ReservationDb = {
   start_time: string;
   end_time: string;
   tracks_requested: number;
-  is_public: number;
-  is_joinable: number;
-  num_participants: number;
 };
 
 type ReservationDetailDb = ReservationDb & {
@@ -79,7 +75,6 @@ const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   event_date: dbProposition.event_date,
   start_time: dbProposition.start_time,
   end_time: dbProposition.end_time,
-  num_participants: dbProposition.num_participants,
   tracks_requested: dbProposition.tracks_requested,
   is_member: Boolean(dbProposition.is_member),
 });
@@ -91,20 +86,6 @@ const mapDbPropositionDetail = (dbProposition: PropositionDetailDb): Proposition
   requester_phone_number: dbProposition.requester_phone_number ?? null,
 });
 
-const normalizeFlag = (value: number | string | boolean): boolean => {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  const numeric = Number(value);
-  if (!Number.isNaN(numeric)) {
-    return numeric === 1;
-  }
-  if (typeof value === 'string') {
-    return value.toLowerCase() === 'true';
-  }
-  return false;
-};
-
 const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   id: dbReservation.id,
   proposition_id: dbReservation.proposition_id,
@@ -113,10 +94,7 @@ const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   event_date: dbReservation.event_date,
   start_time: dbReservation.start_time,
   end_time: dbReservation.end_time,
-  num_participants: dbReservation.num_participants,
   tracks_requested: dbReservation.tracks_requested,
-  is_public: normalizeFlag(dbReservation.is_public),
-  is_joinable: normalizeFlag(dbReservation.is_joinable),
 });
 
 const mapDbReservationDetail = (dbReservation: ReservationDetailDb): ReservationDetail => ({
@@ -150,7 +128,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
           rp.event_date,
           rp.start_time,
           rp.end_time,
-          rp.num_participants,
           rp.tracks_requested,
           EXISTS (
             SELECT 1
@@ -171,7 +148,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]> {
     const stmt = this.db.prepare(
-      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested, is_public, is_joinable, num_participants
+      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested
        FROM reservations_reservations
        WHERE range_id = ? AND event_date BETWEEN ? AND ?`
     );
@@ -298,8 +275,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
   public async createProposition(record: CreatePropositionRecord): Promise<Proposition> {
     const stmt = this.db.prepare(
       `INSERT INTO reservations_propositions
-        (user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
-       VALUES (?, ?, 'open', ?, ?, ?, ?, ?)
+        (user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
+       VALUES (?, ?, 'open', ?, ?, ?, ?)
        RETURNING
          id,
          user_id,
@@ -308,7 +285,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
          event_date,
          start_time,
          end_time,
-         num_participants,
          tracks_requested,
          EXISTS (
            SELECT 1
@@ -326,7 +302,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
         record.event_date,
         record.start_time,
         record.end_time,
-        record.num_participants,
         record.tracks_requested
       )
       .first<PropositionDb>();
@@ -413,7 +388,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
           rp.event_date,
           rp.start_time,
           rp.end_time,
-          rp.num_participants,
           rp.tracks_requested,
           EXISTS (
             SELECT 1
@@ -445,7 +419,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
           rp.event_date,
           rp.start_time,
           rp.end_time,
-          rp.num_participants,
           rp.tracks_requested,
           rp.created_at,
           EXISTS (
@@ -484,7 +457,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
          event_date,
          start_time,
          end_time,
-         num_participants,
          tracks_requested,
          EXISTS (
            SELECT 1
@@ -506,7 +478,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getReservationById(id: number): Promise<Reservation | null> {
     const stmt = this.db.prepare(
-      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable
+      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested
        FROM reservations_reservations
        WHERE id = ?`
     );
@@ -530,10 +502,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
          rr.event_date,
          rr.start_time,
          rr.end_time,
-         rr.num_participants,
          rr.tracks_requested,
-         rr.is_public,
-         rr.is_joinable,
          rr.created_at,
          uu.email AS coordinator_email,
          uu.phone_number AS coordinator_phone_number
@@ -555,7 +524,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
     const stmt = this.db.prepare(
       `DELETE FROM reservations_reservations
        WHERE id = ?
-       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable`
+       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested`
     );
 
     const record = await stmt.bind(id).first<ReservationDb>();
@@ -580,7 +549,6 @@ export class ReservationsDbRepository implements IReservationsRepository {
          event_date,
          start_time,
          end_time,
-         num_participants,
          tracks_requested,
          EXISTS (
            SELECT 1
@@ -630,9 +598,9 @@ export class ReservationsDbRepository implements IReservationsRepository {
     const propositionId = record.proposition_id ?? null;
     const stmt = this.db.prepare(
       `INSERT INTO reservations_reservations
-        (proposition_id, coordinator_id, range_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable`
+        (proposition_id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested`
     );
 
     const created = await stmt
@@ -643,10 +611,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
         record.event_date,
         record.start_time,
         record.end_time,
-        record.num_participants,
-        record.tracks_requested,
-        record.is_public ? 1 : 0,
-        record.is_joinable ? 1 : 0
+        record.tracks_requested
       )
       .first<ReservationDb>();
 

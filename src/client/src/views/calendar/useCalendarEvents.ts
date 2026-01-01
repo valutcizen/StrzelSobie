@@ -20,7 +20,6 @@ export const useCalendarEvents = ({
   calendarTimeBounds,
   currentViewRange,
   defaultView,
-  isJoinableIndicatorVisible,
   locale,
   onForceReload,
   rangeSlug,
@@ -32,7 +31,6 @@ export const useCalendarEvents = ({
   calendarTimeBounds: ComputedRef<{ slotMinTime: string; slotMaxTime: string } | null>
   currentViewRange: Ref<{ start: Date; end: Date } | null>
   defaultView: ComputedRef<string>
-  isJoinableIndicatorVisible: ComputedRef<boolean>
   locale: Ref<string>
   onForceReload?: () => void
   rangeSlug: ComputedRef<string>
@@ -51,19 +49,9 @@ export const useCalendarEvents = ({
         backgroundColor = isMember ? '#2746b9' : '#3a6bff'
         borderColor = isMember ? '#1d3391' : '#2651d6'
       } else if (event.type === 'reservation') {
-        const isPublic = Boolean(event.meta?.isPublic)
-        const isJoinable = Boolean(event.meta?.isOpenForJoining)
-
-        if (isPublic) {
-          classNames.push('event-reservation-public')
-          backgroundColor = '#f59e0b'
-          borderColor = '#c27802'
-          textColor = '#2f1b00'
-        } else {
-          classNames.push(isJoinable ? 'event-reservation-joinable' : 'event-reservation-private')
-          backgroundColor = '#2f9e44'
-          borderColor = isJoinable ? '#c27802' : '#1f7d3f'
-        }
+        classNames.push('event-reservation')
+        backgroundColor = '#2f9e44'
+        borderColor = '#1f7d3f'
       } else if (event.type === 'record') {
         classNames.push('event-record')
         backgroundColor = '#6d4c41'
@@ -72,10 +60,6 @@ export const useCalendarEvents = ({
 
       if (event.meta?.isMember) {
         classNames.push('event-member')
-      }
-
-      if (event.meta?.isOpenForJoining && isJoinableIndicatorVisible.value) {
-        classNames.push('event-joinable')
       }
 
       return {

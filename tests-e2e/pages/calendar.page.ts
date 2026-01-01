@@ -37,7 +37,6 @@ export class PropositionFormDialogPage {
   readonly dateInput: Locator;
   readonly startTimeInput: Locator;
   readonly endTimeInput: Locator;
-  readonly participantsInput: Locator;
   readonly tracksInput: Locator;
   readonly cancelButton: Locator;
   readonly submitButton: Locator;
@@ -47,7 +46,6 @@ export class PropositionFormDialogPage {
     this.dateInput = this.dialog.getByTestId('proposition-form-date-input').locator('input');
     this.startTimeInput = this.dialog.getByTestId('proposition-form-start-time-input').locator('input');
     this.endTimeInput = this.dialog.getByTestId('proposition-form-end-time-input').locator('input');
-    this.participantsInput = this.dialog.getByTestId('proposition-form-participants-input').locator('input');
     this.tracksInput = this.dialog.getByTestId('proposition-form-tracks-input').locator('input');
     this.cancelButton = this.dialog.getByTestId('proposition-form-cancel-button');
     this.submitButton = this.dialog.getByTestId('proposition-form-submit-button');
@@ -80,9 +78,6 @@ export class ReservationFormDialogPage {
   readonly startTimeInput: Locator;
   readonly endTimeInput: Locator;
   readonly tracksInput: Locator;
-  readonly participantsInput: Locator;
-  readonly isPublicSwitch: Locator;
-  readonly isOpenForJoiningSwitch: Locator;
   readonly forceSwitch: Locator;
   readonly cancelButton: Locator;
   readonly submitButton: Locator;
@@ -93,9 +88,6 @@ export class ReservationFormDialogPage {
     this.startTimeInput = this.dialog.getByTestId('reservation-form-start-time-input').locator('input');
     this.endTimeInput = this.dialog.getByTestId('reservation-form-end-time-input').locator('input');
     this.tracksInput = this.dialog.getByTestId('reservation-form-tracks-input').locator('input');
-    this.participantsInput = this.dialog.getByTestId('reservation-form-participants-input').locator('input');
-    this.isPublicSwitch = this.dialog.getByTestId('reservation-form-is-public-switch');
-    this.isOpenForJoiningSwitch = this.dialog.getByTestId('reservation-form-is-open-for-joining-switch');
     this.forceSwitch = this.dialog.getByTestId('reservation-form-force-switch');
     this.cancelButton = this.dialog.getByTestId('reservation-form-cancel-button');
     this.submitButton = this.dialog.getByTestId('reservation-form-submit-button');

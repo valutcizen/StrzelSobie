@@ -160,7 +160,6 @@ const createPropositionEntity = (overrides: Partial<Proposition> = {}): Proposit
   event_date: '2024-01-10',
   start_time: '10:00',
   end_time: '11:00',
-  num_participants: 4,
   tracks_requested: 2,
   is_member: true,
   ...overrides,
@@ -184,10 +183,7 @@ const createReservationEntity = (overrides: Partial<Reservation> = {}): Reservat
   event_date: '2024-01-10',
   start_time: '12:00',
   end_time: '13:00',
-  num_participants: 6,
   tracks_requested: 3,
-  is_public: true,
-  is_joinable: false,
   ...overrides,
 });
 
@@ -279,10 +275,7 @@ const createDirectReservationCommand = (overrides: Partial<CreateReservationComm
   eventDate: '2024-01-10',
   startTime: '12:00',
   endTime: '13:00',
-  numParticipants: 6,
   tracksRequested: 2,
-  isPublic: true,
-  isJoinable: true,
   ...overrides,
 });
 
@@ -338,7 +331,7 @@ describe('ReservationsService contract', () => {
       ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([propositionA, propositionB]);
 
       const reservationA = createReservationEntity({ id: 11, coordinator_id: 10 });
-      const reservationB = createReservationEntity({ id: 12, coordinator_id: 99, is_public: false });
+      const reservationB = createReservationEntity({ id: 12, coordinator_id: 99 });
       ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservationA, reservationB]);
 
       const adminProfile = createUserProfile({
@@ -356,6 +349,7 @@ describe('ReservationsService contract', () => {
       const events = result.getValue();
       expect(events.propositions).toHaveLength(2);
       expect(events.reservations).toHaveLength(2);
+      expect(events.events).toEqual([]);
       expect(events.reservations.every((event) => event.details !== null)).toBe(true);
     });
 
@@ -366,7 +360,7 @@ describe('ReservationsService contract', () => {
       ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([ownProposition, otherProposition]);
 
       const ownReservation = createReservationEntity({ id: 20, coordinator_id: 10 });
-      const otherReservation = createReservationEntity({ id: 21, coordinator_id: 15, is_public: true });
+      const otherReservation = createReservationEntity({ id: 21, coordinator_id: 15 });
       ctx.reservationsRepository.getReservations.mockResolvedValueOnce([ownReservation, otherReservation]);
 
       const memberProfile = createUserProfile({
@@ -396,7 +390,7 @@ describe('ReservationsService contract', () => {
       const otherProposition = createPropositionEntity({ id: 2, user_id: 11 });
       ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([ownProposition, otherProposition]);
       ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
-        createReservationEntity({ id: 40, coordinator_id: 12, is_public: true }),
+        createReservationEntity({ id: 40, coordinator_id: 12 }),
       ]);
 
       const guestProfile = createUserProfile({ id: 77, roles: [createRole(UserRole.Guest)] });
@@ -465,7 +459,6 @@ describe('ReservationsService contract', () => {
         id: 91,
         proposition_id: propositionDetail.id,
         range_id: ctx.rangeDetails.id,
-        is_public: true,
       });
 
       ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
@@ -490,50 +483,13 @@ describe('ReservationsService contract', () => {
       expect(reservationEvent.proposition?.requester).toBeNull();
     });
 
-    it('exposes public reservation details to guests while hiding private reservations', async () => {
+    it('does not expose reservation details to guests', async () => {
       const ctx = createTestContext();
-      const guestReservation = createReservationEntity({ id: 30, is_public: true, coordinator_id: 50, is_joinable: true });
-      const privateReservation = createReservationEntity({ id: 31, is_public: false, coordinator_id: 51 });
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([guestReservation, privateReservation]);
-      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([
-        createPropositionEntity({ id: 3, user_id: 50 }),
-      ]);
-
-      const guestProfile = createUserProfile({ id: 77 });
-
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: guestProfile,
-      });
-
-      expect(result.isSuccess).toBe(true);
-      const events = result.getValue();
-      expect(events.reservations).toHaveLength(2);
-
-      const publicEvent = events.reservations.find((event) => event.id === guestReservation.id);
-      const privateEvent = events.reservations.find((event) => event.id === privateReservation.id);
-
-      expect(publicEvent?.details).toEqual({ coordinatorId: guestReservation.coordinator_id, numParticipants: guestReservation.num_participants });
-      expect(publicEvent?.tracksRequested).toBe(guestReservation.tracks_requested);
-      expect(publicEvent?.isPublic).toBe(true);
-      expect(publicEvent?.isJoinable).toBe(guestReservation.is_joinable);
-      expect(privateEvent?.details).toBeNull();
-      expect(privateEvent?.tracksRequested).toBeNull();
-      expect(privateEvent?.isPublic).toBe(false);
-      expect(privateEvent?.isJoinable).toBeNull();
-    });
-
-    it('does not leak private details when guest shares coordinator id without privileges', async () => {
-      const ctx = createTestContext();
-      const privateReservation = createReservationEntity({
+      const reservation = createReservationEntity({
         id: 32,
         coordinator_id: 88,
-        is_public: false,
-        num_participants: 5,
       });
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([privateReservation]);
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
 
       const guestProfile = createUserProfile({
         id: 88,
@@ -553,8 +509,6 @@ describe('ReservationsService contract', () => {
       const reservationDetails = events.reservations[0];
       expect(reservationDetails.details).toBeNull();
       expect(reservationDetails.tracksRequested).toBeNull();
-      expect(reservationDetails.isPublic).toBe(false);
-      expect(reservationDetails.isJoinable).toBeNull();
     });
   });
 
@@ -619,14 +573,9 @@ describe('ReservationsService contract', () => {
       ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
       ['times are not aligned to five-minute increments', () => ({ startTime: '10:02', endTime: '11:01' })],
       ['end time is not later than start time', () => ({ startTime: '11:00', endTime: '11:00' })],
-      ['participant count is not an integer', () => ({ numParticipants: 3.5 })],
-      ['participant count is below minimum', () => ({ numParticipants: 0 })],
-      ['participant count exceeds maximum', () => ({ numParticipants: 51 })],
       ['tracks requested is not an integer', () => ({ tracksRequested: 1.5 })],
       ['tracks requested is below minimum', () => ({ tracksRequested: 0 })],
       ['tracks requested exceed capacity', (ctx) => ({ tracksRequested: ctx.rangeDetails.totalTracks + 1 })],
-      ['isPublic flag is not boolean', () => ({ isPublic: 'yes' as unknown as boolean })],
-      ['isJoinable flag is not boolean', () => ({ isJoinable: 'yes' as unknown as boolean })],
     ];
 
     it.each(invalidReservationCases)('returns InvalidReservationTimeError when %s', async (_, overrideFactory) => {
@@ -957,22 +906,6 @@ describe('ReservationsService contract', () => {
       expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
     });
 
-    it('validates overridden participant count during conversion', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload({ numParticipants: 0 }),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
-    });
-
     it('propagates overlap errors during conversion', async () => {
       const ctx = createTestContext();
       ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
@@ -1105,10 +1038,7 @@ describe('ReservationsService contract', () => {
         event_date: '2024-02-01',
         start_time: '13:00',
         end_time: '14:00',
-        num_participants: 8,
         tracks_requested: 3,
-        is_public: true,
-        is_joinable: true,
       });
       ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
 
@@ -1119,9 +1049,6 @@ describe('ReservationsService contract', () => {
           startTime: '13:00',
           endTime: '14:00',
           tracksRequested: 3,
-          numParticipants: 8,
-          isPublic: true,
-          isJoinable: true,
         }),
         { force: false },
         user
@@ -1140,10 +1067,7 @@ describe('ReservationsService contract', () => {
           event_date: '2024-02-01',
           start_time: '13:00',
           end_time: '14:00',
-          num_participants: 8,
           tracks_requested: 3,
-          is_public: true,
-          is_joinable: true,
         }),
         proposition.id
       );
@@ -1227,7 +1151,7 @@ describe('ReservationsService contract', () => {
       expect(detail.proposition?.requester?.id).toBe(proposition.user_id);
     });
 
-    it('omits proposition detail when viewer lacks permission', async () => {
+    it('returns ForbiddenError when viewer lacks permission', async () => {
       const ctx = createTestContext();
       const user = createUserDto(); // guest without roles
       const proposition = createPropositionDetailEntity({ id: 81, user_id: 404 });
@@ -1235,21 +1159,16 @@ describe('ReservationsService contract', () => {
         id: 121,
         proposition_id: proposition.id,
         range_id: ctx.rangeDetails.id,
-        is_public: true,
       });
 
-    ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
-    ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(proposition);
+      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
 
-    const result = await ctx.service.getReservationDetails(reservation.id, user);
+      const result = await ctx.service.getReservationDetails(reservation.id, user);
 
-    expect(result.isSuccess).toBe(true);
-    const detail = result.getValue();
-    expect(detail.propositionId).toBe(proposition.id);
-    expect(detail.proposition).not.toBeNull();
-    expect(detail.proposition?.status).toBe(proposition.status);
-    expect(detail.proposition?.requester).toBeNull();
-  });
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ForbiddenError);
+      expect(ctx.reservationsRepository.getPropositionDetailById).not.toHaveBeenCalled();
+    });
 
   it('propagates repository failures when loading linked proposition', async () => {
       const ctx = createTestContext();
@@ -1422,7 +1341,6 @@ describe('ReservationsService contract', () => {
       eventDate: '2024-04-01',
       startTime: '10:00',
       endTime: '11:00',
-      numParticipants: 4,
       tracksRequested: 2,
     };
 
@@ -1487,9 +1405,6 @@ describe('ReservationsService contract', () => {
       ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
       ['times are not aligned to five-minute increments', () => ({ startTime: '10:02', endTime: '11:01' })],
       ['end time is not later than start time', () => ({ startTime: '11:00', endTime: '10:30' })],
-      ['participant count is not an integer', () => ({ numParticipants: 3.5 })],
-      ['participant count is below minimum', () => ({ numParticipants: 0 })],
-      ['participant count exceeds maximum', () => ({ numParticipants: 51 })],
       ['tracks requested is not an integer', () => ({ tracksRequested: 1.5 })],
       ['tracks requested is below minimum', () => ({ tracksRequested: 0 })],
       ['tracks requested exceeds capacity', (ctx) => ({ tracksRequested: ctx.rangeDetails.totalTracks + 1 })],

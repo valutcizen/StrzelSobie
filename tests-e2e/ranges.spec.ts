@@ -80,10 +80,7 @@ test.describe('Ranges', () => {
       eventDate: slotClaim.slot.eventDate,
       startTime: slotClaim.slot.startTime,
       endTime: slotClaim.slot.endTime,
-      numParticipants: 2,
       tracksRequested: 1,
-      isPublic: false,
-      isJoinable: false,
     };
 
     try {

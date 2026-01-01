@@ -133,8 +133,6 @@
     },
     "reservationDialog": {
       "title": "Nowa rezerwacja",
-      "isPublic": "Publiczna",
-      "isOpenForJoining": "Otwarta na dołączenie",
       "forceLabel": "Wymuś zapis mimo konfliktów",
       "forceHint": "Zaznacz, aby wymusić zapis mimo istniejących rezerwacji.",
       "forceSuggestion": "Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.",
@@ -144,6 +142,14 @@
     "recordDialog": {
       "title": "Zapisz bez rezerwacji"
     },
+    "eventTitles": {
+      "proposition": {
+        "member": "Propozycja członka",
+        "guest": "Propozycja gościa"
+      },
+      "reservation": "Rezerwacja",
+      "record": "Zapis bez rezerwacji"
+    },
     "eventDetail": {
       "summary": {
         "tracks": "{count} torów",
@@ -152,19 +158,6 @@
       "proposition": {
         "member": "Zgłoszenie członka",
         "guest": "Zgłoszenie gościa"
-      },
-      "reservation": {
-        "public": "Rezerwacja publiczna",
-        "private": "Rezerwacja prywatna"
-      },
-      "joinable": {
-        "open": "Otwarta na dołączenie",
-        "closed": "Tylko dla zapisanych"
-      },
-      "visibility": {
-        "label": "Widoczność: {value}",
-        "public": "publiczna",
-        "private": "prywatna"
       },
       "sections": {
         "reservation": "Rezerwacja",

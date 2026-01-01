@@ -69,7 +69,6 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       event_date: '2024-05-02',
       start_time: '10:00',
       end_time: '12:00',
-      num_participants: 5,
       tracks_requested: 2,
       is_member: true,
     };
@@ -82,10 +81,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       event_date: '2024-05-03',
       start_time: '11:00',
       end_time: '13:00',
-      num_participants: 4,
       tracks_requested: 2,
-      is_public: true,
-      is_joinable: true,
     };
 
     ctx.rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
@@ -133,10 +129,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       eventDate: '2024-06-10',
       startTime: '13:00',
       endTime: '15:00',
-      numParticipants: 6,
       tracksRequested: 3,
-      isPublic: true,
-      isJoinable: false,
     } as const;
     const options = { force: false } as const;
     const reservation: Reservation = {
@@ -147,10 +140,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       event_date: payload.eventDate,
       start_time: payload.startTime,
       end_time: payload.endTime,
-      num_participants: payload.numParticipants,
       tracks_requested: payload.tracksRequested,
-      is_public: payload.isPublic,
-      is_joinable: payload.isJoinable,
     };
 
     ctx.rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));

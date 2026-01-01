@@ -33,13 +33,6 @@ const BodySchema = z
       ),
     startTime: TimeSchema,
     endTime: TimeSchema,
-    numParticipants: z.coerce
-      .number({
-        invalid_type_error: 'Number of participants must be a number',
-      })
-      .int('Number of participants must be an integer')
-      .min(1, 'At least one participant is required')
-      .max(50, 'Number of participants cannot exceed 50'),
     tracksRequested: z.coerce
       .number({
         invalid_type_error: 'Tracks requested must be a number',
@@ -157,7 +150,6 @@ export class CreateProposition extends OpenAPIRoute {
       eventDate: requestBody.eventDate,
       startTime: requestBody.startTime,
       endTime: requestBody.endTime,
-      numParticipants: requestBody.numParticipants,
       tracksRequested: requestBody.tracksRequested,
     };
 

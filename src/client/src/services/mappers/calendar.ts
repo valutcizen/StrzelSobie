@@ -6,6 +6,7 @@ import type {
   RangeEventType,
 } from '../../types/calendar'
 import { combineDateAndTime } from '../../utils/datetime'
+import i18n from '@/plugins/i18n'
 import type { CalendarEventsDto } from '@strzel-sobie/common'
 
 const PROPOSITION_STATUSES = new Set<Exclude<PropositionEventDetail['status'], null>>([
@@ -48,12 +49,6 @@ const mapLinkedProposition = (proposition: unknown): PropositionEventDetail | nu
     return null
   }
 
-  const numParticipants =
-    typeof data.numParticipants === 'number'
-      ? data.numParticipants
-      : typeof data.num_participants === 'number'
-        ? data.num_participants
-        : null
   const tracksRequested =
     typeof data.tracksRequested === 'number'
       ? data.tracksRequested
@@ -84,7 +79,6 @@ const mapLinkedProposition = (proposition: unknown): PropositionEventDetail | nu
   return {
     type: 'proposition',
     propositionId,
-    numParticipants,
     tracksRequested,
     status,
     createdAt,
@@ -93,22 +87,20 @@ const mapLinkedProposition = (proposition: unknown): PropositionEventDetail | nu
   }
 }
 
-const buildTitle = (type: RangeEventType, meta: { isMember?: boolean; isPublic?: boolean; isJoinable?: boolean }) => {
+const translate = (key: string) => i18n.global.t(key) as string
+
+const buildTitle = (type: RangeEventType, meta: { isMember?: boolean }) => {
   if (type === 'proposition') {
-    return meta.isMember ? 'Propozycja członka' : 'Propozycja gościa'
+    return meta.isMember
+      ? translate('calendar.eventTitles.proposition.member')
+      : translate('calendar.eventTitles.proposition.guest')
   }
 
   if (type === 'reservation') {
-    if (meta.isPublic && meta.isJoinable) {
-      return 'Rezerwacja (otwarta)'
-    }
-    if (meta.isPublic) {
-      return 'Rezerwacja (publiczna)'
-    }
-    return 'Rezerwacja'
+    return translate('calendar.eventTitles.reservation')
   }
 
-  return 'Zapis bez rezerwacji'
+  return translate('calendar.eventTitles.record')
 }
 
 export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
@@ -131,17 +123,13 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
     const tracksRequested =
       typeof event.tracksRequested === 'number' ? event.tracksRequested : undefined
     const coordinatorId = event.details ? event.details.coordinatorId : null
-    const numParticipants = event.details ? event.details.numParticipants : null
-
-    const isPublic = Boolean(event.isPublic)
-    const isJoinable = event.isJoinable === true
     const linkedProposition = mapLinkedProposition(event.proposition)
     const propositionId = event.propositionId ?? linkedProposition?.propositionId ?? null
 
     return {
       id: `reservation-${event.id}`,
       sourceId: event.id,
-      title: buildTitle('reservation', { isPublic, isJoinable }),
+      title: buildTitle('reservation', {}),
       type: 'reservation',
       start: combineDateAndTime(event.eventDate, event.startTime),
       end: combineDateAndTime(event.eventDate, event.endTime),
@@ -149,10 +137,7 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
       meta: {
         reservationId: event.id,
         tracksRequested,
-        isPublic,
-        isOpenForJoining: isJoinable,
         coordinatorId,
-        numParticipants,
         propositionId,
         linkedProposition,
       },

@@ -52,15 +52,6 @@ const canManageRecords = computed(
     ]),
 )
 
-const isJoinableIndicatorVisible = computed(() =>
-  authStore.hasAnyRole([
-    UserRoleEnum.Member,
-    UserRoleEnum.Coordinator,
-    UserRoleEnum.ShootingRangeAdministrator,
-    UserRoleEnum.ClubCommunityAdministrator,
-  ]),
-)
-
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
 const calendarContainerRef = ref<HTMLElement | null>(null)
 const currentViewRange = ref<{ start: Date; end: Date } | null>(null)
@@ -86,7 +77,6 @@ const {
   calendarTimeBounds,
   currentViewRange,
   defaultView,
-  isJoinableIndicatorVisible,
   locale,
   onForceReload: () => clearEventDetailCache(),
   rangeSlug,
@@ -282,9 +272,6 @@ onBeforeUnmount(() => {
       :default-start="reservationDialog.defaultStart"
       :default-end="reservationDialog.defaultEnd"
       :default-tracks="reservationDialog.defaultTracks"
-      :default-participants="reservationDialog.defaultParticipants"
-      :default-is-public="reservationDialog.defaultIsPublic"
-      :default-is-open-for-joining="reservationDialog.defaultIsOpenForJoining"
       :can-use-force="canForceReservations"
       @update:open="reservationDialog.open = $event"
       @submitted="handleReservationSubmitted"
@@ -325,18 +312,10 @@ onBeforeUnmount(() => {
   border-width: 2px;
 }
 
-:deep(.event-joinable) {
-  box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.75);
-}
-
 :deep(.calendar-closed-slot) {
   background-color: rgba(99, 102, 115, 0.18) !important;
   color: #475569 !important;
   pointer-events: none;
-}
-
-:deep(.event-reservation-public) {
-  font-weight: 600;
 }
 
 :deep(.fc-button) {

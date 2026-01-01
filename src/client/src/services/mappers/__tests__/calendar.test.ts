@@ -24,11 +24,8 @@ describe('mapCalendarEvents', () => {
           startTime: '08:00',
           endTime: '09:15',
           tracksRequested: 1,
-          isPublic: true,
-          isJoinable: true,
           details: {
             coordinatorId: 44,
-            numParticipants: 3,
           },
           proposition: {
             id: 17,
@@ -38,7 +35,6 @@ describe('mapCalendarEvents', () => {
             eventDate: '2024-05-02',
             startTime: '07:00',
             endTime: '08:30',
-            numParticipants: 3,
             tracksRequested: 2,
             createdAt: '2024-05-01T10:00:00Z',
             requester: {
@@ -50,6 +46,7 @@ describe('mapCalendarEvents', () => {
           },
         },
       ],
+      events: [],
       records: [],
     }
 
@@ -68,9 +65,6 @@ describe('mapCalendarEvents', () => {
     expect(second.type).toBe('reservation')
     expect(second.start).toBe('2024-05-02T08:00:00')
     expect(second.meta?.reservationId).toBe(9)
-    expect(second.meta?.isPublic).toBe(true)
-    expect(second.meta?.isOpenForJoining).toBe(true)
-    expect(second.meta?.numParticipants).toBe(3)
     expect(second.meta?.propositionId).toBe(17)
     expect(second.meta?.linkedProposition?.propositionId).toBe(17)
     expect(second.meta?.linkedProposition?.requester?.email).toBe('requester@example.com')
@@ -97,12 +91,11 @@ describe('mapCalendarEvents', () => {
           startTime: '06:00',
           endTime: '07:20',
           tracksRequested: null,
-          isPublic: false,
-          isJoinable: false,
           details: null,
           proposition: null,
         },
       ],
+      events: [],
       records: [],
     }
 
@@ -110,8 +103,6 @@ describe('mapCalendarEvents', () => {
 
     expect(events[0].type).toBe('reservation')
     expect(events[0].meta?.tracksRequested).toBeUndefined()
-    expect(events[0].meta?.isPublic).toBe(false)
-    expect(events[0].meta?.isOpenForJoining).toBe(false)
     expect(events[0].meta?.coordinatorId).toBeNull()
     expect(events[1].type).toBe('proposition')
   })

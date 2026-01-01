@@ -84,7 +84,6 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        numParticipants: 4,
         tracksRequested: 2,
       },
     };
@@ -106,7 +105,6 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        numParticipants: 4,
         tracksRequested: 2,
       },
       user
@@ -133,7 +131,6 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        numParticipants: 4,
         tracksRequested: 2,
       },
     };
@@ -150,7 +147,6 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        numParticipants: 4,
         tracksRequested: 2,
       },
       user
@@ -181,7 +177,6 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        numParticipants: 4,
         tracksRequested: 2,
       },
     };
@@ -198,7 +193,6 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        numParticipants: 4,
         tracksRequested: 2,
       },
       user

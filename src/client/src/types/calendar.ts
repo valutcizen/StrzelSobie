@@ -5,8 +5,6 @@ export interface RangeEventMeta {
   reservationId?: number
   tracksRequested?: number
   isMember?: boolean
-  isOpenForJoining?: boolean
-  isPublic?: boolean
   coordinatorId?: number | null
   numParticipants?: number | null
   linkedProposition?: PropositionEventDetail | null
@@ -35,7 +33,6 @@ export interface PersonSummary {
 export interface PropositionEventDetail {
   type: 'proposition'
   propositionId: number
-  numParticipants: number | null
   tracksRequested: number | null
   status: 'open' | 'converted' | 'cancelled' | null
   createdAt: string | null
@@ -48,10 +45,7 @@ export interface ReservationEventDetail {
   reservationId: number
   propositionId: number | null
   proposition: PropositionEventDetail | null
-  numParticipants: number | null
   tracksRequested: number | null
-  isPublic: boolean | null
-  isJoinable: boolean | null
   createdAt: string | null
   coordinator: PersonSummary | null
   notes?: string | null
