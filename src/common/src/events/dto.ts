@@ -1,7 +1,14 @@
-import { Event, EventAudience, EventCapacityType, EventGuestPolicy, EventRegistrationType, EventStatus } from './model';
+import {
+  Event,
+  EventAudience,
+  EventCapacityType,
+  EventGuestPolicy,
+  EventRegistrationType,
+  EventSignupStatus,
+  EventStatus,
+} from './model';
 
 export type CreateEventCommand = {
-  rangeId: Event['range_id'];
   name: Event['name'];
   publicDescription: Event['public_description'];
   memberDescription?: Event['member_description'];
@@ -67,8 +74,31 @@ export type EventDetailsDto = {
   status: EventStatus;
   createdAt: Event['created_at'];
   updatedAt: Event['updated_at'];
+  participants?: EventParticipantDto[];
+  waitlist?: EventParticipantDto[];
 };
 
 export type EventsListResponseDto = {
   data: EventSummaryDto[];
+};
+
+export type CreateEventSignupCommand = {
+  guests?: number;
+};
+
+export type UpdateEventSignupCommand = {
+  guests: number;
+};
+
+export type EventSignupResultDto = {
+  signupId: number;
+  status: EventSignupStatus;
+};
+
+export type EventParticipantDto = {
+  userId: number;
+  email: string | null;
+  displayName: string | null;
+  guests: number;
+  signupTime: string;
 };

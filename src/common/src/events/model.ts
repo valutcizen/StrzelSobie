@@ -23,6 +23,11 @@ export enum EventStatus {
   Cancelled = 'cancelled',
 }
 
+export enum EventSignupStatus {
+  Confirmed = 'confirmed',
+  Waitlisted = 'waitlisted',
+}
+
 export interface Event {
   id: number;
   range_id: number;
@@ -41,6 +46,16 @@ export interface Event {
   waitlist_limit: number | null;
   registration_deadline: string | null;
   status: EventStatus;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface EventSignup {
+  id: number;
+  event_id: number;
+  user_id: number;
+  guests: number;
+  status: EventSignupStatus;
   created_at: string;
   updated_at: string | null;
 }

@@ -172,3 +172,52 @@ export class RangeBookingNotAllowedError extends Error {
     this.name = 'RangeBookingNotAllowedError';
   }
 }
+
+export class EventNotFoundError extends Error {
+  constructor(message = 'Event not found') {
+    super(message);
+    this.name = 'EventNotFoundError';
+  }
+}
+
+export class EventSignupNotFoundError extends Error {
+  constructor(message = 'Event signup not found') {
+    super(message);
+    this.name = 'EventSignupNotFoundError';
+  }
+}
+
+export class EventSignupAlreadyExistsError extends Error {
+  constructor(message = 'User is already signed up for this event') {
+    super(message);
+    this.name = 'EventSignupAlreadyExistsError';
+  }
+}
+
+export class EventSignupClosedError extends Error {
+  constructor(message = 'Event registration is closed') {
+    super(message);
+    this.name = 'EventSignupClosedError';
+  }
+}
+
+export class EventSignupCapacityError extends Error {
+  constructor(message = 'Event capacity is full') {
+    super(message);
+    this.name = 'EventSignupCapacityError';
+  }
+}
+
+export class EventSignupNotAllowedError extends Error {
+  constructor(message = 'Event signup is not allowed') {
+    super(message);
+    this.name = 'EventSignupNotAllowedError';
+  }
+}
+
+export class EventValidationError extends Error {
+  constructor(message = 'Event data is invalid') {
+    super(message);
+    this.name = 'EventValidationError';
+  }
+}
