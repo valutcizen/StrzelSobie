@@ -79,23 +79,20 @@ export class EventsService implements IEventsService {
   }
 
   public async getEventDetails(
-    eventId: number,
+    rangeSlug: string,
+    eventSlug: string,
     user?: UserDto | null
   ): Promise<Result<EventDetailsDto>> {
     if (user?.isDeleted) {
       return Result.fail(new ForbiddenError('Deleted users cannot view events'));
     }
 
-    let event: EventRecord | null;
-    try {
-      event = await this.eventsRepository.getEventById(eventId);
-    } catch (error) {
-      return Result.fail(error as Error);
+    const eventResult = await this.getEventBySlug(rangeSlug, eventSlug, user);
+    if (!eventResult.isSuccess) {
+      return Result.fail(eventResult.getError());
     }
 
-    if (!event) {
-      return Result.fail(new EventNotFoundError());
-    }
+    const event = eventResult.getValue();
 
     if (!this.canUserViewAudience(user, event.range_id, event.audience)) {
       return Result.fail(new ForbiddenError('User is not allowed to view this event'));
@@ -190,7 +187,8 @@ export class EventsService implements IEventsService {
   }
 
   public async updateEvent(
-    eventId: number,
+    rangeSlug: string,
+    eventSlug: string,
     command: UpdateEventCommand,
     user: UserDto
   ): Promise<Result<EventDetailsDto>> {
@@ -198,7 +196,7 @@ export class EventsService implements IEventsService {
       return Result.fail(new ForbiddenError('Deleted users cannot update events'));
     }
 
-    const existing = await this.getEventOrFail(eventId);
+    const existing = await this.getEventBySlug(rangeSlug, eventSlug, user);
     if (!existing.isSuccess) {
       return Result.fail(existing.getError());
     }
@@ -217,7 +215,7 @@ export class EventsService implements IEventsService {
     let updated: EventRecord | null;
     try {
       const updateRecord = this.buildUpdateRecord(command);
-      updated = await this.eventsRepository.updateEvent(eventId, updateRecord);
+      updated = await this.eventsRepository.updateEvent(current.id, updateRecord);
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -243,12 +241,16 @@ export class EventsService implements IEventsService {
     return Result.ok(this.mapDetails(updated, true, undefined, undefined));
   }
 
-  public async cancelEvent(eventId: number, user: UserDto): Promise<Result<void>> {
+  public async cancelEvent(
+    rangeSlug: string,
+    eventSlug: string,
+    user: UserDto
+  ): Promise<Result<void>> {
     if (user.isDeleted) {
       return Result.fail(new ForbiddenError('Deleted users cannot cancel events'));
     }
 
-    const existing = await this.getEventOrFail(eventId);
+    const existing = await this.getEventBySlug(rangeSlug, eventSlug, user);
     if (!existing.isSuccess) {
       return Result.fail(existing.getError());
     }
@@ -260,7 +262,7 @@ export class EventsService implements IEventsService {
 
     let cancelled: EventRecord | null;
     try {
-      cancelled = await this.eventsRepository.cancelEvent(eventId);
+      cancelled = await this.eventsRepository.cancelEvent(current.id);
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -287,7 +289,8 @@ export class EventsService implements IEventsService {
   }
 
   public async createSignup(
-    eventId: number,
+    rangeSlug: string,
+    eventSlug: string,
     command: CreateEventSignupCommand,
     user: UserDto
   ): Promise<Result<EventSignupResultDto>> {
@@ -295,7 +298,7 @@ export class EventsService implements IEventsService {
       return Result.fail(new ForbiddenError('Deleted users cannot sign up for events'));
     }
 
-    const eventResult = await this.getEventOrFail(eventId);
+    const eventResult = await this.getEventBySlug(rangeSlug, eventSlug, user);
     if (!eventResult.isSuccess) {
       return Result.fail(eventResult.getError());
     }
@@ -372,7 +375,8 @@ export class EventsService implements IEventsService {
   }
 
   public async updateSignup(
-    eventId: number,
+    rangeSlug: string,
+    eventSlug: string,
     command: UpdateEventSignupCommand,
     user: UserDto
   ): Promise<Result<EventSignupResultDto>> {
@@ -380,7 +384,7 @@ export class EventsService implements IEventsService {
       return Result.fail(new ForbiddenError('Deleted users cannot update signups'));
     }
 
-    const eventResult = await this.getEventOrFail(eventId);
+    const eventResult = await this.getEventBySlug(rangeSlug, eventSlug, user);
     if (!eventResult.isSuccess) {
       return Result.fail(eventResult.getError());
     }
@@ -472,12 +476,16 @@ export class EventsService implements IEventsService {
     });
   }
 
-  public async cancelSignup(eventId: number, user: UserDto): Promise<Result<void>> {
+  public async cancelSignup(
+    rangeSlug: string,
+    eventSlug: string,
+    user: UserDto
+  ): Promise<Result<void>> {
     if (user.isDeleted) {
       return Result.fail(new ForbiddenError('Deleted users cannot cancel signups'));
     }
 
-    const eventResult = await this.getEventOrFail(eventId);
+    const eventResult = await this.getEventBySlug(rangeSlug, eventSlug, user);
     if (!eventResult.isSuccess) {
       return Result.fail(eventResult.getError());
     }
@@ -533,9 +541,20 @@ export class EventsService implements IEventsService {
     return Result.ok(undefined as void);
   }
 
-  private async getEventOrFail(eventId: number): Promise<Result<EventRecord>> {
+  private async getEventBySlug(
+    rangeSlug: string,
+    eventSlug: string,
+    user?: UserDto | null
+  ): Promise<Result<EventRecord>> {
+    const rangeResult = await this.rangesService.getRangeDetails(rangeSlug, user ?? null);
+    if (!rangeResult.isSuccess) {
+      return Result.fail(rangeResult.getError());
+    }
+
+    const rangeDetails = rangeResult.getValue();
+
     try {
-      const event = await this.eventsRepository.getEventById(eventId);
+      const event = await this.eventsRepository.getEventBySlug(rangeDetails.id, eventSlug);
       if (!event) {
         return Result.fail(new EventNotFoundError());
       }
@@ -548,6 +567,7 @@ export class EventsService implements IEventsService {
   private mapSummary(event: EventRecord) {
     return {
       id: event.id,
+      slug: event.slug,
       rangeId: event.range_id,
       name: event.name,
       eventDate: event.event_date,
@@ -568,6 +588,7 @@ export class EventsService implements IEventsService {
   ): EventDetailsDto {
     return {
       id: event.id,
+      slug: event.slug,
       rangeId: event.range_id,
       createdBy: event.created_by,
       name: event.name,

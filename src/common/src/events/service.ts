@@ -12,23 +12,34 @@ import {
 
 export interface IEventsService {
   getRangeEvents(rangeSlug: string, user?: UserDto | null): Promise<Result<EventsListResponseDto>>;
-  getEventDetails(eventId: number, user?: UserDto | null): Promise<Result<EventDetailsDto>>;
+  getEventDetails(
+    rangeSlug: string,
+    eventSlug: string,
+    user?: UserDto | null
+  ): Promise<Result<EventDetailsDto>>;
   createEvent(
     rangeSlug: string,
     command: CreateEventCommand,
     user: UserDto
   ): Promise<Result<EventDetailsDto>>;
-  updateEvent(eventId: number, command: UpdateEventCommand, user: UserDto): Promise<Result<EventDetailsDto>>;
-  cancelEvent(eventId: number, user: UserDto): Promise<Result<void>>;
+  updateEvent(
+    rangeSlug: string,
+    eventSlug: string,
+    command: UpdateEventCommand,
+    user: UserDto
+  ): Promise<Result<EventDetailsDto>>;
+  cancelEvent(rangeSlug: string, eventSlug: string, user: UserDto): Promise<Result<void>>;
   createSignup(
-    eventId: number,
+    rangeSlug: string,
+    eventSlug: string,
     command: CreateEventSignupCommand,
     user: UserDto
   ): Promise<Result<EventSignupResultDto>>;
   updateSignup(
-    eventId: number,
+    rangeSlug: string,
+    eventSlug: string,
     command: UpdateEventSignupCommand,
     user: UserDto
   ): Promise<Result<EventSignupResultDto>>;
-  cancelSignup(eventId: number, user: UserDto): Promise<Result<void>>;
+  cancelSignup(rangeSlug: string, eventSlug: string, user: UserDto): Promise<Result<void>>;
 }

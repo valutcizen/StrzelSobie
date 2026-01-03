@@ -16,6 +16,13 @@ import { CreateRange } from './endpoints/v1/ranges/create-range';
 import { UpdateRange } from './endpoints/v1/ranges/update-range';
 import { DeleteRange } from './endpoints/v1/ranges/delete-range';
 import { GetEvents } from './endpoints/v1/ranges/get-events';
+import { CreateEvent } from './endpoints/v1/ranges/create-event';
+import { GetEvent } from './endpoints/v1/ranges/get-event';
+import { UpdateEvent } from './endpoints/v1/ranges/update-event';
+import { DeleteEvent } from './endpoints/v1/ranges/delete-event';
+import { CreateEventSignup } from './endpoints/v1/ranges/create-event-signup';
+import { UpdateEventSignup } from './endpoints/v1/ranges/update-event-signup';
+import { DeleteEventSignup } from './endpoints/v1/ranges/delete-event-signup';
 import { CreateProposition } from './endpoints/v1/ranges/create-proposition';
 import { CreateRecord } from './endpoints/v1/ranges/create-record';
 import { CreateReservation } from './endpoints/v1/ranges/create-reservation';
@@ -27,6 +34,7 @@ import { Env, Variables } from './types';
 import { EMBED_MAP_HTML, EMBED_MAP_JS } from '@strzel-sobie/embed-map';
 import { GetMapRangesRoute } from './endpoints/v1/ranges/get-map-ranges';
 import { RangesDbRepository, RangesService } from '@strzel-sobie/ranges';
+import { EventsDbRepository, EventsService } from '@strzel-sobie/events';
 import {
   AuthDbRepository,
   SessionKvRepository,
@@ -114,12 +122,14 @@ app.use('*', async (c, next) => {
   const userRepository = new UserDbRepository(c.env.DB);
   const rangesRepository = new RangesDbRepository(c.env.DB);
   const reservationsRepository = new ReservationsDbRepository(c.env.DB);
+  const eventsRepository = new EventsDbRepository(c.env.DB);
   const auditRepository = new AuditDbRepository(c.env.DB);
 
   // Services
   const auditService = new AuditService(auditRepository);
   const rangesService = new RangesService(rangesRepository, auditService);
   const userService = new UserService(userRepository, rangesService, auditService);
+  const eventsService = new EventsService(rangesService, eventsRepository, auditService);
   const authModule = resolveAuthModule(c.env.AUTH_MODULE);
   const authService = authModule.createAuthService({
     authRepository,
@@ -127,12 +137,18 @@ app.use('*', async (c, next) => {
     userService,
     auditService,
   });
-  const reservationsService = new ReservationsService(rangesService, reservationsRepository, auditService);
+  const reservationsService = new ReservationsService(
+    rangesService,
+    reservationsRepository,
+    eventsService,
+    auditService
+  );
 
   c.set('authService', authService);
   c.set('userService', userService);
   c.set('rangesService', rangesService);
   c.set('reservationsService', reservationsService);
+  c.set('eventsService', eventsService);
   c.set('auditService', auditService);
 
   await next();
@@ -161,6 +177,25 @@ openapi.patch('/api/v1/ranges/:rangeSlug', authMiddleware, UpdateRange);
 openapi.delete('/api/v1/ranges/:rangeSlug', authMiddleware, DeleteRange);
 
 openapi.get('/api/v1/ranges/:rangeSlug/events', GetEvents);
+openapi.post('/api/v1/ranges/:rangeSlug/events', authMiddleware, CreateEvent);
+openapi.get('/api/v1/ranges/:rangeSlug/events/:eventSlug', GetEvent);
+openapi.patch('/api/v1/ranges/:rangeSlug/events/:eventSlug', authMiddleware, UpdateEvent);
+openapi.delete('/api/v1/ranges/:rangeSlug/events/:eventSlug', authMiddleware, DeleteEvent);
+openapi.post(
+  '/api/v1/ranges/:rangeSlug/events/:eventSlug/signups',
+  authMiddleware,
+  CreateEventSignup
+);
+openapi.patch(
+  '/api/v1/ranges/:rangeSlug/events/:eventSlug/signups/me',
+  authMiddleware,
+  UpdateEventSignup
+);
+openapi.delete(
+  '/api/v1/ranges/:rangeSlug/events/:eventSlug/signups/me',
+  authMiddleware,
+  DeleteEventSignup
+);
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
 openapi.post('/api/v1/ranges/:rangeSlug/records', authMiddleware, CreateRecord);

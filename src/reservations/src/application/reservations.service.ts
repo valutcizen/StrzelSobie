@@ -1,7 +1,9 @@
 import {
   IAuditService,
+  IEventsService,
   IReservationsService,
   IRangesService,
+  EventAudience,
   UserRole,
   getRangeRole,
 } from '@strzel-sobie/common/models';
@@ -42,6 +44,7 @@ import {
   RangeBookingNotAllowedError,
   UnauthorizedPropositionError,
   OperatingHours,
+  EventSummaryDto,
   UserDto,
 } from '@strzel-sobie/common';
 import {
@@ -70,6 +73,7 @@ export class ReservationsService implements IReservationsService {
   constructor(
     private readonly rangesService: IRangesService,
     private readonly reservationsRepository: IReservationsRepository,
+    private readonly eventsService: IEventsService,
     private readonly auditService: IAuditService
   ) {}
 
@@ -85,10 +89,21 @@ export class ReservationsService implements IReservationsService {
     const rangeId = rangeDetails.id;
 
     try {
-      const [propositions, reservations] = await Promise.all([
+      const [propositions, reservations, eventsResult] = await Promise.all([
         this.reservationsRepository.getPropositions(rangeId, startDate, endDate),
         this.reservationsRepository.getReservations(rangeId, startDate, endDate),
+        this.eventsService.getRangeEvents(rangeSlug, this.normalizeEventsUser(user)),
       ]);
+
+      if (!eventsResult.isSuccess) {
+        return Result.fail(eventsResult.getError());
+      }
+
+      const events = eventsResult
+        .getValue()
+        .data
+        .filter((event) => event.eventDate >= startDate && event.eventDate <= endDate)
+        .map((event) => this.mapRangeEventSummary(event));
 
       const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
       const roleNames = (user.roles ?? [])
@@ -164,8 +179,7 @@ export class ReservationsService implements IReservationsService {
           tracksRequested: p.tracks_requested,
         })),
         reservations: filteredReservations,
-        // TODO: Fill events when the Events service is available.
-        events: [],
+        events,
         records: records.map((record) => ({
           id: record.id,
           adminId: record.admin_id,
@@ -830,6 +844,59 @@ export class ReservationsService implements IReservationsService {
       phoneNumber: phoneNumber ?? null,
       displayName: null,
     };
+  }
+
+  private normalizeEventsUser(user: UserRoleContext): UserDto {
+    const roleNames = (user.roles ?? [])
+      .map((role) => (typeof role === 'string' ? role : role?.name ?? ''))
+      .filter((roleName) => roleName.length > 0);
+
+    const rangeRolesSource = user.rangeRoles ?? user.range_roles ?? {};
+    const rangeRoles = Object.entries(rangeRolesSource).reduce((acc, [rangeId, roleList]) => {
+      const names = (roleList ?? [])
+        .map((role) => (typeof role === 'string' ? role : role?.name ?? ''))
+        .filter((roleName) => roleName.length > 0);
+      if (names.length > 0) {
+        acc[rangeId] = names.map((name, index) => ({
+          id: index + 1,
+          name,
+          scope: 'range' as const,
+        }));
+      }
+      return acc;
+    }, {} as UserDto['rangeRoles']);
+
+    const isDeleted = (user as { isDeleted?: number }).isDeleted === 1 ? 1 : 0;
+
+    return {
+      id: typeof user.id === 'string' ? Number.parseInt(user.id, 10) : user.id,
+      email: (user as { email?: string }).email ?? 'calendar@strzel-sobie.local',
+      isDeleted,
+      createdAt: (user as { createdAt?: string }).createdAt ?? new Date(0).toISOString(),
+      roles: roleNames.map((name, index) => ({
+        id: index + 1,
+        name,
+        scope: 'global' as const,
+      })),
+      rangeRoles,
+    };
+  }
+
+  private mapRangeEventSummary(event: EventSummaryDto) {
+    const audience: CalendarEventsDto['events'][number]['audience'] =
+      event.audience === EventAudience.Public ? 'Public' : 'MembersOnly';
+
+    return {
+      id: event.id,
+      name: event.name,
+      startTime: this.combineEventDateTime(event.eventDate, event.startTime),
+      endTime: this.combineEventDateTime(event.eventDate, event.endTime),
+      audience,
+    };
+  }
+
+  private combineEventDateTime(eventDate: string, time: string): string {
+    return `${eventDate}T${time}:00`;
   }
 
   private extractRoleName(role: RoleLike): string {

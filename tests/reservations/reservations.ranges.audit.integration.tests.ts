@@ -6,6 +6,7 @@ import {
   CreateRecordCommand,
   CreateReservationCommand,
   IReservationsService,
+  IEventsService,
   IRangesService,
   IUserService,
   IAuditService,
@@ -226,6 +227,7 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
 function createReservationsContext(): {
   reservationsRepository: Mocked<IReservationsRepository>;
   rangesService: Mocked<IRangesService>;
+  eventsService: Mocked<IEventsService>;
   auditService: Mocked<IAuditService>;
   service: ReservationsService;
 } {
@@ -255,15 +257,32 @@ function createReservationsContext(): {
     deleteRange: vi.fn(),
   };
 
+  const eventsService: Mocked<IEventsService> = {
+    getRangeEvents: vi.fn().mockResolvedValue(Result.ok({ data: [] })),
+    getEventDetails: vi.fn(),
+    createEvent: vi.fn(),
+    updateEvent: vi.fn(),
+    cancelEvent: vi.fn(),
+    createSignup: vi.fn(),
+    updateSignup: vi.fn(),
+    cancelSignup: vi.fn(),
+  };
+
   const auditService: Mocked<IAuditService> = {
     logAction: vi.fn(),
   };
 
-  const service = new ReservationsService(rangesService, reservationsRepository, auditService);
+  const service = new ReservationsService(
+    rangesService,
+    reservationsRepository,
+    eventsService,
+    auditService
+  );
 
   return {
     reservationsRepository,
     rangesService,
+    eventsService,
     auditService,
     service,
   };

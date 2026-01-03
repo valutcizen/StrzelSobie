@@ -14,11 +14,13 @@ CREATE TABLE events_events (
     audience TEXT NOT NULL,
     config TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (range_id) REFERENCES ranges_shooting_ranges (id),
     FOREIGN KEY (organizer_id) REFERENCES users_users (id)
 );
 
 CREATE INDEX idx_events_range_date ON events_events(range_id, event_date);
+CREATE INDEX idx_events_range_slug ON events_events(range_id, slug);
 
 -- Join table for event signups.
 CREATE TABLE events_signups (

@@ -30,6 +30,7 @@ export enum EventSignupStatus {
 
 export interface Event {
   id: number;
+  slug: string;
   range_id: number;
   created_by: number;
   name: string;

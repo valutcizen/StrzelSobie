@@ -43,6 +43,7 @@ export type UpdateEventCommand = {
 
 export type EventSummaryDto = {
   id: Event['id'];
+  slug: Event['slug'];
   rangeId: Event['range_id'];
   name: Event['name'];
   eventDate: Event['event_date'];
@@ -56,6 +57,7 @@ export type EventSummaryDto = {
 
 export type EventDetailsDto = {
   id: Event['id'];
+  slug: Event['slug'];
   rangeId: Event['range_id'];
   createdBy: Event['created_by'];
   name: Event['name'];

@@ -41,6 +41,10 @@ import {
   InvalidRecordTimeError,
   RangeClosedError,
   RangeBookingNotAllowedError,
+  EventAudience,
+  EventCapacityType,
+  EventRegistrationType,
+  EventStatus,
 } from '@strzel-sobie/common/models';
 import { ReservationsService } from '../../src/reservations/src/application/reservations.service';
 import type {
@@ -76,6 +80,9 @@ type TestContext = {
     getReservationDetailById: ReturnType<typeof vi.fn>;
     deleteReservation: ReturnType<typeof vi.fn>;
     reopenProposition: ReturnType<typeof vi.fn>;
+  };
+  eventsService: {
+    getRangeEvents: ReturnType<typeof vi.fn>;
   };
   auditService: {
     logAction: ReturnType<typeof vi.fn>;
@@ -252,6 +259,10 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
     reopenProposition: vi.fn(),
   };
 
+  const eventsService = {
+    getRangeEvents: vi.fn().mockResolvedValue(Result.ok({ data: [] })),
+  };
+
   const auditService = {
     logAction: vi.fn().mockResolvedValue(Result.ok<void>(undefined)),
   };
@@ -259,6 +270,7 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
   const service = new ReservationsService(
     rangesService as unknown as any,
     reservationsRepository as unknown as IReservationsRepository,
+    eventsService as unknown as any,
     auditService as unknown as any
   );
 
@@ -266,6 +278,7 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
     service,
     rangesService,
     reservationsRepository,
+    eventsService,
     auditService,
     rangeDetails,
   };
@@ -351,6 +364,47 @@ describe('ReservationsService contract', () => {
       expect(events.reservations).toHaveLength(2);
       expect(events.events).toEqual([]);
       expect(events.reservations.every((event) => event.details !== null)).toBe(true);
+    });
+
+    it('maps events returned by the events service into calendar summaries', async () => {
+      const ctx = createTestContext();
+      ctx.eventsService.getRangeEvents.mockResolvedValueOnce(
+        Result.ok({
+          data: [
+            {
+              id: 55,
+              slug: 'open-day',
+              rangeId: ctx.rangeDetails.id,
+              name: 'Open Day',
+              eventDate: '2024-01-15',
+              startTime: '10:00',
+              endTime: '12:00',
+              registrationType: EventRegistrationType.Notice,
+              audience: EventAudience.Public,
+              capacityType: EventCapacityType.Unlimited,
+              status: EventStatus.Active,
+            },
+          ],
+        })
+      );
+
+      const result = await ctx.service.getCalendarEvents({
+        rangeSlug: ctx.rangeDetails.slug,
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        user: createUserProfile(),
+      });
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().events).toEqual([
+        {
+          id: 55,
+          name: 'Open Day',
+          startTime: '2024-01-15T10:00:00',
+          endTime: '2024-01-15T12:00:00',
+          audience: 'Public',
+        },
+      ]);
     });
 
     it('keeps all propositions visible to members while exposing reservation details', async () => {

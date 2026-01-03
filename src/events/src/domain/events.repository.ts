@@ -9,6 +9,7 @@ import {
 
 export type EventRecord = {
   id: number;
+  slug: string;
   range_id: number;
   created_by: number;
   name: string;
@@ -54,7 +55,7 @@ export type EventSignupSummary = {
 
 export type CreateEventRecord = Omit<
   EventRecord,
-  'id' | 'created_at' | 'updated_at'
+  'id' | 'created_at' | 'updated_at' | 'slug'
 >;
 
 export type UpdateEventRecord = Partial<Omit<EventRecord, 'id' | 'created_at'>>;
@@ -69,6 +70,7 @@ export type CreateEventSignupRecord = {
 export interface IEventsRepository {
   getRangeEvents(rangeId: number): Promise<EventRecord[]>;
   getEventById(eventId: number): Promise<EventRecord | null>;
+  getEventBySlug(rangeId: number, slug: string): Promise<EventRecord | null>;
   getEventParticipants(eventId: number): Promise<EventParticipantRecord[]>;
   getEventWaitlist(eventId: number): Promise<EventParticipantRecord[]>;
   createEvent(record: CreateEventRecord): Promise<EventRecord>;

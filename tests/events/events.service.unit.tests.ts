@@ -102,6 +102,7 @@ const makeRangeDetails = (overrides: Partial<RangeDetailsDto> = {}): RangeDetail
 
 const makeEvent = (overrides: Partial<EventRecord> = {}): EventRecord => ({
   id: 1,
+  slug: 'steel-challenge',
   range_id: 5,
   created_by: 10,
   name: 'Steel Challenge',
@@ -127,6 +128,7 @@ const createTestContext = () => {
   const eventsRepository: MockedRepository = {
     getRangeEvents: vi.fn<IEventsRepository['getRangeEvents']>(),
     getEventById: vi.fn<IEventsRepository['getEventById']>(),
+    getEventBySlug: vi.fn<IEventsRepository['getEventBySlug']>(),
     getEventParticipants: vi.fn<IEventsRepository['getEventParticipants']>(),
     getEventWaitlist: vi.fn<IEventsRepository['getEventWaitlist']>(),
     createEvent: vi.fn<IEventsRepository['createEvent']>(),
@@ -248,13 +250,15 @@ describe('EventsService contract', () => {
   });
 
   it('returns participants when requester is event creator', async () => {
-    const { service, eventsRepository } = createTestContext();
+    const { service, eventsRepository, rangesService } = createTestContext();
+    const rangeDetails = makeRangeDetails();
     const event = makeEvent({
       id: 7,
       created_by: mockUsers.member.id,
       audience: EventAudience.Public,
     });
-    eventsRepository.getEventById.mockResolvedValue(event);
+    rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
+    eventsRepository.getEventBySlug.mockResolvedValue(event);
     eventsRepository.getEventParticipants.mockResolvedValue([
       {
         user_id: 99,
@@ -266,7 +270,11 @@ describe('EventsService contract', () => {
     ]);
     eventsRepository.getEventWaitlist.mockResolvedValue([]);
 
-    const result = await service.getEventDetails(event.id, mockUsers.member);
+    const result = await service.getEventDetails(
+      rangeDetails.slug,
+      event.slug,
+      mockUsers.member
+    );
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue().participants).toHaveLength(1);
@@ -274,14 +282,16 @@ describe('EventsService contract', () => {
   });
 
   it('waitlists signups when capacity is full', async () => {
-    const { service, eventsRepository } = createTestContext();
+    const { service, eventsRepository, rangesService } = createTestContext();
+    const rangeDetails = makeRangeDetails();
     const event = makeEvent({
       id: 20,
       capacity_type: EventCapacityType.Limited,
       capacity_limit: 2,
       waitlist_limit: 5,
     });
-    eventsRepository.getEventById.mockResolvedValue(event);
+    rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
+    eventsRepository.getEventBySlug.mockResolvedValue(event);
     eventsRepository.getSignupByUser.mockResolvedValue(null);
     eventsRepository.getSignupSummary.mockResolvedValue({ confirmedSlots: 2, waitlistedSlots: 0 });
     eventsRepository.createSignup.mockResolvedValue({
@@ -294,7 +304,12 @@ describe('EventsService contract', () => {
       updated_at: null,
     });
 
-    const result = await service.createSignup(event.id, { guests: 0 }, mockUsers.member);
+    const result = await service.createSignup(
+      rangeDetails.slug,
+      event.slug,
+      { guests: 0 },
+      mockUsers.member
+    );
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue().status).toBe(EventSignupStatus.Waitlisted);
@@ -304,28 +319,37 @@ describe('EventsService contract', () => {
   });
 
   it('rejects updates that add guests when guests are not allowed', async () => {
-    const { service, eventsRepository } = createTestContext();
+    const { service, eventsRepository, rangesService } = createTestContext();
+    const rangeDetails = makeRangeDetails();
     const event = makeEvent({
       id: 21,
       audience: EventAudience.Public,
       guest_policy: EventGuestPolicy.NoGuests,
     });
-    eventsRepository.getEventById.mockResolvedValue(event);
+    rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
+    eventsRepository.getEventBySlug.mockResolvedValue(event);
 
-    const result = await service.updateSignup(event.id, { guests: 2 }, mockUsers.member);
+    const result = await service.updateSignup(
+      rangeDetails.slug,
+      event.slug,
+      { guests: 2 },
+      mockUsers.member
+    );
 
     expect(result.isSuccess).toBe(false);
     expect(result.getError()).toBeInstanceOf(EventSignupNotAllowedError);
   });
 
   it('promotes waitlist when confirmed signup is canceled', async () => {
-    const { service, eventsRepository } = createTestContext();
+    const { service, eventsRepository, rangesService } = createTestContext();
+    const rangeDetails = makeRangeDetails();
     const event = makeEvent({
       id: 22,
       capacity_type: EventCapacityType.Limited,
       capacity_limit: 2,
     });
-    eventsRepository.getEventById.mockResolvedValue(event);
+    rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
+    eventsRepository.getEventBySlug.mockResolvedValue(event);
     eventsRepository.getSignupByUser.mockResolvedValue({
       id: 88,
       event_id: event.id,
@@ -345,7 +369,11 @@ describe('EventsService contract', () => {
       updated_at: null,
     });
 
-    const result = await service.cancelSignup(event.id, mockUsers.member);
+    const result = await service.cancelSignup(
+      rangeDetails.slug,
+      event.slug,
+      mockUsers.member
+    );
 
     expect(result.isSuccess).toBe(true);
     expect(eventsRepository.promoteWaitlistedSignup).toHaveBeenCalledWith(event.id, 2);
