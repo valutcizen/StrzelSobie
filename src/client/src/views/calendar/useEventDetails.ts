@@ -126,6 +126,7 @@ interface EventDetailState {
 
 export const useEventDetails = ({
   openReservationDialog,
+  onEventNavigate,
   t,
 }: {
   openReservationDialog: (options: {
@@ -134,6 +135,7 @@ export const useEventDetails = ({
     defaultEnd?: string | null
     defaultTracks?: number | null
   }) => void
+  onEventNavigate: (event: RangeEvent) => void
   t: ComposerTranslation
 }) => {
   const selectedEvent = ref<RangeEvent | null>(null)
@@ -211,6 +213,11 @@ export const useEventDetails = ({
   const handleEventClick = (clickInfo: EventClickArg) => {
     const rangeEvent = (clickInfo.event.extendedProps.rangeEvent ?? null) as RangeEvent | null
     if (!rangeEvent) {
+      return
+    }
+
+    if (rangeEvent.type === 'event') {
+      onEventNavigate(rangeEvent)
       return
     }
 

@@ -38,6 +38,13 @@ const routes: AppRouteRecordRaw[] = [
     props: true,
   },
   {
+    path: '/:rangeSlug/events/:eventSlug',
+    name: 'EventDetail',
+    component: () => import('@/views/events/EventDetailView.vue'),
+    meta: { requiresAuth: false },
+    props: true,
+  },
+  {
     path: '/:rangeSlug/calendar',
     name: 'Calendar',
     component: () => import('@/views/CalendarView.vue'),
@@ -81,6 +88,28 @@ const routes: AppRouteRecordRaw[] = [
       requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
       requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
     },
+  },
+  {
+    path: '/admin/ranges/:rangeSlug/events/new',
+    name: 'EventCreate',
+    component: () => import('@/views/events/EventFormView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
+      requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
+    },
+    props: true,
+  },
+  {
+    path: '/admin/ranges/:rangeSlug/events/:eventSlug/edit',
+    name: 'EventEdit',
+    component: () => import('@/views/events/EventFormView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
+      requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
+    },
+    props: true,
   },
   {
     path: '/privacy',

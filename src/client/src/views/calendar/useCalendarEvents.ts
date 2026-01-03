@@ -48,6 +48,10 @@ export const useCalendarEvents = ({
         classNames.push(isMember ? 'event-proposition-member' : 'event-proposition-guest')
         backgroundColor = isMember ? '#2746b9' : '#3a6bff'
         borderColor = isMember ? '#1d3391' : '#2651d6'
+      } else if (event.type === 'event') {
+        classNames.push('event-event')
+        backgroundColor = '#d97706'
+        borderColor = '#b45309'
       } else if (event.type === 'reservation') {
         classNames.push('event-reservation')
         backgroundColor = '#2f9e44'

@@ -4,6 +4,7 @@
       "cancel": "Cancel",
       "confirm": "Confirm",
       "close": "Close",
+      "create": "Create",
       "save": "Save",
       "submit": "Submit",
       "send": "Send",
@@ -38,6 +39,7 @@
     "club": "Club range",
     "ally": "Ally range",
     "coming-soon": "Coming soon",
+    "meetup": "Meetup range",
     "unknown": "Range"
   },
   "navigation": {
@@ -185,6 +187,132 @@
       }
     }
   },
+  "events": {
+    "detail": {
+      "loadingTitle": "Loading event...",
+      "status": {
+        "cancelled": "This event has been cancelled."
+      },
+      "registration": {
+        "open": "Registration open",
+        "closed": "Registration closed"
+      },
+      "registrationDeadline": {
+        "none": "No registration deadline"
+      },
+      "capacity": {
+        "unlimited": "Unlimited slots",
+        "limited": "{count} slots",
+        "remaining": "{count} slots remaining"
+      },
+      "waitlist": {
+        "available": "{count} waitlist spots",
+        "remaining": "{count} waitlist spots remaining"
+      },
+      "labels": {
+        "registrationDeadline": "Registration deadline",
+        "capacity": "Capacity",
+        "remainingSlots": "Remaining slots",
+        "waitlist": "Waitlist"
+      },
+      "audience": {
+        "public": "Public",
+        "membersOnly": "Members only"
+      },
+      "sections": {
+        "description": "Description",
+        "memberDescription": "Members-only notes",
+        "details": "Event details"
+      },
+      "emptyDescription": "No description provided.",
+      "emptyMemberDescription": "No members-only description available.",
+      "actions": {
+        "refresh": "Refresh event",
+        "edit": "Edit event",
+        "signUp": "Sign up",
+        "joinWaitlist": "Join waitlist",
+        "cancelRegistration": "Cancel registration"
+      },
+      "signup": {
+        "confirmed": "You are registered for this event.",
+        "waitlisted": "You are on the waitlist for this event.",
+        "success": "Registration saved.",
+        "cancelled": "Registration cancelled."
+      },
+      "errors": {
+        "loadFailed": "Failed to load event details.",
+        "signupFailed": "Failed to register for this event.",
+        "cancelFailed": "Failed to cancel registration."
+      }
+    },
+    "form": {
+      "createTitle": "Create event",
+      "editTitle": "Edit event",
+      "actions": {
+        "refresh": "Refresh event"
+      },
+      "labels": {
+        "name": "Event name",
+        "publicDescription": "Public description",
+        "memberDescription": "Members-only description",
+        "eventDate": "Event date",
+        "startTime": "Start time",
+        "endTime": "End time",
+        "registrationDeadline": "Registration deadline",
+        "audience": "Audience",
+        "capacity": "Capacity",
+        "slots": "Slots",
+        "waitlistSlots": "Waitlist slots",
+        "allowGuests": "Allow guests"
+      },
+      "options": {
+        "audience": {
+          "public": "Public",
+          "membersOnly": "Members only"
+        },
+        "capacity": {
+          "unlimited": "Unlimited",
+          "limited": "Limited"
+        }
+      },
+      "validation": {
+        "required": "This field is required.",
+        "invalidDate": "Invalid date format (YYYY-MM-DD).",
+        "invalidTime": "Invalid time format (HH:MM).",
+        "endAfterStart": "End time must be later than start time.",
+        "minSlots": "Minimum slots is 1.",
+        "minWaitlist": "Minimum waitlist is 0."
+      },
+      "errors": {
+        "loadFailed": "Failed to load event.",
+        "saveFailed": "Failed to save event."
+      }
+    },
+    "signup": {
+      "title": "Confirm registration",
+      "prompt": "Confirm registration for {name}.",
+      "guestsLabel": "Guests count"
+    },
+    "participants": {
+      "title": "Participants",
+      "copyAction": "Copy list",
+      "copySuccess": "Participant list copied.",
+      "copyFailure": "Failed to copy participant list.",
+      "confirmedTitle": "Confirmed",
+      "waitlistTitle": "Waitlist",
+      "headers": {
+        "status": "Status",
+        "person": "Participant",
+        "email": "Email",
+        "guests": "Guests",
+        "signupTime": "Signed up at"
+      },
+      "status": {
+        "confirmed": "Confirmed",
+        "waitlisted": "Waitlisted"
+      }
+    }
+  },
   "rangeLanding": {
     "loadingTitle": "Loading range data...",
     "description": "Learn the essentials about the range and available lanes.",
@@ -198,7 +326,9 @@
     "location": "Lat {lat}, Lng {lng}",
     "actions": {
       "refresh": "Refresh range data",
-      "openCalendar": "Open calendar"
+      "openCalendar": "Open calendar",
+      "backToMap": "Back to map",
+      "createEvent": "Create new event"
     },
     "publicDescription": {
       "title": "Description",
@@ -212,6 +342,10 @@
       "title": "Operating hours",
       "closed": "Closed"
     },
+    "events": {
+      "title": "Upcoming events",
+      "empty": "No events scheduled."
+    },
     "days": {
       "monday": "Monday",
       "tuesday": "Tuesday",
@@ -223,7 +357,8 @@
     },
     "errors": {
       "fetchFailed": "Failed to fetch range details."
-    }
+    },
+    "eventsLoadFailed": "Failed to load events."
   },
   "profile": {
     "title": "My profile",
@@ -322,6 +457,7 @@
         "errorMessage": "Failed to update parking location."
       },
       "rangeTypeLabel": "Range type",
+      "allowMemberEventsLabel": "Members can create events",
       "publicDescriptionLabel": "Public description",
       "publicDescriptionHint": "Visible to everyone on the range page. Supports basic HTML.",
       "memberDescriptionLabel": "Members-only description",
@@ -398,6 +534,8 @@
       "allowsReservations": "Bookings available",
       "noReservations": "Bookings unavailable",
       "detailsCta": "View details",
+      "detailsCtaMeetup": "View events",
+      "calendarCta": "View calendar",
       "headers": {
         "name": "Name",
         "type": "Type",

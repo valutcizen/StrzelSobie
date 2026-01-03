@@ -399,6 +399,7 @@ describe('ReservationsService contract', () => {
       expect(result.getValue().events).toEqual([
         {
           id: 55,
+          slug: 'open-day',
           name: 'Open Day',
           startTime: '2024-01-15T10:00:00',
           endTime: '2024-01-15T12:00:00',

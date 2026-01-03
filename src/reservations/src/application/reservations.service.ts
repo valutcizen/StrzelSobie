@@ -888,6 +888,7 @@ export class ReservationsService implements IReservationsService {
 
     return {
       id: event.id,
+      slug: event.slug,
       name: event.name,
       startTime: this.combineEventDateTime(event.eventDate, event.startTime),
       endTime: this.combineEventDateTime(event.eventDate, event.endTime),

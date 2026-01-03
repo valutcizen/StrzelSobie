@@ -18,7 +18,7 @@ const operatingHoursSchema = z.record(
 const createRangeCommandSchema = z.object({
   slug: z.string().min(1),
   displayName: z.string().trim().optional(),
-  type: z.enum(['club', 'ally', 'coming-soon']).optional(),
+  type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
   allowsReservations: z.boolean().optional(),
   publicDescription: z.string().optional().nullable(),
   memberDescription: z.string().optional().nullable(),

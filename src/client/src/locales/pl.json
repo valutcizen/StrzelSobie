@@ -4,6 +4,7 @@
       "cancel": "Anuluj",
       "confirm": "Potwierdź",
       "close": "Zamknij",
+      "create": "Utwórz",
       "save": "Zapisz",
       "submit": "Wyślij",
       "send": "Wyślij",
@@ -38,6 +39,7 @@
     "club": "Strzelnica klubowa",
     "ally": "Strzelnica partnerska",
     "coming-soon": "Wkrótce dostępna",
+    "meetup": "Strzelnica spotkań",
     "unknown": "Strzelnica"
   },
   "navigation": {
@@ -185,6 +187,132 @@
       }
     }
   },
+  "events": {
+    "detail": {
+      "loadingTitle": "Ładujemy wydarzenie...",
+      "status": {
+        "cancelled": "To wydarzenie zostało anulowane."
+      },
+      "registration": {
+        "open": "Rejestracja otwarta",
+        "closed": "Rejestracja zamknięta"
+      },
+      "registrationDeadline": {
+        "none": "Brak terminu rejestracji"
+      },
+      "capacity": {
+        "unlimited": "Nielimitowana liczba miejsc",
+        "limited": "{count} miejsc",
+        "remaining": "Pozostało {count} miejsc"
+      },
+      "waitlist": {
+        "available": "{count} miejsc na liście rezerwowej",
+        "remaining": "Pozostało {count} miejsc na liście rezerwowej"
+      },
+      "labels": {
+        "registrationDeadline": "Termin rejestracji",
+        "capacity": "Pojemność",
+        "remainingSlots": "Pozostałe miejsca",
+        "waitlist": "Lista rezerwowa"
+      },
+      "audience": {
+        "public": "Publiczne",
+        "membersOnly": "Tylko dla członków"
+      },
+      "sections": {
+        "description": "Opis",
+        "memberDescription": "Informacje dla członków",
+        "details": "Szczegóły wydarzenia"
+      },
+      "emptyDescription": "Brak opisu wydarzenia.",
+      "emptyMemberDescription": "Brak opisu dla członków.",
+      "actions": {
+        "refresh": "Odśwież wydarzenie",
+        "edit": "Edytuj wydarzenie",
+        "signUp": "Zapisz się",
+        "joinWaitlist": "Dołącz do listy rezerwowej",
+        "cancelRegistration": "Anuluj zapis"
+      },
+      "signup": {
+        "confirmed": "Jesteś zapisany na to wydarzenie.",
+        "waitlisted": "Jesteś na liście rezerwowej tego wydarzenia.",
+        "success": "Rejestracja została zapisana.",
+        "cancelled": "Rejestracja została anulowana."
+      },
+      "errors": {
+        "loadFailed": "Nie udało się wczytać wydarzenia.",
+        "signupFailed": "Nie udało się zapisać na wydarzenie.",
+        "cancelFailed": "Nie udało się anulować zapisu."
+      }
+    },
+    "form": {
+      "createTitle": "Utwórz wydarzenie",
+      "editTitle": "Edytuj wydarzenie",
+      "actions": {
+        "refresh": "Odśwież wydarzenie"
+      },
+      "labels": {
+        "name": "Nazwa wydarzenia",
+        "publicDescription": "Opis publiczny",
+        "memberDescription": "Opis dla członków",
+        "eventDate": "Data wydarzenia",
+        "startTime": "Godzina rozpoczęcia",
+        "endTime": "Godzina zakończenia",
+        "registrationDeadline": "Termin rejestracji",
+        "audience": "Odbiorcy",
+        "capacity": "Pojemność",
+        "slots": "Liczba miejsc",
+        "waitlistSlots": "Lista rezerwowa",
+        "allowGuests": "Zezwalaj na gości"
+      },
+      "options": {
+        "audience": {
+          "public": "Publiczne",
+          "membersOnly": "Tylko dla członków"
+        },
+        "capacity": {
+          "unlimited": "Bez limitu",
+          "limited": "Limitowana"
+        }
+      },
+      "validation": {
+        "required": "To pole jest wymagane.",
+        "invalidDate": "Nieprawidłowy format daty (YYYY-MM-DD).",
+        "invalidTime": "Nieprawidłowy format godziny (HH:MM).",
+        "endAfterStart": "Godzina zakończenia musi być późniejsza niż godzina rozpoczęcia.",
+        "minSlots": "Minimalna liczba miejsc to 1.",
+        "minWaitlist": "Minimalna liczba miejsc na liście rezerwowej to 0."
+      },
+      "errors": {
+        "loadFailed": "Nie udało się wczytać wydarzenia.",
+        "saveFailed": "Nie udało się zapisać wydarzenia."
+      }
+    },
+    "signup": {
+      "title": "Potwierdź zapis",
+      "prompt": "Potwierdź zapis na {name}.",
+      "guestsLabel": "Liczba gości"
+    },
+    "participants": {
+      "title": "Uczestnicy",
+      "copyAction": "Kopiuj listę",
+      "copySuccess": "Lista uczestników została skopiowana.",
+      "copyFailure": "Nie udało się skopiować listy uczestników.",
+      "confirmedTitle": "Potwierdzeni",
+      "waitlistTitle": "Lista rezerwowa",
+      "headers": {
+        "status": "Status",
+        "person": "Uczestnik",
+        "email": "Email",
+        "guests": "Goście",
+        "signupTime": "Data zapisu"
+      },
+      "status": {
+        "confirmed": "Potwierdzony",
+        "waitlisted": "Lista rezerwowa"
+      }
+    }
+  },
   "rangeLanding": {
     "loadingTitle": "Ładujemy dane strzelnicy...",
     "description": "Poznaj podstawowe informacje o strzelnicy i dostępnych torach.",
@@ -198,7 +326,9 @@
     "location": "Szer. {lat}, dł. {lng}",
     "actions": {
       "refresh": "Odśwież dane strzelnicy",
-      "openCalendar": "Przejdź do kalendarza"
+      "openCalendar": "Przejdź do kalendarza",
+      "backToMap": "Wróć do mapy",
+      "createEvent": "Utwórz wydarzenie"
     },
     "publicDescription": {
       "title": "Opis",
@@ -212,6 +342,10 @@
       "title": "Godziny otwarcia",
       "closed": "Zamknięte"
     },
+    "events": {
+      "title": "Nadchodzące wydarzenia",
+      "empty": "Brak zaplanowanych wydarzeń."
+    },
     "days": {
       "monday": "Poniedziałek",
       "tuesday": "Wtorek",
@@ -223,7 +357,8 @@
     },
     "errors": {
       "fetchFailed": "Nie udało się pobrać danych strzelnicy."
-    }
+    },
+    "eventsLoadFailed": "Nie udało się wczytać wydarzeń."
   },
   "profile": {
     "title": "Mój profil",
@@ -322,6 +457,7 @@
         "errorMessage": "Nie udało się zapisać lokalizacji parkingu."
       },
       "rangeTypeLabel": "Typ strzelnicy",
+      "allowMemberEventsLabel": "Członkowie mogą tworzyć wydarzenia",
       "publicDescriptionLabel": "Opis publiczny",
       "publicDescriptionHint": "Widoczny dla wszystkich na stronie strzelnicy. Obsługuje podstawowy HTML.",
       "memberDescriptionLabel": "Opis dla członków",
@@ -398,6 +534,8 @@
       "allowsReservations": "Rezerwacje dostępne",
       "noReservations": "Rezerwacje niedostępne",
       "detailsCta": "Zobacz szczegóły",
+      "detailsCtaMeetup": "Zobacz wydarzenia",
+      "calendarCta": "Zobacz kalendarz",
       "headers": {
         "name": "Nazwa",
         "type": "Typ",

@@ -33,6 +33,8 @@ const chipColor = computed(() => {
       return 'info'
     case 'coming-soon':
       return 'warning'
+    case 'meetup':
+      return 'deep-orange'
     default:
       return 'primary'
   }
@@ -46,6 +48,8 @@ const chipIcon = computed(() => {
       return 'mdi-handshake-outline'
     case 'coming-soon':
       return 'mdi-clock-outline'
+    case 'meetup':
+      return 'mdi-calendar-star'
     default:
       return 'mdi-map-marker'
   }

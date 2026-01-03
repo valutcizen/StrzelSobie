@@ -85,7 +85,11 @@
             :data-testid="`range-list-details-button-${item.slug}`"
             @click.stop="$emit('select', item.slug)"
           >
-            {{ t('rangeDirectory.list.detailsCta') }}
+            {{
+              item.type === 'meetup'
+                ? t('rangeDirectory.list.detailsCtaMeetup')
+                : t('rangeDirectory.list.calendarCta')
+            }}
           </v-btn>
         </template>
       </v-data-table>

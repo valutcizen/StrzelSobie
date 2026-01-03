@@ -1,7 +1,7 @@
 export interface ShootingRange {
   id: number;
   slug: string;
-  type: 'club' | 'ally' | 'coming-soon';
+  type: 'club' | 'ally' | 'coming-soon' | 'meetup';
   allows_reservations: number;
   is_deleted: number;
   public_description: string | null;

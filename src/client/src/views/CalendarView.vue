@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import FullCalendar from '@fullcalendar/vue3'
 import EventDetailDialog from '@/components/calendar/EventDetailDialog.vue'
 import PropositionFormDialog from '@/components/calendar/PropositionFormDialog.vue'
@@ -25,6 +25,7 @@ const calendarStore = useCalendarStore()
 const authStore = useAuthStore()
 const rangeStore = useRangeStore()
 const route = useRoute()
+const router = useRouter()
 const { t, locale } = useI18n()
 const display = useDisplay()
 
@@ -117,6 +118,15 @@ const {
   selectedEvent,
 } = useEventDetails({
   openReservationDialog,
+  onEventNavigate: (event) => {
+    if (!event.meta?.eventSlug) {
+      return
+    }
+    router.push({
+      name: 'EventDetail',
+      params: { rangeSlug: rangeSlug.value, eventSlug: event.meta.eventSlug },
+    })
+  },
   t,
 })
 

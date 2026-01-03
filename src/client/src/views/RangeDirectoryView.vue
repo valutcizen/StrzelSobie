@@ -23,7 +23,8 @@ const ranges = computed(() => rangeStore.directory)
 const typePriority: Record<string, number> = {
   club: 1,
   ally: 2,
-  'coming-soon': 3,
+  meetup: 3,
+  'coming-soon': 4,
 }
 
 const sortedRanges = computed<RangeSummary[]>(() => {
@@ -57,7 +58,12 @@ void loadRanges()
 const handleSelectRange = (slug: string) => {
   selectedSlug.value = slug
   setLastRangeId(slug)
-  router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
+  const selected = ranges.value.find((range) => range.slug === slug)
+  if (selected?.type === 'meetup') {
+    router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
+  } else {
+    router.push({ name: 'Calendar', params: { rangeSlug: slug } })
+  }
 }
 
 const handleSkipToList = () => {

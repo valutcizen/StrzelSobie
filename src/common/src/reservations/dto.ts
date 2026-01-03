@@ -82,6 +82,7 @@ export type RecordEventDto = {
 
 export type RangeEventSummaryDto = {
   id: number;
+  slug: string;
   name: string;
   startTime: string;
   endTime: string;

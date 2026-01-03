@@ -123,6 +123,12 @@ export class RangesService implements IRangesService {
       range.extras = JSON.stringify(extras);
     }
 
+    if (command.allowMemberEvents !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.allowMemberEvents = command.allowMemberEvents;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.totalTracks !== undefined) {
       range.totalTracks = command.totalTracks;
     }
@@ -308,16 +314,18 @@ export class RangesService implements IRangesService {
   private parseExtras(raw: unknown): RangeExtras {
     const extras = this.parseExtrasObject(raw);
     const parkingLocation = this.parseParkingLocation(extras.parkingLocation);
+    const allowMemberEvents =
+      typeof extras.allowMemberEvents === 'boolean' ? extras.allowMemberEvents : undefined;
 
     if (parkingLocation) {
-      return { parkingLocation };
+      return { parkingLocation, allowMemberEvents };
     }
 
     if (Object.prototype.hasOwnProperty.call(extras, 'parkingLocation')) {
-      return { parkingLocation: null };
+      return { parkingLocation: null, allowMemberEvents };
     }
 
-    return {};
+    return allowMemberEvents === undefined ? {} : { allowMemberEvents };
   }
 
   private parseExtrasObject(raw: unknown): Record<string, unknown> {

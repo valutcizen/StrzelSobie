@@ -119,6 +119,20 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
     },
   }))
 
+  const rangeEvents: RangeEvent[] = (dto.events ?? []).map((event) => ({
+    id: `event-${event.id}`,
+    sourceId: event.id,
+    title: event.name,
+    type: 'event',
+    start: event.startTime,
+    end: event.endTime,
+    allDay: false,
+    meta: {
+      eventSlug: event.slug,
+      audience: event.audience,
+    },
+  }))
+
   const reservationEvents: RangeEvent[] = (dto.reservations ?? []).map((event) => {
     const tracksRequested =
       typeof event.tracksRequested === 'number' ? event.tracksRequested : undefined
@@ -159,7 +173,7 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
     },
   }))
 
-  return [...propositionEvents, ...reservationEvents, ...recordEvents].sort((a, b) =>
+  return [...propositionEvents, ...rangeEvents, ...reservationEvents, ...recordEvents].sort((a, b) =>
     compareAsc(new Date(a.start), new Date(b.start)),
   )
 }

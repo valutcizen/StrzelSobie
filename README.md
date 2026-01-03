@@ -147,7 +147,7 @@ The project is currently in the **early stage of development**. The primary focu
 
 ### API Snapshot
 - `POST /api/v1/ranges/:rangeSlug/propositions`: Authenticated guests, members, and above can propose a new shooting session. The backend validates schedule overlaps, range capacity, and captures an audit log. Successful responses return `201 Created` with the proposition payload and a `Location` header.
-- `GET /api/v1/ranges/:rangeSlug/events`: Returns the combined list of propositions and reservations for the requested range, filtered by the caller’s role.
+- `GET /api/v1/ranges/:rangeSlug/events`: Returns the calendar list of propositions, reservations, and events for the requested range (expects `startDate` and `endDate` query params, filtered by the caller’s role).
 
 ## License
 

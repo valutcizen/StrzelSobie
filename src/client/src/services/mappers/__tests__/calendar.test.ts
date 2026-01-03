@@ -46,15 +46,24 @@ describe('mapCalendarEvents', () => {
           },
         },
       ],
-      events: [],
+      events: [
+        {
+          id: 11,
+          slug: 'open-competition-2024',
+          name: 'Open competition',
+          startTime: '2024-05-03T10:00:00',
+          endTime: '2024-05-03T12:00:00',
+          audience: 'Public',
+        },
+      ],
       records: [],
     }
 
     const events = mapCalendarEvents(response)
 
-    expect(events).toHaveLength(2)
+    expect(events).toHaveLength(3)
 
-    const [first, second] = events
+    const [first, second, third] = events
 
     expect(first.type).toBe('proposition')
     expect(first.start).toBe('2024-05-01T10:00:00')
@@ -68,6 +77,10 @@ describe('mapCalendarEvents', () => {
     expect(second.meta?.propositionId).toBe(17)
     expect(second.meta?.linkedProposition?.propositionId).toBe(17)
     expect(second.meta?.linkedProposition?.requester?.email).toBe('requester@example.com')
+
+    expect(third.type).toBe('event')
+    expect(third.start).toBe('2024-05-03T10:00:00')
+    expect(third.meta?.eventSlug).toBe('open-competition-2024')
   })
 
   it('sorts events chronologically by start time', () => {
@@ -95,7 +108,16 @@ describe('mapCalendarEvents', () => {
           proposition: null,
         },
       ],
-      events: [],
+      events: [
+        {
+          id: 6,
+          slug: 'range-demo-day',
+          name: 'Range demo day',
+          startTime: '2024-06-03T12:00:00',
+          endTime: '2024-06-03T14:00:00',
+          audience: 'MembersOnly',
+        },
+      ],
       records: [],
     }
 
@@ -104,6 +126,7 @@ describe('mapCalendarEvents', () => {
     expect(events[0].type).toBe('reservation')
     expect(events[0].meta?.tracksRequested).toBeUndefined()
     expect(events[0].meta?.coordinatorId).toBeNull()
-    expect(events[1].type).toBe('proposition')
+    expect(events[1].type).toBe('event')
+    expect(events[2].type).toBe('proposition')
   })
 })

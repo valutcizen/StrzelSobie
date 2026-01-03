@@ -1,4 +1,8 @@
-export type RangeEventType = 'proposition' | 'reservation' | 'record'
+import type { CalendarEventsDto } from '@strzel-sobie/common'
+
+export type CalendarEventAudience = CalendarEventsDto['events'][number]['audience']
+
+export type RangeEventType = 'proposition' | 'reservation' | 'record' | 'event'
 
 export interface RangeEventMeta {
   propositionId?: number | null
@@ -10,6 +14,8 @@ export interface RangeEventMeta {
   linkedProposition?: PropositionEventDetail | null
   adminId?: number | null
   createdAt?: string | null
+  eventSlug?: string
+  audience?: CalendarEventAudience
 }
 
 export interface RangeEvent {
