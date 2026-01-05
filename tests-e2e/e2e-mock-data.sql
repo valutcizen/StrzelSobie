@@ -257,6 +257,71 @@ INSERT INTO events_events (
     '{"public_description":"Workshop for organizers and admins.","member_description":"Schedule notes for organizers.","registration_type":"registration_required","capacity_type":"limited","capacity_limit":5,"guest_policy":"no_guests","waitlist_limit":2,"registration_deadline":null}'
   ),
   (
+    3005,
+    99,
+    901,
+    'e2e-public-limited-class',
+    'E2E Public Limited Class',
+    '2025-11-19',
+    '08:00',
+    '09:30',
+    'active',
+    'public',
+    '{"public_description":"Limited-capacity public class for E2E tests.","member_description":null,"registration_type":"registration_required","capacity_type":"limited","capacity_limit":2,"guest_policy":null,"waitlist_limit":2,"registration_deadline":null}'
+  ),
+  (
+    3006,
+    99,
+    901,
+    'e2e-notice-only',
+    'E2E Notice Only',
+    '2025-11-21',
+    '17:00',
+    '18:00',
+    'active',
+    'public',
+    '{"public_description":"Informational banner only.","member_description":null,"registration_type":"notice","capacity_type":"unlimited","capacity_limit":null,"guest_policy":null,"waitlist_limit":null,"registration_deadline":null}'
+  ),
+  (
+    3007,
+    99,
+    901,
+    'e2e-waitlist-promotion',
+    'E2E Waitlist Promotion',
+    '2025-11-23',
+    '10:30',
+    '11:30',
+    'active',
+    'public',
+    '{"public_description":"Event for waitlist promotion coverage.","member_description":null,"registration_type":"registration_required","capacity_type":"limited","capacity_limit":1,"guest_policy":null,"waitlist_limit":2,"registration_deadline":null}'
+  ),
+  (
+    3008,
+    99,
+    901,
+    'e2e-cancel-target',
+    'E2E Cancel Target',
+    '2025-11-25',
+    '09:00',
+    '10:00',
+    'active',
+    'public',
+    '{"public_description":"Event for cancellation coverage.","member_description":null,"registration_type":"registration_required","capacity_type":"unlimited","capacity_limit":null,"guest_policy":null,"waitlist_limit":null,"registration_deadline":null}'
+  ),
+  (
+    3009,
+    99,
+    901,
+    'e2e-edit-target',
+    'E2E Edit Target',
+    '2025-11-26',
+    '13:00',
+    '14:00',
+    'active',
+    'public',
+    '{"public_description":"Event for edit coverage.","member_description":null,"registration_type":"registration_required","capacity_type":"unlimited","capacity_limit":null,"guest_policy":null,"waitlist_limit":null,"registration_deadline":null}'
+  ),
+  (
     3101,
     102,
     901,
@@ -268,6 +333,19 @@ INSERT INTO events_events (
     'active',
     'public',
     '{"public_description":"Meetup event listing for E2E coverage.","member_description":null,"registration_type":"registration_required","capacity_type":"unlimited","capacity_limit":null,"guest_policy":null,"waitlist_limit":null,"registration_deadline":null}'
+  ),
+  (
+    3102,
+    102,
+    903,
+    'e2e-members-meetup',
+    'E2E Members Meetup',
+    '2025-11-24',
+    '19:00',
+    '20:30',
+    'active',
+    'members_only',
+    '{"public_description":"Members-only meetup created by a member.","member_description":"Members can bring guests.","registration_type":"registration_required","capacity_type":"unlimited","capacity_limit":null,"guest_policy":"guests_allowed","waitlist_limit":null,"registration_deadline":null}'
   );
 
 INSERT INTO events_signups (id, event_id, user_id, status, guests_count) VALUES
@@ -275,4 +353,6 @@ INSERT INTO events_signups (id, event_id, user_id, status, guests_count) VALUES
   (4002, 3002, 908, 'confirmed', 0),
   (4003, 3004, 903, 'confirmed', 1),
   (4004, 3004, 906, 'confirmed', 0),
-  (4005, 3004, 902, 'waitlisted', 0);
+  (4005, 3004, 902, 'waitlisted', 0),
+  (4010, 3007, 903, 'confirmed', 0),
+  (4011, 3007, 904, 'waitlisted', 0);
