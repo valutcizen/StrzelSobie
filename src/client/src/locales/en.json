@@ -39,7 +39,7 @@
     "club": "Club range",
     "ally": "Ally range",
     "coming-soon": "Coming soon",
-    "meetup": "Meetup range",
+    "meetup": "Meeting place",
     "unknown": "Range"
   },
   "navigation": {
@@ -263,7 +263,7 @@
         "capacity": "Capacity",
         "slots": "Slots",
         "waitlistSlots": "Waitlist slots",
-        "allowGuests": "Allow guests"
+        "allowGuests": "Allow accompanying persons"
       },
       "options": {
         "audience": {
@@ -291,7 +291,7 @@
     "signup": {
       "title": "Confirm registration",
       "prompt": "Confirm registration for {name}.",
-      "guestsLabel": "Guests count"
+      "guestsLabel": "Number of accompanying persons"
     },
     "participants": {
       "title": "Participants",
@@ -304,7 +304,7 @@
         "status": "Status",
         "person": "Participant",
         "email": "Email",
-        "guests": "Guests",
+        "guests": "Accompanying persons",
         "signupTime": "Signed up at"
       },
       "status": {

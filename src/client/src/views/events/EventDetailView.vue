@@ -374,8 +374,22 @@ const audienceLabel = computed(() => {
     : t('events.detail.audience.membersOnly')
 })
 
-const participantsCount = computed(() => eventDetails.value?.participants?.length ?? null)
-const waitlistCount = computed(() => eventDetails.value?.waitlist?.length ?? null)
+const participantsCount = computed(() => {
+  const participants = eventDetails.value?.participants
+  if (!participants) {
+    return null
+  }
+
+  return participants.reduce((total, participant) => total + 1 + (participant.guests ?? 0), 0)
+})
+const waitlistCount = computed(() => {
+  const waitlist = eventDetails.value?.waitlist
+  if (!waitlist) {
+    return null
+  }
+
+  return waitlist.reduce((total, participant) => total + 1 + (participant.guests ?? 0), 0)
+})
 
 const capacityLabel = computed(() => {
   if (!eventDetails.value) {

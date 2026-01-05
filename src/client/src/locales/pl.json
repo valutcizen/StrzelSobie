@@ -39,7 +39,7 @@
     "club": "Strzelnica klubowa",
     "ally": "Strzelnica partnerska",
     "coming-soon": "Wkrótce dostępna",
-    "meetup": "Strzelnica spotkań",
+    "meetup": "Miejsce spotkań",
     "unknown": "Strzelnica"
   },
   "navigation": {
@@ -263,7 +263,7 @@
         "capacity": "Pojemność",
         "slots": "Liczba miejsc",
         "waitlistSlots": "Lista rezerwowa",
-        "allowGuests": "Zezwalaj na gości"
+        "allowGuests": "Zezwalaj na osoby towarzyszące"
       },
       "options": {
         "audience": {
@@ -291,7 +291,7 @@
     "signup": {
       "title": "Potwierdź zapis",
       "prompt": "Potwierdź zapis na {name}.",
-      "guestsLabel": "Liczba gości"
+      "guestsLabel": "Liczba osób towarzyszących"
     },
     "participants": {
       "title": "Uczestnicy",
@@ -304,7 +304,7 @@
         "status": "Status",
         "person": "Uczestnik",
         "email": "Email",
-        "guests": "Goście",
+        "guests": "Osoby towarzyszące",
         "signupTime": "Data zapisu"
       },
       "status": {

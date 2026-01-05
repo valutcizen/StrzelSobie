@@ -16,6 +16,13 @@ import {
 import { IRangesRepository } from '../domain/ranges.repository';
 import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
+// Default location: Warsaw Central Railway Station.
+const DEFAULT_RANGE_COORDINATES = {
+  latitude: 52.2285,
+  longitude: 21.0037,
+};
+const DEFAULT_TOTAL_TRACKS = 1;
+
 export class RangesService implements IRangesService {
   constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
@@ -179,9 +186,9 @@ export class RangesService implements IRangesService {
       isDeleted: false,
       publicDescription: command.publicDescription ?? null,
       memberDescription: command.memberDescription ?? null,
-      latitude: command.latitude ?? 0,
-      longitude: command.longitude ?? 0,
-      totalTracks: command.totalTracks ?? 0,
+      latitude: command.latitude ?? DEFAULT_RANGE_COORDINATES.latitude,
+      longitude: command.longitude ?? DEFAULT_RANGE_COORDINATES.longitude,
+      totalTracks: command.totalTracks ?? DEFAULT_TOTAL_TRACKS,
       operatingHours,
       extras: '{}',
     });
