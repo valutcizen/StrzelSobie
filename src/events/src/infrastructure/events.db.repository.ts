@@ -175,9 +175,9 @@ export class EventsDbRepository implements IEventsRepository {
     const stmt = this.db.prepare(
       `SELECT id, range_id, organizer_id, slug, name, event_date, start_time, end_time, status, audience, config, created_at, updated_at
        FROM events_events
-       WHERE range_id = ?`
+       WHERE range_id = ? AND status = ?`
     );
-    const { results } = await stmt.bind(rangeId).all<EventDbRow>();
+    const { results } = await stmt.bind(rangeId, EventStatus.Active).all<EventDbRow>();
     return results.map((row) => this.mapEventRow(row));
   }
 
