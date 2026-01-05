@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { format, parseISO } from 'date-fns'
+import { enUS, pl as plLocale } from 'date-fns/locale'
 import RangeActionBar from '@/components/range/RangeActionBar.vue'
 import RangeTypeBadge from '@/components/range/RangeTypeBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
 import { UserRoleEnum } from '@/types/auth'
 import { setLastRangeId } from '@/utils/lastRange'
+import { http } from '@/services/http'
+import { toDateOnly } from '@/utils/datetime'
+import type { CalendarEventsDto } from '@strzel-sobie/common'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -28,8 +33,12 @@ const rangeSlug = computed(() => {
 const isLoading = computed(() => rangeStore.isLoading && rangeStore.currentRangeSlug === rangeSlug.value)
 const hasRangeData = computed(() => Boolean(rangeStore.currentRange))
 const lastError = computed(() => rangeStore.lastError)
-const isBookingUnavailableNotice = computed(() => route.query.booking === 'unavailable')
+const isBookingUnavailableNotice = computed(
+  () => currentRange.value?.type !== 'meetup' && !currentRange.value?.allowsReservations,
+)
 const currentRange = computed(() => rangeStore.currentRange)
+const isMeetupRange = computed(() => currentRange.value?.type === 'meetup')
+const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
 const coordinates = computed(() => {
   const range = rangeStore.currentRange
   if (typeof range?.latitude !== 'number' || typeof range.longitude !== 'number') {
@@ -59,6 +68,23 @@ const canSeeMemberDescription = computed(() =>
     UserRoleEnum.ClubCommunityAdministrator,
   ]),
 )
+const canCreateEvents = computed(() => {
+  const allowMemberEvents = currentRange.value?.extras?.allowMemberEvents ?? false
+
+  if (authStore.hasAnyRole([UserRoleEnum.ClubCommunityAdministrator])) {
+    return true
+  }
+
+  if (authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator])) {
+    return true
+  }
+
+  return allowMemberEvents && authStore.hasRole(UserRoleEnum.Member)
+})
+
+const meetupEvents = ref<CalendarEventsDto['events']>([])
+const meetupEventsLoading = ref(false)
+const meetupEventsError = ref<string | null>(null)
 
 const operatingHoursRows = computed(() => {
   const range = rangeStore.currentRange
@@ -88,6 +114,9 @@ const fetchRange = async (slug: string, force = false) => {
   try {
     await rangeStore.fetchRangeDetails(slug, { force })
     setLastRangeId(slug)
+    if (rangeStore.currentRange?.type === 'meetup') {
+      void loadMeetupEvents(slug)
+    }
   } catch (error) {
     console.error(t('rangeLanding.errors.fetchFailed'), error)
   }
@@ -107,9 +136,66 @@ const handleOpenCalendar = () => {
   router.push({ name: 'Calendar', params: { rangeSlug: rangeSlug.value } })
 }
 
+const handleCreateEvent = () => {
+  if (!rangeSlug.value) {
+    return
+  }
+
+  router.push({ name: 'EventCreate', params: { rangeSlug: rangeSlug.value } })
+}
+
 const handleBackToMap = () => {
   router.push({ name: 'RangeDirectory' })
 }
+
+const loadMeetupEvents = async (slug: string) => {
+  if (!slug) {
+    return
+  }
+
+  meetupEventsLoading.value = true
+  meetupEventsError.value = null
+
+  try {
+    const start = new Date()
+    start.setMonth(start.getMonth() - 6)
+    const end = new Date()
+    end.setMonth(end.getMonth() + 18)
+    const { data } = await http.get<CalendarEventsDto>(`/ranges/${slug}/events`, {
+      params: {
+        startDate: toDateOnly(start),
+        endDate: toDateOnly(end),
+      },
+    })
+    meetupEvents.value = data.events ?? []
+  } catch (error) {
+    meetupEventsError.value =
+      error instanceof Error ? error.message : t('rangeLanding.eventsLoadFailed')
+  } finally {
+    meetupEventsLoading.value = false
+  }
+}
+
+const formatEventDateTime = (value: string, formatString: string) => {
+  try {
+    return format(parseISO(value), formatString, { locale: dateLocale.value })
+  } catch {
+    return value
+  }
+}
+
+const meetupEventCards = computed(() =>
+  [...meetupEvents.value]
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+    .map((event) => ({
+      id: event.id,
+      slug: event.slug,
+      name: event.name,
+      startLabel: formatEventDateTime(event.startTime, 'PPpp'),
+      endLabel: formatEventDateTime(event.endTime, 'p'),
+      audience: event.audience,
+    })),
+)
 
 watch(
   rangeSlug,
@@ -119,6 +205,15 @@ watch(
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => currentRange.value?.type,
+  (nextType) => {
+    if (nextType === 'meetup' && rangeSlug.value) {
+      void loadMeetupEvents(rangeSlug.value)
+    }
+  },
 )
 </script>
 
@@ -216,6 +311,7 @@ watch(
                 </div>
 
                 <RangeActionBar
+                  v-if="!isMeetupRange"
                   :allows-reservations="currentRange?.allowsReservations ?? false"
                   :range-type="(currentRange?.type ?? 'club')"
                   :coordinates="coordinates"
@@ -223,6 +319,29 @@ watch(
                   @open-calendar="handleOpenCalendar"
                   @back-to-map="handleBackToMap"
                 />
+
+                <div
+                  v-else
+                  class="d-flex flex-column flex-sm-row gap-2"
+                >
+                  <v-btn
+                    color="primary"
+                    prepend-icon="mdi-map-outline"
+                    data-testid="range-back-to-map-button"
+                    @click="handleBackToMap"
+                  >
+                    {{ t('rangeLanding.actions.backToMap') }}
+                  </v-btn>
+                  <v-btn
+                    v-if="canCreateEvents"
+                    color="primary"
+                    prepend-icon="mdi-calendar-plus"
+                    data-testid="range-create-event-button"
+                    @click="handleCreateEvent"
+                  >
+                    {{ t('rangeLanding.actions.createEvent') }}
+                  </v-btn>
+                </div>
               </div>
 
               <v-row class="mb-4" dense>
@@ -285,6 +404,71 @@ watch(
                   </v-card>
                 </v-col>
               </v-row>
+
+              <v-card
+                v-if="isMeetupRange"
+                variant="outlined"
+                class="mb-4"
+                data-testid="range-landing-events-card"
+              >
+                <v-card-title class="text-subtitle-1">
+                  {{ t('rangeLanding.events.title') }}
+                </v-card-title>
+                <v-divider />
+                <v-card-text>
+                  <v-alert
+                    v-if="meetupEventsError"
+                    type="error"
+                    variant="tonal"
+                    border="start"
+                    class="mb-4"
+                  >
+                    {{ meetupEventsError }}
+                  </v-alert>
+
+                  <v-progress-linear
+                    v-if="meetupEventsLoading"
+                    indeterminate
+                    color="primary"
+                    class="mb-4"
+                  />
+
+                  <v-list
+                    v-if="!meetupEventsLoading && meetupEventCards.length > 0"
+                    density="comfortable"
+                  >
+                    <v-list-item
+                      v-for="event in meetupEventCards"
+                      :key="event.slug"
+                      :to="{ name: 'EventDetail', params: { rangeSlug: currentRange?.slug, eventSlug: event.slug } }"
+                      data-testid="range-landing-event-item"
+                    >
+                      <v-list-item-title>{{ event.name }}</v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ event.startLabel }} · {{ event.endLabel }}
+                      </v-list-item-subtitle>
+                      <template #append>
+                        <v-chip
+                          size="x-small"
+                          variant="tonal"
+                          :color="event.audience === 'Public' ? 'success' : 'primary'"
+                        >
+                          {{ event.audience === 'Public' ? t('events.detail.audience.public') : t('events.detail.audience.membersOnly') }}
+                        </v-chip>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+
+                  <v-alert
+                    v-else-if="!meetupEventsLoading"
+                    type="info"
+                    variant="tonal"
+                    border="start"
+                  >
+                    {{ t('rangeLanding.events.empty') }}
+                  </v-alert>
+                </v-card-text>
+              </v-card>
 
               <v-card
                 v-if="canSeeMemberDescription"

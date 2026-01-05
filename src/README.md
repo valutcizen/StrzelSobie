@@ -36,6 +36,11 @@ Below is a description of each module within the `src` directory.
 -   **Description:** Responsible for sending email notifications for events like new propositions or confirmed reservations.
 -   [Go to module](./notifications/README.md)
 
+### `events`
+
+-   **Description:** Manages shooting range events, registrations, and event policies.
+-   [Go to module](./events/README.md)
+
 ### `reservations`
 
 -   **Description:** Contains the core business logic for propositions, reservations, scheduling, logging external records, and the calendar view.

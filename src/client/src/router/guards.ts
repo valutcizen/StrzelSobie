@@ -42,8 +42,11 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
 
       try {
         const range = await rangeStore.fetchRangeDetails(rangeSlug)
+        if (range.type === 'meetup') {
+          return { name: 'RangeLanding', params: { rangeSlug } }
+        }
         if (!range.allowsReservations) {
-          return { name: 'RangeLanding', params: { rangeSlug }, query: { booking: 'unavailable' } }
+          return { name: 'RangeLanding', params: { rangeSlug } }
         }
       } catch {
         return { name: 'RangeDirectory' }

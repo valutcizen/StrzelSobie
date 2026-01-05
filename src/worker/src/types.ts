@@ -1,6 +1,7 @@
 import { Context as HonoContext } from 'hono';
 import { IAuthService, SessionData } from '@strzel-sobie/common/models';
 import { AuditService } from '@strzel-sobie/audit';
+import { EventsService } from '@strzel-sobie/events';
 import { ReservationsService } from '@strzel-sobie/reservations';
 import { RangesService } from '@strzel-sobie/ranges';
 import { UserService } from '@strzel-sobie/users';
@@ -17,6 +18,7 @@ export type Variables = {
   userService: UserService;
   rangesService: RangesService;
   reservationsService: ReservationsService;
+  eventsService: EventsService;
   auditService: AuditService;
   session: SessionData;
   user: UserDto;

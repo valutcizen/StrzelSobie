@@ -31,9 +31,6 @@ export const useCalendarDialogs = ({
     defaultStart: null as string | null,
     defaultEnd: null as string | null,
     defaultTracks: null as number | null,
-    defaultParticipants: null as number | null,
-    defaultIsPublic: null as boolean | null,
-    defaultIsOpenForJoining: null as boolean | null,
   })
   const recordDialogOpen = ref(false)
   const confirmationState = reactive({
@@ -74,9 +71,6 @@ export const useCalendarDialogs = ({
     defaultStart?: string | null
     defaultEnd?: string | null
     defaultTracks?: number | null
-    defaultParticipants?: number | null
-    defaultIsPublic?: boolean | null
-    defaultIsOpenForJoining?: boolean | null
   }) => {
     const defaultStart = options.defaultStart
     const defaultEnd = options.defaultEnd
@@ -98,18 +92,6 @@ export const useCalendarDialogs = ({
     reservationDialog.propositionId = options.propositionId ?? null
     reservationDialog.defaultTracks =
       typeof options.defaultTracks === 'number' ? options.defaultTracks : null
-    reservationDialog.defaultParticipants =
-      typeof options.defaultParticipants === 'number' ? options.defaultParticipants : null
-
-    const isPublicDefault =
-      typeof options.defaultIsPublic === 'boolean' ? options.defaultIsPublic : true
-    reservationDialog.defaultIsPublic = isPublicDefault
-
-    const isOpenForJoiningDefault =
-      typeof options.defaultIsOpenForJoining === 'boolean'
-        ? options.defaultIsOpenForJoining && isPublicDefault
-        : false
-    reservationDialog.defaultIsOpenForJoining = isOpenForJoiningDefault
   }
 
   const handleSlotSelect = (selectionInfo: DateSelectArg) => {

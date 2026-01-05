@@ -43,14 +43,20 @@ describe('GetReservationDetail endpoint', () => {
   it('should return 200 with reservation details on success', async () => {
     const reservationDetail: ReservationDetailDto = {
       id: 1,
-      name: 'test',
-      description: 'test description',
-      start: new Date(),
-      end: new Date(),
-      location: 'test location',
-      participants: [],
-      weapons: [],
-      packages: [],
+      rangeId: 5,
+      coordinatorId: 12,
+      propositionId: null,
+      proposition: null,
+      eventDate: '2024-06-01',
+      startTime: '10:00',
+      endTime: '11:00',
+      tracksRequested: 2,
+      createdAt: '2024-05-01T10:00:00Z',
+      coordinator: {
+        id: 12,
+        email: 'coordinator@example.com',
+        phoneNumber: null,
+      },
     };
     (reservationsServiceMock.getReservationDetails as vi.Mock).mockResolvedValue(Result.ok(reservationDetail));
 

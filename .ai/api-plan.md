@@ -217,7 +217,8 @@ Example: `GET /api/v1/ranges`
       "publicDescription": "Aktualny opis z linkami.",
       "memberDescription": "Uwagi dla klubowiczów.",
       "totalTracks": 12,
-      "operatingHours": { "monday": { "open": "09:00", "close": "19:00" } }
+      "operatingHours": { "monday": { "open": "09:00", "close": "19:00" } },
+      "membersCanCreateEvents": true
     }
     ```
 -   **Success Code**: `200 OK`
@@ -259,12 +260,9 @@ Example: `GET /api/v1/ranges`
           "startTime": "10:00",
           "endTime": "12:00",
           "tracksRequested": 5,
-          "isPublic": true,
-          "isJoinable": false,
-          // Details are null/omitted for Guests if not public
+          // Details are null/omitted for Guests
           "details": {
-             "coordinatorId": 5,
-             "numParticipants": 10
+             "coordinatorId": 5
           }
         }
       ]
@@ -286,7 +284,6 @@ Example: `GET /api/v1/ranges`
       "eventDate": "2025-10-15",
       "startTime": "14:00",
       "endTime": "15:00",
-      "numParticipants": 5,
       "tracksRequested": 2
     }
     ```
@@ -322,10 +319,7 @@ Example: `GET /api/v1/ranges`
       "eventDate": "2025-10-18",
       "startTime": "11:00",
       "endTime": "13:00",
-      "numParticipants": 8,
-      "tracksRequested": 4,
-      "isPublic": true,
-      "isJoinable": true
+      "tracksRequested": 4
     }
     ```
 -   **Request Payload (From Proposition, with modifications)**:

@@ -3,8 +3,8 @@ import { GetEvents } from '../../../src/worker/src/endpoints/v1/ranges/get-event
 import {
   Result,
   RangeNotFoundError,
-  GetEventsQuery,
-  EventDto,
+  CalendarEventsDto,
+  UserDto,
 } from '@strzel-sobie/common/models';
 
 type GetEventsDependencies = {
@@ -88,14 +88,12 @@ describe('GetEvents endpoint contract', () => {
           startTime: '12:00',
           endTime: '13:00',
           tracksRequested: 1,
-          isPublic: true,
-          isJoinable: true,
           details: {
             coordinatorId: 23,
-            numParticipants: 5,
           },
         },
       ],
+      events: [],
       records: [],
     };
     const reservationsService = {

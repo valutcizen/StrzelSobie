@@ -53,6 +53,7 @@ const createDefaultOperatingHours = (): FormOperatingHours =>
 type RangeSettingsFormValues = {
   displayName: string
   type: RangeDetails['type']
+  allowMemberEvents: boolean
   location: {
     lat: number | null
     lng: number | null
@@ -80,6 +81,7 @@ const rangeTypeOptions = computed(() => [
   { value: 'club', label: t('rangeTypes.club') },
   { value: 'ally', label: t('rangeTypes.ally') },
   { value: 'coming-soon', label: t('rangeTypes.coming-soon') },
+  { value: 'meetup', label: t('rangeTypes.meetup') },
 ])
 
 const canDeleteRange = computed(() => authStore.hasRole(UserRoleEnum.ClubCommunityAdministrator))
@@ -87,6 +89,7 @@ const canDeleteRange = computed(() => authStore.hasRole(UserRoleEnum.ClubCommuni
 const initialValues = ref<RangeSettingsFormValues>({
   displayName: '',
   type: 'club',
+  allowMemberEvents: false,
   location: null,
   publicDescription: null,
   memberDescription: null,
@@ -149,8 +152,9 @@ const schema = yup.object({
   displayName: yup.string().required(t('admin.rangeSettings.validation.required')),
   type: yup
     .mixed<RangeDetails['type']>()
-    .oneOf(['club', 'ally', 'coming-soon'])
+    .oneOf(['club', 'ally', 'coming-soon', 'meetup'])
     .required(t('admin.rangeSettings.validation.required')),
+  allowMemberEvents: yup.boolean().required(),
   location: yup
     .object({
       lat: yup.number().nullable(),
@@ -181,6 +185,7 @@ const showSnackbar = (message: string, color: 'success' | 'error' = 'success') =
 const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => ({
   displayName: range.displayName,
   type: range.type ?? 'club',
+  allowMemberEvents: range.extras?.allowMemberEvents ?? false,
   location:
     typeof range.latitude === 'number' && typeof range.longitude === 'number'
       ? { lat: range.latitude, lng: range.longitude }
@@ -291,6 +296,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
     const payload: UpdateRangePayload = {
       displayName: values.displayName.trim(),
       type: values.type,
+      allowMemberEvents: values.allowMemberEvents,
       latitude,
       longitude,
       publicDescription: toNullableString(values.publicDescription),
@@ -526,6 +532,26 @@ watch(
 
                     data-testid="range-settings-range-type-select"
 
+                    @update:model-value="field.onChange"
+                  />
+                </Field>
+              </v-col>
+
+              <v-col
+                cols="12"
+                md="4"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="allowMemberEvents"
+                >
+                  <v-switch
+                    :label="t('admin.rangeSettings.allowMemberEventsLabel')"
+                    :model-value="field.value"
+                    :error-messages="errorMessage"
+                    color="primary"
+                    inset
+                    data-testid="range-settings-allow-member-events-switch"
                     @update:model-value="field.onChange"
                   />
                 </Field>

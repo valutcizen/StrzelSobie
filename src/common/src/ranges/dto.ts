@@ -29,6 +29,7 @@ export type RangeParkingLocation = {
 
 export type RangeExtras = {
   parkingLocation?: RangeParkingLocation | null;
+  allowMemberEvents?: boolean;
 };
 
 /**
@@ -74,7 +75,9 @@ export type UpdateRangeCommand = Partial<
     | 'longitude'
     | 'parkingLocation'
   >
->;
+> & {
+  allowMemberEvents?: boolean;
+};
 
 /**
  * Command model for creating a shooting range.

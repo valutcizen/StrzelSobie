@@ -201,7 +201,6 @@ test.describe('Users & Roles', () => {
         eventDate,
         startTime,
         endTime,
-        numParticipants: 2,
         tracksRequested: 1,
       },
     });
@@ -231,17 +230,14 @@ test.describe('Users & Roles', () => {
         const reservationEndObj = new Date(reservationStartObj);
         reservationEndObj.setHours(reservationStartObj.getHours() + 1);
 
-        const reservationResponse = await coordinatorContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
-          data: {
-            eventDate: formatDate(reservationStartObj),
-            startTime: formatTime(reservationStartObj),
-            endTime: formatTime(reservationEndObj),
-            numParticipants: 3,
-            tracksRequested: 2,
-            isPublic: false,
-            isJoinable: false,
-          },
-        });
+          const reservationResponse = await coordinatorContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
+            data: {
+              eventDate: formatDate(reservationStartObj),
+              startTime: formatTime(reservationStartObj),
+              endTime: formatTime(reservationEndObj),
+              tracksRequested: 2,
+            },
+          });
 
         if (!reservationResponse.ok()) {
           continue;
@@ -277,7 +273,6 @@ test.describe('Users & Roles', () => {
     expect(reservationEntry).toBeDefined();
     expect(reservationEntry?.details).toBeNull();
     expect(reservationEntry?.tracksRequested).toBeNull();
-    expect(reservationEntry?.isJoinable).toBeNull();
 
     const propositionLocator = page.locator(
       `[data-event-id="proposition-${propositionId}"]`,
@@ -347,7 +342,6 @@ test.describe('Users & Roles', () => {
                 eventDate,
                 startTime,
                 endTime,
-                numParticipants: 2,
                 tracksRequested: 1,
               },
             },
@@ -365,10 +359,7 @@ test.describe('Users & Roles', () => {
             eventDate,
             startTime,
             endTime,
-            numParticipants: 3,
             tracksRequested: 2,
-            isPublic: false,
-            isJoinable: false,
           };
 
           let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {

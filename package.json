@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/auth-simple -w src/users -w src/reservations -w src/ranges -w src/notifications -w src/audit && npm run build -w src/embed-map && npm run build -w src/worker",
+    "build:backend": "npm run build -w src/common && npm run build -w src/auth -w src/auth-simple -w src/users -w src/reservations -w src/ranges -w src/events -w src/notifications -w src/audit && npm run build -w src/embed-map && npm run build -w src/worker",
     "build:embed": "npm run build -w src/embed-map",
     "build:frontend": "npm run build -w src/client",
     "dev:frontend": "npm run dev -w @strzel-sobie/client",

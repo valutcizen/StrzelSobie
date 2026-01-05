@@ -99,7 +99,6 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | `event_date` | TEXT | NOT NULL | The proposed date for the event (YYYY-MM-DD). |
 | `start_time` | TEXT | NOT NULL | The proposed start time (HH:MM). |
 | `end_time` | TEXT | NOT NULL | The proposed end time (HH:MM). |
-| `num_participants` | INTEGER | NOT NULL | The number of participants for the event. |
 | `tracks_requested` | INTEGER | NOT NULL | The number of shooting tracks requested. |
 | `created_at` | TEXT | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp of when the proposition was created. |
 
@@ -117,10 +116,7 @@ To maintain clarity and prevent naming conflicts between modules, all tables fol
 | `event_date` | TEXT | NOT NULL | The date of the event (YYYY-MM-DD). |
 | `start_time` | TEXT | NOT NULL | The start time of the event (HH:MM). |
 | `end_time` | TEXT | NOT NULL | The end time of the event (HH:MM). |
-| `num_participants` | INTEGER | NOT NULL | The number of participants. |
 | `tracks_requested` | INTEGER | NOT NULL | The number of tracks reserved. |
-| `is_public` | INTEGER | NOT NULL, DEFAULT 0 | `1` if visible to Guests, `0` otherwise. |
-| `is_joinable` | INTEGER | NOT NULL, DEFAULT 0 | `1` if Members can join, `0` otherwise. |
 | `created_at` | TEXT | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp of when the reservation was created. |
 
 **`reservations_records`**

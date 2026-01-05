@@ -6,7 +6,6 @@ export interface Proposition {
   event_date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM
-  num_participants: number;
   tracks_requested: number;
   created_at: string;
 }
@@ -19,10 +18,7 @@ export interface Reservation {
   event_date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM
-  num_participants: number;
   tracks_requested: number;
-  is_public: 0 | 1;
-  is_joinable: 0 | 1;
   created_at: string;
 }
 

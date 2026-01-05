@@ -92,6 +92,14 @@ export const useRangeStore = defineStore('range', {
                   },
                 }
               : {}),
+            ...(payload.allowMemberEvents !== undefined
+              ? {
+                  extras: {
+                    ...(existing.extras ?? {}),
+                    allowMemberEvents: payload.allowMemberEvents,
+                  },
+                }
+              : {}),
           }
           this.directory = this.directory.map((range) =>
             range.slug === rangeSlug

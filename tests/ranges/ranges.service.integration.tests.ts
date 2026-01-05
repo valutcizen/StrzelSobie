@@ -47,7 +47,7 @@ describe('RangesService integration', () => {
     expect(range).toBeDefined();
     expect(range.slug).toBe('test-range');
     expect(range.displayName).toBe('Test Range');
-    expect(range.totalTracks).toBe(0); // Should default to 0
+    expect(range.totalTracks).toBe(1); // Should default to 1
   });
 
   it('should fail to create a range if user is not a global admin', async () => {

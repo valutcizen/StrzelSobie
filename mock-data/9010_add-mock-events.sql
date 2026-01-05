@@ -10,7 +10,6 @@ INSERT INTO reservations_propositions (
   event_date,
   start_time,
   end_time,
-  num_participants,
   tracks_requested
 ) VALUES (
   101,
@@ -20,11 +19,10 @@ INSERT INTO reservations_propositions (
   '2025-10-10',
   '10:00',
   '11:30',
-  3,
   2
 );
 
--- Public reservation created directly by the coordinator.
+-- Reservation created directly by the coordinator.
 INSERT INTO reservations_reservations (
   id,
   proposition_id,
@@ -33,10 +31,7 @@ INSERT INTO reservations_reservations (
   event_date,
   start_time,
   end_time,
-  num_participants,
-  tracks_requested,
-  is_public,
-  is_joinable
+  tracks_requested
 ) VALUES (
   201,
   NULL,
@@ -45,13 +40,10 @@ INSERT INTO reservations_reservations (
   '2025-10-10',
   '12:00',
   '13:30',
-  4,
-  3,
-  1,
-  1
+  3
 );
 
--- Private reservation that should be visible but without details to guests.
+-- Reservation that should be visible but without details to guests.
 INSERT INTO reservations_reservations (
   id,
   proposition_id,
@@ -60,10 +52,7 @@ INSERT INTO reservations_reservations (
   event_date,
   start_time,
   end_time,
-  num_participants,
-  tracks_requested,
-  is_public,
-  is_joinable
+  tracks_requested
 ) VALUES (
   202,
   NULL,
@@ -72,10 +61,7 @@ INSERT INTO reservations_reservations (
   '2025-10-11',
   '09:00',
   '10:30',
-  5,
-  4,
-  0,
-  0
+  4
 );
 
 -- Guest proposition waiting for review.
@@ -87,7 +73,6 @@ INSERT INTO reservations_propositions (
   event_date,
   start_time,
   end_time,
-  num_participants,
   tracks_requested
 ) VALUES (
   102,
@@ -97,11 +82,10 @@ INSERT INTO reservations_propositions (
   '2025-10-12',
   '15:00',
   '16:30',
-  2,
   1
 );
 
--- Private reservation that still allows members to join.
+-- Reservation that still blocks time on the calendar.
 INSERT INTO reservations_reservations (
   id,
   proposition_id,
@@ -110,10 +94,7 @@ INSERT INTO reservations_reservations (
   event_date,
   start_time,
   end_time,
-  num_participants,
-  tracks_requested,
-  is_public,
-  is_joinable
+  tracks_requested
 ) VALUES (
   203,
   NULL,
@@ -122,8 +103,5 @@ INSERT INTO reservations_reservations (
   '2025-10-12',
   '17:00',
   '18:30',
-  3,
-  2,
-  0,
-  1
+  2
 );

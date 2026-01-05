@@ -1,17 +1,21 @@
-export type RangeEventType = 'proposition' | 'reservation' | 'record'
+import type { CalendarEventsDto } from '@strzel-sobie/common'
+
+export type CalendarEventAudience = CalendarEventsDto['events'][number]['audience']
+
+export type RangeEventType = 'proposition' | 'reservation' | 'record' | 'event'
 
 export interface RangeEventMeta {
   propositionId?: number | null
   reservationId?: number
   tracksRequested?: number
   isMember?: boolean
-  isOpenForJoining?: boolean
-  isPublic?: boolean
   coordinatorId?: number | null
   numParticipants?: number | null
   linkedProposition?: PropositionEventDetail | null
   adminId?: number | null
   createdAt?: string | null
+  eventSlug?: string
+  audience?: CalendarEventAudience
 }
 
 export interface RangeEvent {
@@ -35,7 +39,6 @@ export interface PersonSummary {
 export interface PropositionEventDetail {
   type: 'proposition'
   propositionId: number
-  numParticipants: number | null
   tracksRequested: number | null
   status: 'open' | 'converted' | 'cancelled' | null
   createdAt: string | null
@@ -48,10 +51,7 @@ export interface ReservationEventDetail {
   reservationId: number
   propositionId: number | null
   proposition: PropositionEventDetail | null
-  numParticipants: number | null
   tracksRequested: number | null
-  isPublic: boolean | null
-  isJoinable: boolean | null
   createdAt: string | null
   coordinator: PersonSummary | null
   notes?: string | null

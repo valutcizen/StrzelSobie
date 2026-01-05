@@ -48,10 +48,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '11:00',
-        numParticipants: 8,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
     });
 
@@ -61,10 +58,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '11:00',
-        numParticipants: 8,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
       { force: true },
       coordinator,
@@ -147,10 +141,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '11:00',
-        numParticipants: 8,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
     });
 

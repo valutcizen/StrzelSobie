@@ -20,6 +20,7 @@ const projects = [
   'ranges',
   'auth',
   'common',
+  'events',
   'notifications',
   'reservations',
   'users',
@@ -39,9 +40,24 @@ export default defineConfig({
   root: rootDir,
   plugins: [vue()],
   resolve: {
-    alias: {
-      '@': path.join(rootDir, 'src', 'client', 'src'),
-    },
+    alias: [
+      {
+        find: '@strzel-sobie/common/models',
+        replacement: path.join(rootDir, 'src', 'common', 'src', 'index.models.ts'),
+      },
+      {
+        find: '@strzel-sobie/common',
+        replacement: path.join(rootDir, 'src', 'common', 'src', 'index.ts'),
+      },
+      {
+        find: /^@strzel-sobie\/(.*)$/,
+        replacement: path.join(rootDir, 'src', '$1'),
+      },
+      {
+        find: '@',
+        replacement: path.join(rootDir, 'src', 'client', 'src'),
+      },
+    ],
   },
   test: {
     include: includePatterns,

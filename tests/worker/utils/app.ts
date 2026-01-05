@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 
 export type WorkerTestDependencies = Partial<Record<
-  'authService' | 'userService' | 'rangesService' | 'reservationsService' | 'auditService' | 'session' | 'user',
+  'authService' | 'userService' | 'rangesService' | 'reservationsService' | 'eventsService' | 'auditService' | 'session' | 'user',
   unknown
 >>;
 

@@ -87,10 +87,7 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        numParticipants: 6,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
     };
 
@@ -111,10 +108,7 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        numParticipants: 6,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
       { force: false },
       user
@@ -190,10 +184,7 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        numParticipants: 6,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
     };
 
@@ -209,10 +200,7 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        numParticipants: 6,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
       { force: false },
       user
@@ -243,10 +231,7 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        numParticipants: 6,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
     };
 
@@ -262,10 +247,7 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        numParticipants: 6,
         tracksRequested: 3,
-        isPublic: true,
-        isJoinable: false,
       },
       { force: false },
       user

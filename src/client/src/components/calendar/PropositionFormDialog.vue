@@ -62,19 +62,6 @@
             </Field>
             <Field
               v-slot="{ field, errorMessage }"
-              name="participants"
-            >
-              <v-text-field
-                v-bind="field"
-                :error-messages="errorMessage"
-                :label="t('calendar.forms.participantsLabel')"
-                min="1"
-                type="number"
-                data-testid="proposition-form-participants-input"
-              />
-            </Field>
-            <Field
-              v-slot="{ field, errorMessage }"
               name="tracks"
             >
               <v-text-field
@@ -145,7 +132,6 @@ const schema = yup.object({
   date: yup.string().required(),
   startTime: yup.string().required(),
   endTime: yup.string().required(),
-  participants: yup.number().min(1).required(),
   tracks: yup.number().min(1).required(),
 })
 
@@ -157,7 +143,6 @@ interface PropositionFormValues {
   date: string
   startTime: string
   endTime: string
-  participants: number
   tracks: number
 }
 
@@ -191,7 +176,6 @@ const initialValues = computed(() => {
     date,
     startTime,
     endTime,
-    participants: 1,
     tracks: 1,
   }
 })
@@ -227,7 +211,7 @@ const mapSubmissionError = (error: unknown): string => {
 }
 
 const submitProposition: SubmissionHandler = async (values, _ctx) => {
-  const { date, startTime, endTime, participants, tracks } = values as PropositionFormValues
+  const { date, startTime, endTime, tracks } = values as PropositionFormValues
   if (!props.rangeSlug) {
     return
   }
@@ -238,7 +222,6 @@ const submitProposition: SubmissionHandler = async (values, _ctx) => {
     eventDate: date,
     startTime: ensureTimePrecision(startTime),
     endTime: ensureTimePrecision(endTime),
-    numParticipants: Number(participants),
     tracksRequested: Number(tracks),
   }
 
