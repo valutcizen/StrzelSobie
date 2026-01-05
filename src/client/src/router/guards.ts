@@ -46,7 +46,7 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
           return { name: 'RangeLanding', params: { rangeSlug } }
         }
         if (!range.allowsReservations) {
-          return { name: 'RangeLanding', params: { rangeSlug }, query: { booking: 'unavailable' } }
+          return { name: 'RangeLanding', params: { rangeSlug } }
         }
       } catch {
         return { name: 'RangeDirectory' }

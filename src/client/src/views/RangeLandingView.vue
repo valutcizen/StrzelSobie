@@ -33,7 +33,9 @@ const rangeSlug = computed(() => {
 const isLoading = computed(() => rangeStore.isLoading && rangeStore.currentRangeSlug === rangeSlug.value)
 const hasRangeData = computed(() => Boolean(rangeStore.currentRange))
 const lastError = computed(() => rangeStore.lastError)
-const isBookingUnavailableNotice = computed(() => route.query.booking === 'unavailable')
+const isBookingUnavailableNotice = computed(
+  () => currentRange.value?.type !== 'meetup' && !currentRange.value?.allowsReservations,
+)
 const currentRange = computed(() => rangeStore.currentRange)
 const isMeetupRange = computed(() => currentRange.value?.type === 'meetup')
 const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
