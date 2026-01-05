@@ -338,8 +338,8 @@ test.describe('Events', () => {
     }
   });
 
-  test('member signup with guests can be updated @standard-user', async ({ page }) => {
-    const standardContext = await createApiContext(storageStates.standardUser);
+  test('member signup with guests can be updated @member', async ({ page }) => {
+    const memberContext = await createApiContext(storageStates.member);
     const adminContext = await createApiContext(storageStates.admin);
     let signedUp = false;
 
@@ -366,7 +366,7 @@ test.describe('Events', () => {
       await signupResponsePromise;
       signedUp = true;
 
-      const updateResponse = await standardContext.patch(
+      const updateResponse = await memberContext.patch(
         `/api/v1/ranges/${meetupRangeSlug}/events/${membersMeetupEvent.slug}/signups/me`,
         { data: { guests: 3 } },
       );
@@ -378,16 +378,16 @@ test.describe('Events', () => {
       expect(adminDetailResponse.ok()).toBeTruthy();
       const adminDetails = await adminDetailResponse.json();
       const participant = (adminDetails.participants ?? []).find(
-        (item: { email?: string }) => item.email === 'standard-user@e2e.com',
+        (item: { email?: string }) => item.email === 'member@e2e.com',
       );
       expect(participant?.guests).toBe(3);
     } finally {
       if (signedUp) {
-        await standardContext
+        await memberContext
           .delete(`/api/v1/ranges/${meetupRangeSlug}/events/${membersMeetupEvent.slug}/signups/me`)
           .catch(() => {});
       }
-      await Promise.all([standardContext.dispose(), adminContext.dispose()]);
+      await Promise.all([memberContext.dispose(), adminContext.dispose()]);
     }
   });
 
@@ -522,8 +522,22 @@ test.describe('Events', () => {
       await page.getByTestId('event-detail-edit-button').click();
       await expect(page).toHaveURL(`/admin/ranges/${rangeSlug}/events/${editTargetEvent.slug}/edit`);
 
-      await page.getByTestId('event-form-start-time-input').locator('input').fill(editTargetEvent.updatedStart);
-      await page.getByTestId('event-form-end-time-input').locator('input').fill(editTargetEvent.updatedEnd);
+      const startInput = page.getByTestId('event-form-start-time-input').locator('input');
+      const endInput = page.getByTestId('event-form-end-time-input').locator('input');
+
+      await startInput.evaluate((element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+      }, editTargetEvent.updatedStart);
+      await expect(startInput).toHaveValue(editTargetEvent.updatedStart);
+
+      await endInput.evaluate((element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+      }, editTargetEvent.updatedEnd);
+      await expect(endInput).toHaveValue(editTargetEvent.updatedEnd);
 
       const patchResponsePromise = page.waitForResponse(
         (response) =>
@@ -537,8 +551,7 @@ test.describe('Events', () => {
       const detailReloadPromise = waitForEventDetails(page, rangeSlug, editTargetEvent.slug);
       await detailReloadPromise;
 
-      await expect(page.getByTestId('event-detail-view')).toContainText(editTargetEvent.updatedStart);
-      await expect(page.getByTestId('event-detail-view')).toContainText(editTargetEvent.updatedEnd);
+      await expect(page.getByText(`${editTargetEvent.updatedStart} – ${editTargetEvent.updatedEnd}`)).toBeVisible();
     } finally {
       await page.request
         .patch(`/api/v1/ranges/${rangeSlug}/events/${editTargetEvent.slug}`, {
