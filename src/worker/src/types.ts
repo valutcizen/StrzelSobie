@@ -1,6 +1,7 @@
 import { Context as HonoContext } from 'hono';
-import { AuthService, Session } from '@strzel-sobie/auth';
+import { IAuthService, SessionData } from '@strzel-sobie/common/models';
 import { AuditService } from '@strzel-sobie/audit';
+import { EventsService } from '@strzel-sobie/events';
 import { ReservationsService } from '@strzel-sobie/reservations';
 import { RangesService } from '@strzel-sobie/ranges';
 import { UserService } from '@strzel-sobie/users';
@@ -9,15 +10,17 @@ import { UserDto } from '@strzel-sobie/common';
 export type Env = {
   DB: D1Database;
   SESSIONS_KV: KVNamespace;
+  AUTH_MODULE?: string;
 };
 
 export type Variables = {
-  authService: AuthService;
+  authService: IAuthService;
   userService: UserService;
   rangesService: RangesService;
   reservationsService: ReservationsService;
+  eventsService: EventsService;
   auditService: AuditService;
-  session: Session;
+  session: SessionData;
   user: UserDto;
 };
 

@@ -12,7 +12,6 @@ export interface Proposition {
   event_date: string;
   start_time: string;
   end_time: string;
-  num_participants: number;
   tracks_requested: number;
   is_member: boolean;
 };
@@ -25,10 +24,7 @@ export interface Reservation {
   event_date: string;
   start_time: string;
   end_time: string;
-  num_participants: number;
   tracks_requested: number;
-  is_public: boolean;
-  is_joinable: boolean;
 };
 
 export type ReservationConflict = {
@@ -47,10 +43,7 @@ export type CreateReservationRecord = {
   event_date: string;
   start_time: string;
   end_time: string;
-  num_participants: number;
   tracks_requested: number;
-  is_public: boolean;
-  is_joinable: boolean;
 };
 
 export interface IReservationsRepository {

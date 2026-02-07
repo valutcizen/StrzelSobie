@@ -13,9 +13,10 @@ test.describe('Range directory (public)', () => {
     await expect(directoryPage.map).toBeVisible();
     await expect(directoryPage.list).toBeVisible();
 
-    await expect(directoryPage.rows).toHaveCount(3);
+    await expect(directoryPage.rows).toHaveCount(4);
     await expect(directoryPage.nameCell('dobczyce')).toBeVisible();
     await expect(directoryPage.nameCell('ally-e2e')).toBeVisible();
+    await expect(directoryPage.nameCell('meetup-e2e')).toBeVisible();
     await expect(directoryPage.nameCell('coming-soon-e2e')).toBeVisible();
     await expect(directoryPage.rows.nth(0).getByTestId('range-list-name')).toHaveAttribute(
       'data-range-slug',
@@ -27,15 +28,20 @@ test.describe('Range directory (public)', () => {
     );
     await expect(directoryPage.rows.nth(2).getByTestId('range-list-name')).toHaveAttribute(
       'data-range-slug',
+      'meetup-e2e',
+    );
+    await expect(directoryPage.rows.nth(3).getByTestId('range-list-name')).toHaveAttribute(
+      'data-range-slug',
       'coming-soon-e2e',
     );
 
     await expect(directoryPage.typeBadge('dobczyce')).toHaveText(translate('rangeTypes.club'));
     await expect(directoryPage.typeBadge('ally-e2e')).toHaveText(translate('rangeTypes.ally'));
+    await expect(directoryPage.typeBadge('meetup-e2e')).toHaveText(translate('rangeTypes.meetup'));
     await expect(directoryPage.typeBadge('coming-soon-e2e')).toHaveText(translate('rangeTypes.coming-soon'));
 
     const markers = directoryPage.map.locator('.range-map__pin');
-    await expect(markers).toHaveCount(3);
+    await expect(markers).toHaveCount(4);
 
     await directoryPage.detailsButton('ally-e2e').click();
 

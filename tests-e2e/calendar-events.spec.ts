@@ -41,7 +41,6 @@ const createProposition = async (context: APIRequestContext, slot: SlotCandidate
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      numParticipants: 2,
       tracksRequested: 1,
     },
   });
@@ -57,16 +56,13 @@ const createProposition = async (context: APIRequestContext, slot: SlotCandidate
 const createReservation = async (
   context: APIRequestContext,
   slot: SlotCandidate,
-  options?: { isPublic?: boolean; isJoinable?: boolean; numParticipants?: number; tracksRequested?: number },
+  options?: { tracksRequested?: number },
 ) => {
   const payload = {
     eventDate: slot.eventDate,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    numParticipants: options?.numParticipants ?? 3,
     tracksRequested: options?.tracksRequested ?? 2,
-    isPublic: options?.isPublic ?? false,
-    isJoinable: options?.isJoinable ?? false,
   };
 
   let response = await context.post(`${apiBaseUrl}/api/v1/ranges/${rangeSlug}/reservations`, { data: payload });
@@ -178,7 +174,7 @@ test.describe('Calendar Events', () => {
       const reservationClaim = claimSlot(slotSeed(testInfo, 'details'));
       reservationSlot = reservationClaim.slot;
       releaseReservationSlot = reservationClaim.release;
-      reservationId = await createReservation(page.request, reservationSlot, { numParticipants: 4, tracksRequested: 3 });
+      reservationId = await createReservation(page.request, reservationSlot, { tracksRequested: 3 });
       if (typeof reservationId !== 'number') {
         throw new Error('Failed to create reservation for coordinator detail test.');
       }
@@ -208,9 +204,7 @@ test.describe('Calendar Events', () => {
       await expect(dialog.getByTestId('event-detail-reservation-section')).toBeVisible();
 
       const tracksSummary = translate('calendar.eventDetail.summary.tracks', { count: 3 });
-      const participantsSummary = translate('calendar.eventDetail.summary.participants', { count: 4 });
       await expect(dialog.getByText(tracksSummary)).toBeVisible();
-      await expect(dialog.getByText(participantsSummary)).toBeVisible();
 
       await dialog.getByTestId('event-detail-close-button').click();
       await expect(dialog).toBeHidden();
@@ -237,7 +231,7 @@ test.describe('Calendar Events', () => {
       const reservationClaim = claimSlot(slotSeed(testInfo, 'joinable'));
       reservationSlot = reservationClaim.slot;
       releaseReservationSlot = reservationClaim.release;
-      reservationId = await createReservation(coordinatorContext, reservationSlot, { isJoinable: true });
+      reservationId = await createReservation(coordinatorContext, reservationSlot);
       if (typeof reservationId !== 'number') {
         throw new Error('Failed to create joinable reservation for calendar test.');
       }
@@ -251,7 +245,6 @@ test.describe('Calendar Events', () => {
       await expect(reservationLocator).toHaveCount(1, { timeout: 15000 });
       await reservationLocator.scrollIntoViewIfNeeded();
       await expect(reservationLocator).toBeVisible();
-      await expect(reservationLocator).toHaveClass(/event-joinable/);
     } finally {
       if (reservationId !== null) {
         await coordinatorContext.delete(`/api/v1/reservations/${reservationId}`).catch(() => {});

@@ -1,0 +1,16 @@
+{
+  "name": "@strzel-sobie/auth-simple",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
+  },
+  "dependencies": {
+    "@strzel-sobie/auth": "file:../auth",
+    "@strzel-sobie/common": "file:../common"
+  }
+}

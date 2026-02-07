@@ -50,13 +50,7 @@ const ensureSwitchChecked = async (switchWrapper: Locator) => {
   await checkbox.check({ force: true });
 };
 
-const ensureJoinableSwitchChecked = async (switchWrapper: Locator) => {
-  await expect(switchWrapper).not.toHaveClass(/v-input--disabled/);
-  await ensureSwitchChecked(switchWrapper);
-};
-
 interface CreatePropositionOptions {
-  numParticipants?: number;
   tracksRequested?: number;
 }
 
@@ -70,7 +64,6 @@ const createProposition = async (
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      numParticipants: options?.numParticipants ?? 2,
       tracksRequested: options?.tracksRequested ?? 1,
     },
   });
@@ -95,10 +88,7 @@ const deleteProposition = async (context: APIRequestContext, propositionId: numb
 };
 
 interface CreateReservationOptions {
-  numParticipants?: number;
   tracksRequested?: number;
-  isPublic?: boolean;
-  isJoinable?: boolean;
   propositionId?: number | null;
   force?: boolean;
 }
@@ -112,10 +102,7 @@ const createReservation = async (
     eventDate: slot.eventDate,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    numParticipants: options?.numParticipants ?? 3,
     tracksRequested: options?.tracksRequested ?? 2,
-    isPublic: options?.isPublic ?? false,
-    isJoinable: options?.isJoinable ?? false,
     propositionId: options?.propositionId ?? undefined,
   };
 
@@ -235,7 +222,6 @@ test.describe('Reservations', () => {
 
     try {
       propositionId = await createProposition(page.request, slotClaim.slot, {
-        numParticipants: 2,
         tracksRequested: 1,
       });
       await gotoCalendar(page);
@@ -247,11 +233,7 @@ test.describe('Reservations', () => {
       await eventDetailDialog.acceptButton.click();
       await expect(reservationForm.dialog).toBeVisible();
 
-      await reservationForm.participantsInput.fill('5');
       await reservationForm.tracksInput.fill('3');
-      await ensureSwitchChecked(reservationForm.isPublicSwitch);
-      await ensureJoinableSwitchChecked(reservationForm.isOpenForJoiningSwitch);
-
       const createResponsePromise = page.waitForResponse(
         (response) =>
           response.url().includes(`/api/v1/ranges/${rangeSlug}/reservations`) &&
@@ -288,16 +270,12 @@ test.describe('Reservations', () => {
 
       const detailResponse = await fetchDetailWithRetry();
       const detail = await detailResponse.json();
-      const detailParticipants = detail.numParticipants ?? detail.num_participants;
       const detailTracks =
         detail.tracksRequested ??
         detail.tracks_requested ??
         detail.tracksAllocated ??
         detail.tracks_allocated;
-      expect(detailParticipants).toBe(5);
       expect(detailTracks).toBe(3);
-      expect(detail.isPublic ?? detail.is_public).toBe(true);
-      expect(detail.isJoinable ?? detail.is_joinable ?? detail.openForJoining ?? detail.open_for_joining).toBe(true);
     } finally {
       await deleteReservation(page.request, reservationId);
       if (reservationId === null) {
@@ -324,10 +302,6 @@ test.describe('Reservations', () => {
       await reservationForm.startTimeInput.fill(slotClaim.slot.startTime);
       await reservationForm.endTimeInput.fill(slotClaim.slot.endTime);
       await reservationForm.tracksInput.fill('2');
-      await reservationForm.participantsInput.fill('4');
-      await ensureSwitchChecked(reservationForm.isPublicSwitch);
-      await ensureJoinableSwitchChecked(reservationForm.isOpenForJoiningSwitch);
-
       const createResponsePromise = page.waitForResponse(
         (response) =>
           response.url().includes(`/api/v1/ranges/${rangeSlug}/reservations`) &&
@@ -349,8 +323,6 @@ test.describe('Reservations', () => {
       await scrollCalendarToSlot(page, slotClaim.slot);
       const reservationLocator = page.locator(`[data-event-id="reservation-${reservationId}"]`).first();
       await expect(reservationLocator).toBeVisible({ timeout: 15000 });
-      await expect(reservationLocator).toHaveAttribute('class', /event-reservation-public/);
-      await expect(reservationLocator).toHaveAttribute('class', /event-joinable/);
     } finally {
       await deleteReservation(page.request, reservationId);
       slotClaim.release();
@@ -412,7 +384,6 @@ test.describe('Reservations', () => {
 
     try {
       blockingReservationId = await createReservation(page.request, slotClaim.slot, {
-        numParticipants: 3,
         tracksRequested: 2,
       });
 
@@ -424,7 +395,6 @@ test.describe('Reservations', () => {
       await reservationForm.startTimeInput.fill(slotClaim.slot.startTime);
       await reservationForm.endTimeInput.fill(slotClaim.slot.endTime);
       await reservationForm.tracksInput.fill('1');
-      await reservationForm.participantsInput.fill('2');
 
       const failureResponsePromise = page.waitForResponse(
         (response) =>
@@ -477,13 +447,10 @@ test.describe('Reservations', () => {
 
     try {
       propositionId = await createProposition(page.request, slotClaim.slot, {
-        numParticipants: 2,
         tracksRequested: 1,
       });
       reservationId = await createReservation(page.request, slotClaim.slot, {
         propositionId,
-        isPublic: false,
-        isJoinable: false,
       });
 
       await gotoCalendar(page);

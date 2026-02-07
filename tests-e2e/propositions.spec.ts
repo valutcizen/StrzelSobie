@@ -47,7 +47,6 @@ const createPropositionViaApi = async (context: APIRequestContext, slot: SlotCan
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      numParticipants: 2,
       tracksRequested: 1,
     },
   });
@@ -92,7 +91,6 @@ test.describe('Propositions', () => {
       await propositionForm.dateInput.fill(slot.eventDate);
       await propositionForm.startTimeInput.fill(slot.startTime);
       await propositionForm.endTimeInput.fill(slot.endTime);
-      await propositionForm.participantsInput.fill('2');
       await propositionForm.tracksInput.fill('1');
 
       const createResponsePromise = page.waitForResponse(

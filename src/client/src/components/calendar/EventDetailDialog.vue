@@ -32,19 +32,6 @@
                 : t('calendar.eventDetail.proposition.guest') }}
             </v-list-item-title>
           </v-list-item>
-          <v-list-item v-if="isReservation">
-            <template #prepend>
-              <v-icon>mdi-shield-check</v-icon>
-            </template>
-            <v-list-item-title>
-              {{ event.meta?.isPublic
-                ? t('calendar.eventDetail.reservation.public')
-                : t('calendar.eventDetail.reservation.private') }}
-            </v-list-item-title>
-            <v-list-item-subtitle v-if="event.meta?.isOpenForJoining">
-              {{ t('calendar.eventDetail.joinable.open') }}
-            </v-list-item-subtitle>
-          </v-list-item>
           <v-list-item v-if="participants">
             <template #prepend>
               <v-icon>mdi-account-group</v-icon>
@@ -101,18 +88,6 @@
                   <v-list-item-subtitle v-if="coordinatorDisplay.subtitle">
                     {{ coordinatorDisplay.subtitle }}
                   </v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="reservationVisibilityLabel">
-                  <template #prepend>
-                    <v-icon>mdi-eye-outline</v-icon>
-                  </template>
-                  <v-list-item-title>{{ reservationVisibilityLabel }}</v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="reservationJoinableLabel">
-                  <template #prepend>
-                    <v-icon>mdi-account-plus</v-icon>
-                  </template>
-                  <v-list-item-title>{{ reservationJoinableLabel }}</v-list-item-title>
                 </v-list-item>
                 <v-list-item v-if="linkedPropositionId !== null">
                   <template #prepend>
@@ -183,14 +158,6 @@
                   </template>
                   <v-list-item-title>
                     {{ t('calendar.eventDetail.labels.tracksDemand', { count: propositionSectionTracksRequested }) }}
-                  </v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="propositionSectionParticipants !== null">
-                  <template #prepend>
-                    <v-icon>mdi-account-group</v-icon>
-                  </template>
-                  <v-list-item-title>
-                    {{ t('calendar.eventDetail.labels.participants', { count: propositionSectionParticipants }) }}
                   </v-list-item-title>
                 </v-list-item>
                 <v-list-item v-if="propositionSectionCreatedAt">
@@ -305,12 +272,6 @@ const detailTracksRequested = computed(() => {
   return typeof detail.tracksRequested === 'number' ? detail.tracksRequested : null
 })
 
-const detailParticipants = computed(() => {
-  const detail = details.value
-  if (!detail) return null
-  return typeof detail.numParticipants === 'number' ? detail.numParticipants : null
-})
-
 const tracksRequested = computed(() => {
   if (detailTracksRequested.value !== null) {
     return detailTracksRequested.value
@@ -320,9 +281,6 @@ const tracksRequested = computed(() => {
 })
 
 const participants = computed(() => {
-  if (detailParticipants.value !== null) {
-    return detailParticipants.value
-  }
   const metaValue = event.value?.meta?.numParticipants
   return typeof metaValue === 'number' ? metaValue : null
 })
@@ -478,11 +436,6 @@ const propositionSectionTracksRequested = computed(() => {
   return typeof value === 'number' ? value : null
 })
 
-const propositionSectionParticipants = computed(() => {
-  const value = propositionSectionDetail.value?.numParticipants
-  return typeof value === 'number' ? value : null
-})
-
 const linkedPropositionId = computed(() => {
   if (propositionSectionId.value !== null) {
     return propositionSectionId.value
@@ -495,27 +448,6 @@ const linkedPropositionId = computed(() => {
   }
   const metaId = event.value?.meta?.propositionId
   return typeof metaId === 'number' ? metaId : null
-})
-
-const reservationVisibilityLabel = computed(() => {
-  const detail = detailsAsReservation.value
-  if (!detail || detail.isPublic === null) {
-    return null
-  }
-  const visibilityValue = detail.isPublic
-    ? t('calendar.eventDetail.visibility.public')
-    : t('calendar.eventDetail.visibility.private')
-  return t('calendar.eventDetail.visibility.label', { value: visibilityValue })
-})
-
-const reservationJoinableLabel = computed(() => {
-  const detail = detailsAsReservation.value
-  if (!detail || detail.isJoinable === null) {
-    return null
-  }
-  return detail.isJoinable
-    ? t('calendar.eventDetail.joinable.open')
-    : t('calendar.eventDetail.joinable.closed')
 })
 
 const canAccept = computed(() =>

@@ -13,8 +13,10 @@
   "dependencies": {
     "@strzel-sobie/common": "file:../common",
     "@strzel-sobie/auth": "file:../auth",
+    "@strzel-sobie/auth-simple": "file:../auth-simple",
     "@strzel-sobie/users": "file:../users",
     "@strzel-sobie/reservations": "file:../reservations",
+    "@strzel-sobie/events": "file:../events",
     "@strzel-sobie/ranges": "file:../ranges",
     "@strzel-sobie/notifications": "file:../notifications",
     "chanfana": "^2.6.3",

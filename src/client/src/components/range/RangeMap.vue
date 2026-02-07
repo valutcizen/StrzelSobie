@@ -102,6 +102,7 @@ const typeStyleMap: Record<string, { color: string; icon: string }> = {
   club: { color: '#43a047', icon: 'mdi-target' },
   ally: { color: '#0288d1', icon: 'mdi-handshake' },
   'coming-soon': { color: '#f59e0b', icon: 'mdi-progress-clock' },
+  meetup: { color: '#d97706', icon: 'mdi-calendar-star' },
 }
 
 const validRanges = computed(() =>
@@ -160,6 +161,9 @@ const getMarkerZIndex = (range: RangeSummary, isSelected: boolean): number => {
       break
     case 'coming-soon':
       baseZIndex = 100
+      break
+    case 'meetup':
+      baseZIndex = 250
       break
     default:
       baseZIndex = 150 // Default for unknown types

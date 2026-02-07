@@ -17,7 +17,7 @@ const QuerySchema = z.object({
 export class GetEvents extends OpenAPIRoute {
   schema: OpenAPIRouteSchema = {
     summary: 'Get Calendar Events for a Range',
-    description: 'Retrieves all calendar events (propositions and reservations) for a specific shooting range within a given date range.',
+    description: 'Retrieves all calendar events (propositions, reservations, and events) for a specific shooting range within a given date range.',
     tags: ['Reservations'],
     request: {
       params: ParamsSchema,

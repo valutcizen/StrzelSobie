@@ -24,6 +24,7 @@ describe('GET /api/v1/ranges/:rangeSlug/events', () => {
         Result.ok({
           reservations: [],
           propositions: [],
+          events: [],
         }),
       ),
     };
@@ -54,6 +55,7 @@ describe('GET /api/v1/ranges/:rangeSlug/events', () => {
     expect(await response.json()).toEqual({
       reservations: [],
       propositions: [],
+      events: [],
     });
   });
 

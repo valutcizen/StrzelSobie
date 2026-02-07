@@ -68,7 +68,7 @@ test.describe('Ranges', () => {
     const unavailableNotice = translate('rangeLanding.bookingUnavailableNotice');
 
     await page.goto(`/${allyRangeSlug}/calendar`);
-    await expect(page).toHaveURL(`/${allyRangeSlug}?booking=unavailable`);
+    await expect(page).toHaveURL(`/${allyRangeSlug}`);
     await expect(landingPage.view).toBeVisible();
     await expect(landingPage.bookingUnavailableAlert).toContainText(unavailableNotice);
     await expect(landingPage.openCalendarButton).toBeDisabled();
@@ -80,10 +80,7 @@ test.describe('Ranges', () => {
       eventDate: slotClaim.slot.eventDate,
       startTime: slotClaim.slot.startTime,
       endTime: slotClaim.slot.endTime,
-      numParticipants: 2,
       tracksRequested: 1,
-      isPublic: false,
-      isJoinable: false,
     };
 
     try {

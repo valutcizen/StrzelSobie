@@ -1,7 +1,9 @@
 import {
   IAuditService,
+  IEventsService,
   IReservationsService,
   IRangesService,
+  EventAudience,
   UserRole,
   getRangeRole,
 } from '@strzel-sobie/common/models';
@@ -42,6 +44,7 @@ import {
   RangeBookingNotAllowedError,
   UnauthorizedPropositionError,
   OperatingHours,
+  EventSummaryDto,
   UserDto,
 } from '@strzel-sobie/common';
 import {
@@ -57,20 +60,6 @@ import {
   ReservationConflict,
 } from '../domain/reservations.repository';
 
-const normalizeReservationFlag = (value: unknown): boolean => {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return value === 1;
-  }
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    return normalized === '1' || normalized === 'true';
-  }
-  return false;
-};
-
 type RoleLike = { name?: string | null } | string | null | undefined;
 type RangeRolesRecord = Record<string, RoleLike[] | undefined>;
 type UserRoleContext = {
@@ -84,6 +73,7 @@ export class ReservationsService implements IReservationsService {
   constructor(
     private readonly rangesService: IRangesService,
     private readonly reservationsRepository: IReservationsRepository,
+    private readonly eventsService: IEventsService,
     private readonly auditService: IAuditService
   ) {}
 
@@ -99,10 +89,21 @@ export class ReservationsService implements IReservationsService {
     const rangeId = rangeDetails.id;
 
     try {
-      const [propositions, reservations] = await Promise.all([
+      const [propositions, reservations, eventsResult] = await Promise.all([
         this.reservationsRepository.getPropositions(rangeId, startDate, endDate),
         this.reservationsRepository.getReservations(rangeId, startDate, endDate),
+        this.eventsService.getRangeEvents(rangeSlug, this.normalizeEventsUser(user)),
       ]);
+
+      if (!eventsResult.isSuccess) {
+        return Result.fail(eventsResult.getError());
+      }
+
+      const events = eventsResult
+        .getValue()
+        .data
+        .filter((event) => event.eventDate >= startDate && event.eventDate <= endDate)
+        .map((event) => this.mapRangeEventSummary(event));
 
       const { isAdmin, isMember, isGuest } = getRangeRole(user, rangeId);
       const roleNames = (user.roles ?? [])
@@ -144,17 +145,11 @@ export class ReservationsService implements IReservationsService {
         : propositions;
 
       const filteredReservations = reservations.map((r: Reservation) => {
-        const isPublic = normalizeReservationFlag(r.is_public);
-        const isJoinable = normalizeReservationFlag(r.is_joinable);
-        const canViewPrivateDetails = isAdmin || isMember || isCoordinator;
-        const canViewDetails = canViewPrivateDetails || isPublic;
-
+        const canViewDetails = isAdmin || isMember || isCoordinator;
         const tracksRequested = canViewDetails ? r.tracks_requested : null;
-        const isJoinableForUser = canViewDetails ? isJoinable : null;
         const details = canViewDetails
           ? {
               coordinatorId: r.coordinator_id,
-              numParticipants: r.num_participants,
             }
           : null;
 
@@ -168,8 +163,6 @@ export class ReservationsService implements IReservationsService {
           startTime: r.start_time,
           endTime: r.end_time,
           tracksRequested,
-          isPublic,
-          isJoinable: isJoinableForUser,
           details,
           proposition: propositionDetail,
         };
@@ -186,6 +179,7 @@ export class ReservationsService implements IReservationsService {
           tracksRequested: p.tracks_requested,
         })),
         reservations: filteredReservations,
+        events,
         records: records.map((record) => ({
           id: record.id,
           adminId: record.admin_id,
@@ -267,10 +261,7 @@ export class ReservationsService implements IReservationsService {
         eventDate: reservation.event_date,
         startTime: reservation.start_time,
         endTime: reservation.end_time,
-        numParticipants: reservation.num_participants,
         tracksRequested: reservation.tracks_requested,
-        isPublic: Boolean(reservation.is_public),
-        isJoinable: Boolean(reservation.is_joinable),
         createdAt: reservation.created_at ?? null,
         coordinator,
       };
@@ -453,7 +444,6 @@ export class ReservationsService implements IReservationsService {
         event_date: command.eventDate,
         start_time: command.startTime,
         end_time: command.endTime,
-        num_participants: command.numParticipants,
         tracks_requested: command.tracksRequested,
       };
 
@@ -468,7 +458,6 @@ export class ReservationsService implements IReservationsService {
           eventDate: command.eventDate,
           startTime: command.startTime,
           endTime: command.endTime,
-          numParticipants: command.numParticipants,
           tracksRequested: command.tracksRequested,
         },
       });
@@ -605,10 +594,7 @@ export class ReservationsService implements IReservationsService {
       event_date: command.eventDate,
       start_time: command.startTime,
       end_time: command.endTime,
-      num_participants: command.numParticipants,
       tracks_requested: command.tracksRequested,
-      is_public: command.isPublic,
-      is_joinable: command.isJoinable,
     };
 
     try {
@@ -624,7 +610,6 @@ export class ReservationsService implements IReservationsService {
           eventDate: reservation.event_date,
           startTime: reservation.start_time,
           endTime: reservation.end_time,
-          numParticipants: reservation.num_participants,
           tracksRequested: reservation.tracks_requested,
           forceApplied: force && blockingConflicts.length > 0,
         },
@@ -676,9 +661,6 @@ export class ReservationsService implements IReservationsService {
     const startTime = command.startTime ?? proposition.start_time;
     const endTime = command.endTime ?? proposition.end_time;
     const tracksRequested = command.tracksRequested ?? proposition.tracks_requested;
-    const numParticipants = command.numParticipants ?? proposition.num_participants;
-    const isPublic = typeof command.isPublic === 'boolean' ? command.isPublic : false;
-    const isJoinable = typeof command.isJoinable === 'boolean' ? command.isJoinable : false;
     const totalTracks = rangeDetails.totalTracks ?? 0;
 
     if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
@@ -690,10 +672,7 @@ export class ReservationsService implements IReservationsService {
         eventDate,
         startTime,
         endTime,
-        numParticipants,
         tracksRequested,
-        isPublic,
-        isJoinable,
       },
       totalTracks
     );
@@ -742,10 +721,7 @@ export class ReservationsService implements IReservationsService {
       event_date: eventDate,
       start_time: startTime,
       end_time: endTime,
-      num_participants: numParticipants,
       tracks_requested: tracksRequested,
-      is_public: isPublic,
-      is_joinable: isJoinable,
     };
 
     try {
@@ -765,18 +741,13 @@ export class ReservationsService implements IReservationsService {
           eventDate: reservation.event_date,
           startTime: reservation.start_time,
           endTime: reservation.end_time,
-          numParticipants: reservation.num_participants,
           tracksRequested: reservation.tracks_requested,
-          isPublic,
-          isJoinable,
           forceApplied: force && blockingConflicts.length > 0,
           adjustments: {
             eventDateChanged: eventDate !== proposition.event_date,
             startTimeChanged: startTime !== proposition.start_time,
             endTimeChanged: endTime !== proposition.end_time,
             tracksRequestedChanged: tracksRequested !== proposition.tracks_requested,
-            numParticipantsChanged: numParticipants !== proposition.num_participants,
-            visibilityChanged: isPublic !== false || isJoinable !== false,
           },
         },
       });
@@ -856,7 +827,6 @@ export class ReservationsService implements IReservationsService {
       eventDate: proposition.event_date,
       startTime: proposition.start_time,
       endTime: proposition.end_time,
-      numParticipants: proposition.num_participants,
       tracksRequested: proposition.tracks_requested,
       createdAt: proposition.created_at ?? null,
       requester,
@@ -874,6 +844,60 @@ export class ReservationsService implements IReservationsService {
       phoneNumber: phoneNumber ?? null,
       displayName: null,
     };
+  }
+
+  private normalizeEventsUser(user: UserRoleContext): UserDto {
+    const roleNames = (user.roles ?? [])
+      .map((role) => (typeof role === 'string' ? role : role?.name ?? ''))
+      .filter((roleName) => roleName.length > 0);
+
+    const rangeRolesSource = user.rangeRoles ?? user.range_roles ?? {};
+    const rangeRoles = Object.entries(rangeRolesSource).reduce((acc, [rangeId, roleList]) => {
+      const names = (roleList ?? [])
+        .map((role) => (typeof role === 'string' ? role : role?.name ?? ''))
+        .filter((roleName) => roleName.length > 0);
+      if (names.length > 0) {
+        acc[rangeId] = names.map((name, index) => ({
+          id: index + 1,
+          name,
+          scope: 'range' as const,
+        }));
+      }
+      return acc;
+    }, {} as UserDto['rangeRoles']);
+
+    const isDeleted = (user as { isDeleted?: number }).isDeleted === 1 ? 1 : 0;
+
+    return {
+      id: typeof user.id === 'string' ? Number.parseInt(user.id, 10) : user.id,
+      email: (user as { email?: string }).email ?? 'calendar@strzel-sobie.local',
+      isDeleted,
+      createdAt: (user as { createdAt?: string }).createdAt ?? new Date(0).toISOString(),
+      roles: roleNames.map((name, index) => ({
+        id: index + 1,
+        name,
+        scope: 'global' as const,
+      })),
+      rangeRoles,
+    };
+  }
+
+  private mapRangeEventSummary(event: EventSummaryDto) {
+    const audience: CalendarEventsDto['events'][number]['audience'] =
+      event.audience === EventAudience.Public ? 'Public' : 'MembersOnly';
+
+    return {
+      id: event.id,
+      slug: event.slug,
+      name: event.name,
+      startTime: this.combineEventDateTime(event.eventDate, event.startTime),
+      endTime: this.combineEventDateTime(event.eventDate, event.endTime),
+      audience,
+    };
+  }
+
+  private combineEventDateTime(eventDate: string, time: string): string {
+    return `${eventDate}T${time}:00`;
   }
 
   private extractRoleName(role: RoleLike): string {
@@ -930,10 +954,6 @@ export class ReservationsService implements IReservationsService {
   }
 
   private canUserViewReservation(user: UserRoleContext, reservation: ReservationDetail): boolean {
-    if (reservation.is_public) {
-      return true;
-    }
-
     const globalRoleNames = this.getGlobalRoleNames(user);
     const rangeRoleNames = this.getRangeRoleNames(user, reservation.range_id);
 
@@ -1017,7 +1037,6 @@ export class ReservationsService implements IReservationsService {
         eventDate: deletedReservation.event_date,
         startTime: deletedReservation.start_time,
         endTime: deletedReservation.end_time,
-        numParticipants: deletedReservation.num_participants,
         tracksRequested: deletedReservation.tracks_requested,
         coordinatorId: deletedReservation.coordinator_id,
       },
@@ -1111,21 +1130,9 @@ export class ReservationsService implements IReservationsService {
       return timeError;
     }
 
-    if (
-      !Number.isInteger(command.numParticipants) ||
-      command.numParticipants < 1 ||
-      command.numParticipants > 50
-    ) {
-      return new InvalidReservationTimeError('Number of participants must be between 1 and 50');
-    }
-
     const tracksError = this.validateReservationTracks(command.tracksRequested, totalTracks);
     if (tracksError) {
       return tracksError;
-    }
-
-    if (typeof command.isPublic !== 'boolean' || typeof command.isJoinable !== 'boolean') {
-      return new InvalidReservationTimeError('Visibility flags must be boolean values');
     }
 
     return null;
@@ -1393,10 +1400,6 @@ export class ReservationsService implements IReservationsService {
       startHours < endHours || (startHours === endHours && startMinutes < endMinutes);
     if (!startsBeforeEnds) {
       return new InvalidPropositionTimeError('End time must be later than start time');
-    }
-
-    if (!Number.isInteger(command.numParticipants) || command.numParticipants < 1 || command.numParticipants > 50) {
-      return new InvalidPropositionTimeError('Number of participants must be between 1 and 50');
     }
 
     if (

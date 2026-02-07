@@ -27,7 +27,7 @@ const parkingLocationSchema = z
 
 const updateRangeCommandSchema = z.object({
   displayName: z.string().trim().min(1).optional(),
-  type: z.enum(['club', 'ally', 'coming-soon']).optional(),
+  type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
   allowsReservations: z.boolean().optional(),
   publicDescription: z.string().optional().nullable(),
   memberDescription: z.string().optional().nullable(),
@@ -36,6 +36,7 @@ const updateRangeCommandSchema = z.object({
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   parkingLocation: parkingLocationSchema.nullable().optional(),
+  allowMemberEvents: z.boolean().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided for update',
 });

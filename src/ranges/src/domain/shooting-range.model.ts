@@ -1,7 +1,7 @@
 export type ShootingRange = {
   id: number;
   slug: string;
-  type: 'club' | 'ally' | 'coming-soon';
+  type: 'club' | 'ally' | 'coming-soon' | 'meetup';
   allowsReservations: boolean;
   isDeleted: boolean;
   publicDescription?: string | null;

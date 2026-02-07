@@ -10,7 +10,6 @@ type PropositionRow = {
   event_date: string;
   start_time: string;
   end_time: string;
-  num_participants: number;
   tracks_requested: number;
   is_member: number;
 };
@@ -23,10 +22,7 @@ type ReservationRow = {
   event_date: string;
   start_time: string;
   end_time: string;
-  num_participants: number;
   tracks_requested: number;
-  is_public: number;
-  is_joinable: number;
 };
 
 describe('ReservationsDbRepository integration', () => {
@@ -40,7 +36,6 @@ describe('ReservationsDbRepository integration', () => {
     event_date: '2024-01-01',
     start_time: '09:00',
     end_time: '10:00',
-    num_participants: 3,
     tracks_requested: 2,
   };
 
@@ -51,10 +46,7 @@ describe('ReservationsDbRepository integration', () => {
     event_date: '2024-01-02',
     start_time: '11:00',
     end_time: '13:00',
-    num_participants: 4,
     tracks_requested: 3,
-    is_public: 1,
-    is_joinable: 0,
   };
 
   const insertRange = async (
@@ -79,8 +71,8 @@ describe('ReservationsDbRepository integration', () => {
     const data = { ...defaultProposition, ...overrides };
     const statement = dbHandle.d1.prepare(
       `INSERT INTO reservations_propositions
-        (user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        RETURNING
          id,
          user_id,
@@ -89,7 +81,6 @@ describe('ReservationsDbRepository integration', () => {
          event_date,
          start_time,
          end_time,
-         num_participants,
          tracks_requested,
          EXISTS (
            SELECT 1
@@ -107,7 +98,6 @@ describe('ReservationsDbRepository integration', () => {
         data.event_date,
         data.start_time,
         data.end_time,
-        data.num_participants,
         data.tracks_requested
       )
       .first<PropositionRow>();
@@ -121,9 +111,9 @@ describe('ReservationsDbRepository integration', () => {
     const data = { ...defaultReservation, ...overrides };
     const statement = dbHandle.d1.prepare(
       `INSERT INTO reservations_reservations
-        (proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, num_participants, tracks_requested, is_public, is_joinable`
+        (proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested`
     );
     const record = await statement
       .bind(
@@ -133,10 +123,7 @@ describe('ReservationsDbRepository integration', () => {
         data.event_date,
         data.start_time,
         data.end_time,
-        data.num_participants,
-        data.tracks_requested,
-        data.is_public,
-        data.is_joinable
+        data.tracks_requested
       )
       .first<ReservationRow>();
     if (!record) {
@@ -162,8 +149,8 @@ describe('ReservationsDbRepository integration', () => {
     await dbHandle.d1
       .prepare(
         `INSERT INTO reservations_propositions
-          (user_id, range_id, status, event_date, start_time, end_time, num_participants, tracks_requested)
-         VALUES (2, ?, 'open', '2024-03-15', '10:00', '11:00', 4, 2)`
+          (user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
+         VALUES (2, ?, 'open', '2024-03-15', '10:00', '11:00', 2)`
       )
       .bind(otherRangeId)
       .run();
@@ -205,7 +192,7 @@ describe('ReservationsDbRepository integration', () => {
   });
 
   it('getReservations returns reservations for range and window', async () => {
-    const expected = await insertReservation({ event_date: '2024-05-10', is_public: 1, is_joinable: 1 });
+    const expected = await insertReservation({ event_date: '2024-05-10' });
     await insertReservation({ event_date: '2024-06-01' });
     const otherRangeId = await insertRange('poznan', 'Strzelnica Poznań', 5);
     await insertReservation({ range_id: otherRangeId, event_date: '2024-05-15' });
@@ -216,28 +203,7 @@ describe('ReservationsDbRepository integration', () => {
     expect(reservations[0]).toMatchObject({
       id: expected.id,
       range_id: 1,
-      is_public: true,
-      is_joinable: true,
     });
-  });
-
-  it('getReservations normalizes numeric and string flags', async () => {
-    const record = await insertReservation({ event_date: '2024-08-15', is_public: 0, is_joinable: 0 });
-
-    await dbHandle.d1
-      .prepare(
-        `UPDATE reservations_reservations
-         SET is_public = '0', is_joinable = '1'
-         WHERE id = ?`
-      )
-      .bind(record.id)
-      .run();
-
-    const reservations = await repository.getReservations(1, '2024-08-01', '2024-08-31');
-
-    expect(reservations).toHaveLength(1);
-    expect(reservations[0].is_public).toBe(false);
-    expect(reservations[0].is_joinable).toBe(true);
   });
 
   it('getOverlappingUsage sums tracks for overlapping entries', async () => {
@@ -338,7 +304,6 @@ describe('ReservationsDbRepository integration', () => {
       event_date: '2024-10-01',
       start_time: '10:00',
       end_time: '11:00',
-      num_participants: 2,
       tracks_requested: 1,
     });
 
@@ -387,17 +352,12 @@ describe('ReservationsDbRepository integration', () => {
       event_date: '2025-01-05',
       start_time: '12:00',
       end_time: '13:00',
-      num_participants: 5,
       tracks_requested: 3,
-      is_public: true,
-      is_joinable: false,
     });
 
     expect(reservation).toMatchObject({
       id: expect.any(Number),
       proposition_id: null,
-      is_public: true,
-      is_joinable: false,
     });
   });
 
@@ -411,17 +371,12 @@ describe('ReservationsDbRepository integration', () => {
         event_date: proposition.event_date,
         start_time: proposition.start_time,
         end_time: proposition.end_time,
-        num_participants: proposition.num_participants,
         tracks_requested: proposition.tracks_requested,
-        is_public: false,
-        is_joinable: true,
       },
       proposition.id
     );
 
     expect(reservation.proposition_id).toBe(proposition.id);
-    expect(reservation.is_public).toBe(false);
-    expect(reservation.is_joinable).toBe(true);
 
     const storedProposition = await repository.getPropositionById(proposition.id);
     expect(storedProposition?.status).toBe('converted');
@@ -431,7 +386,6 @@ describe('ReservationsDbRepository integration', () => {
     const reservation = await insertReservation();
     const stored = await repository.getReservationById(reservation.id);
     expect(stored?.id).toBe(reservation.id);
-    expect(stored?.is_public).toBe(Boolean(reservation.is_public));
 
     const missing = await repository.getReservationById(999);
     expect(missing).toBeNull();

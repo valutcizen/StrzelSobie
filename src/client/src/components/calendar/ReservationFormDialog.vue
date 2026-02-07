@@ -13,7 +13,7 @@
         :validation-schema="schema"
         @submit="submitReservation"
       >
-        <template #default="{ isSubmitting, meta, values, setFieldValue }">
+        <template #default="{ isSubmitting, meta }">
           <v-card-text>
             <v-alert
               v-if="submissionError"
@@ -79,43 +79,6 @@
                 data-testid="reservation-form-tracks-input"
               />
             </Field>
-            <Field
-              v-slot="{ field, errorMessage }"
-              name="participants"
-            >
-              <v-text-field
-                v-bind="field"
-                :error-messages="errorMessage"
-                :label="t('calendar.forms.participantsLabel')"
-                min="1"
-                type="number"
-                data-testid="reservation-form-participants-input"
-              />
-            </Field>
-            <div>
-              <v-switch
-                :model-value="values.isPublic"
-                class="mt-4"
-                color="primary"
-                :label="t('calendar.reservationDialog.isPublic')"
-                data-testid="reservation-form-is-public-switch"
-                @update:model-value="(value) => {
-                  setFieldValue('isPublic', value)
-                  if (!value) {
-                    setFieldValue('isOpenForJoining', false)
-                  }
-                }"
-              />
-              <v-switch
-                :disabled="!values.isPublic"
-                :model-value="values.isOpenForJoining"
-                color="primary"
-                :label="t('calendar.reservationDialog.isOpenForJoining')"
-                data-testid="reservation-form-is-open-for-joining-switch"
-                @update:model-value="(value) =>
-                  setFieldValue('isOpenForJoining', values.isPublic ? value : false)"
-              />
-            </div>
             <v-switch
               v-if="canUseForce"
               :model-value="force"
@@ -180,9 +143,6 @@ const props = withDefaults(
     defaultStart?: string | null
     defaultEnd?: string | null
     defaultTracks?: number | null
-    defaultParticipants?: number | null
-    defaultIsPublic?: boolean | null
-    defaultIsOpenForJoining?: boolean | null
     canUseForce?: boolean
   }>(),
   {
@@ -190,9 +150,6 @@ const props = withDefaults(
     defaultStart: null,
     defaultEnd: null,
     defaultTracks: 1,
-    defaultParticipants: 1,
-    defaultIsPublic: true,
-    defaultIsOpenForJoining: false,
     canUseForce: false,
   },
 )
@@ -213,9 +170,6 @@ const schema = computed(() =>
     startTime: yup.string().required(),
     endTime: yup.string().required(),
     tracks: yup.number().min(1).required(),
-    participants: yup.number().min(1).required(),
-    isPublic: yup.boolean().required(),
-    isOpenForJoining: yup.boolean().required(),
   }),
 )
 
@@ -224,9 +178,6 @@ interface ReservationFormValues {
   startTime: string
   endTime: string
   tracks: number
-  participants: number
-  isPublic: boolean
-  isOpenForJoining: boolean
 }
 
 export interface ReservationSubmissionError {
@@ -320,21 +271,11 @@ const toTimeInputValue = (isoValue: string | null | undefined) => {
 }
 
 const initialValues = computed(() => {
-  const isPublicDefault =
-    typeof props.defaultIsPublic === 'boolean' ? props.defaultIsPublic : true
-  const isJoinableDefault =
-    typeof props.defaultIsOpenForJoining === 'boolean'
-      ? props.defaultIsOpenForJoining && isPublicDefault
-      : false
-
   return {
     date: toDateInputValue(props.defaultStart ?? null),
     startTime: toTimeInputValue(props.defaultStart ?? null),
     endTime: toTimeInputValue(props.defaultEnd ?? null),
     tracks: props.defaultTracks ?? 1,
-    participants: props.defaultParticipants ?? 1,
-    isPublic: isPublicDefault,
-    isOpenForJoining: isJoinableDefault,
   }
 })
 
@@ -344,11 +285,6 @@ const formKey = computed(() =>
     props.defaultStart ?? 'start',
     props.defaultEnd ?? 'end',
     props.defaultTracks ?? 'tracks',
-    props.defaultParticipants ?? 'participants',
-    typeof props.defaultIsPublic === 'boolean' ? String(props.defaultIsPublic) : 'public',
-    typeof props.defaultIsOpenForJoining === 'boolean'
-      ? String(props.defaultIsOpenForJoining)
-      : 'joinable',
   ].join('-'),
 )
 
@@ -378,13 +314,6 @@ const submitReservation: SubmissionHandler = async (values, _ctx) => {
   const startTime = ensureTimePrecision(formValues.startTime)
   const endTime = ensureTimePrecision(formValues.endTime)
   const tracksValue = Number(formValues.tracks ?? props.defaultTracks ?? 1)
-  const participantsValue = Number(
-    formValues.participants ?? props.defaultParticipants ?? 1,
-  )
-  const isPublicValue = Boolean(formValues.isPublic)
-  const isOpenForJoiningValue = isPublicValue
-    ? Boolean(formValues.isOpenForJoining)
-    : false
 
   const requestConfig = force.value && props.canUseForce ? { params: { force: 'true' } } : undefined
 
@@ -396,9 +325,6 @@ const submitReservation: SubmissionHandler = async (values, _ctx) => {
         startTime,
         endTime,
         tracksRequested: tracksValue,
-        numParticipants: participantsValue,
-        isPublic: isPublicValue,
-        isJoinable: isOpenForJoiningValue,
       }
 
       await http.post<CreatedReservationDto>(
@@ -411,10 +337,7 @@ const submitReservation: SubmissionHandler = async (values, _ctx) => {
         eventDate,
         startTime,
         endTime,
-        numParticipants: participantsValue,
         tracksRequested: tracksValue,
-        isPublic: isPublicValue,
-        isJoinable: isOpenForJoiningValue,
       }
 
       await http.post<CreatedReservationDto>(

@@ -21,21 +21,6 @@ const toNullableNumber = (value: unknown): number | null =>
 const toNullableString = (value: unknown): string | null =>
   typeof value === 'string' ? value : null
 
-const toBooleanOrNull = (value: unknown): boolean | null => {
-  if (typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    if (Number.isNaN(value)) {
-      return null
-    }
-    return value !== 0
-  }
-
-  return null
-}
-
 const toPersonSummary = (raw: unknown): PersonSummary | null => {
   if (!raw || typeof raw !== 'object') {
     return null
@@ -65,10 +50,6 @@ const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEvent
   const propositionId =
     typeof data.id === 'number' ? data.id : event.meta?.propositionId ?? event.sourceId
 
-  const numParticipants =
-    toNullableNumber(data.numParticipants ?? data.num_participants) ??
-    (typeof event.meta?.numParticipants === 'number' ? event.meta.numParticipants : null)
-
   const tracksRequested =
     toNullableNumber(data.tracksRequested ?? data.tracks_requested) ??
     (typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null)
@@ -87,7 +68,6 @@ const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEvent
   return {
     type: 'proposition',
     propositionId,
-    numParticipants,
     tracksRequested,
     status,
     createdAt,
@@ -104,10 +84,6 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
 
   let propositionId = toNullableNumber(data.propositionId ?? data.proposition_id)
 
-  const numParticipants =
-    toNullableNumber(data.numParticipants ?? data.num_participants) ??
-    (typeof event.meta?.numParticipants === 'number' ? event.meta.numParticipants : null)
-
   const tracksRequested =
     toNullableNumber(
       data.tracksRequested ??
@@ -115,15 +91,6 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
         data.tracksAllocated ??
         data.tracks_allocated,
     ) ?? (typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null)
-
-  const isPublic =
-    toBooleanOrNull(data.isPublic ?? data.is_public) ??
-    (typeof event.meta?.isPublic === 'boolean' ? event.meta.isPublic : null)
-
-  const isJoinable =
-    toBooleanOrNull(
-      data.isJoinable ?? data.is_joinable ?? data.openForJoining ?? data.open_for_joining,
-    ) ?? (typeof event.meta?.isOpenForJoining === 'boolean' ? event.meta.isOpenForJoining : null)
 
   const createdAt = toNullableString(data.createdAt ?? data.created_at)
   const coordinator = toPersonSummary(data.coordinator ?? data.owner ?? data.manager)
@@ -142,10 +109,7 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
     reservationId,
     propositionId,
     proposition,
-    numParticipants,
     tracksRequested,
-    isPublic,
-    isJoinable,
     createdAt,
     coordinator,
     notes: notes ?? undefined,
@@ -162,6 +126,7 @@ interface EventDetailState {
 
 export const useEventDetails = ({
   openReservationDialog,
+  onEventNavigate,
   t,
 }: {
   openReservationDialog: (options: {
@@ -169,10 +134,8 @@ export const useEventDetails = ({
     defaultStart?: string | null
     defaultEnd?: string | null
     defaultTracks?: number | null
-    defaultParticipants?: number | null
-    defaultIsPublic?: boolean | null
-    defaultIsOpenForJoining?: boolean | null
   }) => void
+  onEventNavigate: (event: RangeEvent) => void
   t: ComposerTranslation
 }) => {
   const selectedEvent = ref<RangeEvent | null>(null)
@@ -253,6 +216,11 @@ export const useEventDetails = ({
       return
     }
 
+    if (rangeEvent.type === 'event') {
+      onEventNavigate(rangeEvent)
+      return
+    }
+
     selectedEvent.value = rangeEvent
     eventDetailOpen.value = true
 
@@ -296,15 +264,10 @@ export const useEventDetails = ({
     eventDetailOpen.value = false
     let defaultTracks: number | null =
       typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null
-    let defaultParticipants: number | null = null
-
     const detail = eventDetailState.detail
     if (detail && detail.type === 'proposition') {
       if (typeof detail.tracksRequested === 'number') {
         defaultTracks = detail.tracksRequested
-      }
-      if (typeof detail.numParticipants === 'number') {
-        defaultParticipants = detail.numParticipants
       }
     }
 
@@ -313,9 +276,6 @@ export const useEventDetails = ({
       defaultStart: event.start,
       defaultEnd: event.end,
       defaultTracks,
-      defaultParticipants,
-      defaultIsPublic: false,
-      defaultIsOpenForJoining: false,
     })
   }
 
