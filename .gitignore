@@ -7,6 +7,7 @@ src/worker/wrangler.resolved.jsonc
 playwright-report/
 test-results/
 tests-e2e/.auth
+auth-test/
 
 # Node.js
 node_modules/
