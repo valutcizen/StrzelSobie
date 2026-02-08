@@ -12,6 +12,10 @@
             border: none !important;
             box-shadow: none !important;
         }
+        .embed-map__cluster {
+            background: transparent !important;
+            border: none !important;
+        }
         .embed-map__tooltip {
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
             font-size: 12px;
@@ -21,6 +25,20 @@
             border-radius: 8px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.12);
             padding: 6px 10px;
+        }
+        .embed-map__popup .leaflet-popup-content-wrapper {
+            background: rgba(31, 41, 55, 0.92);
+            color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        .embed-map__popup .leaflet-popup-content {
+            margin: 6px 10px;
+            font-size: 12px;
+            line-height: 1.25;
+        }
+        .embed-map__popup .leaflet-popup-tip {
+            background: rgba(31, 41, 55, 0.92);
         }
     </style>
 </head>

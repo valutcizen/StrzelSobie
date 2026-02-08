@@ -41,6 +41,8 @@ export class GetRange extends OpenAPIRoute {
                 .optional(),
               extras: z
                 .object({
+                  allowMemberEvents: z.boolean().optional(),
+                  mapLogoUrl: z.string().nullable().optional(),
                   parkingLocation: z
                     .object({
                       latitude: z.number(),

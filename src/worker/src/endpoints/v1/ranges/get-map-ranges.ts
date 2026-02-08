@@ -5,10 +5,11 @@ import { Context } from '../../../types';
 const mapRangeSchema = z.object({
   id: z.union([z.string(), z.number()]),
   slug: z.string(),
-  type: z.enum(['club', 'ally', 'coming-soon']).optional(),
+  type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
   displayName: z.string(),
   latitude: z.number(),
   longitude: z.number(),
+  mapLogoUrl: z.string().nullable().optional(),
 });
 
 export class GetMapRangesRoute extends OpenAPIRoute {
@@ -62,6 +63,10 @@ export class GetMapRangesRoute extends OpenAPIRoute {
         displayName: range.displayName,
         latitude: Number(range.latitude),
         longitude: Number(range.longitude),
+        mapLogoUrl:
+          typeof range.extras?.mapLogoUrl === 'string' && range.extras.mapLogoUrl.trim().length > 0
+            ? range.extras.mapLogoUrl.trim()
+            : null,
       }));
 
     return c.json(ranges, 200);

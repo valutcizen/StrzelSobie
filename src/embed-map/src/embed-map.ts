@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { mdiTarget, mdiHandshake, mdiProgressClock, mdiMapMarker } from '@mdi/js';
+import 'leaflet.markercluster';
 // Force Leaflet to use explicit URLs instead of prepending its own imagePath
 // when running in the embed bundle.
 // @ts-ignore
@@ -14,11 +14,14 @@ L.Icon.Default.mergeOptions({
 interface RangeData {
   id: string | number;
   slug: string;
-  type?: 'club' | 'ally' | 'coming-soon' | string;
+  type?: 'club' | 'ally' | 'coming-soon' | 'meetup' | string;
   displayName: string;
   latitude: number | null | undefined;
   longitude: number | null | undefined;
+  mapLogoUrl?: string | null;
 }
+
+type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup';
 
 const POLAND_BOUNDS = {
   latMin: 49.0,
@@ -32,41 +35,83 @@ const POLAND_CENTER: [number, number] = [
   19.5,
 ];
 
-const typeStyleMap: Record<string, { color: string; iconPath: string }> = {
-  club: { color: '#43a047', iconPath: mdiTarget },
-  ally: { color: '#0288d1', iconPath: mdiHandshake },
-  'coming-soon': { color: '#f59e0b', iconPath: mdiProgressClock },
+const createDefaultLogoDataUri = (svgContent: string): string => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">${svgContent}</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-const createIcon = (range: RangeData): L.DivIcon => {
-  const style = typeStyleMap[range.type ?? ''] ?? { color: '#1976d2', iconPath: mdiMapMarker };
-  const size = 34;
-  const border = '2px';
-  const shadow = '0 4px 10px rgba(0, 0, 0, 0.18)';
+const DEFAULT_CLUB_LOGO = createDefaultLogoDataUri(
+  '<rect width="80" height="80" rx="20" fill="#1f2937"/><circle cx="40" cy="40" r="23" fill="none" stroke="#ffffff" stroke-width="6"/><circle cx="40" cy="40" r="13" fill="none" stroke="#ffffff" stroke-width="6"/><circle cx="40" cy="40" r="4.5" fill="#ffffff"/>',
+);
 
-  const svg = `
+const DEFAULT_ALLY_LOGO = createDefaultLogoDataUri(
+  '<rect width="80" height="80" rx="20" fill="#0f3b68"/><path d="M22 48c6-1 9-7 13-10 4-3 8-4 12-1 4-3 8-2 12 1 4 3 7 9 13 10v8H22z" fill="#ffffff"/><rect x="18" y="27" width="17" height="9" rx="4.5" fill="#ffffff"/><rect x="45" y="27" width="17" height="9" rx="4.5" fill="#ffffff"/>',
+);
+
+const typeStyleMap: Record<RangeType, { bgColor: string; logoUrl: string }> = {
+  club: { bgColor: '#2e7d32', logoUrl: DEFAULT_CLUB_LOGO },
+  ally: { bgColor: '#1565c0', logoUrl: DEFAULT_ALLY_LOGO },
+  'coming-soon': { bgColor: '#ef6c00', logoUrl: DEFAULT_CLUB_LOGO },
+  meetup: { bgColor: '#00695c', logoUrl: DEFAULT_CLUB_LOGO },
+};
+
+type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } };
+
+const normalizeRangeType = (value: string | undefined): RangeType => {
+  if (value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup') {
+    return value;
+  }
+
+  return 'club';
+};
+
+const getRangeLogoUrl = (range: RangeData, type: RangeType): string => {
+  const customLogoUrl = typeof range.mapLogoUrl === 'string' ? range.mapLogoUrl.trim() : '';
+  if (customLogoUrl.length > 0) {
+    return customLogoUrl;
+  }
+
+  return typeStyleMap[type].logoUrl;
+};
+
+const escapeHtmlAttribute = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+const createIcon = (range: RangeData): L.DivIcon => {
+  const type = normalizeRangeType(range.type);
+  const style = typeStyleMap[type];
+  const logoUrl = escapeHtmlAttribute(getRangeLogoUrl(range, type));
+  const size = 80;
+
+  const pin = `
     <div style="width:${size}px;height:${size + 6}px;position: relative;">
       <div style="
         width:${size}px;
         height:${size}px;
-        background: white;
-        border:${border} solid ${style.color};
+        background: ${style.bgColor};
+        border:2px solid #ffffff;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
-        box-shadow:${shadow};
+        box-shadow:0 7px 18px rgba(0, 0, 0, 0.25);
         display:flex;
         align-items:center;
         justify-content:center;
+        overflow:hidden;
       ">
-        <svg style="transform: rotate(45deg);" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="${style.color}" aria-hidden="true" focusable="false">
-          <path d="${style.iconPath}" />
-        </svg>
+        <div style="transform: rotate(45deg); width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.97); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />
+        </div>
       </div>
     </div>
   `;
 
   return L.divIcon({
-    html: svg,
+    html: pin,
     className: 'leaflet-div-icon embed-map__pin',
     iconSize: [size, size + 6],
     iconAnchor: [size / 2, size + 6],
@@ -74,16 +119,58 @@ const createIcon = (range: RangeData): L.DivIcon => {
 };
 
 const getMarkerZIndex = (range: RangeData): number => {
-  switch (range.type) {
+  switch (normalizeRangeType(range.type)) {
     case 'club':
       return 300;
     case 'ally':
       return 200;
     case 'coming-soon':
       return 100;
+    case 'meetup':
+      return 250;
     default:
       return 150;
   }
+};
+
+const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
+  const markers = cluster.getAllChildMarkers() as MarkerWithRangeType[];
+  const byType = markers.reduce<Record<RangeType, number>>(
+    (acc, marker) => {
+      const type = normalizeRangeType(marker.options.rangeType);
+      acc[type] += 1;
+      return acc;
+    },
+    { club: 0, ally: 0, 'coming-soon': 0, meetup: 0 },
+  );
+
+  const dominantType = (Object.entries(byType) as Array<[RangeType, number]>)
+    .sort((a, b) => b[1] - a[1])[0][0];
+  const bgColor = typeStyleMap[dominantType].bgColor;
+
+  const count = cluster.getChildCount();
+  const size = count < 10 ? 44 : count < 100 ? 50 : 56;
+
+  return L.divIcon({
+    html: `
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        border-radius:50%;
+        background:${bgColor};
+        border:3px solid rgba(255,255,255,0.95);
+        box-shadow:0 10px 24px rgba(0,0,0,0.22);
+        color:#ffffff;
+        font-weight:700;
+        font-size:${count < 10 ? 16 : 15}px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">${count}</div>
+    `,
+    className: 'embed-map__cluster',
+    iconSize: [size, size],
+  });
 };
 
 const getParentOrigin = (): string => {
@@ -112,9 +199,20 @@ async function initMap() {
 
   const map = L.map(mapElement).setView(POLAND_CENTER, 6); // Start on Poland
 
+  const markerClusterGroup = L.markerClusterGroup({
+    animate: false,
+    animateAddingMarkers: false,
+    maxClusterRadius: 88,
+    disableClusteringAtZoom: 11,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    iconCreateFunction: createClusterIcon,
+  });
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
+  markerClusterGroup.addTo(map);
 
   try {
     const response = await fetch('/api/v1/map-ranges');
@@ -139,15 +237,21 @@ async function initMap() {
         const marker = L.marker([range.latitude, range.longitude], {
           icon: createIcon(range),
           zIndexOffset: getMarkerZIndex(range),
-        }).addTo(map);
+        }) as MarkerWithRangeType;
+        marker.options.rangeType = normalizeRangeType(range.type);
+        marker.addTo(markerClusterGroup);
 
-        marker.bindTooltip(range.displayName, {
-          direction: 'top',
-          offset: L.point(0, -4),
-          opacity: 0.95,
-          permanent: false,
-          sticky: false,
-          className: 'embed-map__tooltip',
+        marker.bindPopup(range.displayName, {
+          closeButton: false,
+          autoPan: false,
+          offset: L.point(0, -8),
+          className: 'embed-map__popup',
+        });
+        marker.on('mouseover', () => {
+          marker.openPopup();
+        });
+        marker.on('mouseout', () => {
+          marker.closePopup();
         });
 
         marker.on('click', () => {

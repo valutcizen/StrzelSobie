@@ -26,6 +26,7 @@ const createRangeCommandSchema = z.object({
   longitude: z.number().optional(),
   totalTracks: z.number().int().min(0).optional().nullable(),
   operatingHours: operatingHoursSchema.optional(),
+  mapLogoUrl: z.string().trim().url().nullable().optional(),
 });
 
 export class CreateRange extends OpenAPIRoute {

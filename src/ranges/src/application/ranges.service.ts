@@ -40,6 +40,7 @@ export class RangesService implements IRangesService {
           allowsReservations: range.allowsReservations,
           latitude: range.latitude,
           longitude: range.longitude,
+          extras: this.parseExtras(range.extras),
         };
         return base;
       });
@@ -136,6 +137,15 @@ export class RangesService implements IRangesService {
       range.extras = JSON.stringify(extras);
     }
 
+    if (command.mapLogoUrl !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.mapLogoUrl =
+        typeof command.mapLogoUrl === 'string' && command.mapLogoUrl.trim().length > 0
+          ? command.mapLogoUrl.trim()
+          : null;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.totalTracks !== undefined) {
       range.totalTracks = command.totalTracks;
     }
@@ -177,6 +187,12 @@ export class RangesService implements IRangesService {
     const normalizedType = command.type ?? 'club';
     const allowsReservations = normalizedType === 'club' ? command.allowsReservations ?? true : false;
     const operatingHours = command.operatingHours ? JSON.stringify(command.operatingHours) : '{}';
+    const extras: RangeExtras = {};
+    if (typeof command.mapLogoUrl === 'string' && command.mapLogoUrl.trim().length > 0) {
+      extras.mapLogoUrl = command.mapLogoUrl.trim();
+    } else if (command.mapLogoUrl === null) {
+      extras.mapLogoUrl = null;
+    }
 
     const created = await this.rangesRepository.create({
       slug: command.slug.trim(),
@@ -190,7 +206,7 @@ export class RangesService implements IRangesService {
       longitude: command.longitude ?? DEFAULT_RANGE_COORDINATES.longitude,
       totalTracks: command.totalTracks ?? DEFAULT_TOTAL_TRACKS,
       operatingHours,
-      extras: '{}',
+      extras: JSON.stringify(extras),
     });
 
     const log: AuditLogEntry = {
@@ -323,16 +339,15 @@ export class RangesService implements IRangesService {
     const parkingLocation = this.parseParkingLocation(extras.parkingLocation);
     const allowMemberEvents =
       typeof extras.allowMemberEvents === 'boolean' ? extras.allowMemberEvents : undefined;
+    const mapLogoUrl = this.parseOptionalString(extras.mapLogoUrl);
+    const hasParkingLocation = Object.prototype.hasOwnProperty.call(extras, 'parkingLocation');
+    const hasMapLogo = Object.prototype.hasOwnProperty.call(extras, 'mapLogoUrl');
 
-    if (parkingLocation) {
-      return { parkingLocation, allowMemberEvents };
-    }
-
-    if (Object.prototype.hasOwnProperty.call(extras, 'parkingLocation')) {
-      return { parkingLocation: null, allowMemberEvents };
-    }
-
-    return allowMemberEvents === undefined ? {} : { allowMemberEvents };
+    return {
+      ...(parkingLocation ? { parkingLocation } : hasParkingLocation ? { parkingLocation: null } : {}),
+      ...(allowMemberEvents !== undefined ? { allowMemberEvents } : {}),
+      ...(mapLogoUrl !== undefined ? { mapLogoUrl } : hasMapLogo ? { mapLogoUrl: null } : {}),
+    };
   }
 
   private parseExtrasObject(raw: unknown): Record<string, unknown> {
@@ -395,6 +410,23 @@ export class RangesService implements IRangesService {
 
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : null;
+  }
+
+  private parseOptionalString(value: unknown): string | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   }
 
   private parseOperatingHours(raw: unknown): Record<string, { open: string; close: string } | null> {

@@ -6,7 +6,7 @@ import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.mo
 type ShootingRangeDb = {
   id: number;
   slug: string;
-  type: 'club' | 'ally' | 'coming-soon';
+  type: 'club' | 'ally' | 'coming-soon' | 'meetup';
   allows_reservations: number;
   is_deleted: number;
   public_description: string | null;
@@ -21,7 +21,7 @@ type ShootingRangeDb = {
 
 type ShootingRangeSummaryDb = Pick<
   ShootingRangeDb,
-  'id' | 'slug' | 'type' | 'allows_reservations' | 'latitude' | 'longitude' | 'display_name'
+  'id' | 'slug' | 'type' | 'allows_reservations' | 'latitude' | 'longitude' | 'display_name' | 'extras'
 >;
 
 export class RangesDbRepository implements IRangesRepository {
@@ -54,12 +54,13 @@ export class RangesDbRepository implements IRangesRepository {
       latitude: dbRange.latitude,
       longitude: dbRange.longitude,
       displayName: dbRange.display_name,
+      extras: dbRange.extras,
     };
   }
 
   public async findAll(): Promise<ShootingRangeSummary[]> {
     const stmt = this.db.prepare(
-      `SELECT id, slug, type, allows_reservations, latitude, longitude, display_name
+      `SELECT id, slug, type, allows_reservations, latitude, longitude, display_name, extras
        FROM ranges_shooting_ranges
        WHERE is_deleted = 0`
     );

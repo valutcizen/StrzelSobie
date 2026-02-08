@@ -13,6 +13,7 @@ export type RangeSummaryDto = {
   allowsReservations: boolean;
   latitude?: ShootingRange['latitude'] | null;
   longitude?: ShootingRange['longitude'] | null;
+  extras?: RangeExtras;
 };
 
 /**
@@ -30,6 +31,7 @@ export type RangeParkingLocation = {
 export type RangeExtras = {
   parkingLocation?: RangeParkingLocation | null;
   allowMemberEvents?: boolean;
+  mapLogoUrl?: string | null;
 };
 
 /**
@@ -77,6 +79,7 @@ export type UpdateRangeCommand = Partial<
   >
 > & {
   allowMemberEvents?: boolean;
+  mapLogoUrl?: string | null;
 };
 
 /**
@@ -94,4 +97,5 @@ export type CreateRangeCommand = {
   longitude?: ShootingRange['longitude'];
   totalTracks?: ShootingRange['total_tracks'] | null;
   operatingHours?: OperatingHours;
+  mapLogoUrl?: string | null;
 };

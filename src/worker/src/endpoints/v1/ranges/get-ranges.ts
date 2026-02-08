@@ -20,6 +20,19 @@ export class GetRangesRoute extends OpenAPIRoute {
                 allowsReservations: z.boolean(),
                 latitude: z.number().nullable().optional(),
                 longitude: z.number().nullable().optional(),
+                extras: z
+                  .object({
+                    allowMemberEvents: z.boolean().optional(),
+                    mapLogoUrl: z.string().nullable().optional(),
+                    parkingLocation: z
+                      .object({
+                        latitude: z.number(),
+                        longitude: z.number(),
+                      })
+                      .nullable()
+                      .optional(),
+                  })
+                  .optional(),
               })
             ),
           },

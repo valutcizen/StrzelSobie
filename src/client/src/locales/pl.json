@@ -458,6 +458,8 @@
       },
       "rangeTypeLabel": "Typ strzelnicy",
       "allowMemberEventsLabel": "Członkowie mogą tworzyć wydarzenia",
+      "mapLogoUrlLabel": "Logo na mapie (URL)",
+      "mapLogoUrlHint": "Opcjonalnie: podaj adres URL logotypu dla pinezki na mapie embeddowanej.",
       "publicDescriptionLabel": "Opis publiczny",
       "publicDescriptionHint": "Widoczny dla wszystkich na stronie strzelnicy. Obsługuje podstawowy HTML.",
       "memberDescriptionLabel": "Opis dla członków",
@@ -489,6 +491,7 @@
       "validation": {
         "required": "To pole jest wymagane.",
         "invalidTime": "Nieprawidłowy format godziny (HH:MM).",
+        "invalidUrl": "Podaj poprawny adres URL (http:// lub https://).",
         "closeAfterOpen": "Godzina zamknięcia musi być późniejsza niż godzina otwarcia ({day}).",
         "minTracks": "Liczba torów musi być co najmniej 1."
       }

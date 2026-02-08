@@ -58,12 +58,7 @@ void loadRanges()
 const handleSelectRange = (slug: string) => {
   selectedSlug.value = slug
   setLastRangeId(slug)
-  const selected = ranges.value.find((range) => range.slug === slug)
-  if (selected?.type === 'meetup') {
-    router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
-  } else {
-    router.push({ name: 'Calendar', params: { rangeSlug: slug } })
-  }
+  router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
 }
 
 const handleSkipToList = () => {

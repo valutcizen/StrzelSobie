@@ -16,5 +16,5 @@ export type ShootingRange = {
 
 export type ShootingRangeSummary = Pick<
   ShootingRange,
-  'id' | 'slug' | 'type' | 'allowsReservations' | 'latitude' | 'longitude' | 'displayName'
+  'id' | 'slug' | 'type' | 'allowsReservations' | 'latitude' | 'longitude' | 'displayName' | 'extras'
 >;

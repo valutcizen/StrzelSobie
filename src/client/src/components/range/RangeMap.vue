@@ -19,36 +19,10 @@
       </v-btn>
     </div>
     <div class="range-map__frame">
-      <l-map
-        ref="mapRef"
-        v-model:zoom="zoom"
-        :center="center"
-        :use-global-leaflet="false"
-        :options="{ zoomAnimation: true, markerZoomAnimation: true }"
-        @ready="onMapReady"
-      >
-        <l-tile-layer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          layer-type="base"
-          name="OpenStreetMap"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
-        />
-
-        <l-marker
-          v-for="range in validRanges"
-          :key="range.slug"
-          :lat-lng="[range.latitude!, range.longitude!]"
-          :icon="createIcon(range, range.slug === selectedSlug) as L.Icon"
-          :z-index-offset="getMarkerZIndex(range, range.slug === selectedSlug)"
-          @click="() => emit('select', range.slug)"
-        >
-          <l-tooltip
-            :options="{ direction: 'top', offset: L.point(0, -4), opacity: 0.95, className: 'range-map__tooltip', permanent: false, sticky: false }"
-          >
-            {{ range.displayName }}
-          </l-tooltip>
-        </l-marker>
-      </l-map>
+      <div
+        ref="mapElementRef"
+        class="range-map__canvas"
+      />
     </div>
     <div
       v-if="!hasMarkers"
@@ -61,16 +35,12 @@
 
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
-import { computed, ref, watch, nextTick } from 'vue'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import { computed, ref, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import L, { type DivIcon, type Map } from 'leaflet'
+import L, { type DivIcon, type Map as LeafletMap } from 'leaflet'
 import type { RangeSummary } from '@/types/range'
-import {
-  LMap,
-  LTileLayer,
-  LMarker,
-  LTooltip,
-} from '@vue-leaflet/vue-leaflet'
 
 interface Props {
   ranges: RangeSummary[]
@@ -85,8 +55,14 @@ const emit = defineEmits<{
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const mapRef = ref<InstanceType<typeof LMap> | null>(null)
-const mapInstance = ref<Map | null>(null)
+const mapElementRef = ref<HTMLElement | null>(null)
+const mapInstance = ref<LeafletMap | null>(null)
+const markerClusterLayer = ref<L.LayerGroup | null>(null)
+const markerBySlug = ref<globalThis.Map<string, L.Marker>>(new globalThis.Map())
+const markerClusterPluginPromise = ref<Promise<void> | null>(null)
+const mapResizeObserver = ref<ResizeObserver | null>(null)
+const mapZoomEndHandler = ref<(() => void) | null>(null)
+const mapClusterClickHandler = ref<((event: L.LeafletEvent) => void) | null>(null)
 
 const POLAND_BOUNDS = {
   latMin: 49.0,
@@ -95,14 +71,29 @@ const POLAND_BOUNDS = {
   lngMax: 24.15,
 }
 
-const zoom = ref(6)
 const center = ref<[number, number]>([(POLAND_BOUNDS.latMin + POLAND_BOUNDS.latMax) / 2, 19.5])
 
-const typeStyleMap: Record<string, { color: string; icon: string }> = {
-  club: { color: '#43a047', icon: 'mdi-target' },
-  ally: { color: '#0288d1', icon: 'mdi-handshake' },
-  'coming-soon': { color: '#f59e0b', icon: 'mdi-progress-clock' },
-  meetup: { color: '#d97706', icon: 'mdi-calendar-star' },
+type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup'
+type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } }
+
+const createDefaultLogoDataUri = (svgContent: string): string => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">${svgContent}</svg>`
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+const DEFAULT_CLUB_LOGO = createDefaultLogoDataUri(
+  '<rect width="80" height="80" rx="20" fill="#1f2937"/><circle cx="40" cy="40" r="23" fill="none" stroke="#ffffff" stroke-width="6"/><circle cx="40" cy="40" r="13" fill="none" stroke="#ffffff" stroke-width="6"/><circle cx="40" cy="40" r="4.5" fill="#ffffff"/>',
+)
+
+const DEFAULT_ALLY_LOGO = createDefaultLogoDataUri(
+  '<rect width="80" height="80" rx="20" fill="#0f3b68"/><path d="M22 48c6-1 9-7 13-10 4-3 8-4 12-1 4-3 8-2 12 1 4 3 7 9 13 10v8H22z" fill="#ffffff"/><rect x="18" y="27" width="17" height="9" rx="4.5" fill="#ffffff"/><rect x="45" y="27" width="17" height="9" rx="4.5" fill="#ffffff"/>',
+)
+
+const typeStyleMap: Record<RangeType, { bgColor: string; logoUrl: string }> = {
+  club: { bgColor: '#2e7d32', logoUrl: DEFAULT_CLUB_LOGO },
+  ally: { bgColor: '#1565c0', logoUrl: DEFAULT_ALLY_LOGO },
+  'coming-soon': { bgColor: '#ef6c00', logoUrl: DEFAULT_CLUB_LOGO },
+  meetup: { bgColor: '#00695c', logoUrl: DEFAULT_CLUB_LOGO },
 }
 
 const validRanges = computed(() =>
@@ -112,47 +103,70 @@ const validRanges = computed(() =>
 )
 const hasMarkers = computed(() => validRanges.value.length > 0)
 
-const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
-  const style = typeStyleMap[range.type] ?? { color: '#1976d2', icon: 'mdi-map-marker' }
-  const size = 34
-  const border = '2px'
-  const shadow = isSelected ? '0 6px 14px rgba(0, 0, 0, 0.25)' : '0 4px 10px rgba(0, 0, 0, 0.18)'
+const normalizeRangeType = (value: string | undefined): RangeType => {
+  if (value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup') {
+    return value
+  }
 
-  const svg = `
+  return 'club'
+}
+
+const escapeHtmlAttribute = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+const getRangeLogoUrl = (range: RangeSummary, type: RangeType): string => {
+  const customLogo = typeof range.extras?.mapLogoUrl === 'string' ? range.extras.mapLogoUrl.trim() : ''
+  if (customLogo.length > 0) {
+    return customLogo
+  }
+  return typeStyleMap[type].logoUrl
+}
+
+const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
+  const type = normalizeRangeType(range.type)
+  const style = typeStyleMap[type]
+  const logoUrl = escapeHtmlAttribute(getRangeLogoUrl(range, type))
+  const size = 80
+  const shadow = isSelected ? '0 10px 24px rgba(0, 0, 0, 0.32)' : '0 7px 18px rgba(0, 0, 0, 0.25)'
+
+  const pin = `
     <div style="width:${size}px;height:${size + 6}px;position: relative;">
       <div style="
         width:${size}px;
         height:${size}px;
-        background: white;
-        border:${border} solid ${style.color};
+        background: ${style.bgColor};
+        border:2px solid #ffffff;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         box-shadow:${shadow};
         display:flex;
         align-items:center;
         justify-content:center;
+        overflow:hidden;
       ">
-        <span style="
-          transform: rotate(45deg);
-          font-size:18px;
-          color:${style.color};
-          font-family: 'Material Design Icons';
-        " class="mdi ${style.icon}"></span>
+        <div style="transform: rotate(45deg); width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.97); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />
+        </div>
       </div>
     </div>
   `
 
   return L.divIcon({
-    html: svg,
+    html: pin,
     className: 'leaflet-div-icon range-map__pin',
-    iconSize: [size, size + 6],
-    iconAnchor: [size / 2, size + 6],
+    iconSize: [size, size + 12],
+    iconAnchor: [size / 2, size + 12],
   })
 }
 
 const getMarkerZIndex = (range: RangeSummary, isSelected: boolean): number => {
   let baseZIndex = 0
-  switch (range.type) {
+  switch (normalizeRangeType(range.type)) {
     case 'club':
       baseZIndex = 300
       break
@@ -172,10 +186,136 @@ const getMarkerZIndex = (range: RangeSummary, isSelected: boolean): number => {
   return isSelected ? baseZIndex + 700 : baseZIndex // Selected marker always on top
 }
 
-const onMapReady = () => {
-  mapInstance.value = mapRef.value?.leafletObject as L.Map ?? null
-  if (mapInstance.value) {
-    fitBoundsToMarkers()
+const createClusterIcon = (cluster: L.MarkerCluster): DivIcon => {
+  const markers = cluster.getAllChildMarkers() as MarkerWithRangeType[]
+  const byType = markers.reduce<Record<RangeType, number>>(
+    (acc, marker) => {
+      const type = normalizeRangeType(marker.options.rangeType)
+      acc[type] += 1
+      return acc
+    },
+    { club: 0, ally: 0, 'coming-soon': 0, meetup: 0 },
+  )
+
+  const dominantType = (Object.entries(byType) as Array<[RangeType, number]>)
+    .sort((a, b) => b[1] - a[1])[0][0]
+
+  const count = cluster.getChildCount()
+  const size = count < 10 ? 44 : count < 100 ? 50 : 56
+
+  return L.divIcon({
+    html: `
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        border-radius:50%;
+        background:${typeStyleMap[dominantType].bgColor};
+        border:3px solid rgba(255,255,255,0.95);
+        box-shadow:0 10px 24px rgba(0,0,0,0.22);
+        color:#ffffff;
+        font-weight:700;
+        font-size:${count < 10 ? 16 : 15}px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">${count}</div>
+    `,
+    className: 'range-map__cluster',
+    iconSize: [size, size],
+  })
+}
+
+const ensureMarkerClusterPlugin = async () => {
+  if (typeof L.markerClusterGroup === 'function') {
+    return
+  }
+
+  if (!markerClusterPluginPromise.value) {
+    markerClusterPluginPromise.value = (async () => {
+      ;(window as unknown as { L?: typeof L }).L = L
+      await import('leaflet.markercluster')
+    })()
+  }
+
+  try {
+    await markerClusterPluginPromise.value
+  } catch (error) {
+    console.warn('Failed to load leaflet.markercluster plugin, falling back to plain markers.', error)
+  }
+}
+
+const ensureClusterLayer = () => {
+  if (!mapInstance.value || markerClusterLayer.value) {
+    return
+  }
+
+  if (typeof L.markerClusterGroup === 'function') {
+    const clusterLayer = L.markerClusterGroup({
+      animate: false,
+      animateAddingMarkers: false,
+      maxClusterRadius: 88,
+      disableClusteringAtZoom: 11,
+      spiderfyOnMaxZoom: false,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: false,
+      iconCreateFunction: createClusterIcon,
+    })
+
+    mapClusterClickHandler.value = (event: L.LeafletEvent) => {
+      if (!mapInstance.value) {
+        return
+      }
+
+      const cluster = (event as unknown as { layer?: L.MarkerCluster }).layer
+      if (!cluster) {
+        return
+      }
+
+      const nextZoom = Math.min(mapInstance.value.getZoom() + 2, 16)
+      mapInstance.value.setView(cluster.getLatLng(), nextZoom, { animate: false })
+    }
+
+    clusterLayer.on('clusterclick', mapClusterClickHandler.value)
+    markerClusterLayer.value = clusterLayer as unknown as L.LayerGroup
+  } else {
+    markerClusterLayer.value = L.layerGroup()
+  }
+
+  mapInstance.value.addLayer(markerClusterLayer.value as unknown as L.Layer)
+}
+
+const syncMarkers = () => {
+  if (!markerClusterLayer.value) {
+    return
+  }
+
+  markerClusterLayer.value.clearLayers()
+  markerBySlug.value = new globalThis.Map()
+
+  for (const range of validRanges.value) {
+    const isSelected = range.slug === props.selectedSlug
+    const marker = L.marker([range.latitude as number, range.longitude as number], {
+      icon: createIcon(range, isSelected),
+      zIndexOffset: getMarkerZIndex(range, isSelected),
+    }) as MarkerWithRangeType
+
+    marker.options.rangeType = normalizeRangeType(range.type)
+    marker.bindPopup(range.displayName, {
+      closeButton: false,
+      autoPan: false,
+      offset: L.point(0, -8),
+      className: 'range-map__popup',
+    })
+    marker.on('mouseover', () => {
+      marker.openPopup()
+    })
+    marker.on('mouseout', () => {
+      marker.closePopup()
+    })
+    marker.on('click', () => emit('select', range.slug))
+
+    markerClusterLayer.value.addLayer(marker)
+    markerBySlug.value.set(range.slug, marker)
   }
 }
 
@@ -183,25 +323,118 @@ const fitBoundsToMarkers = () => {
   if (!mapInstance.value || validRanges.value.length === 0) {
     return
   }
-  const bounds = L.latLngBounds(validRanges.value.map((r) => [r.latitude as number, r.longitude as number]))
+
+  const latLngs = validRanges.value.map((r) => [r.latitude as number, r.longitude as number] as [number, number])
+  if (latLngs.length === 0) {
+    return
+  }
+
+  const bounds = L.latLngBounds(latLngs)
   if (bounds.isValid()) {
     mapInstance.value.fitBounds(bounds.pad(0.2), { maxZoom: 12 })
   }
 }
 
+const focusSelectedRange = () => {
+  const selectedSlug = props.selectedSlug
+  if (!mapInstance.value || !selectedSlug) return
+
+  const marker = markerBySlug.value.get(selectedSlug)
+  if (marker) {
+    const latLng = marker.getLatLng()
+    mapInstance.value.setView([latLng.lat, latLng.lng], Math.max(mapInstance.value.getZoom(), 8))
+  }
+}
+
+const invalidateMapSize = () => {
+  if (!mapInstance.value) {
+    return
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      mapInstance.value?.invalidateSize({ pan: false, debounceMoveend: true })
+    })
+  })
+}
+
+const initializeMap = async () => {
+  if (!mapElementRef.value || mapInstance.value) {
+    return
+  }
+
+  mapInstance.value = L.map(mapElementRef.value, {
+    zoomAnimation: false,
+    markerZoomAnimation: false,
+    fadeAnimation: false,
+  }).setView(center.value, 6)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+  }).addTo(mapInstance.value as unknown as L.Map)
+
+  await ensureMarkerClusterPlugin()
+  ensureClusterLayer()
+  syncMarkers()
+  fitBoundsToMarkers()
+  focusSelectedRange()
+  invalidateMapSize()
+
+  mapZoomEndHandler.value = () => {
+    const layer = markerClusterLayer.value as unknown as { refreshClusters?: () => void } | null
+    requestAnimationFrame(() => {
+      layer?.refreshClusters?.()
+    })
+  }
+  mapInstance.value.on('zoomend', mapZoomEndHandler.value)
+}
+
+onMounted(() => {
+  void initializeMap()
+
+  if (typeof ResizeObserver === 'function' && mapElementRef.value) {
+    mapResizeObserver.value = new ResizeObserver(() => {
+      invalidateMapSize()
+    })
+    mapResizeObserver.value.observe(mapElementRef.value)
+  }
+})
+
 watch(() => props.ranges, () => {
   nextTick(() => {
+    if (!mapInstance.value) {
+      return
+    }
+    invalidateMapSize()
+    syncMarkers()
     fitBoundsToMarkers()
   })
 }, { deep: true })
 
 watch(() => props.selectedSlug, (newSlug) => {
-  if (!mapInstance.value || !newSlug) return
+  if (!newSlug || !mapInstance.value) return
+  syncMarkers()
+  focusSelectedRange()
+})
 
-  const range = validRanges.value.find((r) => r.slug === newSlug)
-  if (range) {
-    mapInstance.value.setView([range.latitude as number, range.longitude as number], Math.max(mapInstance.value.getZoom(), 8))
+onBeforeUnmount(() => {
+  if (mapInstance.value) {
+    if (mapZoomEndHandler.value) {
+      mapInstance.value.off('zoomend', mapZoomEndHandler.value)
+    }
+    if (markerClusterLayer.value) {
+      if (mapClusterClickHandler.value) {
+        ;(markerClusterLayer.value as unknown as { off: (event: string, handler: (event: L.LeafletEvent) => void) => void })
+          .off('clusterclick', mapClusterClickHandler.value)
+      }
+      mapInstance.value.removeLayer(markerClusterLayer.value as unknown as L.Layer)
+    }
+    mapInstance.value.remove()
+    mapInstance.value = null
   }
+  mapClusterClickHandler.value = null
+  mapResizeObserver.value?.disconnect()
+  mapResizeObserver.value = null
 })
 
 </script>
@@ -219,6 +452,11 @@ watch(() => props.selectedSlug, (newSlug) => {
   height: calc(100vh - var(--app-bar-height, 96px) - var(--app-footer-height, 48px) - 16px);
   min-height: 360px;
   z-index: 1;
+}
+
+.range-map__canvas {
+  width: 100%;
+  height: 100%;
 }
 
 .range-map__controls {
@@ -258,9 +496,31 @@ watch(() => props.selectedSlug, (newSlug) => {
   display: none;
 }
 
+:deep(.range-map__popup .leaflet-popup-content-wrapper) {
+  background-color: rgba(31, 41, 55, 0.92);
+  color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.range-map__popup .leaflet-popup-content) {
+  margin: 6px 10px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+:deep(.range-map__popup .leaflet-popup-tip) {
+  background-color: rgba(31, 41, 55, 0.92);
+}
+
 :deep(.range-map__pin.leaflet-div-icon) {
   background: transparent;
   border: none;
   box-shadow: none;
+}
+
+:deep(.range-map__cluster.leaflet-div-icon) {
+  background: transparent;
+  border: none;
 }
 </style>

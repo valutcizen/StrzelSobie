@@ -54,6 +54,7 @@ type RangeSettingsFormValues = {
   displayName: string
   type: RangeDetails['type']
   allowMemberEvents: boolean
+  mapLogoUrl: string | null
   location: {
     lat: number | null
     lng: number | null
@@ -90,6 +91,7 @@ const initialValues = ref<RangeSettingsFormValues>({
   displayName: '',
   type: 'club',
   allowMemberEvents: false,
+  mapLogoUrl: null,
   location: null,
   publicDescription: null,
   memberDescription: null,
@@ -155,6 +157,25 @@ const schema = yup.object({
     .oneOf(['club', 'ally', 'coming-soon', 'meetup'])
     .required(t('admin.rangeSettings.validation.required')),
   allowMemberEvents: yup.boolean().required(),
+  mapLogoUrl: yup
+    .string()
+    .nullable()
+    .test(
+      'valid-map-logo-url',
+      t('admin.rangeSettings.validation.invalidUrl'),
+      (value) => {
+        if (!value || value.trim().length === 0) {
+          return true
+        }
+
+        try {
+          const url = new URL(value.trim())
+          return url.protocol === 'http:' || url.protocol === 'https:'
+        } catch {
+          return false
+        }
+      },
+    ),
   location: yup
     .object({
       lat: yup.number().nullable(),
@@ -186,6 +207,7 @@ const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => (
   displayName: range.displayName,
   type: range.type ?? 'club',
   allowMemberEvents: range.extras?.allowMemberEvents ?? false,
+  mapLogoUrl: range.extras?.mapLogoUrl ?? null,
   location:
     typeof range.latitude === 'number' && typeof range.longitude === 'number'
       ? { lat: range.latitude, lng: range.longitude }
@@ -297,6 +319,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
       displayName: values.displayName.trim(),
       type: values.type,
       allowMemberEvents: values.allowMemberEvents,
+      mapLogoUrl: toNullableString(values.mapLogoUrl),
       latitude,
       longitude,
       publicDescription: toNullableString(values.publicDescription),
@@ -584,6 +607,27 @@ watch(
 
                     @update:model-value="field.onChange"
 
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+
+              <v-col
+                cols="12"
+                md="8"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="mapLogoUrl"
+                >
+                  <v-text-field
+                    :label="t('admin.rangeSettings.mapLogoUrlLabel')"
+                    :hint="t('admin.rangeSettings.mapLogoUrlHint')"
+                    persistent-hint
+                    :model-value="field.value ?? ''"
+                    :error-messages="errorMessage"
+                    data-testid="range-settings-map-logo-url-input"
+                    @update:model-value="field.onChange"
                     @blur="field.onBlur"
                   />
                 </Field>

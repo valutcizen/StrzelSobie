@@ -26,6 +26,22 @@ const loadLeafletCss = async () => {
     .replace(/url\(["']?images\/marker-shadow\.png["']?\)/g, 'url("https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png")');
 };
 
+const loadMarkerClusterCss = async () => {
+  const baseCssPath = require.resolve('leaflet.markercluster/dist/MarkerCluster.css', {
+    paths: [projectRoot],
+  });
+  const defaultCssPath = require.resolve('leaflet.markercluster/dist/MarkerCluster.Default.css', {
+    paths: [projectRoot],
+  });
+
+  const [baseCss, defaultCss] = await Promise.all([
+    readFile(baseCssPath, 'utf8'),
+    readFile(defaultCssPath, 'utf8'),
+  ]);
+
+  return `${baseCss}\n${defaultCss}`;
+};
+
 const buildBundle = async () => {
   const result = await build({
     entryPoints: [join(projectRoot, 'src/embed-map.ts')],
@@ -51,10 +67,11 @@ const buildEmbedAssets = async () => {
   await rm(distDir, { recursive: true, force: true });
   await mkdir(distDir, { recursive: true });
 
-  const [bundle, html, leafletCss] = await Promise.all([
+  const [bundle, html, leafletCss, markerClusterCss] = await Promise.all([
     buildBundle(),
     readFile(join(projectRoot, 'embed-map.html'), 'utf8'),
     loadLeafletCss(),
+    loadMarkerClusterCss(),
   ]);
 
   const htmlWithoutCdnLinks = html
@@ -64,7 +81,7 @@ const buildEmbedAssets = async () => {
   const minifiedHtml = minifyHtml(
     htmlWithoutCdnLinks.replace(
       '</head>',
-      `<style>${leafletCss}</style></head>`,
+      `<style>${leafletCss}\n${markerClusterCss}</style></head>`,
     ),
   );
 

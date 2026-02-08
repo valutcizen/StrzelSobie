@@ -37,6 +37,7 @@ const updateRangeCommandSchema = z.object({
   longitude: z.number().optional().nullable(),
   parkingLocation: parkingLocationSchema.nullable().optional(),
   allowMemberEvents: z.boolean().optional(),
+  mapLogoUrl: z.string().trim().url().nullable().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided for update',
 });

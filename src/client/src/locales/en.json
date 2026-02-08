@@ -458,6 +458,8 @@
       },
       "rangeTypeLabel": "Range type",
       "allowMemberEventsLabel": "Members can create events",
+      "mapLogoUrlLabel": "Map logo (URL)",
+      "mapLogoUrlHint": "Optional: provide a logo URL used in the embedded map pin.",
       "publicDescriptionLabel": "Public description",
       "publicDescriptionHint": "Visible to everyone on the range page. Supports basic HTML.",
       "memberDescriptionLabel": "Members-only description",
@@ -489,6 +491,7 @@
       "validation": {
         "required": "This field is required.",
         "invalidTime": "Invalid time format (HH:MM).",
+        "invalidUrl": "Provide a valid URL (http:// or https://).",
         "closeAfterOpen": "Closing time must be later than opening time ({day}).",
         "minTracks": "The minimum number of lanes is 1."
       }
