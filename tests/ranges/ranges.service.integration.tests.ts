@@ -87,6 +87,18 @@ describe('RangesService integration', () => {
     expect(result.getError().message).toContain('already exists');
   });
 
+  it('should fail to create a range when slug format is invalid', async () => {
+    const command: CreateRangeCommand = {
+      slug: 'A A',
+      displayName: 'Invalid Slug',
+    };
+
+    const result = await rangesService.createRange(command, adminUser);
+
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError().message).toContain('lowercase letters, numbers, and dashes');
+  });
+
   it('should update parking location and persist it in extras', async () => {
     await rangesService.createRange(
       {

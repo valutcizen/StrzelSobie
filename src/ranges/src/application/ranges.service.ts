@@ -2,6 +2,8 @@ import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-
 import {
   CreateRangeCommand,
   ForbiddenError,
+  InvalidRangeSlugError,
+  isValidRangeSlug,
   RangeAlreadyExistsError,
   RangeListResponseDto,
   RangeDetailsDto,
@@ -179,9 +181,14 @@ export class RangesService implements IRangesService {
       return Result.fail(new ForbiddenError('User is not allowed to create ranges'));
     }
 
-    const existing = await this.rangesRepository.findBySlug(command.slug);
+    const normalizedSlug = command.slug.trim();
+    if (!isValidRangeSlug(normalizedSlug)) {
+      return Result.fail(new InvalidRangeSlugError());
+    }
+
+    const existing = await this.rangesRepository.findBySlug(normalizedSlug);
     if (existing) {
-      return Result.fail(new RangeAlreadyExistsError(command.slug));
+      return Result.fail(new RangeAlreadyExistsError(normalizedSlug));
     }
 
     const normalizedType = command.type ?? 'club';
@@ -195,8 +202,8 @@ export class RangesService implements IRangesService {
     }
 
     const created = await this.rangesRepository.create({
-      slug: command.slug.trim(),
-      displayName: (command.displayName ?? command.slug).trim(),
+      slug: normalizedSlug,
+      displayName: (command.displayName ?? normalizedSlug).trim(),
       type: normalizedType,
       allowsReservations,
       isDeleted: false,

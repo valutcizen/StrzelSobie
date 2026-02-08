@@ -40,6 +40,13 @@ export class RangeAlreadyExistsError extends Error {
   }
 }
 
+export class InvalidRangeSlugError extends Error {
+  constructor(message = 'Range slug must contain only lowercase letters, numbers, and dashes') {
+    super(message);
+    this.name = 'InvalidRangeSlugError';
+  }
+}
+
 export class EmailAlreadyExistsError extends Error {
   constructor(email: string) {
     super(`User with email ${email} already exists`);

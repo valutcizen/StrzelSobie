@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { RangesService } from '@strzel-sobie/ranges/src/application/ranges.service';
 import {
-  Result,
-  RangeNotFoundError,
   ForbiddenError,
+  IAuditService,
+  InvalidRangeSlugError,
+  Role,
+  RangeNotFoundError,
+  Result,
   UpdateRangeCommand,
   UserDto,
-  IAuditService,
   UserRole,
-  Role,
 } from '@strzel-sobie/common/models';
 import { IRangesRepository } from '@strzel-sobie/ranges/src/domain/ranges.repository';
 import { ShootingRange, ShootingRangeSummary } from '@strzel-sobie/ranges/src/domain/shooting-range.model';
@@ -64,6 +65,7 @@ describe('RangesService contract', () => {
     rangesRepository = {
       findAll: vi.fn(),
       findBySlug: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
       getRangeIdBySlug: vi.fn(),
       existsRangeById: vi.fn(),
@@ -93,8 +95,8 @@ describe('RangesService contract', () => {
 
     expect(result.isSuccess).toBe(true);
     expect(result.getValue()).toEqual([
-      { id: 2, slug: 'beta', displayName: 'Beta Range', type: 'club', allowsReservations: true, latitude: 0, longitude: 0 },
-      { id: 3, slug: 'gamma', displayName: 'Gamma Range', type: 'club', allowsReservations: true, latitude: 0, longitude: 0 },
+      { id: 2, slug: 'beta', displayName: 'Beta Range', type: 'club', allowsReservations: true, latitude: 0, longitude: 0, extras: {} },
+      { id: 3, slug: 'gamma', displayName: 'Gamma Range', type: 'club', allowsReservations: true, latitude: 0, longitude: 0, extras: {} },
     ]);
   });
 
@@ -204,6 +206,25 @@ describe('RangesService contract', () => {
       extras: {},
       parkingLocation: null,
     });
+  });
+
+  it('rejects createRange when slug has spaces or uppercase letters', async () => {
+    const user = buildUser({
+      roles: [{ id: 1, name: UserRole.ClubCommunityAdministrator, scope: 'global' }],
+    });
+
+    const result = await service.createRange(
+      {
+        slug: 'A A',
+        displayName: 'Bad Range',
+      },
+      user,
+    );
+
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError()).toBeInstanceOf(InvalidRangeSlugError);
+    expect(rangesRepository.findBySlug).not.toHaveBeenCalled();
+    expect(rangesRepository.create).not.toHaveBeenCalled();
   });
 
   it('refuses updates for non-admin users', async () => {

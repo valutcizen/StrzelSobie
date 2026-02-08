@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { http } from '@/services/http'
 import { clearLastRangeId } from '@/utils/lastRange'
+import { isValidRangeSlug } from '@/utils/rangeSlug'
 import type {
   CreateRangePayload,
   RangeDetails,
@@ -165,14 +166,18 @@ export const useRangeStore = defineStore('range', {
     },
 
     async createRange(payload: CreateRangePayload) {
-      if (!payload.slug) {
+      const normalizedSlug = payload.slug?.trim()
+      if (!normalizedSlug) {
         throw new Error('slug is required to create range')
+      }
+      if (!isValidRangeSlug(normalizedSlug)) {
+        throw new Error('Range slug must contain only lowercase letters, numbers, and dashes.')
       }
 
       try {
-        const { data } = await http.post<RangeDetails>('/ranges', payload)
-        this.rangesBySlug[payload.slug] = data
-        this.currentRangeSlug = payload.slug
+        const { data } = await http.post<RangeDetails>('/ranges', { ...payload, slug: normalizedSlug })
+        this.rangesBySlug[normalizedSlug] = data
+        this.currentRangeSlug = normalizedSlug
         return data
       } catch (error) {
         const message =

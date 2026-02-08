@@ -10,6 +10,7 @@ export * from './events/dto';
 export * from './ranges/model';
 export * from './ranges/service';
 export * from './ranges/dto';
+export * from './ranges/validation';
 export * from './reservations/model';
 export * from './reservations/service';
 export * from './reservations/dto';

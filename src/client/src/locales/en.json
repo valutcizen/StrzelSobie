@@ -486,6 +486,7 @@
         "description": "Enter the URL slug for the new range. This is the name shown in the address bar.",
         "slugLabel": "Range slug (URL-safe)",
         "slugHint": "Use lowercase letters, numbers, and dashes for the address bar name.",
+        "slugInvalid": "Use only lowercase letters, numbers, and dashes.",
         "cta": "New range"
       },
       "validation": {

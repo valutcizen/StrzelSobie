@@ -185,7 +185,7 @@
           </v-btn>
           <v-btn
             color="primary"
-            :disabled="!newRangeSlug.trim() || isCreatingRange"
+            :disabled="!newRangeSlug.trim() || !isNewRangeSlugValid || isCreatingRange"
             :loading="isCreatingRange"
             @click="handleCreateRangeConfirm"
           >
@@ -210,6 +210,7 @@ import { useAuthDialogStore } from '@/stores/authDialog'
 import { useRangeStore } from '@/stores/range'
 import { UserRoleEnum } from '@/types/auth'
 import { getLastRangeId } from '@/utils/lastRange'
+import { isValidRangeSlug } from '@/utils/rangeSlug'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -239,6 +240,7 @@ const isCreateRangeDialogOpen = ref(false)
 const newRangeSlug = ref('')
 const isCreatingRange = ref(false)
 const createRangeError = ref<string | null>(null)
+const isNewRangeSlugValid = computed(() => isValidRangeSlug(newRangeSlug.value.trim()))
 
 const lastRangeSlug = computed(() => rangeStore.currentRangeSlug ?? getLastRangeId() ?? authStore.defaultRangeSlug)
 const canCreateRange = computed(() => authStore.hasAnyRole([UserRoleEnum.ClubCommunityAdministrator]))
@@ -292,6 +294,10 @@ const closeCreateRangeDialog = () => {
 const handleCreateRangeConfirm = async () => {
   const slug = newRangeSlug.value.trim()
   if (!slug) {
+    return
+  }
+  if (!isValidRangeSlug(slug)) {
+    createRangeError.value = t('admin.rangeSettings.newRange.slugInvalid')
     return
   }
 

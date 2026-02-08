@@ -486,6 +486,7 @@
         "description": "Wprowadź nazwę (końcówka adresu URL) nowej strzelnicy.",
         "slugLabel": "Nazwa strzelnicy (adres URL)",
         "slugHint": "Użyj małych liter, cyfr i myślników.",
+        "slugInvalid": "Użyj tylko małych liter, cyfr i myślników.",
         "cta": "Nowa strzelnica"
     },
       "validation": {

@@ -1,4 +1,9 @@
-import { ForbiddenError, RangeAlreadyExistsError, Result } from '@strzel-sobie/common';
+import {
+  ForbiddenError,
+  InvalidRangeSlugError,
+  RANGE_SLUG_REGEX,
+  RangeAlreadyExistsError,
+} from '@strzel-sobie/common';
 import { CreateRangeCommand, UserDto } from '@strzel-sobie/common';
 import { IRangesService } from '@strzel-sobie/common/models';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
@@ -16,7 +21,11 @@ const operatingHoursSchema = z.record(
 );
 
 const createRangeCommandSchema = z.object({
-  slug: z.string().min(1),
+  slug: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(RANGE_SLUG_REGEX, 'Range slug must contain only lowercase letters, numbers, and dashes'),
   displayName: z.string().trim().optional(),
   type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
   allowsReservations: z.boolean().optional(),
@@ -75,8 +84,8 @@ export class CreateRange extends OpenAPIRoute {
       return c.json({ error: error.message }, 409);
     }
 
-    if (error instanceof Result) {
-      return c.json({ error: error.getError()?.message ?? 'Unexpected error' }, 500);
+    if (error instanceof InvalidRangeSlugError) {
+      return c.json({ error: error.message }, 400);
     }
 
     return c.json({ error: 'An unexpected error occurred' }, 500);
