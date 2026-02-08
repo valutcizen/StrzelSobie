@@ -40,8 +40,19 @@ test.describe('Range directory (public)', () => {
     await expect(directoryPage.typeBadge('meetup-e2e')).toHaveText(translate('rangeTypes.meetup'));
     await expect(directoryPage.typeBadge('coming-soon-e2e')).toHaveText(translate('rangeTypes.coming-soon'));
 
-    const markers = directoryPage.map.locator('.range-map__pin');
-    await expect(markers).toHaveCount(4);
+    const markerPins = directoryPage.map.locator('.range-map__pin');
+    const markerClusters = directoryPage.map.locator('.range-map__cluster');
+    await expect.poll(async () => {
+      const pinCount = await markerPins.count();
+      const clusterTotal = await markerClusters
+        .evaluateAll((nodes) =>
+          nodes.reduce((sum, node) => {
+            const value = Number((node.textContent ?? '').trim());
+            return sum + (Number.isFinite(value) ? value : 0);
+          }, 0),
+        );
+      return pinCount + clusterTotal;
+    }).toBe(4);
 
     await directoryPage.detailsButton('ally-e2e').click();
 
