@@ -78,6 +78,22 @@ describe('RangesDbRepository integration', () => {
     expect(stored?.operatingHours).toBe('{"monday":{"open":"08:00","close":"16:00"}}');
   });
 
+  it('update persists allowsReservations flag', async () => {
+    await repository.update({
+      id: 1,
+      slug: 'strzel-sobie-krakow',
+      displayName: 'Strzel Sobie Kraków',
+      totalTracks: 10,
+      operatingHours: '{"monday":{"open":"08:00","close":"20:00"}}',
+      type: 'club',
+      allowsReservations: false,
+      isDeleted: false,
+    });
+
+    const stored = await repository.findBySlug('strzel-sobie-krakow');
+    expect(stored?.allowsReservations).toBe(false);
+  });
+
   it('getRangeIdBySlug returns identifier or null', async () => {
     await dbHandle.d1
       .prepare(

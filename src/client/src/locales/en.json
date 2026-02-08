@@ -457,6 +457,8 @@
         "errorMessage": "Failed to update parking location."
       },
       "rangeTypeLabel": "Range type",
+      "allowsReservationsLabel": "Bookings enabled",
+      "allowsReservationsHint": "Available for club ranges only.",
       "allowMemberEventsLabel": "Members can create events",
       "mapLogoUrlLabel": "Map logo (URL)",
       "mapLogoUrlHint": "Optional: provide a logo URL used in the embedded map pin.",

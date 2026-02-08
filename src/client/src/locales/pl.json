@@ -457,6 +457,8 @@
         "errorMessage": "Nie udało się zapisać lokalizacji parkingu."
       },
       "rangeTypeLabel": "Typ strzelnicy",
+      "allowsReservationsLabel": "Rezerwacje włączone",
+      "allowsReservationsHint": "Dostępne tylko dla strzelnic klubowych.",
       "allowMemberEventsLabel": "Członkowie mogą tworzyć wydarzenia",
       "mapLogoUrlLabel": "Logo na mapie (URL)",
       "mapLogoUrlHint": "Opcjonalnie: podaj adres URL logotypu dla pinezki na mapie embeddowanej.",

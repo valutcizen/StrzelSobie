@@ -133,4 +133,29 @@ describe('RangesService integration', () => {
     expect(clearResult.getValue().parkingLocation).toBeNull();
     expect(clearResult.getValue().extras.parkingLocation).toBeNull();
   });
+
+  it('should update allowsReservations for a club range and persist it', async () => {
+    await rangesService.createRange(
+      {
+        slug: 'club-with-toggle',
+        displayName: 'Club With Toggle',
+        type: 'club',
+        allowsReservations: true,
+      },
+      adminUser,
+    );
+
+    const updateResult = await rangesService.updateRangeDetails(
+      'club-with-toggle',
+      { allowsReservations: false },
+      adminUser,
+    );
+
+    expect(updateResult.isSuccess).toBe(true);
+    expect(updateResult.getValue().allowsReservations).toBe(false);
+
+    const fetched = await rangesService.getRangeDetails('club-with-toggle', adminUser);
+    expect(fetched.isSuccess).toBe(true);
+    expect(fetched.getValue().allowsReservations).toBe(false);
+  });
 });

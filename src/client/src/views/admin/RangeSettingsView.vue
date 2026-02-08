@@ -53,6 +53,7 @@ const createDefaultOperatingHours = (): FormOperatingHours =>
 type RangeSettingsFormValues = {
   displayName: string
   type: RangeDetails['type']
+  allowsReservations: boolean
   allowMemberEvents: boolean
   mapLogoUrl: string | null
   location: {
@@ -90,6 +91,7 @@ const canDeleteRange = computed(() => authStore.hasRole(UserRoleEnum.ClubCommuni
 const initialValues = ref<RangeSettingsFormValues>({
   displayName: '',
   type: 'club',
+  allowsReservations: true,
   allowMemberEvents: false,
   mapLogoUrl: null,
   location: null,
@@ -156,6 +158,7 @@ const schema = yup.object({
     .mixed<RangeDetails['type']>()
     .oneOf(['club', 'ally', 'coming-soon', 'meetup'])
     .required(t('admin.rangeSettings.validation.required')),
+  allowsReservations: yup.boolean().required(),
   allowMemberEvents: yup.boolean().required(),
   mapLogoUrl: yup
     .string()
@@ -206,6 +209,7 @@ const showSnackbar = (message: string, color: 'success' | 'error' = 'success') =
 const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => ({
   displayName: range.displayName,
   type: range.type ?? 'club',
+  allowsReservations: range.allowsReservations ?? true,
   allowMemberEvents: range.extras?.allowMemberEvents ?? false,
   mapLogoUrl: range.extras?.mapLogoUrl ?? null,
   location:
@@ -318,6 +322,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
     const payload: UpdateRangePayload = {
       displayName: values.displayName.trim(),
       type: values.type,
+      allowsReservations: values.type === 'club' ? values.allowsReservations : false,
       allowMemberEvents: values.allowMemberEvents,
       mapLogoUrl: toNullableString(values.mapLogoUrl),
       latitude,
@@ -555,6 +560,29 @@ watch(
 
                     data-testid="range-settings-range-type-select"
 
+                    @update:model-value="field.onChange"
+                  />
+                </Field>
+              </v-col>
+
+              <v-col
+                cols="12"
+                md="4"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="allowsReservations"
+                >
+                  <v-switch
+                    :label="t('admin.rangeSettings.allowsReservationsLabel')"
+                    :hint="t('admin.rangeSettings.allowsReservationsHint')"
+                    persistent-hint
+                    :model-value="field.value"
+                    :error-messages="errorMessage"
+                    :disabled="values.type !== 'club'"
+                    color="primary"
+                    inset
+                    data-testid="range-settings-allows-reservations-switch"
                     @update:model-value="field.onChange"
                   />
                 </Field>
