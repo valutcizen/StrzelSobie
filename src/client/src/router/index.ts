@@ -95,7 +95,7 @@ const routes: AppRouteRecordRaw[] = [
     component: () => import('@/views/events/EventFormView.vue'),
     meta: {
       requiresAuth: true,
-      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
+      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator, UserRoleEnum.Member],
       requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
     },
     props: true,

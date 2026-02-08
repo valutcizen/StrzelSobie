@@ -332,16 +332,16 @@ watch(
                   >
                     {{ t('rangeLanding.actions.backToMap') }}
                   </v-btn>
-                  <v-btn
-                    v-if="canCreateEvents"
-                    color="primary"
-                    prepend-icon="mdi-calendar-plus"
-                    data-testid="range-create-event-button"
-                    @click="handleCreateEvent"
-                  >
-                    {{ t('rangeLanding.actions.createEvent') }}
-                  </v-btn>
                 </div>
+                <v-btn
+                  v-if="canCreateEvents"
+                  color="primary"
+                  prepend-icon="mdi-calendar-plus"
+                  data-testid="range-create-event-button"
+                  @click="handleCreateEvent"
+                >
+                  {{ t('rangeLanding.actions.createEvent') }}
+                </v-btn>
               </div>
 
               <v-row class="mb-4" dense>

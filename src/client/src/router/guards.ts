@@ -3,6 +3,7 @@ import type { Router } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAuthDialogStore } from '@/stores/authDialog'
 import { useRangeStore } from '@/stores/range'
+import { UserRoleEnum } from '@/types/auth'
 import { getLastRangeId } from '@/utils/lastRange'
 import type { AppRouteMeta } from './index'
 
@@ -50,6 +51,35 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
         }
       } catch {
         return { name: 'RangeDirectory' }
+      }
+    }
+
+    if (to.name === 'EventCreate') {
+      const slugParam = to.params.rangeSlug
+      const rangeSlug = typeof slugParam === 'string' ? slugParam : getLastRangeId()
+
+      if (!rangeSlug) {
+        return { name: 'RangeDirectory' }
+      }
+
+      const isGlobalAdmin = authStore.hasAnyRole([UserRoleEnum.ClubCommunityAdministrator])
+      const isRangeAdmin = authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator])
+      const isMember = authStore.hasRole(UserRoleEnum.Member)
+
+      if (!isGlobalAdmin && !isRangeAdmin) {
+        if (!isMember) {
+          return { name: 'RangeLanding', params: { rangeSlug } }
+        }
+
+        try {
+          const range = await rangeStore.fetchRangeDetails(rangeSlug)
+          const allowMemberEvents = range.extras?.allowMemberEvents ?? false
+          if (!allowMemberEvents) {
+            return { name: 'RangeLanding', params: { rangeSlug } }
+          }
+        } catch {
+          return { name: 'RangeDirectory' }
+        }
       }
     }
 
