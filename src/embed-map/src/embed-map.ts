@@ -30,10 +30,10 @@ const POLAND_BOUNDS = {
   lngMax: 24.15,
 };
 
-const POLAND_CENTER: [number, number] = [
-  (POLAND_BOUNDS.latMin + POLAND_BOUNDS.latMax) / 2,
-  19.5,
-];
+const POLAND_LEAFLET_BOUNDS = L.latLngBounds(
+  [POLAND_BOUNDS.latMin, POLAND_BOUNDS.lngMin],
+  [POLAND_BOUNDS.latMax, POLAND_BOUNDS.lngMax],
+);
 
 const createDefaultLogoDataUri = (svgContent: string): string => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">${svgContent}</svg>`;
@@ -197,7 +197,10 @@ async function initMap() {
 
   const parentOrigin = getParentOrigin();
 
-  const map = L.map(mapElement).setView(POLAND_CENTER, 6); // Start on Poland
+  const map = L.map(mapElement, {
+    maxBounds: POLAND_LEAFLET_BOUNDS,
+    maxBoundsViscosity: 1,
+  });
 
   const markerClusterGroup = L.markerClusterGroup({
     animate: false,
@@ -212,6 +215,7 @@ async function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
+  map.fitBounds(POLAND_LEAFLET_BOUNDS, { padding: [0, 0], animate: false });
   markerClusterGroup.addTo(map);
 
   try {
@@ -221,14 +225,6 @@ async function initMap() {
     }
     const ranges: RangeData[] = await response.json();
     if (ranges.length > 0) {
-      const valid = ranges.filter((range) => range.latitude != null && range.longitude != null);
-      if (valid.length > 0) {
-        const bounds = L.latLngBounds(valid.map((range) => [range.latitude as number, range.longitude as number]));
-        if (bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.2), { maxZoom: 12 });
-        }
-      }
-
       ranges.forEach(range => {
         if (range.latitude == null || range.longitude == null) {
           return;

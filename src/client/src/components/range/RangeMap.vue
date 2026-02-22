@@ -71,7 +71,10 @@ const POLAND_BOUNDS = {
   lngMax: 24.15,
 }
 
-const center = ref<[number, number]>([(POLAND_BOUNDS.latMin + POLAND_BOUNDS.latMax) / 2, 19.5])
+const polandLeafletBounds = L.latLngBounds(
+  [POLAND_BOUNDS.latMin, POLAND_BOUNDS.lngMin],
+  [POLAND_BOUNDS.latMax, POLAND_BOUNDS.lngMax],
+)
 
 type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup'
 type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } }
@@ -319,33 +322,6 @@ const syncMarkers = () => {
   }
 }
 
-const fitBoundsToMarkers = () => {
-  if (!mapInstance.value || validRanges.value.length === 0) {
-    return
-  }
-
-  const latLngs = validRanges.value.map((r) => [r.latitude as number, r.longitude as number] as [number, number])
-  if (latLngs.length === 0) {
-    return
-  }
-
-  const bounds = L.latLngBounds(latLngs)
-  if (bounds.isValid()) {
-    mapInstance.value.fitBounds(bounds.pad(0.2), { maxZoom: 12 })
-  }
-}
-
-const focusSelectedRange = () => {
-  const selectedSlug = props.selectedSlug
-  if (!mapInstance.value || !selectedSlug) return
-
-  const marker = markerBySlug.value.get(selectedSlug)
-  if (marker) {
-    const latLng = marker.getLatLng()
-    mapInstance.value.setView([latLng.lat, latLng.lng], Math.max(mapInstance.value.getZoom(), 8))
-  }
-}
-
 const invalidateMapSize = () => {
   if (!mapInstance.value) {
     return
@@ -367,17 +343,18 @@ const initializeMap = async () => {
     zoomAnimation: false,
     markerZoomAnimation: false,
     fadeAnimation: false,
-  }).setView(center.value, 6)
+    maxBounds: polandLeafletBounds,
+    maxBoundsViscosity: 1,
+  })
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
   }).addTo(mapInstance.value as unknown as L.Map)
+  mapInstance.value.fitBounds(polandLeafletBounds, { padding: [0, 0], animate: false })
 
   await ensureMarkerClusterPlugin()
   ensureClusterLayer()
   syncMarkers()
-  fitBoundsToMarkers()
-  focusSelectedRange()
   invalidateMapSize()
 
   mapZoomEndHandler.value = () => {
@@ -407,14 +384,12 @@ watch(() => props.ranges, () => {
     }
     invalidateMapSize()
     syncMarkers()
-    fitBoundsToMarkers()
   })
 }, { deep: true })
 
-watch(() => props.selectedSlug, (newSlug) => {
-  if (!newSlug || !mapInstance.value) return
+watch(() => props.selectedSlug, () => {
+  if (!mapInstance.value) return
   syncMarkers()
-  focusSelectedRange()
 })
 
 onBeforeUnmount(() => {
