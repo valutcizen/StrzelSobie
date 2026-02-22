@@ -533,6 +533,7 @@
     }
   },
   "rangeDirectory": {
+    "title": "Mapa strzelnic",
     "mapTitle": "Mapa strzelnic",
     "catalogTitle": "Katalog strzelnic",
     "notices": {

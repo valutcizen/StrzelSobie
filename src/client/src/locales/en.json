@@ -533,6 +533,7 @@
     }
   },
   "rangeDirectory": {
+    "title": "Range map",
     "mapTitle": "Range map",
     "catalogTitle": "Range catalog",
     "notices": {

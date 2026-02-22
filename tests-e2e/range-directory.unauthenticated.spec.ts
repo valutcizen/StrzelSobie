@@ -9,8 +9,26 @@ test.describe('Range directory (public)', () => {
 
     await page.goto('/map');
     await expect(directoryPage.view).toBeVisible();
-    await expect(page.getByRole('heading', { name: translate('rangeDirectory.title') })).toBeVisible();
+    await expect(page.getByRole('heading', { name: translate('rangeDirectory.mapTitle') })).toBeVisible();
     await expect(directoryPage.map).toBeVisible();
+
+    const markerPins = directoryPage.map.locator('.range-map__pin');
+    const markerClusters = directoryPage.map.locator('.range-map__cluster');
+    await expect.poll(async () => {
+      const pinCount = await markerPins.count();
+      const clusterTotal = await markerClusters
+        .evaluateAll((nodes) =>
+          nodes.reduce((sum, node) => {
+            const value = Number((node.textContent ?? '').trim());
+            return sum + (Number.isFinite(value) ? value : 0);
+          }, 0),
+        );
+      return pinCount + clusterTotal;
+    }).toBe(4);
+
+    await page.goto('/catalog');
+    await expect(page.getByTestId('range-catalog-view')).toBeVisible();
+    await expect(page.getByRole('heading', { name: translate('rangeDirectory.catalogTitle') })).toBeVisible();
     await expect(directoryPage.list).toBeVisible();
 
     await expect(directoryPage.rows).toHaveCount(4);
@@ -39,20 +57,6 @@ test.describe('Range directory (public)', () => {
     await expect(directoryPage.typeBadge('ally-e2e')).toHaveText(translate('rangeTypes.ally'));
     await expect(directoryPage.typeBadge('meetup-e2e')).toHaveText(translate('rangeTypes.meetup'));
     await expect(directoryPage.typeBadge('coming-soon-e2e')).toHaveText(translate('rangeTypes.coming-soon'));
-
-    const markerPins = directoryPage.map.locator('.range-map__pin');
-    const markerClusters = directoryPage.map.locator('.range-map__cluster');
-    await expect.poll(async () => {
-      const pinCount = await markerPins.count();
-      const clusterTotal = await markerClusters
-        .evaluateAll((nodes) =>
-          nodes.reduce((sum, node) => {
-            const value = Number((node.textContent ?? '').trim());
-            return sum + (Number.isFinite(value) ? value : 0);
-          }, 0),
-        );
-      return pinCount + clusterTotal;
-    }).toBe(4);
 
     await directoryPage.detailsButton('ally-e2e').click();
 
