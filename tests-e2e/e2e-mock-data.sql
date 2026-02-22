@@ -51,7 +51,7 @@ INSERT INTO ranges_shooting_ranges (
     20.0906,
     '{"monday":{"open":"10:00","close":"18:00"},"tuesday":{"open":"10:00","close":"18:00"},"wednesday":{"open":"10:00","close":"18:00"},"thursday":{"open":"10:00","close":"18:00"},"friday":{"open":"10:00","close":"18:00"}}',
     8,
-    '{}'
+    '{"voivodeship":"malopolskie"}'
   ),
   (
     100,
@@ -65,7 +65,7 @@ INSERT INTO ranges_shooting_ranges (
     19.945,
     '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"}}',
     0,
-    '{}'
+    '{"voivodeship":"slaskie"}'
   ),
   (
     101,
@@ -79,7 +79,7 @@ INSERT INTO ranges_shooting_ranges (
     20.0262,
     '{"monday":{"open":"closed","close":"closed"},"tuesday":{"open":"closed","close":"closed"},"wednesday":{"open":"closed","close":"closed"},"thursday":{"open":"closed","close":"closed"},"friday":{"open":"closed","close":"closed"}}',
     0,
-    '{}'
+    '{"voivodeship":null}'
   ),
   (
     102,
@@ -93,7 +93,7 @@ INSERT INTO ranges_shooting_ranges (
     19.888,
     '{"monday":{"open":"12:00","close":"20:00"},"tuesday":{"open":"12:00","close":"20:00"},"wednesday":{"open":"12:00","close":"20:00"},"thursday":{"open":"12:00","close":"20:00"},"friday":{"open":"12:00","close":"20:00"}}',
     0,
-    '{"allowMemberEvents":true}'
+    '{"allowMemberEvents":true,"voivodeship":""}'
   );
 
 -- =============================================================================

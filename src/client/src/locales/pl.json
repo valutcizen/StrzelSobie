@@ -461,6 +461,8 @@
       "allowsReservationsLabel": "Rezerwacje włączone",
       "allowsReservationsHint": "Dostępne tylko dla strzelnic klubowych.",
       "allowMemberEventsLabel": "Członkowie mogą tworzyć wydarzenia",
+      "voivodeshipLabel": "Województwo",
+      "voivodeshipEmptyOption": "(puste)",
       "mapLogoUrlLabel": "Logo na mapie (URL)",
       "mapLogoUrlHint": "Opcjonalnie: podaj adres URL logotypu dla pinezki na mapie embeddowanej.",
       "publicDescriptionLabel": "Opis publiczny",
@@ -533,9 +535,25 @@
   "rangeDirectory": {
     "mapTitle": "Mapa strzelnic",
     "catalogTitle": "Katalog strzelnic",
+    "catalog": {
+      "filters": {
+        "voivodeshipLabel": "Filtruj po województwie",
+        "allVoivodeships": "Wszystkie województwa",
+        "emptyVoivodeship": "(puste)"
+      },
+      "sort": {
+        "label": "Sortowanie",
+        "default": "Domyślne",
+        "nameAsc": "Nazwa A-Z",
+        "nameDesc": "Nazwa Z-A",
+        "voivodeshipAsc": "Województwo A-Z",
+        "voivodeshipDesc": "Województwo Z-A"
+      }
+    },
     "list": {
       "title": "Lista strzelnic",
       "empty": "Brak strzelnic do wyświetlenia.",
+      "emptyVoivodeship": "(puste)",
       "allowsReservations": "Rezerwacje dostępne",
       "noReservations": "Rezerwacje niedostępne",
       "detailsCta": "Zobacz szczegóły",
@@ -544,6 +562,7 @@
       "headers": {
         "name": "Nazwa",
         "type": "Typ",
+        "voivodeship": "Województwo",
         "reservations": "Rezerwacje"
       }
     },

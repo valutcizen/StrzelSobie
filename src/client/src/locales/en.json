@@ -461,6 +461,8 @@
       "allowsReservationsLabel": "Bookings enabled",
       "allowsReservationsHint": "Available for club ranges only.",
       "allowMemberEventsLabel": "Members can create events",
+      "voivodeshipLabel": "Voivodeship",
+      "voivodeshipEmptyOption": "(empty)",
       "mapLogoUrlLabel": "Map logo (URL)",
       "mapLogoUrlHint": "Optional: provide a logo URL used in the embedded map pin.",
       "publicDescriptionLabel": "Public description",
@@ -533,9 +535,25 @@
   "rangeDirectory": {
     "mapTitle": "Range map",
     "catalogTitle": "Range catalog",
+    "catalog": {
+      "filters": {
+        "voivodeshipLabel": "Filter by voivodeship",
+        "allVoivodeships": "All voivodeships",
+        "emptyVoivodeship": "(empty)"
+      },
+      "sort": {
+        "label": "Sort",
+        "default": "Default",
+        "nameAsc": "Name A-Z",
+        "nameDesc": "Name Z-A",
+        "voivodeshipAsc": "Voivodeship A-Z",
+        "voivodeshipDesc": "Voivodeship Z-A"
+      }
+    },
     "list": {
       "title": "Range list",
       "empty": "No ranges to display.",
+      "emptyVoivodeship": "(empty)",
       "allowsReservations": "Bookings available",
       "noReservations": "Bookings unavailable",
       "detailsCta": "View details",
@@ -544,6 +562,7 @@
       "headers": {
         "name": "Name",
         "type": "Type",
+        "voivodeship": "Voivodeship",
         "reservations": "Bookings"
       }
     },

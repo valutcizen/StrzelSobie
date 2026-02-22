@@ -63,6 +63,15 @@
           />
         </template>
 
+        <template
+          v-if="showVoivodeship"
+          #item.voivodeship="{ item }"
+        >
+          <span data-testid="range-list-voivodeship">
+            {{ getVoivodeshipLabel(item) }}
+          </span>
+        </template>
+
         <template #item.allowsReservations="{ item }">
           <v-chip
             size="small"
@@ -88,7 +97,7 @@
             {{
               item.type === 'meetup'
                 ? t('rangeDirectory.list.detailsCtaMeetup')
-                : t('rangeDirectory.list.calendarCta')
+                : t('rangeDirectory.list.detailsCta')
             }}
           </v-btn>
         </template>
@@ -100,12 +109,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { VOIVODESHIP_LABELS, type Voivodeship } from '@/constants/voivodeships'
 import RangeTypeBadge from '@/components/range/RangeTypeBadge.vue'
 import type { RangeSummary } from '@/types/range'
 
 interface Props {
   ranges: RangeSummary[]
   selectedSlug?: string | null
+  showVoivodeship?: boolean
   page: number
   itemsPerPage: number
   itemsPerPageOptions?: number[]
@@ -120,12 +131,46 @@ const emit = defineEmits<{
 
 const itemsPerPageOptions = computed(() => props.itemsPerPageOptions ?? [10, 25, 50])
 
-const headers = computed(() => [
-  { title: t('rangeDirectory.list.headers.name'), key: 'displayName', sortable: false },
-  { title: t('rangeDirectory.list.headers.type'), key: 'type', sortable: false, width: 160 },
-  { title: t('rangeDirectory.list.headers.reservations'), key: 'allowsReservations', sortable: false, width: 200 },
-  { title: '', key: 'actions', sortable: false, width: 160 },
-])
+const normalizeVoivodeship = (value: unknown): Voivodeship | null => {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? (trimmed as Voivodeship) : null
+}
+
+const getVoivodeshipLabel = (range: RangeSummary): string => {
+  const value = normalizeVoivodeship(range.extras?.voivodeship)
+  if (!value) {
+    return t('rangeDirectory.list.emptyVoivodeship')
+  }
+
+  return VOIVODESHIP_LABELS[value] ?? value
+}
+
+const headers = computed(() => {
+  const base = [
+    { title: t('rangeDirectory.list.headers.name'), key: 'displayName', sortable: false },
+    { title: t('rangeDirectory.list.headers.type'), key: 'type', sortable: false, width: 160 },
+  ]
+
+  if (props.showVoivodeship) {
+    base.push({
+      title: t('rangeDirectory.list.headers.voivodeship'),
+      key: 'voivodeship',
+      sortable: false,
+      width: 210,
+    })
+  }
+
+  base.push(
+    { title: t('rangeDirectory.list.headers.reservations'), key: 'allowsReservations', sortable: false, width: 200 },
+    { title: '', key: 'actions', sortable: false, width: 160 },
+  )
+
+  return base
+})
 
 const handleRowClick = (_event: unknown, row: { item: RangeSummary }) => {
   const slug = row?.item?.slug

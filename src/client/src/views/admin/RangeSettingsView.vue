@@ -6,6 +6,7 @@ import * as yup from 'yup'
 import { useRoute, useRouter } from 'vue-router'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
 import RangeParkingLocationModal from '@/components/range/RangeParkingLocationModal.vue'
+import { VOIVODESHIPS, VOIVODESHIP_LABELS, type Voivodeship } from '@/constants/voivodeships'
 import { useAuthStore } from '@/stores/auth'
 import { useRangeStore } from '@/stores/range'
 import type { OperatingHours, RangeDetails, UpdateRangePayload } from '@/types/range'
@@ -55,6 +56,7 @@ type RangeSettingsFormValues = {
   type: RangeDetails['type']
   allowsReservations: boolean
   allowMemberEvents: boolean
+  voivodeship: Voivodeship | null
   mapLogoUrl: string | null
   location: {
     lat: number | null
@@ -86,6 +88,11 @@ const rangeTypeOptions = computed(() => [
   { value: 'meetup', label: t('rangeTypes.meetup') },
 ])
 
+const voivodeshipOptions = computed(() => [
+  { value: null, label: t('admin.rangeSettings.voivodeshipEmptyOption') },
+  ...VOIVODESHIPS.map((value) => ({ value, label: VOIVODESHIP_LABELS[value] })),
+])
+
 const canDeleteRange = computed(() => authStore.hasRole(UserRoleEnum.ClubCommunityAdministrator))
 
 const initialValues = ref<RangeSettingsFormValues>({
@@ -93,6 +100,7 @@ const initialValues = ref<RangeSettingsFormValues>({
   type: 'club',
   allowsReservations: true,
   allowMemberEvents: false,
+  voivodeship: null,
   mapLogoUrl: null,
   location: null,
   publicDescription: null,
@@ -160,6 +168,10 @@ const schema = yup.object({
     .required(t('admin.rangeSettings.validation.required')),
   allowsReservations: yup.boolean().required(),
   allowMemberEvents: yup.boolean().required(),
+  voivodeship: yup
+    .string()
+    .nullable()
+    .oneOf([...VOIVODESHIPS, null]),
   mapLogoUrl: yup
     .string()
     .nullable()
@@ -211,6 +223,10 @@ const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => (
   type: range.type ?? 'club',
   allowsReservations: range.allowsReservations ?? true,
   allowMemberEvents: range.extras?.allowMemberEvents ?? false,
+  voivodeship: (() => {
+    const value = typeof range.extras?.voivodeship === 'string' ? range.extras.voivodeship.trim() : ''
+    return VOIVODESHIPS.includes(value as Voivodeship) ? (value as Voivodeship) : null
+  })(),
   mapLogoUrl: range.extras?.mapLogoUrl ?? null,
   location:
     typeof range.latitude === 'number' && typeof range.longitude === 'number'
@@ -324,6 +340,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
       type: values.type,
       allowsReservations: values.type === 'club' ? values.allowsReservations : false,
       allowMemberEvents: values.allowMemberEvents,
+      voivodeship: toNullableString(values.voivodeship),
       mapLogoUrl: toNullableString(values.mapLogoUrl),
       latitude,
       longitude,
@@ -730,6 +747,28 @@ watch(
                             (val) => field.onChange(updateLocationCoordinate(field.value, 'lng', val))
                           "
                         />
+                      </v-col>
+                    </v-row>
+
+                    <v-row class="mt-1" dense>
+                      <v-col cols="12" md="6">
+                        <Field
+                          v-slot="{ field: voivodeshipField, errorMessage }"
+                          name="voivodeship"
+                        >
+                          <v-autocomplete
+                            :label="t('admin.rangeSettings.voivodeshipLabel')"
+                            :items="voivodeshipOptions"
+                            item-title="label"
+                            item-value="value"
+                            :model-value="voivodeshipField.value"
+                            :error-messages="errorMessage"
+                            clearable
+                            data-testid="range-settings-voivodeship-select"
+                            @update:model-value="voivodeshipField.onChange"
+                            @blur="voivodeshipField.onBlur"
+                          />
+                        </Field>
                       </v-col>
                     </v-row>
 

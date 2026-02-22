@@ -33,7 +33,7 @@ INSERT INTO ranges_shooting_ranges (
       "sunday": {"open": "09:00", "close": "20:00"}
     }',
     10,
-    '{"parkingLocation":{"latitude":50.0525,"longitude":19.9212}}'
+    '{"parkingLocation":{"latitude":50.0525,"longitude":19.9212},"voivodeship":"malopolskie"}'
   ), (
     2,
     'ally-krakow',
@@ -54,7 +54,7 @@ INSERT INTO ranges_shooting_ranges (
       "sunday": null
     }',
     5,
-    '{}'
+    '{"voivodeship":"slaskie"}'
   ), (
     3,
     'coming-soon-podhale',

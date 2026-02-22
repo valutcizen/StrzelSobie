@@ -74,6 +74,20 @@ export const useRangeStore = defineStore('range', {
 
         const existing = this.rangesBySlug[rangeSlug]
         if (existing) {
+          const nextExtras = { ...(existing.extras ?? {}) }
+          if (payload.parkingLocation !== undefined) {
+            nextExtras.parkingLocation = payload.parkingLocation ?? null
+          }
+          if (payload.allowMemberEvents !== undefined) {
+            nextExtras.allowMemberEvents = payload.allowMemberEvents
+          }
+          if (payload.mapLogoUrl !== undefined) {
+            nextExtras.mapLogoUrl = payload.mapLogoUrl ?? null
+          }
+          if (payload.voivodeship !== undefined) {
+            nextExtras.voivodeship = payload.voivodeship ?? null
+          }
+
           this.rangesBySlug[rangeSlug] = {
             ...existing,
             ...(payload.displayName !== undefined ? { displayName: payload.displayName } : {}),
@@ -85,21 +99,11 @@ export const useRangeStore = defineStore('range', {
             ...(payload.latitude !== undefined ? { latitude: payload.latitude } : {}),
             ...(payload.longitude !== undefined ? { longitude: payload.longitude } : {}),
             ...(payload.parkingLocation !== undefined ? { parkingLocation: payload.parkingLocation ?? null } : {}),
-            ...(payload.parkingLocation !== undefined
-              ? {
-                  extras: {
-                    ...(existing.extras ?? {}),
-                    parkingLocation: payload.parkingLocation ?? null,
-                  },
-                }
-              : {}),
-            ...(payload.allowMemberEvents !== undefined
-              ? {
-                  extras: {
-                    ...(existing.extras ?? {}),
-                    allowMemberEvents: payload.allowMemberEvents,
-                  },
-                }
+            ...(payload.parkingLocation !== undefined ||
+            payload.allowMemberEvents !== undefined ||
+            payload.mapLogoUrl !== undefined ||
+            payload.voivodeship !== undefined
+              ? { extras: nextExtras }
               : {}),
           }
           this.directory = this.directory.map((range) =>
@@ -109,6 +113,14 @@ export const useRangeStore = defineStore('range', {
                   ...(payload.displayName !== undefined ? { displayName: payload.displayName } : {}),
                   ...(payload.latitude !== undefined ? { latitude: payload.latitude ?? undefined } : {}),
                   ...(payload.longitude !== undefined ? { longitude: payload.longitude ?? undefined } : {}),
+                  ...(payload.voivodeship !== undefined
+                    ? {
+                        extras: {
+                          ...(range.extras ?? {}),
+                          voivodeship: payload.voivodeship ?? null,
+                        },
+                      }
+                    : {}),
                 }
               : range,
           )

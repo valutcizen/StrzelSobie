@@ -148,6 +148,15 @@ export class RangesService implements IRangesService {
       range.extras = JSON.stringify(extras);
     }
 
+    if (command.voivodeship !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.voivodeship =
+        typeof command.voivodeship === 'string' && command.voivodeship.trim().length > 0
+          ? command.voivodeship.trim()
+          : null;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.totalTracks !== undefined) {
       range.totalTracks = command.totalTracks;
     }
@@ -199,6 +208,11 @@ export class RangesService implements IRangesService {
       extras.mapLogoUrl = command.mapLogoUrl.trim();
     } else if (command.mapLogoUrl === null) {
       extras.mapLogoUrl = null;
+    }
+    if (typeof command.voivodeship === 'string' && command.voivodeship.trim().length > 0) {
+      extras.voivodeship = command.voivodeship.trim();
+    } else if (command.voivodeship === null) {
+      extras.voivodeship = null;
     }
 
     const created = await this.rangesRepository.create({
@@ -347,13 +361,16 @@ export class RangesService implements IRangesService {
     const allowMemberEvents =
       typeof extras.allowMemberEvents === 'boolean' ? extras.allowMemberEvents : undefined;
     const mapLogoUrl = this.parseOptionalString(extras.mapLogoUrl);
+    const voivodeship = this.parseOptionalString(extras.voivodeship);
     const hasParkingLocation = Object.prototype.hasOwnProperty.call(extras, 'parkingLocation');
     const hasMapLogo = Object.prototype.hasOwnProperty.call(extras, 'mapLogoUrl');
+    const hasVoivodeship = Object.prototype.hasOwnProperty.call(extras, 'voivodeship');
 
     return {
       ...(parkingLocation ? { parkingLocation } : hasParkingLocation ? { parkingLocation: null } : {}),
       ...(allowMemberEvents !== undefined ? { allowMemberEvents } : {}),
       ...(mapLogoUrl !== undefined ? { mapLogoUrl } : hasMapLogo ? { mapLogoUrl: null } : {}),
+      ...(voivodeship !== undefined ? { voivodeship } : hasVoivodeship ? { voivodeship: null } : {}),
     };
   }
 
