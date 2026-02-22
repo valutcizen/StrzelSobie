@@ -90,8 +90,13 @@
       >
         <RoleBasedLink
           icon="mdi-map"
-          :label="t('navigation.directory')"
+          :label="t('navigation.map')"
           :to="{ name: 'RangeDirectory' }"
+        />
+        <RoleBasedLink
+          icon="mdi-format-list-bulleted"
+          :label="t('navigation.catalog')"
+          :to="{ name: 'RangeCatalog' }"
         />
         <RoleBasedLink
           icon="mdi-target"

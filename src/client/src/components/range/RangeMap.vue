@@ -5,19 +5,6 @@
     elevation="1"
     data-testid="range-map"
   >
-    <div class="range-map__controls">
-      <v-btn
-        variant="elevated"
-        color="primary"
-        size="small"
-        prepend-icon="mdi-format-list-bulleted"
-        data-testid="range-map-skip-to-list"
-        class="range-map__skip-button"
-        @click="emit('skip-to-list')"
-      >
-        {{ t('rangeDirectory.actions.skipToList') }}
-      </v-btn>
-    </div>
     <div class="range-map__frame">
       <div
         ref="mapElementRef"
@@ -49,7 +36,6 @@ interface Props {
 
 const emit = defineEmits<{
   (event: 'select', slug: string): void
-  (event: 'skip-to-list'): void
 }>()
 
 const props = defineProps<Props>()
@@ -432,21 +418,6 @@ onBeforeUnmount(() => {
 .range-map__canvas {
   width: 100%;
   height: 100%;
-}
-
-.range-map__controls {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  display: flex;
-}
-
-.range-map__skip-button {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  color: #0f3b68 !important;
-  border: 1px solid rgba(25, 118, 210, 0.28);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
 }
 
 .range-map__empty {

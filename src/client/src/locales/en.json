@@ -43,7 +43,8 @@
     "unknown": "Range"
   },
   "navigation": {
-    "directory": "Map & directory",
+    "map": "Range map",
+    "catalog": "Range catalog",
     "rangeInfo": "Range info",
     "calendar": "Calendar",
     "profile": "My profile",
@@ -530,10 +531,8 @@
     }
   },
   "rangeDirectory": {
-    "title": "Range directory and map",
-    "actions": {
-      "skipToList": "Go to range list"
-    },
+    "mapTitle": "Range map",
+    "catalogTitle": "Range catalog",
     "list": {
       "title": "Range list",
       "empty": "No ranges to display.",

@@ -43,7 +43,8 @@
     "unknown": "Strzelnica"
   },
   "navigation": {
-    "directory": "Katalog i mapa",
+    "map": "Mapa strzelnic",
+    "catalog": "Katalog strzelnic",
     "rangeInfo": "Strzelnica",
     "calendar": "Kalendarz",
     "profile": "Mój profil",
@@ -530,10 +531,8 @@
     }
   },
   "rangeDirectory": {
-    "title": "Katalog i mapa strzelnic",
-    "actions": {
-      "skipToList": "Przejdź do listy strzelnic"
-    },
+    "mapTitle": "Mapa strzelnic",
+    "catalogTitle": "Katalog strzelnic",
     "list": {
       "title": "Lista strzelnic",
       "empty": "Brak strzelnic do wyświetlenia.",

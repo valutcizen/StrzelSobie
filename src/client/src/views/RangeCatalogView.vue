@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import RangeMap from '@/components/range/RangeMap.vue'
+import RangeList from '@/components/range/RangeList.vue'
 import { useRangeStore } from '@/stores/range'
 import type { RangeSummary } from '@/types/range'
 import { getLastRangeId, setLastRangeId } from '@/utils/lastRange'
@@ -11,6 +11,7 @@ const { t } = useI18n()
 const router = useRouter()
 const rangeStore = useRangeStore()
 
+const page = ref(1)
 const selectedSlug = ref<string | null>(getLastRangeId())
 
 const isLoading = computed(() => rangeStore.isDirectoryLoading)
@@ -31,6 +32,10 @@ const sortedRanges = computed<RangeSummary[]>(() => {
     return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' })
   })
 })
+
+const itemsPerPage = 10
+const pageCount = computed(() => Math.max(1, Math.ceil(sortedRanges.value.length / itemsPerPage)))
+const currentPage = computed(() => Math.min(page.value, pageCount.value))
 
 const loadRanges = async () => {
   try {
@@ -62,24 +67,29 @@ watch(
     }
   },
 )
+
+watch(pageCount, (next) => {
+  if (page.value > next) {
+    page.value = next
+  }
+})
 </script>
 
 <template>
   <v-container
     fluid
     class="py-8"
-    data-testid="range-directory-view"
+    data-testid="range-catalog-view"
   >
     <v-row class="mb-4">
       <v-col cols="12">
         <h1 class="text-h5 font-weight-bold mb-1">
-          {{ t('rangeDirectory.mapTitle') }}
+          {{ t('rangeDirectory.catalogTitle') }}
         </h1>
-
       </v-col>
     </v-row>
 
-    <v-row class="mb-6">
+    <v-row>
       <v-col cols="12">
         <v-alert
           v-if="loadError"
@@ -87,21 +97,25 @@ watch(
           variant="tonal"
           border="start"
           class="mb-4"
-          data-testid="range-directory-error"
+          data-testid="range-catalog-error"
         >
           {{ loadError }}
         </v-alert>
 
         <v-skeleton-loader
           v-if="isLoading && ranges.length === 0"
-          type="image, heading, table-tbody"
+          type="heading, table-tbody"
         />
 
-        <RangeMap
+        <RangeList
           v-else
           :ranges="sortedRanges"
           :selected-slug="selectedSlug"
+          :page="currentPage"
+          :items-per-page="itemsPerPage"
+          :items-per-page-options="[10, 25, 50]"
           @select="handleSelectRange"
+          @update:page="page = $event"
         />
       </v-col>
     </v-row>

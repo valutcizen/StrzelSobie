@@ -31,6 +31,12 @@ const routes: AppRouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/catalog',
+    name: 'RangeCatalog',
+    component: () => import('@/views/RangeCatalogView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/:rangeSlug',
     name: 'RangeLanding',
     component: () => import('@/views/RangeLandingView.vue'),
