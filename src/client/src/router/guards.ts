@@ -7,6 +7,11 @@ import { UserRoleEnum } from '@/types/auth'
 import { getLastRangeId } from '@/utils/lastRange'
 import type { AppRouteMeta } from './index'
 
+const isNotFoundError = (error: unknown): boolean => {
+  const status = (error as { response?: { status?: unknown } } | null | undefined)?.response?.status
+  return status === 404
+}
+
 export const setupRouterGuards = (router: Router, pinia: Pinia) => {
   const authStore = useAuthStore(pinia)
   const authDialogStore = useAuthDialogStore(pinia)
@@ -30,6 +35,22 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
         }
 
         return { name: 'RangeDirectory' }
+      }
+    }
+
+    if (to.name === 'RangeLanding' || to.name === 'EventDetail') {
+      const slugParam = typeof to.params.rangeSlug === 'string' ? to.params.rangeSlug : null
+
+      if (!slugParam) {
+        return { name: 'RangeDirectory', query: { notice: 'range-not-found' } }
+      }
+
+      try {
+        await rangeStore.fetchRangeDetails(slugParam)
+      } catch (error) {
+        if (isNotFoundError(error)) {
+          return { name: 'RangeDirectory', query: { notice: 'range-not-found' } }
+        }
       }
     }
 

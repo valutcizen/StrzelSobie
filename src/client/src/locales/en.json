@@ -535,6 +535,9 @@
   "rangeDirectory": {
     "mapTitle": "Range map",
     "catalogTitle": "Range catalog",
+    "notices": {
+      "rangeNotFound": "Range does not exist."
+    },
     "catalog": {
       "filters": {
         "voivodeshipLabel": "Filter by voivodeship",

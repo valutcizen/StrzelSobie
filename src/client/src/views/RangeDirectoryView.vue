@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import RangeMap from '@/components/range/RangeMap.vue'
 import { useRangeStore } from '@/stores/range'
 import type { RangeSummary } from '@/types/range'
 import { getLastRangeId, setLastRangeId } from '@/utils/lastRange'
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const rangeStore = useRangeStore()
 
@@ -16,6 +17,7 @@ const selectedSlug = ref<string | null>(getLastRangeId())
 const isLoading = computed(() => rangeStore.isDirectoryLoading)
 const loadError = computed(() => rangeStore.directoryError)
 const ranges = computed(() => rangeStore.directory)
+const showRangeNotFoundNotice = computed(() => route.query.notice === 'range-not-found')
 
 const typePriority: Record<string, number> = {
   club: 1,
@@ -81,6 +83,17 @@ watch(
 
     <v-row class="mb-6">
       <v-col cols="12">
+        <v-alert
+          v-if="showRangeNotFoundNotice"
+          type="info"
+          variant="tonal"
+          border="start"
+          class="mb-4"
+          data-testid="range-directory-not-found-notice"
+        >
+          {{ t('rangeDirectory.notices.rangeNotFound') }}
+        </v-alert>
+
         <v-alert
           v-if="loadError"
           type="error"

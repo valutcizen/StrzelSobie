@@ -535,6 +535,9 @@
   "rangeDirectory": {
     "mapTitle": "Mapa strzelnic",
     "catalogTitle": "Katalog strzelnic",
+    "notices": {
+      "rangeNotFound": "Strzelnica nie istnieje."
+    },
     "catalog": {
       "filters": {
         "voivodeshipLabel": "Filtruj po województwie",

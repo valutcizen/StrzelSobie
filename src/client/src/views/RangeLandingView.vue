@@ -118,6 +118,11 @@ const fetchRange = async (slug: string, force = false) => {
       void loadMeetupEvents(slug)
     }
   } catch (error) {
+    const status = (error as { response?: { status?: unknown } } | null | undefined)?.response?.status
+    if (status === 404) {
+      router.replace({ name: 'RangeDirectory', query: { notice: 'range-not-found' } })
+      return
+    }
     console.error(t('rangeLanding.errors.fetchFailed'), error)
   }
 }
