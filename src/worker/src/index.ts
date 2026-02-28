@@ -211,12 +211,12 @@ openapi.delete(
 
 app.get('/embed/map', async (_c) => {
   // Cache by path only (ignore query params like parentOrigin)
-  const cacheKey = 'https://cache.strzel-sobie/embed/map';
+  const cacheKey = 'https://cache.strzel-sobie/embed/map?v=4';
   return cacheEmbedResponse(cacheKey, EMBED_MAP_HTML, 'text/html; charset=utf-8');
 });
 
 app.get('/embed/map.js', async (_c) => {
-  const cacheKey = 'https://cache.strzel-sobie/embed/map.js';
+  const cacheKey = 'https://cache.strzel-sobie/embed/map.js?v=4';
   return cacheEmbedResponse(cacheKey, EMBED_MAP_JS, 'application/javascript; charset=utf-8');
 });
 
