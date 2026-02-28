@@ -17,12 +17,18 @@
         variant="text"
         @click.stop="toggleNav"
       />
-      <img
+      <RouterLink
+        class="logo-link"
+        :to="{ name: 'RangeDirectory' }"
+        :aria-label="t('navigation.map')"
+      >
+        <img
         src="data:image/png;base64,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"
         alt="Logo"
         class="logo"
         :height="logoHeight"
       >
+      </RouterLink>
       <div class="app-title">
         <v-toolbar-title class="app-title__main">{{ t('app.title') }}</v-toolbar-title>
         <div class="app-title__subtitle">
@@ -332,6 +338,12 @@ const openLoginDialog = () => {
 </script>
 
 <style scoped>
+.logo-link {
+  display: inline-flex;
+  align-self: center;
+  text-decoration: none;
+}
+
 .logo {
   margin-right: 16px;
   align-self: center;
