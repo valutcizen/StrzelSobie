@@ -301,17 +301,17 @@ const syncMarkers = () => {
     }) as MarkerWithRangeType
 
     marker.options.rangeType = normalizeRangeType(range.type)
-    marker.bindPopup(range.displayName, {
-      closeButton: false,
-      autoPan: false,
-      offset: L.point(0, -8),
-      className: 'range-map__popup',
+    marker.bindTooltip(range.displayName, {
+      direction: 'bottom',
+      offset: L.point(0, 18),
+      opacity: 1,
+      className: 'range-map__tooltip',
     })
     marker.on('mouseover', () => {
-      marker.openPopup()
+      marker.openTooltip()
     })
     marker.on('mouseout', () => {
-      marker.closePopup()
+      marker.closeTooltip()
     })
     marker.on('click', () => emit('select', range.slug))
 
