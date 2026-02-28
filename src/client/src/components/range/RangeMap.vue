@@ -62,6 +62,18 @@ const polandLeafletBounds = L.latLngBounds(
   [POLAND_BOUNDS.latMax, POLAND_BOUNDS.lngMax],
 )
 
+const POLAND_INTERACTION_PADDING = {
+  north: 0.9,
+  south: 0.2,
+  west: 0.2,
+  east: 0.2,
+}
+
+const polandInteractionBounds = L.latLngBounds(
+  [POLAND_BOUNDS.latMin - POLAND_INTERACTION_PADDING.south, POLAND_BOUNDS.lngMin - POLAND_INTERACTION_PADDING.west],
+  [POLAND_BOUNDS.latMax + POLAND_INTERACTION_PADDING.north, POLAND_BOUNDS.lngMax + POLAND_INTERACTION_PADDING.east],
+)
+
 type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup'
 type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } }
 
@@ -329,8 +341,8 @@ const initializeMap = async () => {
     zoomAnimation: false,
     markerZoomAnimation: false,
     fadeAnimation: false,
-    maxBounds: polandLeafletBounds,
-    maxBoundsViscosity: 1,
+    maxBounds: polandInteractionBounds,
+    maxBoundsViscosity: 0.85,
   })
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:

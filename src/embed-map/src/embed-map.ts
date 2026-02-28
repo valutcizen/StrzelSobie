@@ -35,6 +35,18 @@ const POLAND_LEAFLET_BOUNDS = L.latLngBounds(
   [POLAND_BOUNDS.latMax, POLAND_BOUNDS.lngMax],
 );
 
+const POLAND_INTERACTION_PADDING = {
+  north: 0.9,
+  south: 0.2,
+  west: 0.2,
+  east: 0.2,
+};
+
+const POLAND_INTERACTION_BOUNDS = L.latLngBounds(
+  [POLAND_BOUNDS.latMin - POLAND_INTERACTION_PADDING.south, POLAND_BOUNDS.lngMin - POLAND_INTERACTION_PADDING.west],
+  [POLAND_BOUNDS.latMax + POLAND_INTERACTION_PADDING.north, POLAND_BOUNDS.lngMax + POLAND_INTERACTION_PADDING.east],
+);
+
 const createDefaultLogoDataUri = (svgContent: string): string => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">${svgContent}</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -198,8 +210,8 @@ async function initMap() {
   const parentOrigin = getParentOrigin();
 
   const map = L.map(mapElement, {
-    maxBounds: POLAND_LEAFLET_BOUNDS,
-    maxBoundsViscosity: 1,
+    maxBounds: POLAND_INTERACTION_BOUNDS,
+    maxBoundsViscosity: 0.85,
   });
 
   const markerClusterGroup = L.markerClusterGroup({
