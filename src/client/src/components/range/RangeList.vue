@@ -72,7 +72,10 @@
           </span>
         </template>
 
-        <template #item.allowsReservations="{ item }">
+        <template
+          v-if="props.showReservations !== false"
+          #item.allowsReservations="{ item }"
+        >
           <v-chip
             size="small"
             :color="item.allowsReservations ? 'success' : 'warning'"
@@ -117,6 +120,7 @@ interface Props {
   ranges: RangeSummary[]
   selectedSlug?: string | null
   showVoivodeship?: boolean
+  showReservations?: boolean
   page: number
   itemsPerPage: number
   itemsPerPageOptions?: number[]
@@ -164,10 +168,16 @@ const headers = computed(() => {
     })
   }
 
-  base.push(
-    { title: t('rangeDirectory.list.headers.reservations'), key: 'allowsReservations', sortable: false, width: 200 },
-    { title: '', key: 'actions', sortable: false, width: 160 },
-  )
+  if (props.showReservations !== false) {
+    base.push({
+      title: t('rangeDirectory.list.headers.reservations'),
+      key: 'allowsReservations',
+      sortable: false,
+      width: 200,
+    })
+  }
+
+  base.push({ title: '', key: 'actions', sortable: false, width: 160 })
 
   return base
 })

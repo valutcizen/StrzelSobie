@@ -122,6 +122,7 @@ const handleSelect = (slug: string) => {
           v-else
           :ranges="sortedRanges"
           :show-voivodeship="true"
+          :show-reservations="false"
           :selected-slug="selectedSlug"
           :page="currentPage"
           :items-per-page="itemsPerPage"
