@@ -64,6 +64,7 @@ describe('RangesService contract', () => {
   beforeEach(() => {
     rangesRepository = {
       findAll: vi.fn(),
+      countFutureAvailabilityImpact: vi.fn(),
       findBySlug: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),

@@ -259,7 +259,14 @@ const isCreatingRange = ref(false)
 const createRangeError = ref<string | null>(null)
 const isNewRangeSlugValid = computed(() => isValidRangeSlug(newRangeSlug.value.trim()))
 
-const lastRangeSlug = computed(() => rangeStore.currentRangeSlug ?? getLastRangeId() ?? authStore.defaultRangeSlug)
+const lastRangeSlug = computed(() => {
+  const currentSlug = rangeStore.currentRangeSlug
+  const currentType = rangeStore.currentRange?.type
+  if (currentSlug && currentType !== 'office') {
+    return currentSlug
+  }
+  return getLastRangeId() ?? authStore.defaultRangeSlug
+})
 const currentEntityType = computed(() => rangeStore.currentRange?.type ?? 'club')
 const currentEntityLabel = computed(() => {
   if (currentEntityType.value === 'office') {

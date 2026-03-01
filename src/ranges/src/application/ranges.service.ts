@@ -3,6 +3,9 @@ import {
   CreateRangeCommand,
   ForbiddenError,
   InvalidRangeSlugError,
+  RangeType,
+  RangeTypeChangeImpact,
+  RangeTypeChangeConfirmationRequiredError,
   isValidRangeSlug,
   RangeAlreadyExistsError,
   RangeListResponseDto,
@@ -62,6 +65,41 @@ export class RangesService implements IRangesService {
     }
   }
 
+  public async previewRangeTypeChange(
+    rangeSlug: string,
+    nextType: RangeType,
+    user: UserDto,
+  ): Promise<Result<RangeTypeChangeImpact>> {
+    const range = await this.rangesRepository.findBySlug(rangeSlug);
+    if (!range) {
+      return Result.fail(new RangeNotFoundError('Range not found'));
+    }
+
+    if (!this.canManageRange(range.id, user)) {
+      return Result.fail(new ForbiddenError('User is not an admin for this range'));
+    }
+
+    if (range.type === nextType) {
+      return Result.ok({
+        nextType,
+        futureReservations: 0,
+        futureEvents: 0,
+        requiresConfirmation: false,
+      });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const impact = await this.rangesRepository.countFutureAvailabilityImpact(range.id, today);
+    const requiresConfirmation = impact.futureReservations > 0 || impact.futureEvents > 0;
+
+    return Result.ok({
+      nextType,
+      futureReservations: impact.futureReservations,
+      futureEvents: impact.futureEvents,
+      requiresConfirmation,
+    });
+  }
+
   public async getRangeDetails(slug: string, user: UserDto | null = null): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(slug);
 
@@ -81,7 +119,8 @@ export class RangesService implements IRangesService {
   public async updateRangeDetails(
     rangeSlug: string,
     command: UpdateRangeCommand,
-    user: UserDto
+    user: UserDto,
+    options?: { confirmTypeChange?: boolean }
   ): Promise<Result<RangeDetailsDto>> {
     const range = await this.rangesRepository.findBySlug(rangeSlug);
 
@@ -93,7 +132,44 @@ export class RangesService implements IRangesService {
       return Result.fail(new ForbiddenError('User is not an admin for this range'));
     }
 
+    const previousType = range.type;
     const nextType = command.type ?? range.type;
+    const isTypeChanging = nextType !== range.type;
+    let typeChangeImpact: RangeTypeChangeImpact | null = null;
+
+    if (isTypeChanging) {
+      const preview = await this.previewRangeTypeChange(rangeSlug, nextType, user);
+      if (!preview.isSuccess) {
+        return Result.fail(preview.getError());
+      }
+      typeChangeImpact = preview.getValue();
+      if (typeChangeImpact.requiresConfirmation && !options?.confirmTypeChange) {
+        return Result.fail(new RangeTypeChangeConfirmationRequiredError({
+          nextType,
+          futureReservations: typeChangeImpact.futureReservations,
+          futureEvents: typeChangeImpact.futureEvents,
+        }));
+      }
+    }
+
+    let droppedData: Record<string, unknown> | undefined;
+    if (isTypeChanging) {
+      droppedData = {
+        allowsReservations: range.allowsReservations,
+        publicDescription: range.publicDescription ?? null,
+        memberDescription: range.memberDescription ?? null,
+        totalTracks: range.totalTracks ?? null,
+        operatingHours: this.parseOperatingHours(range.operatingHours),
+        extras: this.parseExtrasObject(range.extras),
+      };
+
+      range.publicDescription = null;
+      range.memberDescription = null;
+      range.totalTracks = null;
+      range.operatingHours = '{}';
+      range.extras = '{}';
+    }
+
     const nextAllowsReservations =
       nextType === 'club'
         ? command.allowsReservations ?? range.allowsReservations ?? true
@@ -157,6 +233,33 @@ export class RangesService implements IRangesService {
       range.extras = JSON.stringify(extras);
     }
 
+    if (command.address !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.address =
+        typeof command.address === 'string' && command.address.trim().length > 0
+          ? command.address.trim()
+          : null;
+      range.extras = JSON.stringify(extras);
+    }
+
+    if (command.phone !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.phone =
+        typeof command.phone === 'string' && command.phone.trim().length > 0
+          ? command.phone.trim()
+          : null;
+      range.extras = JSON.stringify(extras);
+    }
+
+    if (command.details !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.details =
+        typeof command.details === 'string' && command.details.trim().length > 0
+          ? command.details.trim()
+          : null;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.totalTracks !== undefined) {
       range.totalTracks = command.totalTracks;
     }
@@ -172,7 +275,18 @@ export class RangesService implements IRangesService {
         target_id: range.id,
         details: {
             user: user,
-            command: command
+            command: command,
+            ...(isTypeChanging
+              ? {
+                  typeChange: {
+                    previousType,
+                    nextType,
+                    droppedData: droppedData ?? {},
+                    confirmationAccepted: options?.confirmTypeChange ?? false,
+                    impact: typeChangeImpact,
+                  },
+                }
+              : {}),
         }
     };
 

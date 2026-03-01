@@ -3,6 +3,7 @@ import { ShootingRange, ShootingRangeSummary } from './shooting-range.model';
 
 export interface IRangesRepository {
   findAll(options?: { types?: RangeType[] }): Promise<ShootingRangeSummary[]>;
+  countFutureAvailabilityImpact(rangeId: number, fromDate: string): Promise<{ futureReservations: number; futureEvents: number }>;
   findBySlug(slug: string): Promise<ShootingRange | null>;
   create(range: Omit<ShootingRange, 'id'>): Promise<ShootingRange>;
   update(range: ShootingRange): Promise<void>;

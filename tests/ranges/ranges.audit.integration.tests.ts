@@ -21,6 +21,9 @@ describe('RangesService ↔ Audit module integration', () => {
     const storedRange: ShootingRange = {
       id: 3,
       slug: 'downtown',
+      type: 'club',
+      allowsReservations: true,
+      isDeleted: false,
       displayName: 'Downtown Range',
       totalTracks: 5,
       operatingHours: JSON.stringify({ monday: { open: '09:00', close: '17:00' } }),
@@ -71,7 +74,9 @@ function createRangesServiceContext(): {
 } {
   const rangesRepository: Mocked<IRangesRepository> = {
     findAll: vi.fn(),
+    countFutureAvailabilityImpact: vi.fn().mockResolvedValue({ futureReservations: 0, futureEvents: 0 }),
     findBySlug: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
     getRangeIdBySlug: vi.fn(),
     existsRangeById: vi.fn(),

@@ -1,4 +1,11 @@
-import { ForbiddenError, RANGE_TYPES, RangeNotFoundError, UpdateRangeCommand, UserDto } from '@strzel-sobie/common';
+import {
+  ForbiddenError,
+  RANGE_TYPES,
+  RangeNotFoundError,
+  RangeTypeChangeConfirmationRequiredError,
+  UpdateRangeCommand,
+  UserDto
+} from '@strzel-sobie/common';
 import { IRangesService } from '@strzel-sobie/common/models';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
@@ -6,6 +13,9 @@ import { Context } from '../../../types';
 
 const paramsSchema = z.object({
   rangeSlug: z.string(),
+});
+const querySchema = z.object({
+  dryRun: z.coerce.boolean().optional().default(false),
 });
 
 const operatingHoursSchema = z.record(
@@ -39,6 +49,10 @@ const updateRangeCommandSchema = z.object({
   allowMemberEvents: z.boolean().optional(),
   mapLogoUrl: z.string().trim().url().nullable().optional(),
   voivodeship: z.string().trim().nullable().optional(),
+  address: z.string().trim().nullable().optional(),
+  phone: z.string().trim().nullable().optional(),
+  details: z.string().trim().nullable().optional(),
+  confirmTypeChange: z.boolean().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided for update',
 });
@@ -50,6 +64,7 @@ export class UpdateRange extends OpenAPIRoute {
     tags: ['Ranges'],
     request: {
       params: paramsSchema,
+      query: querySchema,
       body: {
         content: {
           'application/json': {
@@ -91,6 +106,9 @@ export class UpdateRange extends OpenAPIRoute {
       '404': {
         description: 'Not Found'
       },
+      '409': {
+        description: 'Type change confirmation required',
+      },
     },
   };
 
@@ -100,9 +118,35 @@ export class UpdateRange extends OpenAPIRoute {
     const {
       params: { rangeSlug },
       body: command,
-    } = await this.getValidatedData<{ params: z.infer<typeof paramsSchema>; body: UpdateRangeCommand }>();
+      query,
+    } = await this.getValidatedData<{
+      params: z.infer<typeof paramsSchema>;
+      body: UpdateRangeCommand & { confirmTypeChange?: boolean };
+      query: z.infer<typeof querySchema>;
+    }>();
 
-    const result = await rangesService.updateRangeDetails(rangeSlug, command, user);
+    if (command.type && command.type !== undefined) {
+      const preview = await rangesService.previewRangeTypeChange(rangeSlug, command.type, user);
+      if (!preview.isSuccess) {
+        const error = preview.getError();
+        console.error('Error while previewing range type change', error);
+        if (error instanceof RangeNotFoundError) {
+          return c.json({ error: error.message }, 404);
+        }
+        if (error instanceof ForbiddenError) {
+          return c.json({ error: error.message }, 403);
+        }
+        return c.json({ error: 'An unexpected error occurred' }, 500);
+      }
+
+      if (query.dryRun) {
+        return c.json(preview.getValue(), 200);
+      }
+    }
+
+    const { confirmTypeChange, ...updateCommand } = command;
+
+    const result = await rangesService.updateRangeDetails(rangeSlug, updateCommand, user, { confirmTypeChange });
 
     if (result.isSuccess) {
       return c.json({ success: true }, 200);
@@ -116,6 +160,14 @@ export class UpdateRange extends OpenAPIRoute {
 
     if (error instanceof ForbiddenError) {
       return c.json({ error: error.message }, 403);
+    }
+
+    if (error instanceof RangeTypeChangeConfirmationRequiredError) {
+      return c.json({
+        error: error.message,
+        code: 'range_type_change_confirmation_required',
+        details: error.details,
+      }, 409);
     }
 
     return c.json({ error: 'An unexpected error occurred' }, 500);

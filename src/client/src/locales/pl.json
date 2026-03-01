@@ -469,6 +469,9 @@
       "voivodeshipEmptyOption": "(puste)",
       "mapLogoUrlLabel": "Logo na mapie (URL)",
       "mapLogoUrlHint": "Opcjonalnie: podaj adres URL logotypu dla pinezki na mapie embeddowanej.",
+      "officeAddressLabel": "Adres biura",
+      "officePhoneLabel": "Telefon",
+      "officeDetailsLabel": "Szczegóły biura",
       "publicDescriptionLabel": "Opis publiczny",
       "publicDescriptionHint": "Widoczny dla wszystkich na stronie strzelnicy. Obsługuje podstawowy HTML.",
       "memberDescriptionLabel": "Opis dla członków",
@@ -488,6 +491,7 @@
       "slugRequired": "Slug strzelnicy jest wymagany.",
       "deleteAction": "Usuń strzelnicę",
       "deleteConfirm": "Czy na pewno chcesz usunąć tę strzelnicę? Ta akcja jest nieodwracalna.",
+      "typeChangeWarning": "Zmiana typu wpłynie na dostępność przyszłych pozycji. Przyszłe rezerwacje: {reservations}, przyszłe wydarzenia: {events}. Czy kontynuować?",
       "deleteSuccess": "Strzelnica została usunięta.",
       "deleteError": "Nie udało się usunąć strzelnicy.",
       "newRange": {

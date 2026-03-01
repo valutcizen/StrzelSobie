@@ -228,3 +228,17 @@ export class EventValidationError extends Error {
     this.name = 'EventValidationError';
   }
 }
+
+export class RangeTypeChangeConfirmationRequiredError extends Error {
+  constructor(
+    public readonly details: {
+      nextType: string;
+      futureReservations: number;
+      futureEvents: number;
+    },
+    message = 'Range type change requires explicit confirmation due to future availability impact'
+  ) {
+    super(message);
+    this.name = 'RangeTypeChangeConfirmationRequiredError';
+  }
+}

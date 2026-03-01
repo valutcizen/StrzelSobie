@@ -85,6 +85,9 @@ export type UpdateRangeCommand = Partial<
   allowMemberEvents?: boolean;
   mapLogoUrl?: string | null;
   voivodeship?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  details?: string | null;
 };
 
 /**

@@ -80,6 +80,30 @@ export class RangesDbRepository implements IRangesRepository {
     return results.map((dbRange) => this.mapDbRangeSummary(dbRange));
   }
 
+  public async countFutureAvailabilityImpact(
+    rangeId: number,
+    fromDate: string,
+  ): Promise<{ futureReservations: number; futureEvents: number }> {
+    const reservationsStmt = this.db.prepare(
+      `SELECT COUNT(*) AS count
+       FROM reservations_reservations
+       WHERE range_id = ? AND event_date >= ?`
+    );
+    const eventsStmt = this.db.prepare(
+      `SELECT COUNT(*) AS count
+       FROM events_events
+       WHERE range_id = ? AND event_date >= ? AND status = 'active'`
+    );
+
+    const reservationsResult = await reservationsStmt.bind(rangeId, fromDate).first<{ count?: number }>();
+    const eventsResult = await eventsStmt.bind(rangeId, fromDate).first<{ count?: number }>();
+
+    return {
+      futureReservations: Number(reservationsResult?.count ?? 0),
+      futureEvents: Number(eventsResult?.count ?? 0),
+    };
+  }
+
 
   public async existsRangeById(rangeId: number): Promise<boolean> {
     const stmt = this.db.prepare('SELECT 1 FROM ranges_shooting_ranges WHERE id = ? AND is_deleted = 0');

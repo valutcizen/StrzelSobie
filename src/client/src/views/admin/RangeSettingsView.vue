@@ -58,6 +58,9 @@ type RangeSettingsFormValues = {
   allowMemberEvents: boolean
   voivodeship: Voivodeship | null
   mapLogoUrl: string | null
+  address: string | null
+  phone: string | null
+  details: string | null
   location: {
     lat: number | null
     lng: number | null
@@ -103,6 +106,9 @@ const initialValues = ref<RangeSettingsFormValues>({
   allowMemberEvents: false,
   voivodeship: null,
   mapLogoUrl: null,
+  address: null,
+  phone: null,
+  details: null,
   location: null,
   publicDescription: null,
   memberDescription: null,
@@ -192,6 +198,9 @@ const schema = yup.object({
         }
       },
     ),
+  address: yup.string().nullable(),
+  phone: yup.string().nullable(),
+  details: yup.string().nullable(),
   location: yup
     .object({
       lat: yup.number().nullable(),
@@ -229,6 +238,9 @@ const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => (
     return VOIVODESHIPS.includes(value as Voivodeship) ? (value as Voivodeship) : null
   })(),
   mapLogoUrl: range.extras?.mapLogoUrl ?? null,
+  address: typeof range.extras?.address === 'string' ? range.extras.address : null,
+  phone: typeof range.extras?.phone === 'string' ? range.extras.phone : null,
+  details: typeof range.extras?.details === 'string' ? range.extras.details : null,
   location:
     typeof range.latitude === 'number' && typeof range.longitude === 'number'
       ? { lat: range.latitude, lng: range.longitude }
@@ -333,6 +345,8 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
   lastError.value = null
 
   try {
+    const currentType = rangeStore.currentRange?.type
+    const isTypeChange = typeof currentType === 'string' && currentType !== values.type
     const latitude = values.location ? toNullableNumber(values.location.lat) ?? null : null
     const longitude = values.location ? toNullableNumber(values.location.lng) ?? null : null
 
@@ -340,18 +354,39 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
       displayName: values.displayName.trim(),
       type: values.type,
       allowsReservations: values.type === 'club' ? values.allowsReservations : false,
-      allowMemberEvents: values.allowMemberEvents,
-      voivodeship: toNullableString(values.voivodeship),
-      mapLogoUrl: toNullableString(values.mapLogoUrl),
+      allowMemberEvents: values.type === 'office' ? false : values.allowMemberEvents,
+      voivodeship: values.type === 'office' ? null : toNullableString(values.voivodeship),
+      mapLogoUrl: values.type === 'office' ? null : toNullableString(values.mapLogoUrl),
+      address: values.type === 'office' ? toNullableString(values.address) : null,
+      phone: values.type === 'office' ? toNullableString(values.phone) : null,
+      details: values.type === 'office' ? toNullableString(values.details) : null,
       latitude,
       longitude,
-      publicDescription: toNullableString(values.publicDescription),
-      memberDescription: toNullableString(values.memberDescription),
-      totalTracks: Number(values.totalTracks),
-      operatingHours: mapFormToOperatingHours(values),
+      publicDescription: values.type === 'office' ? null : toNullableString(values.publicDescription),
+      memberDescription: values.type === 'office' ? null : toNullableString(values.memberDescription),
+      totalTracks: values.type === 'office' ? null : Number(values.totalTracks),
+      operatingHours: values.type === 'office' ? {} : mapFormToOperatingHours(values),
     }
 
-    await rangeStore.updateRange(rangeSlug.value, payload)
+    let confirmTypeChange = false
+    if (isTypeChange) {
+      const preview = await rangeStore.previewTypeChange(rangeSlug.value, values.type ?? 'club')
+      if (preview.requiresConfirmation) {
+        const confirmed = window.confirm(
+          t('admin.rangeSettings.typeChangeWarning', {
+            reservations: preview.futureReservations,
+            events: preview.futureEvents,
+          }),
+        )
+        if (!confirmed) {
+          isSaving.value = false
+          return
+        }
+        confirmTypeChange = true
+      }
+    }
+
+    await rangeStore.updateRange(rangeSlug.value, payload, { confirmTypeChange })
     const updated = await rangeStore.fetchRangeDetails(rangeSlug.value, { force: true })
     initialValues.value = mapRangeToFormValues(updated)
     formKey.value += 1
@@ -584,6 +619,7 @@ watch(
               </v-col>
 
               <v-col
+                v-if="values.type !== 'office'"
                 cols="12"
                 md="4"
               >
@@ -607,6 +643,7 @@ watch(
               </v-col>
 
               <v-col
+                v-if="values.type !== 'office'"
                 cols="12"
                 md="4"
               >
@@ -627,6 +664,7 @@ watch(
               </v-col>
 
               <v-col
+                v-if="values.type !== 'office'"
 
                 cols="12"
                 md="4"
@@ -659,6 +697,7 @@ watch(
               </v-col>
 
               <v-col
+                v-if="values.type !== 'office'"
                 cols="12"
                 md="8"
               >
@@ -681,6 +720,65 @@ watch(
             </v-row>
 
             <v-row class="mb-4">
+              <v-col
+                v-if="values.type === 'office'"
+                cols="12"
+                md="4"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="address"
+                >
+                  <v-text-field
+                    :label="t('admin.rangeSettings.officeAddressLabel')"
+                    :model-value="field.value ?? ''"
+                    :error-messages="errorMessage"
+                    data-testid="range-settings-office-address-input"
+                    @update:model-value="field.onChange"
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+              <v-col
+                v-if="values.type === 'office'"
+                cols="12"
+                md="4"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="phone"
+                >
+                  <v-text-field
+                    :label="t('admin.rangeSettings.officePhoneLabel')"
+                    :model-value="field.value ?? ''"
+                    :error-messages="errorMessage"
+                    data-testid="range-settings-office-phone-input"
+                    @update:model-value="field.onChange"
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+              <v-col
+                v-if="values.type === 'office'"
+                cols="12"
+                md="4"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="details"
+                >
+                  <v-textarea
+                    :label="t('admin.rangeSettings.officeDetailsLabel')"
+                    :model-value="field.value ?? ''"
+                    :error-messages="errorMessage"
+                    auto-grow
+                    data-testid="range-settings-office-details-input"
+                    @update:model-value="field.onChange"
+                    @blur="field.onBlur"
+                  />
+                </Field>
+              </v-col>
+
               <v-col
 
                 cols="12"
@@ -751,7 +849,11 @@ watch(
                       </v-col>
                     </v-row>
 
-                    <v-row class="mt-1" dense>
+                    <v-row
+                      v-if="values.type !== 'office'"
+                      class="mt-1"
+                      dense
+                    >
                       <v-col cols="12" md="6">
                         <Field
                           v-slot="{ field: voivodeshipField, errorMessage }"
@@ -778,7 +880,10 @@ watch(
               </v-col>
             </v-row>
 
-            <v-row class="mb-4">
+            <v-row
+              v-if="values.type !== 'office'"
+              class="mb-4"
+            >
               <v-col cols="12">
                 <v-sheet
                   border
@@ -826,13 +931,20 @@ watch(
               </v-col>
             </v-row>
 
-            <v-divider class="my-6" />
+            <v-divider
+              v-if="values.type !== 'office'"
+              class="my-6"
+            />
 
-            <h3 class="text-subtitle-1 font-weight-medium mb-4">
+            <h3
+              v-if="values.type !== 'office'"
+              class="text-subtitle-1 font-weight-medium mb-4"
+            >
               {{ t('admin.rangeSettings.operatingHoursHeading') }}
             </h3>
 
             <v-table
+              v-if="values.type !== 'office'"
 
               density="compact"
 
@@ -959,9 +1071,12 @@ watch(
               </tbody>
             </v-table>
 
-            <v-divider class="my-6" />
+            <v-divider
+              v-if="values.type !== 'office'"
+              class="my-6"
+            />
 
-            <v-row>
+            <v-row v-if="values.type !== 'office'">
               <v-col
 
                 cols="12"

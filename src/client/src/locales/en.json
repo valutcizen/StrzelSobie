@@ -469,6 +469,9 @@
       "voivodeshipEmptyOption": "(empty)",
       "mapLogoUrlLabel": "Map logo (URL)",
       "mapLogoUrlHint": "Optional: provide a logo URL used in the embedded map pin.",
+      "officeAddressLabel": "Office address",
+      "officePhoneLabel": "Phone",
+      "officeDetailsLabel": "Office details",
       "publicDescriptionLabel": "Public description",
       "publicDescriptionHint": "Visible to everyone on the range page. Supports basic HTML.",
       "memberDescriptionLabel": "Members-only description",
@@ -488,6 +491,7 @@
       "slugRequired": "Provide a range slug to manage settings.",
       "deleteAction": "Delete range",
       "deleteConfirm": "Are you sure you want to delete this range? This action cannot be undone.",
+      "typeChangeWarning": "Changing range type will impact future availability. Future reservations: {reservations}, future events: {events}. Continue?",
       "deleteSuccess": "Range deleted.",
       "deleteError": "Failed to delete range.",
       "newRange": {

@@ -42,6 +42,7 @@ describe('PATCH /api/v1/ranges/:rangeSlug', () => {
         operatingHours: { monday: { open: '08:00', close: '18:00' } },
       },
       adminUser,
+      { confirmTypeChange: undefined },
     );
 
     expect(response.status).toBe(200);

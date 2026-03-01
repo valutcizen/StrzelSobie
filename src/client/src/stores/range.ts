@@ -14,6 +14,18 @@ interface FetchRangeOptions {
   force?: boolean
 }
 
+interface UpdateRangeOptions {
+  dryRun?: boolean
+  confirmTypeChange?: boolean
+}
+
+interface RangeTypeChangePreview {
+  nextType: string
+  futureReservations: number
+  futureEvents: number
+  requiresConfirmation: boolean
+}
+
 type RangeDictionary = Record<string, RangeDetails>
 
 export const useRangeStore = defineStore('range', {
@@ -64,13 +76,22 @@ export const useRangeStore = defineStore('range', {
         this.isLoading = false
       }
     },
-    async updateRange(rangeSlug: string, payload: UpdateRangePayload) {
+    async updateRange(rangeSlug: string, payload: UpdateRangePayload, options: UpdateRangeOptions = {}) {
       if (!rangeSlug) {
         throw new Error('rangeSlug is required to update range')
       }
 
       try {
-        await http.patch(`/ranges/${rangeSlug}`, payload)
+        const requestPayload = {
+          ...payload,
+          ...(options.confirmTypeChange !== undefined ? { confirmTypeChange: options.confirmTypeChange } : {}),
+        }
+        const params = options.dryRun ? { dryRun: true } : undefined
+        const response = await http.patch(`/ranges/${rangeSlug}`, requestPayload, { params })
+
+        if (options.dryRun) {
+          return response.data as RangeTypeChangePreview
+        }
 
         const existing = this.rangesBySlug[rangeSlug]
         if (existing) {
@@ -131,6 +152,10 @@ export const useRangeStore = defineStore('range', {
         this.lastError = error instanceof Error ? error.message : 'Nie udało się zapisać danych strzelnicy.'
         throw error
       }
+    },
+    async previewTypeChange(rangeSlug: string, nextType: string) {
+      const result = await this.updateRange(rangeSlug, { type: nextType as UpdateRangePayload['type'] }, { dryRun: true })
+      return result as RangeTypeChangePreview
     },
     async updateParkingLocation(
       rangeSlug: string,
