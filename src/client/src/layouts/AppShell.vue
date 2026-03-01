@@ -115,9 +115,10 @@
           :to="currentEntityRoute"
         />
         <RoleBasedLink
+          v-if="showCalendarNavLink"
           icon="mdi-calendar"
           :label="t('navigation.calendar')"
-          :to="{ name: 'Calendar', params: { rangeSlug: lastRangeSlug } }"
+          :to="{ name: 'Calendar', params: { rangeSlug: calendarTargetRangeSlug } }"
         />
         <RoleBasedLink
           icon="mdi-account-group"
@@ -128,7 +129,10 @@
         <RoleBasedLink
           icon="mdi-account-cog"
           :label="t('navigation.rangeUserManagement')"
-          :to="{ name: 'RangeUserManagement' }"
+          :to="{
+            name: 'RangeUserManagement',
+            query: adminTargetRangeSlug ? { rangeSlug: adminTargetRangeSlug } : undefined,
+          }"
           :roles="[UserRoleEnum.ClubCommunityAdministrator]"
           :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
         />
@@ -141,7 +145,10 @@
         <RoleBasedLink
           icon="mdi-target-account"
           :label="t('navigation.rangeSettings')"
-          :to="{ name: 'RangeSettings' }"
+          :to="{
+            name: 'RangeSettings',
+            query: adminTargetRangeSlug ? { rangeSlug: adminTargetRangeSlug } : undefined,
+          }"
           :roles="[UserRoleEnum.ClubCommunityAdministrator]"
           :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
         />
@@ -226,6 +233,7 @@ import { useAuthDialogStore } from '@/stores/authDialog'
 import { useRangeStore } from '@/stores/range'
 import { UserRoleEnum } from '@/types/auth'
 import { getLastRangeId } from '@/utils/lastRange'
+import { getLastOpenedObject } from '@/utils/lastOpenedObject'
 import { isValidRangeSlug } from '@/utils/rangeSlug'
 
 const { t } = useI18n()
@@ -267,7 +275,13 @@ const lastRangeSlug = computed(() => {
   }
   return getLastRangeId() ?? authStore.defaultRangeSlug
 })
-const currentEntityType = computed(() => rangeStore.currentRange?.type ?? 'club')
+const sessionLastOpenedObject = computed(() => {
+  // Re-evaluate on route/range changes to keep session fallback fresh.
+  void route.fullPath
+  void rangeStore.currentRangeSlug
+  return getLastOpenedObject()
+})
+const currentEntityType = computed(() => rangeStore.currentRange?.type ?? sessionLastOpenedObject.value?.type ?? 'club')
 const currentEntityLabel = computed(() => {
   if (currentEntityType.value === 'office') {
     return t('navigation.officeInfo')
@@ -278,11 +292,41 @@ const currentEntityLabel = computed(() => {
   return t('navigation.rangeInfo')
 })
 const currentEntityRoute = computed(() => {
-  const currentSlug = typeof route.params.rangeSlug === 'string' ? route.params.rangeSlug : null
+  const currentSlug = adminTargetRangeSlug.value
   if (currentEntityType.value === 'office') {
     return { name: 'OfficeLanding', params: { rangeSlug: currentSlug ?? lastRangeSlug.value } }
   }
   return { name: 'RangeLanding', params: { rangeSlug: currentSlug ?? lastRangeSlug.value } }
+})
+const adminTargetRangeSlug = computed(() => {
+  const querySlug = typeof route.query.rangeSlug === 'string' ? route.query.rangeSlug : null
+  if (querySlug) {
+    return querySlug
+  }
+
+  const currentSlug = typeof route.params.rangeSlug === 'string' ? route.params.rangeSlug : null
+  return currentSlug ?? sessionLastOpenedObject.value?.slug ?? lastRangeSlug.value ?? null
+})
+const calendarTargetRangeSlug = computed(() => adminTargetRangeSlug.value ?? lastRangeSlug.value)
+const showCalendarNavLink = computed(() => {
+  if (!calendarTargetRangeSlug.value) {
+    return false
+  }
+
+  const target = rangeStore.rangesBySlug[calendarTargetRangeSlug.value]
+  if (target) {
+    if (target.type === 'meetup') {
+      return false
+    }
+    return target.allowsReservations
+  }
+
+  // Fallback when details are not loaded yet: keep behavior consistent with known object types.
+  if (currentEntityType.value === 'meetup' || currentEntityType.value === 'office') {
+    return false
+  }
+
+  return true
 })
 const canCreateRange = computed(() => authStore.hasAnyRole([UserRoleEnum.ClubCommunityAdministrator]))
 

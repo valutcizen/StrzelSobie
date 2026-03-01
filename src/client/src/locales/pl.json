@@ -32,7 +32,7 @@
     "member": "Członek",
     "coordinator": "Prowadzący strzelanie",
     "confirmator": "Potwierdzający role",
-    "shootingRangeAdmin": "Administrator strzelnicy",
+    "shootingRangeAdmin": "Administrator obiektu",
     "clubCommunityAdmin": "Administrator klubu/społeczności"
   },
   "rangeTypes": {
@@ -53,9 +53,9 @@
     "calendar": "Kalendarz",
     "profile": "Mój profil",
     "userManagement": "Zarządzanie użytkownikami",
-    "rangeUserManagement": "Zarządzanie rolami strzelnicy",
+    "rangeUserManagement": "Zarządzanie rolami obiektu",
     "userVerification": "Weryfikacja użytkowników",
-    "rangeSettings": "Ustawienia strzelnicy"
+    "rangeSettings": "Ustawienia obiektu"
   },
   "userMenu": {
     "label": "Menu użytkownika",
@@ -406,7 +406,7 @@
       }
     },
     "rangeUsers": {
-      "title": "Zarządzanie rolami dla strzelnicy",
+      "title": "Zarządzanie rolami obiektu",
       "refresh": "Odśwież",
       "snackbarSuccess": "Role użytkownika zostały zaktualizowane.",
       "snackbarError": "Nie udało się zaktualizować ról użytkownika.",
@@ -419,9 +419,9 @@
         "noRoles": "Brak przypisanych ról."
       },
       "errors": {
-        "fetchUsers": "Nie udało się pobrać listy użytkowników strzelnicy.",
-        "fetchRoles": "Nie udało się pobrać dostępnych ról strzelnicy.",
-        "fetchRange": "Nie udało się pobrać danych strzelnicy."
+        "fetchUsers": "Nie udało się pobrać listy użytkowników obiektu.",
+        "fetchRoles": "Nie udało się pobrać dostępnych ról obiektu.",
+        "fetchRange": "Nie udało się pobrać danych obiektu."
       }
     },
     "verification": {
@@ -435,7 +435,7 @@
       }
     },
     "rangeSettings": {
-      "title": "Ustawienia strzelnicy",
+      "title": "Ustawienia obiektu",
       "totalTracksLabel": "Łączna liczba torów",
       "dayColumn": "Dzień",
       "statusColumn": "Status",

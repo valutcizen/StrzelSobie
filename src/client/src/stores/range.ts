@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { http } from '@/services/http'
 import { clearLastRangeId } from '@/utils/lastRange'
+import { clearLastOpenedObject, getLastOpenedObject, setLastOpenedObject } from '@/utils/lastOpenedObject'
 import { isValidRangeSlug } from '@/utils/rangeSlug'
 import type {
   CreateRangePayload,
@@ -58,6 +59,7 @@ export const useRangeStore = defineStore('range', {
       if (!force && this.rangesBySlug[rangeSlug]) {
         this.currentRangeSlug = rangeSlug
         this.lastError = null
+        setLastOpenedObject({ slug: rangeSlug, type: this.rangesBySlug[rangeSlug].type })
         return this.rangesBySlug[rangeSlug]
       }
 
@@ -68,6 +70,7 @@ export const useRangeStore = defineStore('range', {
       try {
         const { data } = await http.get<RangeDetails>(`/ranges/${rangeSlug}`)
         this.rangesBySlug[rangeSlug] = data
+        setLastOpenedObject({ slug: rangeSlug, type: data.type })
         return data
       } catch (error) {
         this.lastError = error instanceof Error ? error.message : 'Nie udało się pobrać danych strzelnicy.'
@@ -238,6 +241,9 @@ export const useRangeStore = defineStore('range', {
           this.currentRangeSlug = null
         }
         clearLastRangeId()
+        if (getLastOpenedObject()?.slug === rangeSlug) {
+          clearLastOpenedObject()
+        }
       } catch (error) {
         this.lastError = error instanceof Error ? error.message : 'Nie udało się usunąć strzelnicy.'
         throw error
