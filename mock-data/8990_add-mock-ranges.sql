@@ -1,4 +1,4 @@
--- Mock shooting ranges (club, ally, coming-soon) for local testing.
+-- Mock shooting ranges (club, ally, coming-soon, office) for local testing.
 
 INSERT INTO ranges_shooting_ranges (
   id,
@@ -68,4 +68,17 @@ INSERT INTO ranges_shooting_ranges (
     '{}',
     0,
     '{}'
+  ), (
+    4,
+    'biuro-krakow',
+    'Biuro Terenowe Kraków',
+    'office',
+    0,
+    null,
+    null,
+    50.0614,
+    19.9383,
+    '{}',
+    0,
+    '{"address":"ul. Strzelecka 10, 31-503 Kraków","phone":"+48123456789","details":"Biuro terenowe obsługujące region Kraków."}'
   );

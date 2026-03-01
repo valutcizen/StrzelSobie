@@ -94,6 +94,20 @@ INSERT INTO ranges_shooting_ranges (
     '{"monday":{"open":"12:00","close":"20:00"},"tuesday":{"open":"12:00","close":"20:00"},"wednesday":{"open":"12:00","close":"20:00"},"thursday":{"open":"12:00","close":"20:00"},"friday":{"open":"12:00","close":"20:00"}}',
     0,
     '{"allowMemberEvents":true,"voivodeship":""}'
+  ),
+  (
+    103,
+    'office-e2e',
+    'E2E Field Office',
+    'office',
+    0,
+    null,
+    null,
+    50.0675,
+    19.9123,
+    '{}',
+    0,
+    '{"address":"ul. Testowa 1, Kraków","phone":"+48111222333","details":"E2E office details."}'
   );
 
 -- =============================================================================

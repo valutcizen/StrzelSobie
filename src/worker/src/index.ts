@@ -44,6 +44,11 @@ import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/res
 import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
 import { resolveAuthModule } from './auth/module-registry';
+import { RANGE_TYPES, type RangeType } from '@strzel-sobie/common';
+
+const EMBED_MAP_ALLOWED_TYPES: RangeType[] = [...RANGE_TYPES];
+const EMBED_MAP_CACHE_VERSION = '5';
+const EMBED_MAP_CONFIG_VERSION = `types:${EMBED_MAP_ALLOWED_TYPES.join(',')}`;
 
 const cacheEmbedResponse = async (
   cacheKey: string,
@@ -150,6 +155,10 @@ app.use('*', async (c, next) => {
   c.set('reservationsService', reservationsService);
   c.set('eventsService', eventsService);
   c.set('auditService', auditService);
+  c.set('embedMapConfig', {
+    allowedTypes: EMBED_MAP_ALLOWED_TYPES,
+    cacheVersion: EMBED_MAP_CACHE_VERSION,
+  });
 
   await next();
 });
@@ -211,12 +220,12 @@ openapi.delete(
 
 app.get('/embed/map', async (_c) => {
   // Cache by path only (ignore query params like parentOrigin)
-  const cacheKey = 'https://cache.strzel-sobie/embed/map?v=4';
+  const cacheKey = `https://cache.strzel-sobie/embed/map?v=${EMBED_MAP_CACHE_VERSION}&cfg=${EMBED_MAP_CONFIG_VERSION}`;
   return cacheEmbedResponse(cacheKey, EMBED_MAP_HTML, 'text/html; charset=utf-8');
 });
 
 app.get('/embed/map.js', async (_c) => {
-  const cacheKey = 'https://cache.strzel-sobie/embed/map.js?v=4';
+  const cacheKey = `https://cache.strzel-sobie/embed/map.js?v=${EMBED_MAP_CACHE_VERSION}&cfg=${EMBED_MAP_CONFIG_VERSION}`;
   return cacheEmbedResponse(cacheKey, EMBED_MAP_JS, 'application/javascript; charset=utf-8');
 });
 

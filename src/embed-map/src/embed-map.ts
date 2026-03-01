@@ -14,14 +14,14 @@ L.Icon.Default.mergeOptions({
 interface RangeData {
   id: string | number;
   slug: string;
-  type?: 'club' | 'ally' | 'coming-soon' | 'meetup' | string;
+  type?: 'club' | 'ally' | 'coming-soon' | 'meetup' | 'office' | string;
   displayName: string;
   latitude: number | null | undefined;
   longitude: number | null | undefined;
   mapLogoUrl?: string | null;
 }
 
-type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup';
+type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup' | 'office';
 
 const POLAND_BOUNDS = {
   latMin: 49.0,
@@ -65,12 +65,13 @@ const typeStyleMap: Record<RangeType, { bgColor: string; logoUrl: string }> = {
   ally: { bgColor: '#1565c0', logoUrl: DEFAULT_ALLY_LOGO },
   'coming-soon': { bgColor: '#ef6c00', logoUrl: DEFAULT_CLUB_LOGO },
   meetup: { bgColor: '#00695c', logoUrl: DEFAULT_CLUB_LOGO },
+  office: { bgColor: '#00897b', logoUrl: DEFAULT_CLUB_LOGO },
 };
 
 type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } };
 
 const normalizeRangeType = (value: string | undefined): RangeType => {
-  if (value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup') {
+  if (value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup' || value === 'office') {
     return value;
   }
 
@@ -140,6 +141,8 @@ const getMarkerZIndex = (range: RangeData): number => {
       return 100;
     case 'meetup':
       return 250;
+    case 'office':
+      return 280;
     default:
       return 150;
   }
@@ -153,7 +156,7 @@ const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
       acc[type] += 1;
       return acc;
     },
-    { club: 0, ally: 0, 'coming-soon': 0, meetup: 0 },
+    { club: 0, ally: 0, 'coming-soon': 0, meetup: 0, office: 0 },
   );
 
   const dominantType = (Object.entries(byType) as Array<[RangeType, number]>)
@@ -231,7 +234,7 @@ async function initMap() {
   markerClusterGroup.addTo(map);
 
   try {
-    const response = await fetch('/api/v1/map-ranges');
+    const response = await fetch('/api/v1/map-ranges?scope=embed');
     if (!response.ok) {
         throw new Error('HTTP error! status: ' + response.status);
     }

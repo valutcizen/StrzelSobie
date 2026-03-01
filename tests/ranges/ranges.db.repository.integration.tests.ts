@@ -26,7 +26,7 @@ describe('RangesDbRepository integration', () => {
 
     const ranges = await repository.findAll();
     const slugs = ranges.map((range) => range.slug).sort();
-    expect(slugs).toEqual(['ally-krakow', 'coming-soon-podhale', 'krakow', 'strzel-sobie-krakow']);
+    expect(slugs).toEqual(['ally-krakow', 'biuro-krakow', 'coming-soon-podhale', 'krakow', 'strzel-sobie-krakow']);
 
     const strzelSobieKrakow = ranges.find((range) => range.slug === 'strzel-sobie-krakow');
     expect(strzelSobieKrakow).toMatchObject({

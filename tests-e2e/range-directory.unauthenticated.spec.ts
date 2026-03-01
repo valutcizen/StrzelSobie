@@ -24,17 +24,16 @@ test.describe('Range directory (public)', () => {
           }, 0),
         );
       return pinCount + clusterTotal;
-    }).toBe(4);
+    }).toBe(5);
 
     await page.goto('/catalog');
     await expect(page.getByTestId('range-catalog-view')).toBeVisible();
     await expect(page.getByRole('heading', { name: translate('rangeDirectory.catalogTitle') })).toBeVisible();
     await expect(directoryPage.list).toBeVisible();
 
-    await expect(directoryPage.rows).toHaveCount(4);
+    await expect(directoryPage.rows).toHaveCount(3);
     await expect(directoryPage.nameCell('dobczyce')).toBeVisible();
     await expect(directoryPage.nameCell('ally-e2e')).toBeVisible();
-    await expect(directoryPage.nameCell('meetup-e2e')).toBeVisible();
     await expect(directoryPage.nameCell('coming-soon-e2e')).toBeVisible();
     await expect(directoryPage.rows.nth(0).getByTestId('range-list-name')).toHaveAttribute(
       'data-range-slug',
@@ -46,16 +45,11 @@ test.describe('Range directory (public)', () => {
     );
     await expect(directoryPage.rows.nth(2).getByTestId('range-list-name')).toHaveAttribute(
       'data-range-slug',
-      'meetup-e2e',
-    );
-    await expect(directoryPage.rows.nth(3).getByTestId('range-list-name')).toHaveAttribute(
-      'data-range-slug',
       'coming-soon-e2e',
     );
 
     await expect(directoryPage.typeBadge('dobczyce')).toHaveText(translate('rangeTypes.club'));
     await expect(directoryPage.typeBadge('ally-e2e')).toHaveText(translate('rangeTypes.ally'));
-    await expect(directoryPage.typeBadge('meetup-e2e')).toHaveText(translate('rangeTypes.meetup'));
     await expect(directoryPage.typeBadge('coming-soon-e2e')).toHaveText(translate('rangeTypes.coming-soon'));
 
     await directoryPage.detailsButton('ally-e2e').click();

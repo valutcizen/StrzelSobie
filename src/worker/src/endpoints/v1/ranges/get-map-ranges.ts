@@ -15,6 +15,7 @@ const mapRangeSchema = z.object({
 
 const getMapRangesQuerySchema = z.object({
   type: z.union([z.enum(RANGE_TYPES), z.array(z.enum(RANGE_TYPES))]).optional(),
+  scope: z.enum(['embed']).optional(),
 });
 
 export class GetMapRangesRoute extends OpenAPIRoute {
@@ -58,6 +59,7 @@ export class GetMapRangesRoute extends OpenAPIRoute {
 
   async handle(c: Context) {
     const rangesService = c.get('rangesService');
+    const embedMapConfig = c.get('embedMapConfig');
     let types: RangeType[] | undefined;
     try {
       const parsedTypes = z.array(z.enum(RANGE_TYPES)).optional().parse(new URL(c.req.url).searchParams.getAll('type'));
@@ -67,6 +69,11 @@ export class GetMapRangesRoute extends OpenAPIRoute {
         return c.json({ error: 'Invalid range type filter' }, 400);
       }
       throw error;
+    }
+
+    const scope = new URL(c.req.url).searchParams.get('scope');
+    if (scope === 'embed') {
+      types = embedMapConfig?.allowedTypes;
     }
 
     const result = await rangesService.getRanges({ types });

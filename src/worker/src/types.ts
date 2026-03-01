@@ -5,7 +5,7 @@ import { EventsService } from '@strzel-sobie/events';
 import { ReservationsService } from '@strzel-sobie/reservations';
 import { RangesService } from '@strzel-sobie/ranges';
 import { UserService } from '@strzel-sobie/users';
-import { UserDto } from '@strzel-sobie/common';
+import { RangeType, UserDto } from '@strzel-sobie/common';
 
 export type Env = {
   DB: D1Database;
@@ -22,6 +22,10 @@ export type Variables = {
   auditService: AuditService;
   session: SessionData;
   user: UserDto;
+  embedMapConfig: {
+    allowedTypes: RangeType[];
+    cacheVersion: string;
+  };
 };
 
 export type Context = HonoContext<{ Bindings: Env; Variables: Variables }>;
