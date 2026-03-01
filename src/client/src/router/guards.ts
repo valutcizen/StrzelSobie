@@ -38,18 +38,24 @@ export const setupRouterGuards = (router: Router, pinia: Pinia) => {
       }
     }
 
-    if (to.name === 'RangeLanding' || to.name === 'EventDetail') {
+    if (to.name === 'RangeLanding' || to.name === 'EventDetail' || to.name === 'OfficeLanding') {
       const slugParam = typeof to.params.rangeSlug === 'string' ? to.params.rangeSlug : null
 
       if (!slugParam) {
-        return { name: 'RangeDirectory', query: { notice: 'range-not-found' } }
+        return { name: to.name === 'OfficeLanding' ? 'Offices' : 'RangeDirectory', query: { notice: 'range-not-found' } }
       }
 
       try {
-        await rangeStore.fetchRangeDetails(slugParam)
+        const range = await rangeStore.fetchRangeDetails(slugParam)
+        if (to.name === 'RangeLanding' && range.type === 'office') {
+          return { name: 'OfficeLanding', params: { rangeSlug: slugParam } }
+        }
+        if (to.name === 'OfficeLanding' && range.type !== 'office') {
+          return { name: 'RangeLanding', params: { rangeSlug: slugParam } }
+        }
       } catch (error) {
         if (isNotFoundError(error)) {
-          return { name: 'RangeDirectory', query: { notice: 'range-not-found' } }
+          return { name: to.name === 'OfficeLanding' ? 'Offices' : 'RangeDirectory', query: { notice: 'range-not-found' } }
         }
       }
     }

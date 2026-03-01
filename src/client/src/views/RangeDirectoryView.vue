@@ -13,6 +13,7 @@ const router = useRouter()
 const rangeStore = useRangeStore()
 
 const selectedSlug = ref<string | null>(getLastRangeId())
+const mapMode = ref<'open-club' | 'club-ranges' | 'ranges' | 'all'>('all')
 
 const isLoading = computed(() => rangeStore.isDirectoryLoading)
 const loadError = computed(() => rangeStore.directoryError)
@@ -22,12 +23,35 @@ const showRangeNotFoundNotice = computed(() => route.query.notice === 'range-not
 const typePriority: Record<string, number> = {
   club: 1,
   ally: 2,
-  meetup: 3,
-  'coming-soon': 4,
+  'coming-soon': 3,
+  office: 4,
+  meetup: 5,
 }
 
+const mapModeOptions = computed(() => [
+  { value: 'open-club' as const, label: t('rangeDirectory.mapModes.openClub') },
+  { value: 'club-ranges' as const, label: t('rangeDirectory.mapModes.clubRanges') },
+  { value: 'ranges' as const, label: t('rangeDirectory.mapModes.ranges') },
+  { value: 'all' as const, label: t('rangeDirectory.mapModes.all') },
+])
+
+const modeFilteredRanges = computed<RangeSummary[]>(() => {
+  return ranges.value.filter((range) => {
+    if (mapMode.value === 'open-club') {
+      return range.type === 'club'
+    }
+    if (mapMode.value === 'club-ranges') {
+      return range.type === 'club' || range.type === 'coming-soon'
+    }
+    if (mapMode.value === 'ranges') {
+      return range.type === 'club' || range.type === 'ally' || range.type === 'coming-soon'
+    }
+    return true
+  })
+})
+
 const sortedRanges = computed<RangeSummary[]>(() => {
-  return [...ranges.value].sort((a, b) => {
+  return [...modeFilteredRanges.value].sort((a, b) => {
     const typeCompare = (typePriority[a.type] ?? 99) - (typePriority[b.type] ?? 99)
     if (typeCompare !== 0) return typeCompare
     return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' })
@@ -51,7 +75,13 @@ const loadRanges = async () => {
 void loadRanges()
 
 const handleSelectRange = (slug: string) => {
+  const selectedRange = ranges.value.find((range) => range.slug === slug)
   selectedSlug.value = slug
+  if (selectedRange?.type === 'office') {
+    router.push({ name: 'OfficeLanding', params: { rangeSlug: slug } })
+    return
+  }
+
   setLastRangeId(slug)
   router.push({ name: 'RangeLanding', params: { rangeSlug: slug } })
 }
@@ -77,7 +107,22 @@ watch(
         <h1 class="text-h5 font-weight-bold mb-1">
           {{ t('rangeDirectory.mapTitle') }}
         </h1>
+      </v-col>
+    </v-row>
 
+    <v-row class="mb-4">
+      <v-col
+        cols="12"
+        md="4"
+      >
+        <v-select
+          v-model="mapMode"
+          :label="t('rangeDirectory.mapModes.label')"
+          :items="mapModeOptions"
+          item-title="label"
+          item-value="value"
+          data-testid="range-directory-map-mode"
+        />
       </v-col>
     </v-row>
 

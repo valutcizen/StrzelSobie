@@ -122,6 +122,7 @@ const loadRanges = async () => {
   try {
     await rangeStore.fetchDirectory({
       sort: 'type_priority',
+      types: ['club', 'ally', 'coming-soon'],
     })
     if (!selectedSlug.value && ranges.value.length > 0) {
       selectedSlug.value = ranges.value[0].slug

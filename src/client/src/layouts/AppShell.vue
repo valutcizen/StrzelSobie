@@ -95,6 +95,11 @@
         nav
       >
         <RoleBasedLink
+          icon="mdi-office-building-marker-outline"
+          :label="t('navigation.offices')"
+          :to="{ name: 'Offices' }"
+        />
+        <RoleBasedLink
           icon="mdi-map"
           :label="t('navigation.map')"
           :to="{ name: 'RangeDirectory' }"
@@ -106,8 +111,8 @@
         />
         <RoleBasedLink
           icon="mdi-target"
-          :label="t('navigation.rangeInfo')"
-          :to="{ name: 'RangeLanding', params: { rangeSlug: lastRangeSlug } }"
+          :label="currentEntityLabel"
+          :to="currentEntityRoute"
         />
         <RoleBasedLink
           icon="mdi-calendar"
@@ -211,7 +216,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import RoleBasedLink from '@/components/navigation/RoleBasedLink.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
@@ -228,6 +233,7 @@ const authStore = useAuthStore()
 const authDialogStore = useAuthDialogStore()
 const rangeStore = useRangeStore()
 const router = useRouter()
+const route = useRoute()
 const display = useDisplay()
 const isSmallScreen = computed(() => display.smAndDown.value)
 const isScrolled = ref(false)
@@ -254,6 +260,23 @@ const createRangeError = ref<string | null>(null)
 const isNewRangeSlugValid = computed(() => isValidRangeSlug(newRangeSlug.value.trim()))
 
 const lastRangeSlug = computed(() => rangeStore.currentRangeSlug ?? getLastRangeId() ?? authStore.defaultRangeSlug)
+const currentEntityType = computed(() => rangeStore.currentRange?.type ?? 'club')
+const currentEntityLabel = computed(() => {
+  if (currentEntityType.value === 'office') {
+    return t('navigation.officeInfo')
+  }
+  if (currentEntityType.value === 'meetup') {
+    return t('navigation.meetupInfo')
+  }
+  return t('navigation.rangeInfo')
+})
+const currentEntityRoute = computed(() => {
+  const currentSlug = typeof route.params.rangeSlug === 'string' ? route.params.rangeSlug : null
+  if (currentEntityType.value === 'office') {
+    return { name: 'OfficeLanding', params: { rangeSlug: currentSlug ?? lastRangeSlug.value } }
+  }
+  return { name: 'RangeLanding', params: { rangeSlug: currentSlug ?? lastRangeSlug.value } }
+})
 const canCreateRange = computed(() => authStore.hasAnyRole([UserRoleEnum.ClubCommunityAdministrator]))
 
 watch(

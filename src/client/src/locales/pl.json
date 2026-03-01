@@ -40,12 +40,16 @@
     "ally": "Strzelnica partnerska",
     "coming-soon": "Wkrótce dostępna",
     "meetup": "Miejsce spotkań",
+    "office": "Biuro terenowe",
     "unknown": "Strzelnica"
   },
   "navigation": {
     "map": "Mapa strzelnic",
+    "offices": "Biura Terenowe",
     "catalog": "Katalog strzelnic",
     "rangeInfo": "Strzelnica",
+    "officeInfo": "Biuro terenowe",
+    "meetupInfo": "Miejsce spotkań",
     "calendar": "Kalendarz",
     "profile": "Mój profil",
     "userManagement": "Zarządzanie użytkownikami",
@@ -536,8 +540,21 @@
     "title": "Mapa strzelnic",
     "mapTitle": "Mapa strzelnic",
     "catalogTitle": "Katalog strzelnic",
+    "officesTitle": "Biura Terenowe",
     "notices": {
       "rangeNotFound": "Strzelnica nie istnieje."
+    },
+    "mapModes": {
+      "label": "Tryb mapy",
+      "openClub": "Otwarte klubowe",
+      "clubRanges": "Klubowe",
+      "ranges": "Strzelnice",
+      "all": "Wszystkie"
+    },
+    "offices": {
+      "modeLabel": "Typ pozycji",
+      "modeOffices": "Biura terenowe",
+      "modeMeetups": "Miejsca spotkań"
     },
     "catalog": {
       "filters": {
@@ -572,6 +589,14 @@
     },
     "map": {
       "empty": "Brak danych do wyświetlenia na mapie."
+    }
+  },
+  "officeLanding": {
+    "labels": {
+      "location": "Lokalizacja",
+      "details": "Szczegóły",
+      "address": "Adres",
+      "phone": "Telefon"
     }
   }
 }

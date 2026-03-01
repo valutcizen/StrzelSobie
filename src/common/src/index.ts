@@ -2,6 +2,7 @@ export * from './auth/dto';
 export * from './events/dto';
 export * from './ranges/dto';
 export * from './ranges/model';
+export * from './ranges/service';
 export * from './reservations/dto';
 export * from './users/dto';
 export * from './result';

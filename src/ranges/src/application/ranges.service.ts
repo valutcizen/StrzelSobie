@@ -2,7 +2,6 @@ import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-
 import {
   CreateRangeCommand,
   ForbiddenError,
-  GetRangesOptions,
   InvalidRangeSlugError,
   isValidRangeSlug,
   RangeAlreadyExistsError,
@@ -29,7 +28,7 @@ const DEFAULT_TOTAL_TRACKS = 1;
 export class RangesService implements IRangesService {
   constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
-  public async getRanges(options?: GetRangesOptions): Promise<Result<RangeListResponseDto>> {
+  public async getRanges(options?: { types?: Array<ShootingRange['type']> }): Promise<Result<RangeListResponseDto>> {
 
     try {
       const data = await this.rangesRepository.findAll({ types: options?.types });
@@ -363,15 +362,24 @@ export class RangesService implements IRangesService {
       typeof extras.allowMemberEvents === 'boolean' ? extras.allowMemberEvents : undefined;
     const mapLogoUrl = this.parseOptionalString(extras.mapLogoUrl);
     const voivodeship = this.parseOptionalString(extras.voivodeship);
+    const address = this.parseOptionalString(extras.address);
+    const phone = this.parseOptionalString(extras.phone);
+    const details = this.parseOptionalString(extras.details);
     const hasParkingLocation = Object.prototype.hasOwnProperty.call(extras, 'parkingLocation');
     const hasMapLogo = Object.prototype.hasOwnProperty.call(extras, 'mapLogoUrl');
     const hasVoivodeship = Object.prototype.hasOwnProperty.call(extras, 'voivodeship');
+    const hasAddress = Object.prototype.hasOwnProperty.call(extras, 'address');
+    const hasPhone = Object.prototype.hasOwnProperty.call(extras, 'phone');
+    const hasDetails = Object.prototype.hasOwnProperty.call(extras, 'details');
 
     return {
       ...(parkingLocation ? { parkingLocation } : hasParkingLocation ? { parkingLocation: null } : {}),
       ...(allowMemberEvents !== undefined ? { allowMemberEvents } : {}),
       ...(mapLogoUrl !== undefined ? { mapLogoUrl } : hasMapLogo ? { mapLogoUrl: null } : {}),
       ...(voivodeship !== undefined ? { voivodeship } : hasVoivodeship ? { voivodeship: null } : {}),
+      ...(address !== undefined ? { address } : hasAddress ? { address: null } : {}),
+      ...(phone !== undefined ? { phone } : hasPhone ? { phone: null } : {}),
+      ...(details !== undefined ? { details } : hasDetails ? { details: null } : {}),
     };
   }
 

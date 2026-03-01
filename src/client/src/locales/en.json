@@ -40,12 +40,16 @@
     "ally": "Ally range",
     "coming-soon": "Coming soon",
     "meetup": "Meeting place",
+    "office": "Field office",
     "unknown": "Range"
   },
   "navigation": {
     "map": "Range map",
+    "offices": "Field offices",
     "catalog": "Range catalog",
     "rangeInfo": "Range info",
+    "officeInfo": "Field office",
+    "meetupInfo": "Meeting place",
     "calendar": "Calendar",
     "profile": "My profile",
     "userManagement": "User Management",
@@ -536,8 +540,21 @@
     "title": "Range map",
     "mapTitle": "Range map",
     "catalogTitle": "Range catalog",
+    "officesTitle": "Field offices",
     "notices": {
       "rangeNotFound": "Range does not exist."
+    },
+    "mapModes": {
+      "label": "Map mode",
+      "openClub": "Open club",
+      "clubRanges": "Club ranges",
+      "ranges": "Ranges",
+      "all": "All"
+    },
+    "offices": {
+      "modeLabel": "Item type",
+      "modeOffices": "Field offices",
+      "modeMeetups": "Meeting places"
     },
     "catalog": {
       "filters": {
@@ -572,6 +589,14 @@
     },
     "map": {
       "empty": "No map data available."
+    }
+  },
+  "officeLanding": {
+    "labels": {
+      "location": "Location",
+      "details": "Details",
+      "address": "Address",
+      "phone": "Phone"
     }
   }
 }

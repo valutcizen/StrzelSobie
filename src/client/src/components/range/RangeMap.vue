@@ -28,6 +28,7 @@ import { computed, ref, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import L, { type DivIcon, type Map as LeafletMap } from 'leaflet'
 import type { RangeSummary } from '@/types/range'
+import type { RangeType } from '@strzel-sobie/common'
 
 interface Props {
   ranges: RangeSummary[]
@@ -74,7 +75,6 @@ const polandInteractionBounds = L.latLngBounds(
   [POLAND_BOUNDS.latMax + POLAND_INTERACTION_PADDING.north, POLAND_BOUNDS.lngMax + POLAND_INTERACTION_PADDING.east],
 )
 
-type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup'
 type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } }
 
 const createDefaultLogoDataUri = (svgContent: string): string => {
@@ -95,6 +95,7 @@ const typeStyleMap: Record<RangeType, { bgColor: string; logoUrl: string }> = {
   ally: { bgColor: '#1565c0', logoUrl: DEFAULT_ALLY_LOGO },
   'coming-soon': { bgColor: '#ef6c00', logoUrl: DEFAULT_CLUB_LOGO },
   meetup: { bgColor: '#00695c', logoUrl: DEFAULT_CLUB_LOGO },
+  office: { bgColor: '#00897b', logoUrl: DEFAULT_CLUB_LOGO },
 }
 
 const validRanges = computed(() =>
@@ -105,7 +106,7 @@ const validRanges = computed(() =>
 const hasMarkers = computed(() => validRanges.value.length > 0)
 
 const normalizeRangeType = (value: string | undefined): RangeType => {
-  if (value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup') {
+  if (value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup' || value === 'office') {
     return value
   }
 
@@ -180,6 +181,9 @@ const getMarkerZIndex = (range: RangeSummary, isSelected: boolean): number => {
     case 'meetup':
       baseZIndex = 250
       break
+    case 'office':
+      baseZIndex = 280
+      break
     default:
       baseZIndex = 150 // Default for unknown types
   }
@@ -195,7 +199,7 @@ const createClusterIcon = (cluster: L.MarkerCluster): DivIcon => {
       acc[type] += 1
       return acc
     },
-    { club: 0, ally: 0, 'coming-soon': 0, meetup: 0 },
+    { club: 0, ally: 0, 'coming-soon': 0, meetup: 0, office: 0 },
   )
 
   const dominantType = (Object.entries(byType) as Array<[RangeType, number]>)

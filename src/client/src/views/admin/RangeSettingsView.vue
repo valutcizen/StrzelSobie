@@ -86,6 +86,7 @@ const rangeTypeOptions = computed(() => [
   { value: 'ally', label: t('rangeTypes.ally') },
   { value: 'coming-soon', label: t('rangeTypes.coming-soon') },
   { value: 'meetup', label: t('rangeTypes.meetup') },
+  { value: 'office', label: t('rangeTypes.office') },
 ])
 
 const voivodeshipOptions = computed(() => [
@@ -164,7 +165,7 @@ const schema = yup.object({
   displayName: yup.string().required(t('admin.rangeSettings.validation.required')),
   type: yup
     .mixed<RangeDetails['type']>()
-    .oneOf(['club', 'ally', 'coming-soon', 'meetup'])
+    .oneOf(['club', 'ally', 'coming-soon', 'meetup', 'office'])
     .required(t('admin.rangeSettings.validation.required')),
   allowsReservations: yup.boolean().required(),
   allowMemberEvents: yup.boolean().required(),
