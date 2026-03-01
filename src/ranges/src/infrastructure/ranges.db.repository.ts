@@ -1,4 +1,5 @@
 import { IDatabase } from '@strzel-sobie/common/models';
+import type { RangeType } from '@strzel-sobie/common';
 import { IRangesRepository } from '../domain/ranges.repository';
 import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
@@ -6,7 +7,7 @@ import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.mo
 type ShootingRangeDb = {
   id: number;
   slug: string;
-  type: 'club' | 'ally' | 'coming-soon' | 'meetup';
+  type: RangeType;
   allows_reservations: number;
   is_deleted: number;
   public_description: string | null;

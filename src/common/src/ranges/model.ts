@@ -1,7 +1,10 @@
+export const RANGE_TYPES = ['club', 'ally', 'coming-soon', 'meetup', 'office'] as const;
+export type RangeType = (typeof RANGE_TYPES)[number];
+
 export interface ShootingRange {
   id: number;
   slug: string;
-  type: 'club' | 'ally' | 'coming-soon' | 'meetup';
+  type: RangeType;
   allows_reservations: number;
   is_deleted: number;
   public_description: string | null;

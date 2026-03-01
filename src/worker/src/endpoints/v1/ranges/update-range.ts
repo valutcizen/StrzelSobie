@@ -1,4 +1,4 @@
-import { ForbiddenError, RangeNotFoundError, UpdateRangeCommand, UserDto } from '@strzel-sobie/common';
+import { ForbiddenError, RANGE_TYPES, RangeNotFoundError, UpdateRangeCommand, UserDto } from '@strzel-sobie/common';
 import { IRangesService } from '@strzel-sobie/common/models';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ const parkingLocationSchema = z
 
 const updateRangeCommandSchema = z.object({
   displayName: z.string().trim().min(1).optional(),
-  type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
+  type: z.enum(RANGE_TYPES).optional(),
   allowsReservations: z.boolean().optional(),
   publicDescription: z.string().optional().nullable(),
   memberDescription: z.string().optional().nullable(),

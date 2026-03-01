@@ -1,6 +1,7 @@
 import {
   ForbiddenError,
   InvalidRangeSlugError,
+  RANGE_TYPES,
   RANGE_SLUG_REGEX,
   RangeAlreadyExistsError,
 } from '@strzel-sobie/common';
@@ -27,7 +28,7 @@ const createRangeCommandSchema = z.object({
     .min(1)
     .regex(RANGE_SLUG_REGEX, 'Range slug must contain only lowercase letters, numbers, and dashes'),
   displayName: z.string().trim().optional(),
-  type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
+  type: z.enum(RANGE_TYPES).optional(),
   allowsReservations: z.boolean().optional(),
   publicDescription: z.string().optional().nullable(),
   memberDescription: z.string().optional().nullable(),

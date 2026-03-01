@@ -1,11 +1,12 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { z } from 'zod';
+import { RANGE_TYPES } from '@strzel-sobie/common';
 import { Context } from '../../../types';
 
 const mapRangeSchema = z.object({
   id: z.union([z.string(), z.number()]),
   slug: z.string(),
-  type: z.enum(['club', 'ally', 'coming-soon', 'meetup']).optional(),
+  type: z.enum(RANGE_TYPES).optional(),
   displayName: z.string(),
   latitude: z.number(),
   longitude: z.number(),

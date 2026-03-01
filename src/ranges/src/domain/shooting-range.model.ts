@@ -1,7 +1,9 @@
+import type { RangeType } from '@strzel-sobie/common';
+
 export type ShootingRange = {
   id: number;
   slug: string;
-  type: 'club' | 'ally' | 'coming-soon' | 'meetup';
+  type: RangeType;
   allowsReservations: boolean;
   isDeleted: boolean;
   publicDescription?: string | null;
