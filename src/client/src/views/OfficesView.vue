@@ -13,7 +13,7 @@ const rangeStore = useRangeStore()
 
 const page = ref(1)
 const selectedSlug = ref<string | null>(null)
-const mode = ref<'office' | 'meetup'>('office')
+const mode = ref<'office' | 'all'>('office')
 
 const isLoading = computed(() => rangeStore.isDirectoryLoading)
 const loadError = computed(() => rangeStore.directoryError)
@@ -21,7 +21,7 @@ const ranges = computed(() => rangeStore.directory)
 
 const modeOptions = computed(() => [
   { value: 'office' as const, label: t('rangeDirectory.offices.modeOffices') },
-  { value: 'meetup' as const, label: t('rangeDirectory.offices.modeMeetups') },
+  { value: 'all' as const, label: t('rangeDirectory.offices.modeAll') },
 ])
 
 const sortedRanges = computed<RangeSummary[]>(() => {
@@ -34,9 +34,10 @@ const currentPage = computed(() => Math.min(page.value, pageCount.value))
 
 const loadRanges = async () => {
   try {
+    const types = mode.value === 'all' ? ['office', 'meetup'] : ['office']
     await rangeStore.fetchDirectory({
       sort: 'name',
-      types: [mode.value],
+      types,
     })
     selectedSlug.value = sortedRanges.value[0]?.slug ?? null
   } catch (error) {
@@ -60,7 +61,8 @@ watch(pageCount, (next) => {
 
 const handleSelect = (slug: string) => {
   selectedSlug.value = slug
-  if (mode.value === 'office') {
+  const selected = sortedRanges.value.find((range) => range.slug === slug)
+  if (selected?.type === 'office') {
     router.push({ name: 'OfficeLanding', params: { rangeSlug: slug } })
     return
   }

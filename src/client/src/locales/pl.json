@@ -558,6 +558,7 @@
     "offices": {
       "modeLabel": "Typ pozycji",
       "modeOffices": "Biura terenowe",
+      "modeAll": "Wszystkie",
       "modeMeetups": "Miejsca spotkań"
     },
     "catalog": {

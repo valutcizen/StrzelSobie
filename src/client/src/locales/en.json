@@ -558,6 +558,7 @@
     "offices": {
       "modeLabel": "Item type",
       "modeOffices": "Field offices",
+      "modeAll": "All",
       "modeMeetups": "Meeting places"
     },
     "catalog": {
