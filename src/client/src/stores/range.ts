@@ -151,6 +151,8 @@ export const useRangeStore = defineStore('range', {
         } else {
           await this.fetchRangeDetails(rangeSlug, { force: true })
         }
+
+        return undefined
       } catch (error) {
         this.lastError = error instanceof Error ? error.message : 'Nie udało się zapisać danych strzelnicy.'
         throw error
