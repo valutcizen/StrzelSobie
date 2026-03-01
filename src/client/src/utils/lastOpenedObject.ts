@@ -11,11 +11,11 @@ const isValidRangeType = (value: unknown): value is RangeType =>
   value === 'club' || value === 'ally' || value === 'coming-soon' || value === 'meetup' || value === 'office'
 
 export const getLastOpenedObject = (): LastOpenedObject | null => {
-  if (typeof sessionStorage === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
     return null
   }
 
-  const raw = sessionStorage.getItem(LAST_OPENED_OBJECT_KEY)
+  const raw = window.sessionStorage.getItem(LAST_OPENED_OBJECT_KEY)
   if (!raw) {
     return null
   }
@@ -36,17 +36,17 @@ export const getLastOpenedObject = (): LastOpenedObject | null => {
 }
 
 export const setLastOpenedObject = (value: LastOpenedObject) => {
-  if (typeof sessionStorage === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
     return
   }
 
-  sessionStorage.setItem(LAST_OPENED_OBJECT_KEY, JSON.stringify(value))
+  window.sessionStorage.setItem(LAST_OPENED_OBJECT_KEY, JSON.stringify(value))
 }
 
 export const clearLastOpenedObject = () => {
-  if (typeof sessionStorage === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
     return
   }
 
-  sessionStorage.removeItem(LAST_OPENED_OBJECT_KEY)
+  window.sessionStorage.removeItem(LAST_OPENED_OBJECT_KEY)
 }
