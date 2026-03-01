@@ -158,11 +158,19 @@ const goBack = () => {
                 >
                   <v-card variant="outlined">
                     <v-card-title class="text-subtitle-1">
-                      {{ t('officeLanding.labels.location') }}
+                      Kontakt
                     </v-card-title>
                     <v-divider />
-                    <v-card-text data-testid="office-localization">
-                      <div>{{ coordinatesLabel ?? '-' }}</div>
+                    <v-card-text>
+                      <div
+                        class="text-caption text-medium-emphasis mb-1"
+                        data-testid="office-localization-label"
+                      >
+                        {{ t('officeLanding.labels.location') }}
+                      </div>
+                      <div data-testid="office-localization">
+                        {{ coordinatesLabel ?? '-' }}
+                      </div>
                       <div
                         v-if="locationLinks.length > 0"
                         class="office-location-links mt-3"
@@ -181,6 +189,25 @@ const goBack = () => {
                           {{ link.label }}
                         </v-btn>
                       </div>
+                      <div class="text-caption text-medium-emphasis mt-4 mb-1">
+                      {{ t('officeLanding.labels.address') }}
+                      </div>
+                      <div data-testid="office-address">
+                      {{ address ?? '-' }}
+                      </div>
+
+                      <div class="text-caption text-medium-emphasis mt-4 mb-1">
+                      {{ t('officeLanding.labels.phone') }}
+                      </div>
+                      <div data-testid="office-phone">
+                      <a
+                        v-if="phone"
+                        :href="`tel:${phone}`"
+                      >
+                        {{ phone }}
+                      </a>
+                      <span v-else>-</span>
+                      </div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -195,40 +222,6 @@ const goBack = () => {
                     <v-divider />
                     <v-card-text data-testid="office-details">
                       {{ details ?? '-' }}
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-                <v-col
-                  cols="12"
-                  md="6"
-                >
-                  <v-card variant="outlined">
-                    <v-card-title class="text-subtitle-1">
-                      {{ t('officeLanding.labels.address') }}
-                    </v-card-title>
-                    <v-divider />
-                    <v-card-text data-testid="office-address">
-                      {{ address ?? '-' }}
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-                <v-col
-                  cols="12"
-                  md="6"
-                >
-                  <v-card variant="outlined">
-                    <v-card-title class="text-subtitle-1">
-                      {{ t('officeLanding.labels.phone') }}
-                    </v-card-title>
-                    <v-divider />
-                    <v-card-text data-testid="office-phone">
-                      <a
-                        v-if="phone"
-                        :href="`tel:${phone}`"
-                      >
-                        {{ phone }}
-                      </a>
-                      <span v-else>-</span>
                     </v-card-text>
                   </v-card>
                 </v-col>
