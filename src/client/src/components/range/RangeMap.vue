@@ -5,6 +5,12 @@
     elevation="1"
     data-testid="range-map"
   >
+    <div
+      v-if="$slots.controls"
+      class="range-map__controls"
+    >
+      <slot name="controls" />
+    </div>
     <div class="range-map__frame">
       <div
         ref="mapElementRef"
@@ -426,9 +432,21 @@ onBeforeUnmount(() => {
 .range-map__frame {
   position: relative;
   width: 100%;
-  height: calc(100vh - var(--app-bar-height, 96px) - var(--app-footer-height, 48px) - 16px);
-  min-height: 360px;
+  height: min(68vh, calc(100vh - var(--app-bar-height, 96px) - var(--app-footer-height, 48px) - 96px));
+  min-height: 320px;
   z-index: 1;
+}
+
+.range-map__controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 550;
+  width: min(100% - 24px, 320px);
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.2);
 }
 
 .range-map__canvas {

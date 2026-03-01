@@ -110,22 +110,6 @@ watch(
       </v-col>
     </v-row>
 
-    <v-row class="mb-4">
-      <v-col
-        cols="12"
-        md="4"
-      >
-        <v-select
-          v-model="mapMode"
-          :label="t('rangeDirectory.mapModes.label')"
-          :items="mapModeOptions"
-          item-title="label"
-          item-value="value"
-          data-testid="range-directory-map-mode"
-        />
-      </v-col>
-    </v-row>
-
     <v-row class="mb-6">
       <v-col cols="12">
         <v-alert
@@ -160,8 +144,29 @@ watch(
           :ranges="sortedRanges"
           :selected-slug="selectedSlug"
           @select="handleSelectRange"
-        />
+        >
+          <template #controls>
+            <div class="range-directory-map-controls">
+              <v-select
+                v-model="mapMode"
+                :label="t('rangeDirectory.mapModes.label')"
+                :items="mapModeOptions"
+                item-title="label"
+                item-value="value"
+                density="comfortable"
+                hide-details
+                data-testid="range-directory-map-mode"
+              />
+            </div>
+          </template>
+        </RangeMap>
       </v-col>
     </v-row>
   </v-container>
 </template>
+
+<style scoped>
+.range-directory-map-controls {
+  width: min(100%, 320px);
+}
+</style>
