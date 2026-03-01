@@ -59,13 +59,23 @@ export class RangesDbRepository implements IRangesRepository {
     };
   }
 
-  public async findAll(): Promise<ShootingRangeSummary[]> {
+  public async findAll(options?: { types?: RangeType[] }): Promise<ShootingRangeSummary[]> {
+    const normalizedTypes = (options?.types ?? []).filter(Boolean);
+
+    const whereClauses = ['is_deleted = 0'];
+    const bindValues: Array<string | number> = [];
+
+    if (normalizedTypes.length > 0) {
+      whereClauses.push(`type IN (${normalizedTypes.map(() => '?').join(', ')})`);
+      bindValues.push(...normalizedTypes);
+    }
+
     const stmt = this.db.prepare(
       `SELECT id, slug, type, allows_reservations, latitude, longitude, display_name, extras
        FROM ranges_shooting_ranges
-       WHERE is_deleted = 0`
+       WHERE ${whereClauses.join(' AND ')}`
     );
-    const { results } = await stmt.all<ShootingRangeSummaryDb>();
+    const { results } = await stmt.bind(...bindValues).all<ShootingRangeSummaryDb>();
 
     return results.map((dbRange) => this.mapDbRangeSummary(dbRange));
   }

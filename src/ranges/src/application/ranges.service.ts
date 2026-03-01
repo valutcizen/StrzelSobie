@@ -2,6 +2,7 @@ import { AuditLogEntry, IAuditService, IRangesService, UserRole } from '@strzel-
 import {
   CreateRangeCommand,
   ForbiddenError,
+  GetRangesOptions,
   InvalidRangeSlugError,
   isValidRangeSlug,
   RangeAlreadyExistsError,
@@ -28,10 +29,10 @@ const DEFAULT_TOTAL_TRACKS = 1;
 export class RangesService implements IRangesService {
   constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
 
-  public async getRanges(): Promise<Result<RangeListResponseDto>> {
+  public async getRanges(options?: GetRangesOptions): Promise<Result<RangeListResponseDto>> {
 
     try {
-      const data = await this.rangesRepository.findAll();
+      const data = await this.rangesRepository.findAll({ types: options?.types });
 
       const ranges = data.map((range: ShootingRangeSummary) => {
         const base: RangeSummaryDto = {

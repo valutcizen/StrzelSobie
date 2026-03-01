@@ -1,6 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
-import { z } from 'zod';
-import { RANGE_TYPES } from '@strzel-sobie/common';
+import { z, ZodError } from 'zod';
+import { RANGE_TYPES, type RangeType } from '@strzel-sobie/common';
 import { Context } from '../../../types';
 
 const mapRangeSchema = z.object({
@@ -13,16 +13,33 @@ const mapRangeSchema = z.object({
   mapLogoUrl: z.string().nullable().optional(),
 });
 
+const getMapRangesQuerySchema = z.object({
+  type: z.union([z.enum(RANGE_TYPES), z.array(z.enum(RANGE_TYPES))]).optional(),
+});
+
 export class GetMapRangesRoute extends OpenAPIRoute {
   schema: OpenAPIRouteSchema = {
     summary: 'Get ranges with coordinates for the embed map',
     tags: ['Ranges'],
+    request: {
+      query: getMapRangesQuerySchema,
+    },
     responses: {
       '200': {
         description: 'List of ranges available on the embedded map',
         content: {
           'application/json': {
             schema: z.array(mapRangeSchema),
+          },
+        },
+      },
+      '400': {
+        description: 'Bad Request',
+        content: {
+          'application/json': {
+            schema: z.object({
+              error: z.string(),
+            }),
           },
         },
       },
@@ -41,7 +58,18 @@ export class GetMapRangesRoute extends OpenAPIRoute {
 
   async handle(c: Context) {
     const rangesService = c.get('rangesService');
-    const result = await rangesService.getRanges();
+    let types: RangeType[] | undefined;
+    try {
+      const parsedTypes = z.array(z.enum(RANGE_TYPES)).optional().parse(new URL(c.req.url).searchParams.getAll('type'));
+      types = parsedTypes?.length ? (parsedTypes as RangeType[]) : undefined;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return c.json({ error: 'Invalid range type filter' }, 400);
+      }
+      throw error;
+    }
+
+    const result = await rangesService.getRanges({ types });
 
     if (!result.isSuccess) {
       console.error('Error while fetching ranges for map', result.getError());

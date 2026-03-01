@@ -1,7 +1,8 @@
+import type { RangeType } from '@strzel-sobie/common';
 import { ShootingRange, ShootingRangeSummary } from './shooting-range.model';
 
 export interface IRangesRepository {
-  findAll(): Promise<ShootingRangeSummary[]>;
+  findAll(options?: { types?: RangeType[] }): Promise<ShootingRangeSummary[]>;
   findBySlug(slug: string): Promise<ShootingRange | null>;
   create(range: Omit<ShootingRange, 'id'>): Promise<ShootingRange>;
   update(range: ShootingRange): Promise<void>;
