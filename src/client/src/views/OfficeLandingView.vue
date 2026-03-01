@@ -43,6 +43,31 @@ const coordinatesLabel = computed(() => {
   return null
 })
 
+const locationLinks = computed(() => {
+  const lat = currentOffice.value?.latitude
+  const lng = currentOffice.value?.longitude
+  if (typeof lat !== 'number' || typeof lng !== 'number') {
+    return []
+  }
+
+  return [
+    {
+      key: 'google',
+      href: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+      icon: 'mdi-google-maps',
+      label: t('range.actionBar.locationLinks.google'),
+      testId: 'office-location-link-google',
+    },
+    {
+      key: 'osm',
+      href: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`,
+      icon: 'mdi-map',
+      label: t('range.actionBar.locationLinks.osm'),
+      testId: 'office-location-link-osm',
+    },
+  ]
+})
+
 const loadOffice = async () => {
   if (!rangeSlug.value) {
     router.replace({ name: 'Offices' })
@@ -137,7 +162,25 @@ const goBack = () => {
                     </v-card-title>
                     <v-divider />
                     <v-card-text data-testid="office-localization">
-                      {{ coordinatesLabel ?? '-' }}
+                      <div>{{ coordinatesLabel ?? '-' }}</div>
+                      <div
+                        v-if="locationLinks.length > 0"
+                        class="office-location-links mt-3"
+                      >
+                        <v-btn
+                          v-for="link in locationLinks"
+                          :key="link.key"
+                          :href="link.href"
+                          :prepend-icon="link.icon"
+                          target="_blank"
+                          rel="noopener"
+                          variant="tonal"
+                          size="small"
+                          :data-testid="link.testId"
+                        >
+                          {{ link.label }}
+                        </v-btn>
+                      </div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -197,3 +240,11 @@ const goBack = () => {
     </v-row>
   </v-container>
 </template>
+
+<style scoped>
+.office-location-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+</style>
