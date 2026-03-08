@@ -383,4 +383,52 @@ describe('ReservationsDbRepository integration', () => {
     });
     expect(record.created_at).toBeDefined();
   });
+
+  it('create/list/get/update admin message templates', async () => {
+    const created = await repository.createAdminMessageTemplate({
+      range_id: 1,
+      created_by_admin_id: 1,
+      name: 'Base template',
+      content: 'Initial content',
+    });
+    expect(created).toMatchObject({
+      id: expect.any(Number),
+      range_id: 1,
+      created_by_admin_id: 1,
+      name: 'Base template',
+      content: 'Initial content',
+      is_active: 1,
+    });
+
+    const activeOnly = await repository.listAdminMessageTemplates(1, false);
+    expect(activeOnly.map((template) => template.id)).toContain(created.id);
+
+    const fetched = await repository.getAdminMessageTemplateById(created.id);
+    expect(fetched?.id).toBe(created.id);
+
+    const updated = await repository.updateAdminMessageTemplate(created.id, {
+      name: 'Updated template',
+      content: 'Updated content',
+      is_active: 0,
+    });
+    expect(updated).toMatchObject({
+      id: created.id,
+      name: 'Updated template',
+      content: 'Updated content',
+      is_active: 0,
+    });
+
+    const activeAfterDeactivation = await repository.listAdminMessageTemplates(1, false);
+    expect(activeAfterDeactivation.find((template) => template.id === created.id)).toBeUndefined();
+
+    const includeInactive = await repository.listAdminMessageTemplates(1, true);
+    expect(includeInactive.find((template) => template.id === created.id)).toBeDefined();
+  });
+
+  it('updateAdminMessageTemplate returns null for unknown template', async () => {
+    const result = await repository.updateAdminMessageTemplate(9999, {
+      name: 'No template',
+    });
+    expect(result).toBeNull();
+  });
 });

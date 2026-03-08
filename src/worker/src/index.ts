@@ -287,9 +287,13 @@ const worker = {
       return;
     }
     const cleanup = result.getValue();
+    const expiredCount =
+      typeof cleanup === 'number' ? cleanup : cleanup.expiredCount;
+    const expiredFailedEmailCount =
+      typeof cleanup === 'number' ? 0 : cleanup.expiredFailedEmailCount;
     console.info('Scheduled notifications cleanup completed', {
-      expiredCount: cleanup.expiredCount,
-      expiredFailedEmailCount: cleanup.expiredFailedEmailCount,
+      expiredCount,
+      expiredFailedEmailCount,
     });
   },
 };

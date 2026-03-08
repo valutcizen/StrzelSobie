@@ -193,4 +193,108 @@ describe('UserDbRepository integration', () => {
     const lookup = await repository.findByEmail('member@example.com');
     expect(lookup).toBeNull();
   });
+
+  it('upsertAdminContactProfile persists and returns profile data', async () => {
+    const profile = await repository.upsertAdminContactProfile({
+      userId: 2,
+      email: 'range-admin@example.com',
+      phoneNumber: '+48123123123',
+      displayName: 'Range Admin',
+      isHiddenGlobally: false,
+    });
+
+    expect(profile).toEqual({
+      userId: 2,
+      email: 'range-admin@example.com',
+      phoneNumber: '+48123123123',
+      displayName: 'Range Admin',
+      isHiddenGlobally: false,
+    });
+
+    const stored = await repository.getAdminContactProfile(2);
+    expect(stored).toEqual(profile);
+  });
+
+  it('upsertAdminContactProfileOverride persists range override and can be fetched', async () => {
+    const override = await repository.upsertAdminContactProfileOverride({
+      userId: 2,
+      rangeId: 1,
+      email: 'override@example.com',
+      phoneNumber: '+48999888777',
+      displayName: 'Override Admin',
+      isHiddenInRange: false,
+    });
+
+    expect(override).toEqual({
+      userId: 2,
+      rangeId: 1,
+      email: 'override@example.com',
+      phoneNumber: '+48999888777',
+      displayName: 'Override Admin',
+      isHiddenInRange: false,
+    });
+
+    const stored = await repository.getAdminContactProfileOverride(2, 1);
+    expect(stored).toEqual(override);
+  });
+
+  it('getVisibleRangeAdminContacts applies profile visibility and override precedence', async () => {
+    await repository.assignRangeRole(2, 5, 1);
+    await repository.upsertAdminContactProfile({
+      userId: 2,
+      email: 'profile@example.com',
+      phoneNumber: '+48111222333',
+      displayName: 'Profile Admin',
+      isHiddenGlobally: false,
+    });
+    await repository.upsertAdminContactProfileOverride({
+      userId: 2,
+      rangeId: 1,
+      email: 'override@example.com',
+      phoneNumber: '+48444555666',
+      displayName: 'Override Admin',
+      isHiddenInRange: false,
+    });
+
+    const visible = await repository.getVisibleRangeAdminContacts(1);
+    expect(visible).toEqual([
+      {
+        userId: 2,
+        email: 'override@example.com',
+        phoneNumber: '+48444555666',
+        displayName: 'Override Admin',
+      },
+    ]);
+
+    await repository.upsertAdminContactProfileOverride({
+      userId: 2,
+      rangeId: 1,
+      email: 'override@example.com',
+      phoneNumber: '+48444555666',
+      displayName: 'Override Admin',
+      isHiddenInRange: true,
+    });
+
+    const hiddenInRange = await repository.getVisibleRangeAdminContacts(1);
+    expect(hiddenInRange).toEqual([]);
+
+    await repository.upsertAdminContactProfile({
+      userId: 2,
+      email: 'profile@example.com',
+      phoneNumber: '+48111222333',
+      displayName: 'Profile Admin',
+      isHiddenGlobally: true,
+    });
+    await repository.upsertAdminContactProfileOverride({
+      userId: 2,
+      rangeId: 1,
+      email: 'override@example.com',
+      phoneNumber: '+48444555666',
+      displayName: 'Override Admin',
+      isHiddenInRange: false,
+    });
+
+    const hiddenGlobally = await repository.getVisibleRangeAdminContacts(1);
+    expect(hiddenGlobally).toEqual([]);
+  });
 });
