@@ -48,3 +48,8 @@ export type NotificationEnvelope = {
 };
 
 export type NotificationsResult = Promise<Result<void>>;
+
+export type CleanupNotificationsResultDto = {
+  expiredCount: number;
+  expiredFailedEmailCount: number;
+};

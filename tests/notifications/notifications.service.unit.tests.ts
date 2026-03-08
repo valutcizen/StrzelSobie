@@ -12,6 +12,7 @@ type RepositoryMocks = {
   updateMessageStatus: ReturnType<typeof vi.fn>;
   createDeliveryAttempt: ReturnType<typeof vi.fn>;
   getUserEmail: ReturnType<typeof vi.fn>;
+  countFailedEmailMessagesToExpire: ReturnType<typeof vi.fn>;
   expireMessagesBefore: ReturnType<typeof vi.fn>;
 };
 
@@ -44,6 +45,9 @@ const createRepository = (): RepositoryMocks => {
       .fn<INotificationsRepository['createDeliveryAttempt']>()
       .mockResolvedValue(undefined),
     getUserEmail: vi.fn<INotificationsRepository['getUserEmail']>().mockResolvedValue('member@example.com'),
+    countFailedEmailMessagesToExpire: vi
+      .fn<INotificationsRepository['countFailedEmailMessagesToExpire']>()
+      .mockResolvedValue(1),
     expireMessagesBefore: vi.fn<INotificationsRepository['expireMessagesBefore']>().mockResolvedValue(3),
   };
 };
@@ -156,7 +160,11 @@ describe('NotificationsService', () => {
     const result = await service.cleanupExpiredNotifications('2024-02-01T00:00:00.000Z');
 
     expect(result.isSuccess).toBe(true);
-    expect(result.getValue()).toBe(3);
+    expect(result.getValue()).toEqual({
+      expiredCount: 3,
+      expiredFailedEmailCount: 1,
+    });
+    expect(repository.countFailedEmailMessagesToExpire).toHaveBeenCalledWith('2024-02-01T00:00:00.000Z');
     expect(repository.expireMessagesBefore).toHaveBeenCalledWith('2024-02-01T00:00:00.000Z');
   });
 });

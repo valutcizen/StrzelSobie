@@ -95,7 +95,7 @@ const NOOP_NOTIFICATIONS_SERVICE: INotificationsService = {
     return Result.ok(undefined);
   },
   async cleanupExpiredNotifications() {
-    return Result.ok(0);
+    return Result.ok({ expiredCount: 0, expiredFailedEmailCount: 0 });
   },
 };
 

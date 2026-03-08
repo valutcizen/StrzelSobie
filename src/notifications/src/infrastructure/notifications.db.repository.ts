@@ -83,6 +83,22 @@ export class NotificationsDbRepository implements INotificationsRepository {
     return row?.email ?? null;
   }
 
+  public async countFailedEmailMessagesToExpire(cutoffIso: string): Promise<number> {
+    const row = await this.db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM notifications_messages
+         WHERE channel = 'email'
+           AND status = 'failed'
+           AND expires_at IS NOT NULL
+           AND expires_at <= ?`
+      )
+      .bind(cutoffIso)
+      .first<{ count: number }>();
+
+    return Number(row?.count ?? 0);
+  }
+
   public async expireMessagesBefore(cutoffIso: string): Promise<number> {
     const result = await this.db
       .prepare(

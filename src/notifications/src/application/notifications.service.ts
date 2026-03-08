@@ -1,4 +1,5 @@
 import {
+  CleanupNotificationsResultDto,
   INotificationsService,
   NotificationType,
   NotifyNewPropositionCommand,
@@ -112,11 +113,16 @@ export class NotificationsService implements INotificationsService {
     });
   }
 
-  public async cleanupExpiredNotifications(nowIso?: string): Promise<Result<number>> {
+  public async cleanupExpiredNotifications(
+    nowIso?: string
+  ): Promise<Result<CleanupNotificationsResultDto>> {
     try {
       const now = nowIso ? new Date(nowIso) : new Date();
-      const expiredCount = await this.repository.expireMessagesBefore(now.toISOString());
-      return Result.ok(expiredCount);
+      const cutoffIso = now.toISOString();
+      const expiredFailedEmailCount =
+        await this.repository.countFailedEmailMessagesToExpire(cutoffIso);
+      const expiredCount = await this.repository.expireMessagesBefore(cutoffIso);
+      return Result.ok({ expiredCount, expiredFailedEmailCount });
     } catch (error) {
       return Result.fail(error as Error);
     }

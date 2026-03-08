@@ -286,8 +286,10 @@ const worker = {
       console.error('Scheduled notifications cleanup failed', result.getError());
       return;
     }
+    const cleanup = result.getValue();
     console.info('Scheduled notifications cleanup completed', {
-      expiredCount: result.getValue(),
+      expiredCount: cleanup.expiredCount,
+      expiredFailedEmailCount: cleanup.expiredFailedEmailCount,
     });
   },
 };

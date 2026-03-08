@@ -38,5 +38,6 @@ export interface INotificationsRepository {
   ): Promise<void>;
   createDeliveryAttempt(record: NotificationDeliveryAttemptRecord): Promise<void>;
   getUserEmail(userId: number): Promise<string | null>;
+  countFailedEmailMessagesToExpire(cutoffIso: string): Promise<number>;
   expireMessagesBefore(cutoffIso: string): Promise<number>;
 }
