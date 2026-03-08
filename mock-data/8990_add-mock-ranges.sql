@@ -82,3 +82,8 @@ INSERT INTO ranges_shooting_ranges (
     0,
     '{"address":"ul. Strzelecka 10, 31-503 Kraków","phone":"+48123456789","details":"Biuro terenowe obsługujące region Kraków."}'
   );
+
+INSERT INTO ranges_firing_lines (id, range_id, name, length_meters, tracks_count, sort_order) VALUES
+  (101, 1, 'Line 1', 25, 4, 1),
+  (102, 1, 'Line 2', 50, 4, 2),
+  (103, 1, 'Line 3', 100, 2, 3);

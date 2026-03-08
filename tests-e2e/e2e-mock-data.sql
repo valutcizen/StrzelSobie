@@ -8,11 +8,18 @@
 
 PRAGMA foreign_keys = OFF;
 
+DELETE FROM notifications_delivery_attempts;
+DELETE FROM notifications_messages;
+DELETE FROM events_event_firing_lines;
+DELETE FROM reservations_admin_message_templates;
+DELETE FROM users_admin_contact_profile_overrides;
+DELETE FROM users_admin_contact_profiles;
 DELETE FROM reservations_propositions;
 DELETE FROM reservations_reservations;
 DELETE FROM reservations_records;
 DELETE FROM events_signups;
 DELETE FROM events_events;
+DELETE FROM ranges_firing_lines;
 DELETE FROM users_user_global_roles;
 DELETE FROM users_user_range_roles;
 DELETE FROM auth_user_credentials;
@@ -110,6 +117,11 @@ INSERT INTO ranges_shooting_ranges (
     '{"address":"ul. Testowa 1, Kraków","phone":"+48111222333","details":"E2E office details."}'
   );
 
+INSERT INTO ranges_firing_lines (id, range_id, name, length_meters, tracks_count, sort_order) VALUES
+  (9901, 99, 'Line 1', 25, 4, 1),
+  (9902, 99, 'Line 2', 50, 4, 2),
+  (9903, 99, 'Line 3', 100, 2, 3);
+
 -- =============================================================================
 -- Users & Credentials
 -- All passwords are the username + "password", e.g., "adminpassword"
@@ -183,24 +195,119 @@ INSERT INTO users_user_global_roles (user_id, role_id) VALUES (908, 2), (908, 1)
 -- =============================================================================
 
 -- Proposition from a member (903) - for testing highlighting and acceptance
-INSERT INTO reservations_propositions (id, user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
-VALUES (1001, 903, 99, 'open', '2025-11-10', '12:00', '13:00', 2);
+INSERT INTO reservations_propositions (
+  id,
+  user_id,
+  range_id,
+  status,
+  event_date,
+  start_time,
+  end_time,
+  firing_line_id,
+  metadata_json
+) VALUES (
+  1001,
+  903,
+  99,
+  'open',
+  '2025-11-10',
+  '12:00',
+  '13:00',
+  9901,
+  '{"hasCoordinatorLicenseInGroup":true,"trackNos":[1,2]}'
+);
 
--- Proposition from a guest (904) - for testing basic acceptance
-INSERT INTO reservations_propositions (id, user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
-VALUES (1002, 904, 99, 'open', '2025-11-11', '14:00', '15:00', 1);
+-- Proposition from another member (908) - for testing basic acceptance
+INSERT INTO reservations_propositions (
+  id,
+  user_id,
+  range_id,
+  status,
+  event_date,
+  start_time,
+  end_time,
+  firing_line_id,
+  metadata_json
+) VALUES (
+  1002,
+  908,
+  99,
+  'open',
+  '2025-11-11',
+  '14:00',
+  '15:00',
+  9902,
+  '{"hasCoordinatorLicenseInGroup":false,"trackNos":[1]}'
+);
 
 -- A confirmed reservation for calendar checks
-INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
-VALUES (2001, 902, 99, '2025-11-12', '10:00', '12:00', 3);
+INSERT INTO reservations_reservations (
+  id,
+  proposition_id,
+  approved_by_admin_id,
+  range_id,
+  event_date,
+  start_time,
+  end_time,
+  firing_line_id,
+  metadata_json
+) VALUES (
+  2001,
+  NULL,
+  906,
+  99,
+  '2025-11-12',
+  '10:00',
+  '12:00',
+  9901,
+  '{"trackNos":[1,2,3]}'
+);
 
 -- A confirmed reservation for calendar checks
-INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
-VALUES (2002, 902, 99, '2025-11-13', '11:00', '12:30', 2);
+INSERT INTO reservations_reservations (
+  id,
+  proposition_id,
+  approved_by_admin_id,
+  range_id,
+  event_date,
+  start_time,
+  end_time,
+  firing_line_id,
+  metadata_json
+) VALUES (
+  2002,
+  NULL,
+  906,
+  99,
+  '2025-11-13',
+  '11:00',
+  '12:30',
+  9902,
+  '{"trackNos":[2,3]}'
+);
 
 -- A confirmed reservation for calendar checks
-INSERT INTO reservations_reservations (id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
-VALUES (2003, 902, 99, '2025-11-14', '16:00', '17:00', 1);
+INSERT INTO reservations_reservations (
+  id,
+  proposition_id,
+  approved_by_admin_id,
+  range_id,
+  event_date,
+  start_time,
+  end_time,
+  firing_line_id,
+  metadata_json
+) VALUES (
+  2003,
+  NULL,
+  906,
+  99,
+  '2025-11-14',
+  '16:00',
+  '17:00',
+  9903,
+  '{"trackNos":[1]}'
+);
 
 -- =============================================================================
 -- Events
@@ -361,6 +468,17 @@ INSERT INTO events_events (
     'members_only',
     '{"public_description":"Members-only meetup created by a member.","member_description":"Members can bring guests.","registration_type":"registration_required","capacity_type":"unlimited","capacity_limit":null,"guest_policy":"guests_allowed","waitlist_limit":null,"registration_deadline":null}'
   );
+
+INSERT INTO events_event_firing_lines (event_id, firing_line_id) VALUES
+  (3001, 9901),
+  (3002, 9902),
+  (3003, 9901),
+  (3004, 9903),
+  (3005, 9901),
+  (3006, 9902),
+  (3007, 9901),
+  (3008, 9902),
+  (3009, 9903);
 
 INSERT INTO events_signups (id, event_id, user_id, status, guests_count) VALUES
   (4001, 3002, 902, 'confirmed', 0),
