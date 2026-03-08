@@ -13,7 +13,9 @@ describe('mapCalendarEvents', () => {
           eventDate: '2024-05-01',
           startTime: '10:00',
           endTime: '11:30',
-          tracksRequested: 2,
+          firingLineId: 3,
+          trackNos: [1, 2],
+          hasCoordinatorLicenseInGroup: false,
         },
       ],
       reservations: [
@@ -23,9 +25,10 @@ describe('mapCalendarEvents', () => {
           eventDate: '2024-05-02',
           startTime: '08:00',
           endTime: '09:15',
-          tracksRequested: 1,
+          firingLineId: 3,
+          trackNos: [1],
           details: {
-            coordinatorId: 44,
+            approvedByAdminId: 44,
           },
           proposition: {
             id: 17,
@@ -35,7 +38,10 @@ describe('mapCalendarEvents', () => {
             eventDate: '2024-05-02',
             startTime: '07:00',
             endTime: '08:30',
-            tracksRequested: 2,
+            firingLineId: 3,
+            trackNos: [1, 2],
+            hasCoordinatorLicenseInGroup: true,
+            metadata: { trackNos: [1, 2], hasCoordinatorLicenseInGroup: true },
             createdAt: '2024-05-01T10:00:00Z',
             requester: {
               id: 88,
@@ -68,7 +74,8 @@ describe('mapCalendarEvents', () => {
     expect(first.type).toBe('proposition')
     expect(first.start).toBe('2024-05-01T10:00:00')
     expect(first.meta?.propositionId).toBe(5)
-    expect(first.meta?.tracksRequested).toBe(2)
+    expect(first.meta?.trackNos).toEqual([1, 2])
+    expect(first.meta?.firingLineId).toBe(3)
     expect(first.meta?.isMember).toBe(false)
 
     expect(second.type).toBe('reservation')
@@ -93,7 +100,9 @@ describe('mapCalendarEvents', () => {
           eventDate: '2024-06-03',
           startTime: '18:00',
           endTime: '19:00',
-          tracksRequested: 1,
+          firingLineId: 1,
+          trackNos: [2],
+          hasCoordinatorLicenseInGroup: false,
         },
       ],
       reservations: [
@@ -103,7 +112,8 @@ describe('mapCalendarEvents', () => {
           eventDate: '2024-06-03',
           startTime: '06:00',
           endTime: '07:20',
-          tracksRequested: null,
+          firingLineId: 1,
+          trackNos: [1],
           details: null,
           proposition: null,
         },
@@ -124,8 +134,8 @@ describe('mapCalendarEvents', () => {
     const events = mapCalendarEvents(response)
 
     expect(events[0].type).toBe('reservation')
-    expect(events[0].meta?.tracksRequested).toBeUndefined()
-    expect(events[0].meta?.coordinatorId).toBeNull()
+    expect(events[0].meta?.trackNos).toEqual([1])
+    expect(events[0].meta?.approvedByAdminId).toBeNull()
     expect(events[1].type).toBe('event')
     expect(events[2].type).toBe('proposition')
   })

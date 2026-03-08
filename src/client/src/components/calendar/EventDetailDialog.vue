@@ -16,11 +16,17 @@
             <v-list-item-title>{{ formattedStart }}</v-list-item-title>
             <v-list-item-subtitle>{{ formattedEnd }}</v-list-item-subtitle>
           </v-list-item>
-          <v-list-item v-if="tracksRequested">
+          <v-list-item v-if="firingLineId !== null">
+            <template #prepend>
+              <v-icon>mdi-ray-start-vertex-end</v-icon>
+            </template>
+            <v-list-item-title>{{ t('calendar.eventDetail.summary.firingLine', { id: firingLineId }) }}</v-list-item-title>
+          </v-list-item>
+          <v-list-item v-if="trackNos.length > 0">
             <template #prepend>
               <v-icon>mdi-target</v-icon>
             </template>
-            <v-list-item-title>{{ t('calendar.eventDetail.summary.tracks', { count: tracksRequested }) }}</v-list-item-title>
+            <v-list-item-title>{{ t('calendar.eventDetail.summary.trackNos', { tracks: trackNos.join(', ') }) }}</v-list-item-title>
           </v-list-item>
           <v-list-item v-if="isProposition">
             <template #prepend>
@@ -80,13 +86,13 @@
                 <v-list-subheader data-testid="event-detail-reservation-section">
                   {{ t('calendar.eventDetail.sections.reservation') }}
                 </v-list-subheader>
-                <v-list-item v-if="coordinatorDisplay">
+                <v-list-item v-if="approvedByAdminDisplay">
                   <template #prepend>
                     <v-icon>mdi-account-tie</v-icon>
                   </template>
-                  <v-list-item-title>{{ coordinatorDisplay.title }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="coordinatorDisplay.subtitle">
-                    {{ coordinatorDisplay.subtitle }}
+                  <v-list-item-title>{{ approvedByAdminDisplay.title }}</v-list-item-title>
+                  <v-list-item-subtitle v-if="approvedByAdminDisplay.subtitle">
+                    {{ approvedByAdminDisplay.subtitle }}
                   </v-list-item-subtitle>
                 </v-list-item>
                 <v-list-item v-if="linkedPropositionId !== null">
@@ -152,12 +158,12 @@
                     {{ propositionSectionRequesterDisplay.subtitle }}
                   </v-list-item-subtitle>
                 </v-list-item>
-                <v-list-item v-if="propositionSectionTracksRequested !== null">
+                <v-list-item v-if="propositionSectionTrackNos.length > 0">
                   <template #prepend>
                     <v-icon>mdi-target</v-icon>
                   </template>
                   <v-list-item-title>
-                    {{ t('calendar.eventDetail.labels.tracksDemand', { count: propositionSectionTracksRequested }) }}
+                    {{ t('calendar.eventDetail.labels.trackNosDemand', { tracks: propositionSectionTrackNos.join(', ') }) }}
                   </v-list-item-title>
                 </v-list-item>
                 <v-list-item v-if="propositionSectionCreatedAt">
@@ -266,18 +272,21 @@ const detailsAsReservation = computed(() =>
   details.value?.type === 'reservation' ? details.value : null,
 )
 
-const detailTracksRequested = computed(() => {
+const firingLineId = computed(() => {
   const detail = details.value
-  if (!detail) return null
-  return typeof detail.tracksRequested === 'number' ? detail.tracksRequested : null
+  if (detail && typeof detail.firingLineId === 'number') {
+    return detail.firingLineId
+  }
+  const metaValue = event.value?.meta?.firingLineId
+  return typeof metaValue === 'number' ? metaValue : null
 })
 
-const tracksRequested = computed(() => {
-  if (detailTracksRequested.value !== null) {
-    return detailTracksRequested.value
+const trackNos = computed(() => {
+  const detail = details.value
+  if (detail && Array.isArray(detail.trackNos)) {
+    return detail.trackNos
   }
-  const metaValue = event.value?.meta?.tracksRequested
-  return typeof metaValue === 'number' ? metaValue : null
+  return Array.isArray(event.value?.meta?.trackNos) ? event.value?.meta?.trackNos ?? [] : []
 })
 
 const participants = computed(() => {
@@ -371,8 +380,8 @@ const formatPerson = (person: PersonSummary | null): PersonDisplay | null => {
   }
 }
 
-const coordinatorDisplay = computed(() =>
-  formatPerson(detailsAsReservation.value?.coordinator ?? null),
+const approvedByAdminDisplay = computed(() =>
+  formatPerson(detailsAsReservation.value?.approvedByAdmin ?? null),
 )
 
 const reservationLinkedProposition = computed(() => {
@@ -431,10 +440,7 @@ const propositionSectionNotes = computed(() =>
   normalizeNotes(propositionSectionDetail.value?.notes),
 )
 
-const propositionSectionTracksRequested = computed(() => {
-  const value = propositionSectionDetail.value?.tracksRequested
-  return typeof value === 'number' ? value : null
-})
+const propositionSectionTrackNos = computed(() => propositionSectionDetail.value?.trackNos ?? [])
 
 const linkedPropositionId = computed(() => {
   if (propositionSectionId.value !== null) {
@@ -453,13 +459,15 @@ const linkedPropositionId = computed(() => {
 const canAccept = computed(() =>
   isProposition.value &&
   Boolean(event.value?.meta?.propositionId) &&
-  authStore.hasAnyRole([UserRoleEnum.Coordinator]),
+  (authStore.hasAnyRole([UserRoleEnum.ShootingRangeAdministrator, UserRoleEnum.ClubCommunityAdministrator]) ||
+    authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator])),
 )
 const canCancel = computed(() =>
   Boolean(
     event.value &&
       event.value.type !== 'record' &&
-      authStore.hasAnyRole([UserRoleEnum.Coordinator, UserRoleEnum.ShootingRangeAdministrator]),
+      (authStore.hasAnyRole([UserRoleEnum.ShootingRangeAdministrator, UserRoleEnum.ClubCommunityAdministrator]) ||
+        authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator])),
   ),
 )
 

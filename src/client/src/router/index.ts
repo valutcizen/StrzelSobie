@@ -109,6 +109,16 @@ const routes: AppRouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/range-message-templates',
+    name: 'RangeMessageTemplates',
+    component: () => import('@/views/admin/RangeMessageTemplatesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiredRoles: [UserRoleEnum.ClubCommunityAdministrator],
+      requiredRangeRoles: [UserRoleEnum.ShootingRangeAdministrator],
+    },
+  },
+  {
     path: '/admin/ranges/:rangeSlug/events/new',
     name: 'EventCreate',
     component: () => import('@/views/events/EventFormView.vue'),

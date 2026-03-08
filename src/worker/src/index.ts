@@ -279,7 +279,7 @@ app.get('/embed/map.js', async (_c) => {
 
 const worker = {
   fetch: app.fetch,
-  scheduled: async (_controller: ScheduledController, env: Env, _ctx: ExecutionContext) => {
+  scheduled: async (_controller: unknown, env: Env, _ctx: unknown) => {
     const notificationsService = createNotificationsService(env);
     const result = await notificationsService.cleanupExpiredNotifications();
     if (!result.isSuccess) {

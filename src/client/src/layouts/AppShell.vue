@@ -152,6 +152,16 @@
           :roles="[UserRoleEnum.ClubCommunityAdministrator]"
           :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
         />
+        <RoleBasedLink
+          icon="mdi-message-text-outline"
+          :label="t('navigation.rangeMessageTemplates')"
+          :to="{
+            name: 'RangeMessageTemplates',
+            query: adminTargetRangeSlug ? { rangeSlug: adminTargetRangeSlug } : undefined,
+          }"
+          :roles="[UserRoleEnum.ClubCommunityAdministrator]"
+          :range-roles="[UserRoleEnum.ShootingRangeAdministrator]"
+        />
         <v-list-item
           v-if="canCreateRange"
           prepend-icon="mdi-plus-circle"

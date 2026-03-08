@@ -10,7 +10,8 @@
       "send": "Wyślij",
       "retry": "Ponów próbę",
       "accept": "Akceptuj",
-      "refresh": "Odśwież"
+      "refresh": "Odśwież",
+      "clear": "Wyczyść"
     },
     "feedback": {
       "operationFailed": "Operacja nie powiodła się."
@@ -20,7 +21,9 @@
       "pl": "Polski"
     },
     "labels": {
-      "userWithId": "Użytkownik #{id}"
+      "userWithId": "Użytkownik #{id}",
+      "active": "Aktywny",
+      "inactive": "Nieaktywny"
     }
   },
   "app": {
@@ -55,7 +58,8 @@
     "userManagement": "Zarządzanie użytkownikami",
     "rangeUserManagement": "Zarządzanie rolami obiektu",
     "userVerification": "Weryfikacja użytkowników",
-    "rangeSettings": "Ustawienia obiektu"
+    "rangeSettings": "Ustawienia obiektu",
+    "rangeMessageTemplates": "Szablony wiadomości"
   },
   "userMenu": {
     "label": "Menu użytkownika",
@@ -107,7 +111,15 @@
       "week": "Tydzień"
     },
     "errors": {
-      "rangeClosed": "Strzelnica jest zamknięta w wybranym czasie."
+      "rangeClosed": "Strzelnica jest zamknięta w wybranym czasie.",
+      "memberRoleRequired": "Tylko członkowie mogą tworzyć propozycje.",
+      "coordinatorDeclarationRequired": "Deklaracja koordynatora jest wymagana.",
+      "invalidTargetAdmin": "Wybrany administrator jest nieprawidłowy.",
+      "invalidReservationTime": "Podany zakres czasu rezerwacji jest nieprawidłowy.",
+      "reservationConflict": "Rezerwacja koliduje z istniejącą rezerwacją.",
+      "reservationForceRequired": "Rezerwacja koliduje z istniejącą rezerwacją. Użyj wymuszenia, aby kontynuować.",
+      "propositionClosed": "Ta propozycja nie jest już otwarta.",
+      "templateNotFound": "Wybrany szablon wiadomości nie został znaleziony."
     },
     "alerts": {
       "detailsFetchFailed": "Nie udało się pobrać szczegółów wydarzenia."
@@ -131,12 +143,18 @@
       "startTimeLabel": "Początek",
       "endTimeLabel": "Koniec",
       "participantsLabel": "Liczba uczestników",
-      "tracksLabel": "Liczba torów"
+      "tracksLabel": "Liczba torów",
+      "firingLineLabel": "Oś strzelecka",
+      "trackNosLabel": "Numery torów",
+      "wholeLineLabel": "Zarezerwuj całą oś"
     },
     "propositionDialog": {
       "title": "Zaproponuj termin",
       "submit": "Wyślij",
-      "defaultError": "Nie udało się zgłosić propozycji. Spróbuj ponownie."
+      "defaultError": "Nie udało się zgłosić propozycji. Spróbuj ponownie.",
+      "coordinatorDeclarationLabel": "Ktoś w mojej grupie ma uprawnienia prowadzącego strzelanie",
+      "targetAdminLabel": "Powiadom konkretnego administratora",
+      "targetAdminNone": "Utwórz bez powiadomienia konkretnego administratora"
     },
     "reservationDialog": {
       "title": "Nowa rezerwacja",
@@ -144,7 +162,9 @@
       "forceHint": "Zaznacz, aby wymusić zapis mimo istniejących rezerwacji.",
       "forceSuggestion": "Jeśli to konieczne, spróbuj zapisać z wymuszeniem lub zmień parametry.",
       "defaultError": "Nie udało się zapisać rezerwacji. Spróbuj ponownie.",
-      "propositionNotFound": "Nie znaleziono wybranej propozycji do konwersji."
+      "propositionNotFound": "Nie znaleziono wybranej propozycji do konwersji.",
+      "templateLabel": "Szablon wiadomości",
+      "adminMessageLabel": "Wiadomość do użytkownika"
     },
     "recordDialog": {
       "title": "Zapisz bez rezerwacji"
@@ -160,6 +180,8 @@
     "eventDetail": {
       "summary": {
         "tracks": "{count} torów",
+        "trackNos": "Tory: {tracks}",
+        "firingLine": "Oś #{id}",
         "participants": "{count} uczestników"
       },
       "proposition": {
@@ -182,6 +204,7 @@
         "submittedAt": "Data zgłoszenia",
         "notes": "Notatki",
         "tracksDemand": "Zapotrzebowanie: {count} torów",
+        "trackNosDemand": "Wybrane tory: {tracks}",
         "participants": "Uczestnicy: {count}"
       },
       "actions": {
@@ -363,12 +386,38 @@
     "errors": {
       "fetchFailed": "Nie udało się pobrać danych strzelnicy."
     },
-    "eventsLoadFailed": "Nie udało się wczytać wydarzeń."
+    "eventsLoadFailed": "Nie udało się wczytać wydarzeń.",
+    "administratorContacts": {
+      "title": "Kontakty administratorów",
+      "empty": "Brak widocznych kontaktów administratorów.",
+      "fallbackName": "Administrator #{id}"
+    }
   },
   "profile": {
     "title": "Mój profil",
     "emailLabel": "Email",
-    "rolesHeading": "Role użytkownika"
+    "rolesHeading": "Role użytkownika",
+    "adminContactProfile": {
+      "title": "Globalny profil kontaktowy administratora",
+      "hint": "Uzupełnij dane widoczne jako domyślne kontakty administratora.",
+      "displayNameLabel": "Nazwa wyświetlana",
+      "emailLabel": "Email kontaktowy",
+      "phoneLabel": "Telefon kontaktowy",
+      "hiddenGloballyLabel": "Ukryj kontakt globalnie",
+      "success": "Zapisano globalny profil kontaktowy administratora.",
+      "error": "Nie udało się zapisać globalnego profilu kontaktowego administratora."
+    },
+    "adminContactOverride": {
+      "title": "Nadpisanie kontaktu dla strzelnicy",
+      "hint": "Opcjonalnie ustaw inne dane kontaktowe dla wybranej strzelnicy.",
+      "rangeLabel": "Strzelnica",
+      "displayNameLabel": "Nazwa wyświetlana (nadpisanie)",
+      "emailLabel": "Email (nadpisanie)",
+      "phoneLabel": "Telefon (nadpisanie)",
+      "hiddenInRangeLabel": "Ukryj kontakt na tej strzelnicy",
+      "success": "Zapisano nadpisanie kontaktu dla strzelnicy.",
+      "error": "Nie udało się zapisać nadpisania kontaktu dla strzelnicy."
+    }
   },
   "admin": {
     "userRoles": {
@@ -508,6 +557,22 @@
         "invalidUrl": "Podaj poprawny adres URL (http:// lub https://).",
         "closeAfterOpen": "Godzina zamknięcia musi być późniejsza niż godzina otwarcia ({day}).",
         "minTracks": "Liczba torów musi być co najmniej 1."
+      }
+    },
+    "messageTemplates": {
+      "title": "Szablony wiadomości administratorów",
+      "rangeLabel": "Strzelnica",
+      "createTitle": "Nowy szablon",
+      "nameLabel": "Nazwa szablonu",
+      "contentLabel": "Treść wiadomości",
+      "activeLabel": "Szablon aktywny",
+      "empty": "Brak szablonów dla: {range}",
+      "createSuccess": "Szablon został utworzony.",
+      "updateSuccess": "Szablon został zaktualizowany.",
+      "errors": {
+        "load": "Nie udało się pobrać szablonów.",
+        "create": "Nie udało się utworzyć szablonu.",
+        "update": "Nie udało się zaktualizować szablonu."
       }
     }
   },

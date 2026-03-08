@@ -23,6 +23,7 @@ export const useCalendarEvents = ({
   locale,
   onForceReload,
   rangeSlug,
+  selectedFiringLineId,
   t,
 }: {
   calendarRef: Ref<InstanceType<typeof FullCalendar> | null>
@@ -34,10 +35,24 @@ export const useCalendarEvents = ({
   locale: Ref<string>
   onForceReload?: () => void
   rangeSlug: ComputedRef<string>
+  selectedFiringLineId: Ref<number | null>
   t: ComposerTranslation
 }) => {
+  const filteredRangeEvents = computed(() =>
+    calendarStore.events.filter((event) => {
+      if (event.type === 'proposition' || event.type === 'reservation') {
+        return (
+          selectedFiringLineId.value === null ||
+          event.meta?.firingLineId === selectedFiringLineId.value
+        )
+      }
+
+      return true
+    }),
+  )
+
   const calendarEvents = computed<EventInput[]>(() =>
-    calendarStore.events.map((event) => {
+    filteredRangeEvents.value.map((event) => {
       const classNames = [`event-${event.type}`]
       let backgroundColor = '#4a5568'
       let borderColor = '#2d3748'

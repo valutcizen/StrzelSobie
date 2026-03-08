@@ -10,7 +10,8 @@
       "send": "Send",
       "retry": "Try again",
       "accept": "Accept",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "clear": "Clear"
     },
     "feedback": {
       "operationFailed": "Failed to complete the action."
@@ -20,7 +21,9 @@
       "pl": "Polski"
     },
     "labels": {
-      "userWithId": "User #{id}"
+      "userWithId": "User #{id}",
+      "active": "Active",
+      "inactive": "Inactive"
     }
   },
   "app": {
@@ -55,7 +58,8 @@
     "userManagement": "User Management",
     "rangeUserManagement": "Range Role Management",
     "userVerification": "User Verification",
-    "rangeSettings": "Range Settings"
+    "rangeSettings": "Range Settings",
+    "rangeMessageTemplates": "Message Templates"
   },
   "userMenu": {
     "label": "User menu",
@@ -107,7 +111,15 @@
       "week": "Week"
     },
     "errors": {
-      "rangeClosed": "The range is closed for the selected time window."
+      "rangeClosed": "The range is closed for the selected time window.",
+      "memberRoleRequired": "Only members can create propositions.",
+      "coordinatorDeclarationRequired": "Coordinator declaration is required.",
+      "invalidTargetAdmin": "Selected administrator is invalid.",
+      "invalidReservationTime": "Provided reservation time window is invalid.",
+      "reservationConflict": "Reservation conflicts with existing booking.",
+      "reservationForceRequired": "Reservation conflicts with existing booking. Use force to continue.",
+      "propositionClosed": "This proposition is no longer open.",
+      "templateNotFound": "Selected message template was not found."
     },
     "alerts": {
       "detailsFetchFailed": "Failed to load event details."
@@ -131,12 +143,18 @@
       "startTimeLabel": "Start time",
       "endTimeLabel": "End time",
       "participantsLabel": "Number of participants",
-      "tracksLabel": "Number of lanes"
+      "tracksLabel": "Number of lanes",
+      "firingLineLabel": "Firing line",
+      "trackNosLabel": "Track numbers",
+      "wholeLineLabel": "Reserve whole firing line"
     },
     "propositionDialog": {
       "title": "Propose a slot",
       "submit": "Send",
-      "defaultError": "Failed to submit the proposition. Try again."
+      "defaultError": "Failed to submit the proposition. Try again.",
+      "coordinatorDeclarationLabel": "Someone in my group has a coordinator license",
+      "targetAdminLabel": "Notify specific range admin",
+      "targetAdminNone": "Create without targeted notification"
     },
     "reservationDialog": {
       "title": "New reservation",
@@ -144,7 +162,9 @@
       "forceHint": "Check to force the save even if conflicts exist.",
       "forceSuggestion": "If needed, try saving with force or adjust the parameters.",
       "defaultError": "Failed to save the reservation. Try again.",
-      "propositionNotFound": "Could not find the selected proposition to convert."
+      "propositionNotFound": "Could not find the selected proposition to convert.",
+      "templateLabel": "Message template",
+      "adminMessageLabel": "Message to member"
     },
     "recordDialog": {
       "title": "Log without reservation"
@@ -160,6 +180,8 @@
     "eventDetail": {
       "summary": {
         "tracks": "{count} lanes",
+        "trackNos": "Tracks: {tracks}",
+        "firingLine": "Firing line #{id}",
         "participants": "{count} participants"
       },
       "proposition": {
@@ -182,6 +204,7 @@
         "submittedAt": "Submitted at",
         "notes": "Notes",
         "tracksDemand": "Tracks requested: {count}",
+        "trackNosDemand": "Requested tracks: {tracks}",
         "participants": "Participants: {count}"
       },
       "actions": {
@@ -363,12 +386,38 @@
     "errors": {
       "fetchFailed": "Failed to fetch range details."
     },
-    "eventsLoadFailed": "Failed to load events."
+    "eventsLoadFailed": "Failed to load events.",
+    "administratorContacts": {
+      "title": "Administrator contacts",
+      "empty": "No visible administrator contacts.",
+      "fallbackName": "Administrator #{id}"
+    }
   },
   "profile": {
     "title": "My profile",
     "emailLabel": "Email",
-    "rolesHeading": "Roles"
+    "rolesHeading": "Roles",
+    "adminContactProfile": {
+      "title": "Global administrator contact profile",
+      "hint": "Provide default administrator contact details visible for ranges.",
+      "displayNameLabel": "Display name",
+      "emailLabel": "Contact email",
+      "phoneLabel": "Contact phone",
+      "hiddenGloballyLabel": "Hide contact globally",
+      "success": "Global administrator contact profile saved.",
+      "error": "Failed to save global administrator contact profile."
+    },
+    "adminContactOverride": {
+      "title": "Range-specific contact override",
+      "hint": "Optionally provide different contact details for a selected range.",
+      "rangeLabel": "Range",
+      "displayNameLabel": "Display name (override)",
+      "emailLabel": "Email (override)",
+      "phoneLabel": "Phone (override)",
+      "hiddenInRangeLabel": "Hide contact in this range",
+      "success": "Range contact override saved.",
+      "error": "Failed to save range contact override."
+    }
   },
   "admin": {
     "userRoles": {
@@ -508,6 +557,22 @@
         "invalidUrl": "Provide a valid URL (http:// or https://).",
         "closeAfterOpen": "Closing time must be later than opening time ({day}).",
         "minTracks": "The minimum number of lanes is 1."
+      }
+    },
+    "messageTemplates": {
+      "title": "Administrator message templates",
+      "rangeLabel": "Range",
+      "createTitle": "New template",
+      "nameLabel": "Template name",
+      "contentLabel": "Message content",
+      "activeLabel": "Template active",
+      "empty": "No templates for: {range}",
+      "createSuccess": "Template created.",
+      "updateSuccess": "Template updated.",
+      "errors": {
+        "load": "Failed to load templates.",
+        "create": "Failed to create template.",
+        "update": "Failed to update template."
       }
     }
   },

@@ -50,9 +50,20 @@ const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEvent
   const propositionId =
     typeof data.id === 'number' ? data.id : event.meta?.propositionId ?? event.sourceId
 
-  const tracksRequested =
-    toNullableNumber(data.tracksRequested ?? data.tracks_requested) ??
-    (typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null)
+  const firingLineId =
+    toNullableNumber(data.firingLineId ?? data.firing_line_id) ??
+    (typeof event.meta?.firingLineId === 'number' ? event.meta.firingLineId : null)
+  const trackNos = Array.isArray(data.trackNos)
+    ? data.trackNos.filter((item): item is number => typeof item === 'number')
+    : Array.isArray(event.meta?.trackNos)
+      ? event.meta.trackNos
+      : []
+  const hasCoordinatorLicenseInGroup =
+    typeof data.hasCoordinatorLicenseInGroup === 'boolean'
+      ? data.hasCoordinatorLicenseInGroup
+      : typeof event.meta?.hasCoordinatorLicenseInGroup === 'boolean'
+        ? event.meta.hasCoordinatorLicenseInGroup
+        : null
 
   const statusRaw = data.status
   const statusValue = typeof statusRaw === 'string' ? statusRaw : null
@@ -68,7 +79,9 @@ const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEvent
   return {
     type: 'proposition',
     propositionId,
-    tracksRequested,
+    firingLineId,
+    trackNos,
+    hasCoordinatorLicenseInGroup,
     status,
     createdAt,
     requester,
@@ -84,16 +97,19 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
 
   let propositionId = toNullableNumber(data.propositionId ?? data.proposition_id)
 
-  const tracksRequested =
-    toNullableNumber(
-      data.tracksRequested ??
-        data.tracks_requested ??
-        data.tracksAllocated ??
-        data.tracks_allocated,
-    ) ?? (typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null)
+  const firingLineId =
+    toNullableNumber(data.firingLineId ?? data.firing_line_id) ??
+    (typeof event.meta?.firingLineId === 'number' ? event.meta.firingLineId : null)
+  const trackNos = Array.isArray(data.trackNos)
+    ? data.trackNos.filter((item): item is number => typeof item === 'number')
+    : Array.isArray(event.meta?.trackNos)
+      ? event.meta.trackNos
+      : []
 
   const createdAt = toNullableString(data.createdAt ?? data.created_at)
-  const coordinator = toPersonSummary(data.coordinator ?? data.owner ?? data.manager)
+  const approvedByAdmin = toPersonSummary(
+    data.approvedByAdmin ?? data.approved_by_admin ?? data.coordinator ?? data.owner ?? data.manager,
+  )
   const notes = toNullableString(data.notes ?? data.additionalNotes ?? data.comment)
   const rawPropositionDetail =
     data.proposition ?? data.linkedProposition ?? data.originalProposition ?? null
@@ -109,9 +125,10 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
     reservationId,
     propositionId,
     proposition,
-    tracksRequested,
+    firingLineId,
+    trackNos,
     createdAt,
-    coordinator,
+    approvedByAdmin,
     notes: notes ?? undefined,
   }
 }
@@ -133,7 +150,8 @@ export const useEventDetails = ({
     propositionId?: number | null
     defaultStart?: string | null
     defaultEnd?: string | null
-    defaultTracks?: number | null
+    defaultFiringLineId?: number | null
+    defaultTrackNos?: number[]
   }) => void
   onEventNavigate: (event: RangeEvent) => void
   t: ComposerTranslation
@@ -262,20 +280,21 @@ export const useEventDetails = ({
 
   const handleAcceptEvent = (event: RangeEvent) => {
     eventDetailOpen.value = false
-    let defaultTracks: number | null =
-      typeof event.meta?.tracksRequested === 'number' ? event.meta.tracksRequested : null
+    let defaultFiringLineId: number | null =
+      typeof event.meta?.firingLineId === 'number' ? event.meta.firingLineId : null
+    let defaultTrackNos: number[] = Array.isArray(event.meta?.trackNos) ? event.meta.trackNos : []
     const detail = eventDetailState.detail
     if (detail && detail.type === 'proposition') {
-      if (typeof detail.tracksRequested === 'number') {
-        defaultTracks = detail.tracksRequested
-      }
+      defaultFiringLineId = detail.firingLineId
+      defaultTrackNos = detail.trackNos
     }
 
     openReservationDialog({
       propositionId: event.meta?.propositionId ?? null,
       defaultStart: event.start,
       defaultEnd: event.end,
-      defaultTracks,
+      defaultFiringLineId,
+      defaultTrackNos,
     })
   }
 

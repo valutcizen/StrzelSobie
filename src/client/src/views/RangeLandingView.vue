@@ -68,6 +68,8 @@ const canSeeMemberDescription = computed(() =>
     UserRoleEnum.ClubCommunityAdministrator,
   ]),
 )
+const canSeeAdministratorContacts = canSeeMemberDescription
+const administratorContacts = computed(() => currentRange.value?.administratorContacts ?? [])
 const canCreateEvents = computed(() => {
   const allowMemberEvents = currentRange.value?.extras?.allowMemberEvents ?? false
 
@@ -472,6 +474,48 @@ watch(
                   >
                     {{ t('rangeLanding.events.empty') }}
                   </v-alert>
+                </v-card-text>
+              </v-card>
+
+              <v-card
+                v-if="canSeeAdministratorContacts"
+                variant="outlined"
+                class="mb-4"
+                data-testid="range-administrator-contacts-card"
+              >
+                <v-card-title class="text-subtitle-1 d-flex align-center gap-2">
+                  <v-icon color="primary">
+                    mdi-account-tie
+                  </v-icon>
+                  {{ t('rangeLanding.administratorContacts.title') }}
+                </v-card-title>
+                <v-divider />
+                <v-card-text>
+                  <v-list
+                    v-if="administratorContacts.length > 0"
+                    density="compact"
+                    data-testid="range-administrator-contacts-list"
+                  >
+                    <v-list-item
+                      v-for="contact in administratorContacts"
+                      :key="contact.userId"
+                    >
+                      <v-list-item-title>
+                        {{ contact.displayName ?? t('rangeLanding.administratorContacts.fallbackName', { id: contact.userId }) }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        <span v-if="contact.email">{{ contact.email }}</span>
+                        <span v-if="contact.email && contact.phoneNumber"> · </span>
+                        <span v-if="contact.phoneNumber">{{ contact.phoneNumber }}</span>
+                      </v-list-item-subtitle>
+                    </v-list-item>
+                  </v-list>
+                  <p
+                    v-else
+                    class="text-medium-emphasis mb-0"
+                  >
+                    {{ t('rangeLanding.administratorContacts.empty') }}
+                  </p>
                 </v-card-text>
               </v-card>
 

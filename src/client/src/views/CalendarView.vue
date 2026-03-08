@@ -35,12 +35,23 @@ const defaultView = computed(() => (isSmallScreen.value ? 'timeGridDay' : 'timeG
 const rangeSlug = computed(() => String(route.params.rangeSlug ?? authStore.defaultRangeSlug))
 const canForceReservations = computed(() =>
   authStore.hasAnyRole([
-    UserRoleEnum.Coordinator,
     UserRoleEnum.ShootingRangeAdministrator,
     UserRoleEnum.ClubCommunityAdministrator,
   ]),
 )
-const canCreateReservations = computed(() => authStore.hasAnyRole([UserRoleEnum.Coordinator]))
+const canCreateReservations = computed(
+  () =>
+    authStore.hasAnyRole([
+      UserRoleEnum.ShootingRangeAdministrator,
+      UserRoleEnum.ClubCommunityAdministrator,
+    ]) ||
+    authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator]),
+)
+const canCreatePropositions = computed(
+  () =>
+    authStore.hasAnyRole([UserRoleEnum.Member]) ||
+    authStore.hasAnyRangeRole([UserRoleEnum.Member]),
+)
 const canManageRecords = computed(
   () =>
     authStore.hasAnyRole([
@@ -56,7 +67,17 @@ const canManageRecords = computed(
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null)
 const calendarContainerRef = ref<HTMLElement | null>(null)
 const currentViewRange = ref<{ start: Date; end: Date } | null>(null)
+const selectedFiringLineId = ref<number | null>(null)
 let resizeObserver: ResizeObserver | null = null
+
+const firingLines = computed(() => rangeStore.currentRange?.firingLines ?? [])
+const adminContacts = computed(() => rangeStore.currentRange?.administratorContacts ?? [])
+const firingLineTabs = computed(() =>
+  firingLines.value.map((line) => ({
+    value: line.id,
+    title: `${line.name} (${line.lengthMeters}m)`,
+  })),
+)
 
 const { closedCalendarBackgroundEvents, calendarTimeBounds } = useOperatingHours({
   currentViewRange,
@@ -81,6 +102,7 @@ const {
   locale,
   onForceReload: () => clearEventDetailCache(),
   rangeSlug,
+  selectedFiringLineId,
   t,
 })
 
@@ -152,6 +174,9 @@ const loadRangeDetails = async () => {
   try {
     await rangeStore.fetchRangeDetails(rangeSlug.value)
     setLastRangeId(rangeSlug.value)
+    if (!selectedFiringLineId.value && firingLines.value.length > 0) {
+      selectedFiringLineId.value = firingLines.value[0].id
+    }
   } catch {
     // If range metadata is unavailable, fall back to default calendar bounds.
   }
@@ -223,12 +248,28 @@ onBeforeUnmount(() => {
         <v-card>
           <CalendarHeaderActions
             :range-slug="rangeSlug"
+            :can-create-propositions="canCreatePropositions"
             :can-create-reservations="canCreateReservations"
             :can-manage-records="canManageRecords"
             @propose="openPropositionDialog"
             @reserve="openReservationDialog({})"
             @record="recordDialogOpen = true"
           />
+          <v-tabs
+            v-if="firingLineTabs.length > 0"
+            v-model="selectedFiringLineId"
+            color="primary"
+            class="px-4"
+            data-testid="calendar-firing-line-tabs"
+          >
+            <v-tab
+              v-for="tab in firingLineTabs"
+              :key="tab.value"
+              :value="tab.value"
+            >
+              {{ tab.title }}
+            </v-tab>
+          </v-tabs>
           <v-divider />
           <v-card-text>
             <v-alert
@@ -271,6 +312,8 @@ onBeforeUnmount(() => {
       :open="propositionDialogOpen"
       :range-slug="rangeSlug"
       :selected-slot="selectedSlot"
+      :firing-lines="firingLines"
+      :admin-contacts="adminContacts"
       @update:open="propositionDialogOpen = $event"
       @submitted="handlePropositionSubmitted"
     />
@@ -281,8 +324,10 @@ onBeforeUnmount(() => {
       :proposition-id="reservationDialog.propositionId"
       :default-start="reservationDialog.defaultStart"
       :default-end="reservationDialog.defaultEnd"
-      :default-tracks="reservationDialog.defaultTracks"
+      :default-firing-line-id="reservationDialog.defaultFiringLineId ?? selectedFiringLineId"
+      :default-track-nos="reservationDialog.defaultTrackNos"
       :can-use-force="canForceReservations"
+      :firing-lines="firingLines"
       @update:open="reservationDialog.open = $event"
       @submitted="handleReservationSubmitted"
       @submit-error="handleReservationError"

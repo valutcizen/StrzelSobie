@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   rangeSlug: string
+  canCreatePropositions: boolean
   canCreateReservations: boolean
   canManageRecords: boolean
 }>()
@@ -24,6 +25,7 @@ const emit = defineEmits<{
     </div>
     <div class="d-flex flex-wrap gap-2">
       <v-btn
+        v-if="props.canCreatePropositions"
         color="secondary"
         variant="outlined"
         prepend-icon="mdi-target"

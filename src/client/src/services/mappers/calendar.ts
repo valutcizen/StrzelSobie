@@ -49,11 +49,20 @@ const mapLinkedProposition = (proposition: unknown): PropositionEventDetail | nu
     return null
   }
 
-  const tracksRequested =
-    typeof data.tracksRequested === 'number'
-      ? data.tracksRequested
-      : typeof data.tracks_requested === 'number'
-        ? data.tracks_requested
+  const firingLineId =
+    typeof data.firingLineId === 'number'
+      ? data.firingLineId
+      : typeof data.firing_line_id === 'number'
+        ? data.firing_line_id
+        : null
+  const trackNos = Array.isArray(data.trackNos)
+    ? data.trackNos.filter((item): item is number => typeof item === 'number')
+    : []
+  const hasCoordinatorLicenseInGroup =
+    typeof data.hasCoordinatorLicenseInGroup === 'boolean'
+      ? data.hasCoordinatorLicenseInGroup
+      : typeof data.has_coordinator_license_in_group === 'boolean'
+        ? data.has_coordinator_license_in_group
         : null
   const statusRaw = typeof data.status === 'string' ? data.status : null
   const status =
@@ -79,7 +88,9 @@ const mapLinkedProposition = (proposition: unknown): PropositionEventDetail | nu
   return {
     type: 'proposition',
     propositionId,
-    tracksRequested,
+    firingLineId,
+    trackNos,
+    hasCoordinatorLicenseInGroup,
     status,
     createdAt,
     requester,
@@ -114,7 +125,9 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
     allDay: false,
     meta: {
       propositionId: event.id,
-      tracksRequested: event.tracksRequested,
+      firingLineId: event.firingLineId,
+      trackNos: event.trackNos,
+      hasCoordinatorLicenseInGroup: event.hasCoordinatorLicenseInGroup,
       isMember: event.isMember,
     },
   }))
@@ -134,9 +147,7 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
   }))
 
   const reservationEvents: RangeEvent[] = (dto.reservations ?? []).map((event) => {
-    const tracksRequested =
-      typeof event.tracksRequested === 'number' ? event.tracksRequested : undefined
-    const coordinatorId = event.details ? event.details.coordinatorId : null
+    const approvedByAdminId = event.details ? event.details.approvedByAdminId : null
     const linkedProposition = mapLinkedProposition(event.proposition)
     const propositionId = event.propositionId ?? linkedProposition?.propositionId ?? null
 
@@ -150,8 +161,9 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
       allDay: false,
       meta: {
         reservationId: event.id,
-        tracksRequested,
-        coordinatorId,
+        firingLineId: event.firingLineId,
+        trackNos: event.trackNos,
+        approvedByAdminId,
         propositionId,
         linkedProposition,
       },

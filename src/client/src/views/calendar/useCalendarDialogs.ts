@@ -30,7 +30,8 @@ export const useCalendarDialogs = ({
     propositionId: null as number | null,
     defaultStart: null as string | null,
     defaultEnd: null as string | null,
-    defaultTracks: null as number | null,
+    defaultFiringLineId: null as number | null,
+    defaultTrackNos: [] as number[],
   })
   const recordDialogOpen = ref(false)
   const confirmationState = reactive({
@@ -70,7 +71,8 @@ export const useCalendarDialogs = ({
     propositionId?: number | null
     defaultStart?: string | null
     defaultEnd?: string | null
-    defaultTracks?: number | null
+    defaultFiringLineId?: number | null
+    defaultTrackNos?: number[]
   }) => {
     const defaultStart = options.defaultStart
     const defaultEnd = options.defaultEnd
@@ -90,8 +92,11 @@ export const useCalendarDialogs = ({
 
     reservationDialog.open = true
     reservationDialog.propositionId = options.propositionId ?? null
-    reservationDialog.defaultTracks =
-      typeof options.defaultTracks === 'number' ? options.defaultTracks : null
+    reservationDialog.defaultFiringLineId =
+      typeof options.defaultFiringLineId === 'number' ? options.defaultFiringLineId : null
+    reservationDialog.defaultTrackNos = Array.isArray(options.defaultTrackNos)
+      ? options.defaultTrackNos
+      : []
   }
 
   const handleSlotSelect = (selectionInfo: DateSelectArg) => {

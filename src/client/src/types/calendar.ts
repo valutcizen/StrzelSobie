@@ -7,9 +7,11 @@ export type RangeEventType = 'proposition' | 'reservation' | 'record' | 'event'
 export interface RangeEventMeta {
   propositionId?: number | null
   reservationId?: number
-  tracksRequested?: number
+  firingLineId?: number | null
+  trackNos?: number[]
   isMember?: boolean
-  coordinatorId?: number | null
+  hasCoordinatorLicenseInGroup?: boolean
+  approvedByAdminId?: number | null
   numParticipants?: number | null
   linkedProposition?: PropositionEventDetail | null
   adminId?: number | null
@@ -39,7 +41,9 @@ export interface PersonSummary {
 export interface PropositionEventDetail {
   type: 'proposition'
   propositionId: number
-  tracksRequested: number | null
+  firingLineId: number | null
+  trackNos: number[]
+  hasCoordinatorLicenseInGroup: boolean | null
   status: 'open' | 'converted' | 'cancelled' | null
   createdAt: string | null
   requester: PersonSummary | null
@@ -51,9 +55,10 @@ export interface ReservationEventDetail {
   reservationId: number
   propositionId: number | null
   proposition: PropositionEventDetail | null
-  tracksRequested: number | null
+  firingLineId: number | null
+  trackNos: number[]
   createdAt: string | null
-  coordinator: PersonSummary | null
+  approvedByAdmin: PersonSummary | null
   notes?: string | null
 }
 

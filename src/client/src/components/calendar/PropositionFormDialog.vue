@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="open"
-    max-width="480"
+    max-width="560"
     data-testid="proposition-form-dialog"
     @update:model-value="onDialogToggle"
   >
@@ -13,7 +13,7 @@
         :validation-schema="schema"
         @submit="submitProposition"
       >
-        <template #default="{ isSubmitting, meta }">
+        <template #default="{ isSubmitting, meta, values }">
           <v-card-text>
             <v-alert
               v-if="submissionError"
@@ -62,15 +62,62 @@
             </Field>
             <Field
               v-slot="{ field, errorMessage }"
-              name="tracks"
+              name="firingLineId"
             >
-              <v-text-field
+              <v-select
                 v-bind="field"
+                :items="firingLineItems"
+                item-title="title"
+                item-value="value"
                 :error-messages="errorMessage"
-                :label="t('calendar.forms.tracksLabel')"
-                min="1"
-                type="number"
-                data-testid="proposition-form-tracks-input"
+                :label="t('calendar.forms.firingLineLabel')"
+                data-testid="proposition-form-firing-line-select"
+              />
+            </Field>
+            <Field
+              v-slot="{ field, errorMessage }"
+              name="trackNos"
+            >
+              <v-select
+                :model-value="field.value"
+                multiple
+                chips
+                closable-chips
+                :items="trackItems(values.firingLineId)"
+                item-title="title"
+                item-value="value"
+                :error-messages="errorMessage"
+                :label="t('calendar.forms.trackNosLabel')"
+                data-testid="proposition-form-track-nos-select"
+                @update:model-value="(value) => field.onChange(value)"
+              />
+            </Field>
+            <Field
+              v-slot="{ field }"
+              name="hasCoordinatorLicenseInGroup"
+            >
+              <v-checkbox
+                :model-value="field.value"
+                :disabled="isCoordinator"
+                :label="t('calendar.propositionDialog.coordinatorDeclarationLabel')"
+                data-testid="proposition-form-coordinator-checkbox"
+                @update:model-value="(value) => field.onChange(Boolean(value))"
+              />
+            </Field>
+            <Field
+              v-slot="{ field, errorMessage }"
+              name="targetAdminUserId"
+            >
+              <v-select
+                :model-value="field.value"
+                clearable
+                :items="adminTargetItems"
+                item-title="title"
+                item-value="value"
+                :error-messages="errorMessage"
+                :label="t('calendar.propositionDialog.targetAdminLabel')"
+                data-testid="proposition-form-target-admin-select"
+                @update:model-value="(value) => field.onChange(value ?? null)"
               />
             </Field>
           </v-card-text>
@@ -107,8 +154,10 @@ import * as yup from 'yup'
 import { useI18n } from 'vue-i18n'
 import { http } from '../../services/http'
 import { ensureTimePrecision, toDateInputValue, toTimeInputValue } from '../../utils/datetime'
-import type { CreatePropositionCommand, CreatedPropositionDto } from '@strzel-sobie/common'
+import type { CreatePropositionCommand, CreatedPropositionDto, RangeDetailsDto } from '@strzel-sobie/common'
 import { isAxiosError } from 'axios'
+import { useAuthStore } from '@/stores/auth'
+import { UserRoleEnum } from '@/types/auth'
 
 export interface SelectedSlot {
   start: string
@@ -119,6 +168,8 @@ interface PropositionFormDialogProps {
   open: boolean
   rangeSlug: string
   selectedSlot: SelectedSlot | null
+  firingLines: RangeDetailsDto['firingLines']
+  adminContacts: RangeDetailsDto['administratorContacts']
 }
 
 const props = defineProps<PropositionFormDialogProps>()
@@ -128,11 +179,17 @@ const emit = defineEmits<{
   submitted: []
 }>()
 
+const authStore = useAuthStore()
+const isCoordinator = computed(() => authStore.hasRole(UserRoleEnum.Coordinator))
+
 const schema = yup.object({
   date: yup.string().required(),
   startTime: yup.string().required(),
   endTime: yup.string().required(),
-  tracks: yup.number().min(1).required(),
+  firingLineId: yup.number().min(1).required(),
+  trackNos: yup.array().min(1).required(),
+  hasCoordinatorLicenseInGroup: yup.boolean().required(),
+  targetAdminUserId: yup.number().nullable(),
 })
 
 const { t } = useI18n()
@@ -143,7 +200,10 @@ interface PropositionFormValues {
   date: string
   startTime: string
   endTime: string
-  tracks: number
+  firingLineId: number | null
+  trackNos: number[]
+  hasCoordinatorLicenseInGroup: boolean
+  targetAdminUserId: number | null
 }
 
 const defaultTimeValues = () => {
@@ -163,7 +223,37 @@ const defaultTimeValues = () => {
   }
 }
 
-const initialValues = computed(() => {
+const firingLineItems = computed(() =>
+  (props.firingLines ?? []).map((line) => ({
+    value: line.id,
+    title: `${line.name} (${line.lengthMeters}m, ${line.tracksCount})`,
+  })),
+)
+
+const adminTargetItems = computed(() => [
+  {
+    value: null,
+    title: t('calendar.propositionDialog.targetAdminNone'),
+  },
+  ...(props.adminContacts ?? []).map((contact) => ({
+    value: contact.userId,
+    title: contact.displayName ?? contact.email ?? `#${contact.userId}`,
+  })),
+])
+
+const trackItems = (firingLineId: number | null | undefined) => {
+  const line = (props.firingLines ?? []).find((item) => item.id === firingLineId)
+  if (!line) {
+    return []
+  }
+
+  return Array.from({ length: line.tracksCount }, (_, index) => ({
+    value: index + 1,
+    title: `${index + 1}`,
+  }))
+}
+
+const initialValues = computed<PropositionFormValues>(() => {
   const fallback = defaultTimeValues()
   const selectedStart = props.selectedSlot?.start ?? null
   const selectedEnd = props.selectedSlot?.end ?? null
@@ -171,12 +261,17 @@ const initialValues = computed(() => {
   const date = toDateInputValue(selectedStart) || fallback.date
   const startTime = ensureTimePrecision(toTimeInputValue(selectedStart) || fallback.startTime)
   const endTime = ensureTimePrecision(toTimeInputValue(selectedEnd) || fallback.endTime)
+  const firingLineId = props.firingLines[0]?.id ?? null
+  const defaultTrackNo = firingLineId ? [1] : []
 
   return {
     date,
     startTime,
     endTime,
-    tracks: 1,
+    firingLineId,
+    trackNos: defaultTrackNo,
+    hasCoordinatorLicenseInGroup: isCoordinator.value,
+    targetAdminUserId: null,
   }
 })
 
@@ -200,8 +295,14 @@ const mapSubmissionError = (error: unknown): string => {
     switch (payload?.code) {
       case 'range_closed':
         return t('calendar.errors.rangeClosed')
+      case 'coordinator_declaration_required':
+        return t('calendar.errors.coordinatorDeclarationRequired')
+      case 'member_role_required':
+        return t('calendar.errors.memberRoleRequired')
+      case 'invalid_target_admin':
+        return t('calendar.errors.invalidTargetAdmin')
       case 'invalid_time_window':
-        return defaultErrorMessage
+        return t('calendar.errors.invalidReservationTime')
       default:
         return payload?.message ?? defaultErrorMessage
     }
@@ -211,7 +312,11 @@ const mapSubmissionError = (error: unknown): string => {
 }
 
 const submitProposition: SubmissionHandler = async (values, _ctx) => {
-  const { date, startTime, endTime, tracks } = values as PropositionFormValues
+  const { date, startTime, endTime } = values as PropositionFormValues
+  const firingLineId = Number((values as PropositionFormValues).firingLineId)
+  const trackNos = ((values as PropositionFormValues).trackNos ?? [])
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item > 0)
   if (!props.rangeSlug) {
     return
   }
@@ -222,7 +327,12 @@ const submitProposition: SubmissionHandler = async (values, _ctx) => {
     eventDate: date,
     startTime: ensureTimePrecision(startTime),
     endTime: ensureTimePrecision(endTime),
-    tracksRequested: Number(tracks),
+    firingLineId,
+    trackNos,
+    hasCoordinatorLicenseInGroup: isCoordinator.value
+      ? true
+      : Boolean((values as PropositionFormValues).hasCoordinatorLicenseInGroup),
+    targetAdminUserId: (values as PropositionFormValues).targetAdminUserId ?? undefined,
   }
 
   try {
