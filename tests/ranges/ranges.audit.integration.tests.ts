@@ -76,6 +76,7 @@ function createRangesServiceContext(): {
     findAll: vi.fn(),
     countFutureAvailabilityImpact: vi.fn().mockResolvedValue({ futureReservations: 0, futureEvents: 0 }),
     findBySlug: vi.fn(),
+    findFiringLinesByRangeId: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
     update: vi.fn(),
     getRangeIdBySlug: vi.fn(),

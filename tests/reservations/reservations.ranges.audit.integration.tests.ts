@@ -36,6 +36,8 @@ const buildRangeDetails = (overrides: Partial<RangeDetailsDto>): RangeDetailsDto
   operatingHours: {},
   extras: {},
   parkingLocation: null,
+  firingLines: [{ id: 101, name: 'Line 1', tracksCount: 10, lengthMeters: 25, sortOrder: 1 }],
+  administratorContacts: [],
   ...overrides,
 });
 
@@ -70,19 +72,21 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       event_date: '2024-05-02',
       start_time: '10:00',
       end_time: '12:00',
-      tracks_requested: 2,
+      firing_line_id: 101,
+      metadata_json: JSON.stringify({ trackNos: [1, 2], hasCoordinatorLicenseInGroup: true }),
       is_member: true,
     };
 
     const reservation: Reservation = {
       id: 3,
       range_id: rangeDetails.id,
-      coordinator_id: query.user.id,
+      approved_by_admin_id: query.user.id,
       proposition_id: null,
       event_date: '2024-05-03',
       start_time: '11:00',
       end_time: '13:00',
-      tracks_requested: 2,
+      firing_line_id: 101,
+      metadata_json: JSON.stringify({ trackNos: [2, 3] }),
     };
 
     ctx.rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
@@ -130,22 +134,25 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
       eventDate: '2024-06-10',
       startTime: '13:00',
       endTime: '15:00',
-      tracksRequested: 3,
+      firingLineId: 101,
+      trackNos: [1, 2, 3],
     } as const;
     const options = { force: false } as const;
     const reservation: Reservation = {
       id: 55,
       range_id: rangeDetails.id,
-      coordinator_id: user.id,
+      approved_by_admin_id: user.id,
       proposition_id: null,
       event_date: payload.eventDate,
       start_time: payload.startTime,
       end_time: payload.endTime,
-      tracks_requested: payload.tracksRequested,
+      firing_line_id: payload.firingLineId,
+      metadata_json: JSON.stringify({ trackNos: payload.trackNos }),
     };
 
     ctx.rangesService.getRangeDetails.mockResolvedValue(Result.ok(rangeDetails));
-    ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValue([]);
+    ctx.reservationsRepository.getPropositions.mockResolvedValue([]);
+    ctx.reservationsRepository.getReservations.mockResolvedValue([]);
     ctx.reservationsRepository.createReservation.mockResolvedValue(reservation);
     ctx.auditService.logAction.mockResolvedValue(Result.ok(undefined));
 
@@ -161,7 +168,8 @@ describe('ReservationsService ↔ Ranges & Audit module integration', () => {
           rangeId: rangeDetails.id,
           rangeSlug: rangeDetails.slug,
           userId: user.id,
-          tracksRequested: payload.tracksRequested,
+          firingLineId: payload.firingLineId,
+          trackNos: payload.trackNos,
         }),
       })
     );
@@ -234,16 +242,17 @@ function createReservationsContext(): {
   const reservationsRepository: Mocked<IReservationsRepository> = {
     getPropositions: vi.fn(),
     getReservations: vi.fn(),
-    getOverlappingUsage: vi.fn(),
-    getOverlappingReservationsDetails: vi.fn(),
+    getRecords: vi.fn(),
     createProposition: vi.fn(),
     createReservation: vi.fn(),
     createReservationFromProposition: vi.fn(),
     createRecord: vi.fn(),
     markPropositionConverted: vi.fn(),
     getPropositionById: vi.fn(),
+    getPropositionDetailById: vi.fn(),
     cancelProposition: vi.fn(),
     getReservationById: vi.fn(),
+    getReservationDetailById: vi.fn(),
     deleteReservation: vi.fn(),
     reopenProposition: vi.fn(),
   };
@@ -251,7 +260,9 @@ function createReservationsContext(): {
   const rangesService: Mocked<IRangesService> = {
     existsRangeById: vi.fn(),
     getRanges: vi.fn(),
+    previewRangeTypeChange: vi.fn(),
     getRangeDetails: vi.fn(),
+    createRange: vi.fn(),
     updateRangeDetails: vi.fn(),
     getRangeIdBySlug: vi.fn(),
     deleteRange: vi.fn(),

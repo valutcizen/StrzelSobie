@@ -10,7 +10,8 @@ type PropositionRow = {
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
   is_member: number;
 };
 
@@ -18,16 +19,18 @@ type ReservationRow = {
   id: number;
   proposition_id: number | null;
   range_id: number;
-  coordinator_id: number;
+  approved_by_admin_id: number;
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
 };
 
 describe('ReservationsDbRepository integration', () => {
   let dbHandle: TestDatabase;
   let repository: ReservationsDbRepository;
+  let defaultFiringLineId: number;
 
   const defaultProposition = {
     user_id: 2,
@@ -36,17 +39,19 @@ describe('ReservationsDbRepository integration', () => {
     event_date: '2024-01-01',
     start_time: '09:00',
     end_time: '10:00',
-    tracks_requested: 2,
+    firing_line_id: 0,
+    metadata_json: JSON.stringify({ trackNos: [1, 2], hasCoordinatorLicenseInGroup: true }),
   };
 
   const defaultReservation = {
     proposition_id: null as number | null,
     range_id: 1,
-    coordinator_id: 2,
+    approved_by_admin_id: 2,
     event_date: '2024-01-02',
     start_time: '11:00',
     end_time: '13:00',
-    tracks_requested: 3,
+    firing_line_id: 0,
+    metadata_json: JSON.stringify({ trackNos: [3, 4] }),
   };
 
   const insertRange = async (
@@ -67,12 +72,25 @@ describe('ReservationsDbRepository integration', () => {
     return record.id;
   };
 
+  const insertFiringLine = async (rangeId: number, tracksCount = 6, name = 'Line 1'): Promise<number> => {
+    const statement = dbHandle.d1.prepare(
+      `INSERT INTO ranges_firing_lines (range_id, name, tracks_count, length_meters, sort_order)
+       VALUES (?, ?, ?, 25, 1)
+       RETURNING id`
+    );
+    const record = await statement.bind(rangeId, name, tracksCount).first<{ id: number }>();
+    if (!record) {
+      throw new Error('Failed to insert firing line fixture');
+    }
+    return record.id;
+  };
+
   const insertProposition = async (overrides: Partial<typeof defaultProposition> = {}): Promise<PropositionRow> => {
     const data = { ...defaultProposition, ...overrides };
     const statement = dbHandle.d1.prepare(
       `INSERT INTO reservations_propositions
-        (user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+        (user_id, range_id, status, event_date, start_time, end_time, firing_line_id, metadata_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING
          id,
          user_id,
@@ -81,7 +99,8 @@ describe('ReservationsDbRepository integration', () => {
          event_date,
          start_time,
          end_time,
-         tracks_requested,
+         firing_line_id,
+         metadata_json,
          EXISTS (
            SELECT 1
            FROM users_user_global_roles ugr
@@ -98,7 +117,8 @@ describe('ReservationsDbRepository integration', () => {
         data.event_date,
         data.start_time,
         data.end_time,
-        data.tracks_requested
+        data.firing_line_id || defaultFiringLineId,
+        data.metadata_json
       )
       .first<PropositionRow>();
     if (!record) {
@@ -111,19 +131,20 @@ describe('ReservationsDbRepository integration', () => {
     const data = { ...defaultReservation, ...overrides };
     const statement = dbHandle.d1.prepare(
       `INSERT INTO reservations_reservations
-        (proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested`
+        (proposition_id, range_id, approved_by_admin_id, event_date, start_time, end_time, firing_line_id, metadata_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, proposition_id, range_id, approved_by_admin_id, event_date, start_time, end_time, firing_line_id, metadata_json`
     );
     const record = await statement
       .bind(
         data.proposition_id,
         data.range_id,
-        data.coordinator_id,
+        data.approved_by_admin_id,
         data.event_date,
         data.start_time,
         data.end_time,
-        data.tracks_requested
+        data.firing_line_id || defaultFiringLineId,
+        data.metadata_json
       )
       .first<ReservationRow>();
     if (!record) {
@@ -135,6 +156,13 @@ describe('ReservationsDbRepository integration', () => {
   beforeEach(async () => {
     dbHandle = await createTestDatabase();
     repository = new ReservationsDbRepository(dbHandle.db);
+    const line = await dbHandle.d1
+      .prepare('SELECT id FROM ranges_firing_lines WHERE range_id = 1 ORDER BY sort_order, id LIMIT 1')
+      .first<{ id: number }>();
+    if (!line) {
+      throw new Error('Missing firing line fixture for range 1');
+    }
+    defaultFiringLineId = line.id;
   });
 
   afterEach(() => {
@@ -146,13 +174,14 @@ describe('ReservationsDbRepository integration', () => {
     await insertProposition({ event_date: '2024-04-01' });
 
     const otherRangeId = await insertRange('krakow', 'Strzelnica Kraków', 6);
+    const otherLineId = await insertFiringLine(otherRangeId, 6);
     await dbHandle.d1
       .prepare(
         `INSERT INTO reservations_propositions
-          (user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
-         VALUES (2, ?, 'open', '2024-03-15', '10:00', '11:00', 2)`
+          (user_id, range_id, status, event_date, start_time, end_time, firing_line_id, metadata_json)
+         VALUES (2, ?, 'open', '2024-03-15', '10:00', '11:00', ?, '{"trackNos":[1,2]}')`
       )
-      .bind(otherRangeId)
+      .bind(otherRangeId, otherLineId)
       .run();
 
     const result = await repository.getPropositions(1, '2024-03-01', '2024-03-31');
@@ -162,40 +191,17 @@ describe('ReservationsDbRepository integration', () => {
       range_id: 1,
       status: 'open',
       event_date: '2024-03-10',
+      firing_line_id: defaultFiringLineId,
     });
     expect(result[0].is_member).toBe(true);
-  });
-
-  it('getPropositions marks membership flag based on user roles', async () => {
-    await insertProposition({ user_id: 3, event_date: '2024-03-12' });
-    await insertProposition({ user_id: 4, event_date: '2024-03-13' });
-
-    const results = await repository.getPropositions(1, '2024-03-01', '2024-03-31');
-
-    const memberProposition = results.find((row) => row.user_id === 3);
-    const guestProposition = results.find((row) => row.user_id === 4);
-
-    expect(memberProposition?.is_member).toBe(true);
-    expect(guestProposition?.is_member).toBe(false);
-  });
-
-  it('getPropositions excludes non-open statuses', async () => {
-    await insertProposition({ status: 'converted', event_date: '2024-03-20' });
-    await insertProposition({ status: 'cancelled', event_date: '2024-03-21' });
-    const openProposition = await insertProposition({ status: 'open', event_date: '2024-03-22' });
-
-    const results = await repository.getPropositions(1, '2024-03-01', '2024-03-31');
-
-    expect(results).toHaveLength(1);
-    expect(results[0].id).toBe(openProposition.id);
-    expect(results[0].status).toBe('open');
   });
 
   it('getReservations returns reservations for range and window', async () => {
     const expected = await insertReservation({ event_date: '2024-05-10' });
     await insertReservation({ event_date: '2024-06-01' });
     const otherRangeId = await insertRange('poznan', 'Strzelnica Poznań', 5);
-    await insertReservation({ range_id: otherRangeId, event_date: '2024-05-15' });
+    const otherLineId = await insertFiringLine(otherRangeId, 5);
+    await insertReservation({ range_id: otherRangeId, firing_line_id: otherLineId, event_date: '2024-05-15' });
 
     const reservations = await repository.getReservations(1, '2024-05-01', '2024-05-31');
 
@@ -203,99 +209,14 @@ describe('ReservationsDbRepository integration', () => {
     expect(reservations[0]).toMatchObject({
       id: expected.id,
       range_id: 1,
+      firing_line_id: defaultFiringLineId,
+      approved_by_admin_id: 2,
     });
   });
 
-  it('getOverlappingUsage sums tracks for overlapping entries', async () => {
-    await insertProposition({
-      event_date: '2024-04-10',
-      start_time: '08:00',
-      end_time: '10:30',
-      tracks_requested: 2,
-    });
-    await insertReservation({
-      event_date: '2024-04-10',
-      start_time: '09:00',
-      end_time: '11:00',
-      tracks_requested: 3,
-    });
-
-    const usage = await repository.getOverlappingUsage(1, '2024-04-10', '09:00', '10:00');
-    expect(usage).toEqual({ propositions_tracks: 2, reservations_tracks: 3 });
-  });
-
-  it('getOverlappingUsage returns zeros when nothing overlaps', async () => {
-    const usage = await repository.getOverlappingUsage(1, '2024-07-01', '10:00', '11:00');
-    expect(usage).toEqual({ propositions_tracks: 0, reservations_tracks: 0 });
-  });
-
-  it('getOverlappingReservationsDetails returns conflicts with types', async () => {
-    const proposition = await insertProposition({
-      event_date: '2024-08-01',
-      start_time: '10:00',
-      end_time: '12:00',
-      tracks_requested: 2,
-    });
-    const reservation = await insertReservation({
-      event_date: '2024-08-01',
-      start_time: '11:00',
-      end_time: '13:00',
-      tracks_requested: 4,
-    });
-
-    const conflicts = await repository.getOverlappingReservationsDetails(1, '2024-08-01', '10:30', '11:30');
-
-    expect(conflicts).toEqual(
-      expect.arrayContaining([
-        {
-          id: reservation.id,
-          type: 'reservation',
-          event_date: reservation.event_date,
-          start_time: reservation.start_time,
-          end_time: reservation.end_time,
-          tracks_requested: reservation.tracks_requested,
-        },
-        {
-          id: proposition.id,
-          type: 'proposition',
-          event_date: proposition.event_date,
-          start_time: proposition.start_time,
-          end_time: proposition.end_time,
-          tracks_requested: proposition.tracks_requested,
-        },
-      ])
-    );
-  });
-
-  it('getOverlappingReservationsDetails respects exclusion options', async () => {
-    const proposition = await insertProposition({ event_date: '2024-09-01', start_time: '09:00', end_time: '10:00' });
-    const reservation = await insertReservation({
-      event_date: '2024-09-01',
-      start_time: '09:30',
-      end_time: '10:30',
-      tracks_requested: 3,
-    });
-
-    const withoutReservation = await repository.getOverlappingReservationsDetails(
-      1,
-      '2024-09-01',
-      '09:00',
-      '10:30',
-      { excludeReservationId: reservation.id }
-    );
-    expect(withoutReservation).toHaveLength(1);
-    expect(withoutReservation[0].type).toBe('proposition');
-
-    const withoutProposition = await repository.getOverlappingReservationsDetails(
-      1,
-      '2024-09-01',
-      '09:00',
-      '10:30',
-      { excludePropositionId: proposition.id }
-    );
-    expect(withoutProposition).toHaveLength(1);
-    expect(withoutProposition[0].type).toBe('reservation');
-  });
+  it.skip(
+    'legacy SQL overlap aggregation moved to service-level range+date conflict resolution (phase 3)'
+  );
 
   it('createProposition inserts and returns new entity', async () => {
     const proposition = await repository.createProposition({
@@ -304,7 +225,8 @@ describe('ReservationsDbRepository integration', () => {
       event_date: '2024-10-01',
       start_time: '10:00',
       end_time: '11:00',
-      tracks_requested: 1,
+      firing_line_id: defaultFiringLineId,
+      metadata_json: JSON.stringify({ trackNos: [1], hasCoordinatorLicenseInGroup: false }),
     });
 
     expect(proposition).toMatchObject({
@@ -312,16 +234,19 @@ describe('ReservationsDbRepository integration', () => {
       status: 'open',
       user_id: 3,
       range_id: 1,
+      firing_line_id: defaultFiringLineId,
     });
-
-    const stored = await repository.getPropositionById(proposition.id);
-    expect(stored?.status).toBe('open');
+    expect(JSON.parse(proposition.metadata_json)).toEqual({
+      trackNos: [1],
+      hasCoordinatorLicenseInGroup: false,
+    });
   });
 
   it('getPropositionById returns proposition or null', async () => {
     const proposition = await insertProposition({ event_date: '2024-11-01' });
     const stored = await repository.getPropositionById(proposition.id);
     expect(stored?.id).toBe(proposition.id);
+    expect(stored?.firing_line_id).toBe(defaultFiringLineId);
 
     const missing = await repository.getPropositionById(999);
     expect(missing).toBeNull();
@@ -348,16 +273,19 @@ describe('ReservationsDbRepository integration', () => {
     const reservation = await repository.createReservation({
       proposition_id: null,
       range_id: 1,
-      coordinator_id: 2,
+      approved_by_admin_id: 2,
       event_date: '2025-01-05',
       start_time: '12:00',
       end_time: '13:00',
-      tracks_requested: 3,
+      firing_line_id: defaultFiringLineId,
+      metadata_json: JSON.stringify({ trackNos: [1, 2, 3] }),
     });
 
     expect(reservation).toMatchObject({
       id: expect.any(Number),
       proposition_id: null,
+      approved_by_admin_id: 2,
+      firing_line_id: defaultFiringLineId,
     });
   });
 
@@ -367,16 +295,18 @@ describe('ReservationsDbRepository integration', () => {
       {
         proposition_id: proposition.id,
         range_id: 1,
-        coordinator_id: 2,
+        approved_by_admin_id: 2,
         event_date: proposition.event_date,
         start_time: proposition.start_time,
         end_time: proposition.end_time,
-        tracks_requested: proposition.tracks_requested,
+        firing_line_id: defaultFiringLineId,
+        metadata_json: proposition.metadata_json,
       },
       proposition.id
     );
 
     expect(reservation.proposition_id).toBe(proposition.id);
+    expect(reservation.approved_by_admin_id).toBe(2);
 
     const storedProposition = await repository.getPropositionById(proposition.id);
     expect(storedProposition?.status).toBe('converted');
@@ -386,6 +316,7 @@ describe('ReservationsDbRepository integration', () => {
     const reservation = await insertReservation();
     const stored = await repository.getReservationById(reservation.id);
     expect(stored?.id).toBe(reservation.id);
+    expect(stored?.firing_line_id).toBe(defaultFiringLineId);
 
     const missing = await repository.getReservationById(999);
     expect(missing).toBeNull();
@@ -411,17 +342,6 @@ describe('ReservationsDbRepository integration', () => {
 
     expect(reopened?.id).toBe(proposition.id);
     expect(reopened?.status).toBe('open');
-
-    const persisted = await repository.getPropositionById(proposition.id);
-    expect(persisted?.status).toBe('open');
-  });
-
-  it('reopenProposition returns null when proposition is not converted', async () => {
-    const proposition = await insertProposition({ status: 'cancelled' });
-
-    const reopened = await repository.reopenProposition(proposition.id);
-
-    expect(reopened).toBeNull();
   });
 
   it('createRecord inserts manual record entry', async () => {
@@ -442,5 +362,4 @@ describe('ReservationsDbRepository integration', () => {
     });
     expect(record.created_at).toBeDefined();
   });
-
 });

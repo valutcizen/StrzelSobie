@@ -66,6 +66,7 @@ describe('RangesService contract', () => {
       findAll: vi.fn(),
       countFutureAvailabilityImpact: vi.fn(),
       findBySlug: vi.fn(),
+      findFiringLinesByRangeId: vi.fn().mockResolvedValue([]),
       create: vi.fn(),
       update: vi.fn(),
       getRangeIdBySlug: vi.fn(),
@@ -142,6 +143,8 @@ describe('RangesService contract', () => {
       operatingHours: { monday: { open: '09:00', close: '17:00' } },
       extras: {},
       parkingLocation: null,
+      firingLines: [],
+      administratorContacts: [],
     });
   });
 
@@ -157,6 +160,8 @@ describe('RangesService contract', () => {
     expect(result.getValue()).toMatchObject({
       extras: { parkingLocation: { latitude: 50.1234, longitude: 19.9876 } },
       parkingLocation: { latitude: 50.1234, longitude: 19.9876 },
+      firingLines: [],
+      administratorContacts: [],
     });
   });
 
@@ -172,6 +177,8 @@ describe('RangesService contract', () => {
     expect(result.getValue()).toMatchObject({
       extras: {},
       parkingLocation: null,
+      firingLines: [],
+      administratorContacts: [],
     });
   });
 
@@ -206,6 +213,8 @@ describe('RangesService contract', () => {
       operatingHours: {},
       extras: {},
       parkingLocation: null,
+      firingLines: [],
+      administratorContacts: [],
     });
   });
 
