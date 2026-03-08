@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
+import { expect, request, test, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
 import {
   CalendarPage,
   EventDetailDialogPage,
@@ -47,7 +47,9 @@ const createPropositionViaApi = async (context: APIRequestContext, slot: SlotCan
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      tracksRequested: 1,
+      firingLineId: 1,
+      trackNos: [1],
+      hasCoordinatorLicenseInGroup: true,
     },
   });
 
@@ -91,8 +93,6 @@ test.describe('Propositions', () => {
       await propositionForm.dateInput.fill(slot.eventDate);
       await propositionForm.startTimeInput.fill(slot.startTime);
       await propositionForm.endTimeInput.fill(slot.endTime);
-      await propositionForm.tracksInput.fill('1');
-
       const createResponsePromise = page.waitForResponse(
         (response) =>
           response.url().includes(`/api/v1/ranges/${rangeSlug}/propositions`) &&
@@ -125,16 +125,20 @@ test.describe('Propositions', () => {
     }
   });
 
-  test('coordinator can cancel their own proposition @coordinator', async ({ page }, testInfo) => {
+  test('range admin can cancel a proposition @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const eventDetailDialog = new EventDetailDialogPage(page);
     const confirmationDialog = new ConfirmationDialogPage(page);
     const { slot, release } = claimSlot(slotSeed(testInfo, 'cancel'));
 
     let propositionId: number | null = null;
+    const memberContext = await request.newContext({
+      baseURL: 'http://localhost:5173',
+      storageState: 'tests-e2e/.auth/member.json',
+    });
 
     try {
-      propositionId = await createPropositionViaApi(page.request, slot);
+      propositionId = await createPropositionViaApi(memberContext, slot);
 
       const initialEventsResponse = waitForCalendarEvents(page);
       await page.goto(calendarPath);
@@ -172,7 +176,8 @@ test.describe('Propositions', () => {
         });
       }
     } finally {
-      await deletePropositionViaApi(page.request, propositionId);
+      await deletePropositionViaApi(memberContext, propositionId);
+      await memberContext.dispose();
       release();
     }
   });

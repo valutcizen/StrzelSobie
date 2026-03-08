@@ -36,6 +36,8 @@ test.describe('Ranges', () => {
 
     await expect(landingPage.memberDescriptionCard).toBeVisible();
     await expect(landingPage.memberDescriptionContent).toContainText('Member-only notes for E2E tests.');
+    await expect(landingPage.administratorContactsCard).toBeVisible();
+    await expect(landingPage.administratorContactsList).toBeVisible();
   });
 
   test('booking controls reflect range availability @member', async ({ page }) => {
@@ -74,13 +76,14 @@ test.describe('Ranges', () => {
     await expect(landingPage.openCalendarButton).toBeDisabled();
   });
 
-  test('reservation attempts for non-bookable ranges return a conflict @coordinator', async ({ page }, testInfo) => {
+  test('reservation attempts for non-bookable ranges return a conflict @range-admin', async ({ page }, testInfo) => {
     const slotClaim = claimSlot(slotSeed(testInfo, 'non-bookable'));
     const payload = {
       eventDate: slotClaim.slot.eventDate,
       startTime: slotClaim.slot.startTime,
       endTime: slotClaim.slot.endTime,
-      tracksRequested: 1,
+      firingLineId: 1,
+      trackNos: [1],
     };
 
     try {

@@ -41,7 +41,9 @@ const createProposition = async (context: APIRequestContext, slot: SlotCandidate
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      tracksRequested: 1,
+      firingLineId: 1,
+      trackNos: [1],
+      hasCoordinatorLicenseInGroup: true,
     },
   });
 
@@ -56,13 +58,14 @@ const createProposition = async (context: APIRequestContext, slot: SlotCandidate
 const createReservation = async (
   context: APIRequestContext,
   slot: SlotCandidate,
-  options?: { tracksRequested?: number },
+  options?: { trackNos?: number[] },
 ) => {
   const payload = {
     eventDate: slot.eventDate,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    tracksRequested: options?.tracksRequested ?? 2,
+    firingLineId: 1,
+    trackNos: options?.trackNos ?? [1, 2],
   };
 
   let response = await context.post(`${apiBaseUrl}/api/v1/ranges/${rangeSlug}/reservations`, { data: payload });
@@ -102,9 +105,9 @@ test.describe('Calendar Events', () => {
       baseURL: apiBaseUrl,
       storageState: 'tests-e2e/.auth/member.json',
     });
-    const coordinatorContext = await request.newContext({
+    const rangeAdminContext = await request.newContext({
       baseURL: apiBaseUrl,
-      storageState: 'tests-e2e/.auth/coordinator.json',
+      storageState: 'tests-e2e/.auth/range-admin.json',
     });
 
     let propositionId: number | null = null;
@@ -126,7 +129,7 @@ test.describe('Calendar Events', () => {
       const reservationClaim = claimSlot(slotSeed(testInfo, 'reservation'));
       reservationSlot = reservationClaim.slot;
       releaseReservationSlot = reservationClaim.release;
-      reservationId = await createReservation(coordinatorContext, reservationSlot);
+      reservationId = await createReservation(rangeAdminContext, reservationSlot);
       if (typeof reservationId !== 'number') {
         throw new Error('Failed to create reservation for calendar test.');
       }
@@ -156,15 +159,15 @@ test.describe('Calendar Events', () => {
         await memberContext.delete(`/api/v1/propositions/${propositionId}`).catch(() => {});
       }
       if (reservationId !== null) {
-        await coordinatorContext.delete(`/api/v1/reservations/${reservationId}`).catch(() => {});
+        await rangeAdminContext.delete(`/api/v1/reservations/${reservationId}`).catch(() => {});
       }
       releasePropositionSlot?.();
       releaseReservationSlot?.();
-      await Promise.all([memberContext.dispose(), coordinatorContext.dispose()]);
+      await Promise.all([memberContext.dispose(), rangeAdminContext.dispose()]);
     }
   });
 
-  test('allows a coordinator to open an event and read reservation details @coordinator', async ({ page }, testInfo) => {
+  test('allows a range admin to open an event and read reservation details @range-admin', async ({ page }, testInfo) => {
 
     let reservationId: number | null = null;
     let reservationSlot: SlotCandidate | null = null;
@@ -174,7 +177,7 @@ test.describe('Calendar Events', () => {
       const reservationClaim = claimSlot(slotSeed(testInfo, 'details'));
       reservationSlot = reservationClaim.slot;
       releaseReservationSlot = reservationClaim.release;
-      reservationId = await createReservation(page.request, reservationSlot, { tracksRequested: 3 });
+      reservationId = await createReservation(page.request, reservationSlot, { trackNos: [1, 2, 3] });
       if (typeof reservationId !== 'number') {
         throw new Error('Failed to create reservation for coordinator detail test.');
       }
@@ -203,7 +206,7 @@ test.describe('Calendar Events', () => {
 
       await expect(dialog.getByTestId('event-detail-reservation-section')).toBeVisible();
 
-      const tracksSummary = translate('calendar.eventDetail.summary.tracks', { count: 3 });
+      const tracksSummary = translate('calendar.eventDetail.summary.trackNos', { tracks: '1, 2, 3' });
       await expect(dialog.getByText(tracksSummary)).toBeVisible();
 
       await dialog.getByTestId('event-detail-close-button').click();
@@ -218,9 +221,9 @@ test.describe('Calendar Events', () => {
 
   test('shows a visual indicator for joinable reservations to members @member', async ({ page }, testInfo) => {
 
-    const coordinatorContext = await request.newContext({
+    const rangeAdminContext = await request.newContext({
       baseURL: apiBaseUrl,
-      storageState: 'tests-e2e/.auth/coordinator.json',
+      storageState: 'tests-e2e/.auth/range-admin.json',
     });
 
     let reservationId: number | null = null;
@@ -231,7 +234,7 @@ test.describe('Calendar Events', () => {
       const reservationClaim = claimSlot(slotSeed(testInfo, 'joinable'));
       reservationSlot = reservationClaim.slot;
       releaseReservationSlot = reservationClaim.release;
-      reservationId = await createReservation(coordinatorContext, reservationSlot);
+      reservationId = await createReservation(rangeAdminContext, reservationSlot);
       if (typeof reservationId !== 'number') {
         throw new Error('Failed to create joinable reservation for calendar test.');
       }
@@ -247,10 +250,10 @@ test.describe('Calendar Events', () => {
       await expect(reservationLocator).toBeVisible();
     } finally {
       if (reservationId !== null) {
-        await coordinatorContext.delete(`/api/v1/reservations/${reservationId}`).catch(() => {});
+        await rangeAdminContext.delete(`/api/v1/reservations/${reservationId}`).catch(() => {});
       }
       releaseReservationSlot?.();
-      await coordinatorContext.dispose();
+      await rangeAdminContext.dispose();
     }
   });
 });

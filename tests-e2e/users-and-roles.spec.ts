@@ -201,7 +201,9 @@ test.describe('Users & Roles', () => {
         eventDate,
         startTime,
         endTime,
-        tracksRequested: 1,
+        firingLineId: 1,
+        trackNos: [1],
+        hasCoordinatorLicenseInGroup: true,
       },
     });
     if (!createResponse.ok()) {
@@ -211,7 +213,7 @@ test.describe('Users & Roles', () => {
 
     const { id: propositionId } = await createResponse.json();
 
-    const coordinatorContext = await request.newContext({ storageState: 'tests-e2e/.auth/coordinator.json' });
+    const rangeAdminContext = await request.newContext({ storageState: 'tests-e2e/.auth/range-admin.json' });
     const candidateDayOffsets = [2, 3, 4]; // mid-week slots to reduce conflict risk
     const candidateHours = [8, 12, 16];
 
@@ -230,12 +232,13 @@ test.describe('Users & Roles', () => {
         const reservationEndObj = new Date(reservationStartObj);
         reservationEndObj.setHours(reservationStartObj.getHours() + 1);
 
-          const reservationResponse = await coordinatorContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
+          const reservationResponse = await rangeAdminContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
             data: {
               eventDate: formatDate(reservationStartObj),
               startTime: formatTime(reservationStartObj),
               endTime: formatTime(reservationEndObj),
-              tracksRequested: 2,
+              firingLineId: 1,
+              trackNos: [1, 2],
             },
           });
 
@@ -272,7 +275,7 @@ test.describe('Users & Roles', () => {
     );
     expect(reservationEntry).toBeDefined();
     expect(reservationEntry?.details).toBeNull();
-    expect(reservationEntry?.tracksRequested).toBeNull();
+    expect(reservationEntry?.trackNos).toEqual([]);
 
     const propositionLocator = page.locator(
       `[data-event-id="proposition-${propositionId}"]`,
@@ -292,7 +295,7 @@ test.describe('Users & Roles', () => {
     expect(propositionStatus).toBeLessThan(500);
   });
 
-  test('a coordinator can view contact details for a managed reservation @coordinator', async ({ page }) => {
+  test('a range admin can view contact details for a managed reservation @range-admin', async ({ page }) => {
 
     const formatDate = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
@@ -342,7 +345,9 @@ test.describe('Users & Roles', () => {
                 eventDate,
                 startTime,
                 endTime,
-                tracksRequested: 1,
+                firingLineId: 1,
+                trackNos: [1],
+                hasCoordinatorLicenseInGroup: true,
               },
             },
           );
@@ -359,7 +364,7 @@ test.describe('Users & Roles', () => {
             eventDate,
             startTime,
             endTime,
-            tracksRequested: 2,
+            adminMessage: 'Approved for contact details test',
           };
 
           let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {

@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Locator, type Page, type TestInfo } from '@playwright/test';
+import { expect, request, test, type APIRequestContext, type Locator, type Page, type TestInfo } from '@playwright/test';
 import {
   CalendarPage,
   EventDetailDialogPage,
@@ -50,21 +50,18 @@ const ensureSwitchChecked = async (switchWrapper: Locator) => {
   await checkbox.check({ force: true });
 };
 
-interface CreatePropositionOptions {
-  tracksRequested?: number;
-}
-
 const createProposition = async (
   context: APIRequestContext,
   slot: SlotCandidate,
-  options?: CreatePropositionOptions,
 ) => {
   const response = await context.post(`${apiBaseUrl}/api/v1/ranges/${rangeSlug}/propositions`, {
     data: {
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      tracksRequested: options?.tracksRequested ?? 1,
+      firingLineId: 1,
+      trackNos: [1],
+      hasCoordinatorLicenseInGroup: true,
     },
   });
 
@@ -88,9 +85,10 @@ const deleteProposition = async (context: APIRequestContext, propositionId: numb
 };
 
 interface CreateReservationOptions {
-  tracksRequested?: number;
+  trackNos?: number[];
   propositionId?: number | null;
   force?: boolean;
+  adminMessage?: string;
 }
 
 const createReservation = async (
@@ -98,13 +96,22 @@ const createReservation = async (
   slot: SlotCandidate,
   options?: CreateReservationOptions,
 ) => {
-  const payload = {
-    eventDate: slot.eventDate,
-    startTime: slot.startTime,
-    endTime: slot.endTime,
-    tracksRequested: options?.tracksRequested ?? 2,
-    propositionId: options?.propositionId ?? undefined,
-  };
+  const payload =
+    options?.propositionId !== undefined && options?.propositionId !== null
+      ? {
+          propositionId: options.propositionId,
+          eventDate: slot.eventDate,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          adminMessage: options.adminMessage ?? 'Approved by range admin',
+        }
+      : {
+          eventDate: slot.eventDate,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          firingLineId: 1,
+          trackNos: options?.trackNos ?? [1, 2],
+        };
 
   const querySuffix = options?.force ? '?force=true' : '';
   let response = await context.post(
@@ -153,7 +160,7 @@ const gotoCalendar = async (page: Page) => {
 };
 
 test.describe('Reservations', () => {
-  test('coordinator can convert a proposition into a reservation @coordinator', async ({ page }, testInfo) => {
+  test('range admin can convert a proposition into a reservation @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const eventDetailDialog = new EventDetailDialogPage(page);
     const reservationForm = new ReservationFormDialogPage(page);
@@ -161,9 +168,13 @@ test.describe('Reservations', () => {
 
     let propositionId: number | null = null;
     let reservationId: number | null = null;
+    const memberContext = await request.newContext({
+      baseURL: apiBaseUrl,
+      storageState: 'tests-e2e/.auth/member.json',
+    });
 
     try {
-      propositionId = await createProposition(page.request, slotClaim.slot);
+      propositionId = await createProposition(memberContext, slotClaim.slot);
       await gotoCalendar(page);
 
       await scrollCalendarToSlot(page, slotClaim.slot);
@@ -205,13 +216,14 @@ test.describe('Reservations', () => {
     } finally {
       await deleteReservation(page.request, reservationId);
       if (reservationId === null) {
-        await deleteProposition(page.request, propositionId);
+        await deleteProposition(memberContext, propositionId);
       }
+      await memberContext.dispose();
       slotClaim.release();
     }
   });
 
-  test('coordinator can adjust reservation details when accepting a proposition @coordinator', async ({ page }, testInfo) => {
+  test('range admin can adjust final time when accepting a proposition @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const eventDetailDialog = new EventDetailDialogPage(page);
     const reservationForm = new ReservationFormDialogPage(page);
@@ -219,11 +231,13 @@ test.describe('Reservations', () => {
 
     let propositionId: number | null = null;
     let reservationId: number | null = null;
+    const memberContext = await request.newContext({
+      baseURL: apiBaseUrl,
+      storageState: 'tests-e2e/.auth/member.json',
+    });
 
     try {
-      propositionId = await createProposition(page.request, slotClaim.slot, {
-        tracksRequested: 1,
-      });
+      propositionId = await createProposition(memberContext, slotClaim.slot);
       await gotoCalendar(page);
 
       await scrollCalendarToSlot(page, slotClaim.slot);
@@ -233,7 +247,9 @@ test.describe('Reservations', () => {
       await eventDetailDialog.acceptButton.click();
       await expect(reservationForm.dialog).toBeVisible();
 
-      await reservationForm.tracksInput.fill('3');
+      await reservationForm.startTimeInput.fill('11:00');
+      await reservationForm.endTimeInput.fill('12:00');
+      await reservationForm.adminMessageInput.fill('Updated reservation time');
       const createResponsePromise = page.waitForResponse(
         (response) =>
           response.url().includes(`/api/v1/ranges/${rangeSlug}/reservations`) &&
@@ -270,22 +286,19 @@ test.describe('Reservations', () => {
 
       const detailResponse = await fetchDetailWithRetry();
       const detail = await detailResponse.json();
-      const detailTracks =
-        detail.tracksRequested ??
-        detail.tracks_requested ??
-        detail.tracksAllocated ??
-        detail.tracks_allocated;
-      expect(detailTracks).toBe(3);
+      expect(detail.startTime ?? detail.start_time).toBe('11:00');
+      expect(detail.endTime ?? detail.end_time).toBe('12:00');
     } finally {
       await deleteReservation(page.request, reservationId);
       if (reservationId === null) {
-        await deleteProposition(page.request, propositionId);
+        await deleteProposition(memberContext, propositionId);
       }
+      await memberContext.dispose();
       slotClaim.release();
     }
   });
 
-  test('coordinator can create a reservation directly @coordinator', async ({ page }, testInfo) => {
+  test('range admin can create a reservation directly @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const reservationForm = new ReservationFormDialogPage(page);
     const slotClaim = claimSlot(slotSeed(testInfo, 'direct'));
@@ -301,7 +314,6 @@ test.describe('Reservations', () => {
       await reservationForm.dateInput.fill(slotClaim.slot.eventDate);
       await reservationForm.startTimeInput.fill(slotClaim.slot.startTime);
       await reservationForm.endTimeInput.fill(slotClaim.slot.endTime);
-      await reservationForm.tracksInput.fill('2');
       const createResponsePromise = page.waitForResponse(
         (response) =>
           response.url().includes(`/api/v1/ranges/${rangeSlug}/reservations`) &&
@@ -329,7 +341,7 @@ test.describe('Reservations', () => {
     }
   });
 
-  test('coordinator can cancel an existing reservation @coordinator', async ({ page }, testInfo) => {
+  test('range admin can cancel an existing reservation @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const eventDetailDialog = new EventDetailDialogPage(page);
     const confirmationDialog = new ConfirmationDialogPage(page);
@@ -374,7 +386,7 @@ test.describe('Reservations', () => {
     }
   });
 
-  test('overlapping reservations prompt a force warning before saving @coordinator', async ({ page }, testInfo) => {
+  test('overlapping reservations prompt a force warning before saving @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const reservationForm = new ReservationFormDialogPage(page);
     const slotClaim = claimSlot(slotSeed(testInfo, 'overlap'));
@@ -384,7 +396,7 @@ test.describe('Reservations', () => {
 
     try {
       blockingReservationId = await createReservation(page.request, slotClaim.slot, {
-        tracksRequested: 2,
+        trackNos: [1, 2],
       });
 
       await gotoCalendar(page);
@@ -394,7 +406,9 @@ test.describe('Reservations', () => {
       await reservationForm.dateInput.fill(slotClaim.slot.eventDate);
       await reservationForm.startTimeInput.fill(slotClaim.slot.startTime);
       await reservationForm.endTimeInput.fill(slotClaim.slot.endTime);
-      await reservationForm.tracksInput.fill('1');
+      await reservationForm.trackNosSelect.click();
+      await page.getByRole('option', { name: /^1$/ }).click();
+      await page.keyboard.press('Escape');
 
       const failureResponsePromise = page.waitForResponse(
         (response) =>
@@ -436,7 +450,7 @@ test.describe('Reservations', () => {
     }
   });
 
-  test('cancelling a reservation restores its original proposition @coordinator', async ({ page }, testInfo) => {
+  test('cancelling a reservation restores its original proposition @range-admin', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const eventDetailDialog = new EventDetailDialogPage(page);
     const confirmationDialog = new ConfirmationDialogPage(page);
@@ -444,11 +458,13 @@ test.describe('Reservations', () => {
 
     let propositionId: number | null = null;
     let reservationId: number | null = null;
+    const memberContext = await request.newContext({
+      baseURL: apiBaseUrl,
+      storageState: 'tests-e2e/.auth/member.json',
+    });
 
     try {
-      propositionId = await createProposition(page.request, slotClaim.slot, {
-        tracksRequested: 1,
-      });
+      propositionId = await createProposition(memberContext, slotClaim.slot);
       reservationId = await createReservation(page.request, slotClaim.slot, {
         propositionId,
       });
@@ -484,7 +500,8 @@ test.describe('Reservations', () => {
       reservationId = null;
     } finally {
       await deleteReservation(page.request, reservationId);
-      await deleteProposition(page.request, propositionId);
+      await deleteProposition(memberContext, propositionId);
+      await memberContext.dispose();
       slotClaim.release();
     }
   });

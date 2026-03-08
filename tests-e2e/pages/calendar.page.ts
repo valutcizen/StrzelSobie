@@ -37,7 +37,10 @@ export class PropositionFormDialogPage {
   readonly dateInput: Locator;
   readonly startTimeInput: Locator;
   readonly endTimeInput: Locator;
-  readonly tracksInput: Locator;
+  readonly firingLineSelect: Locator;
+  readonly trackNosSelect: Locator;
+  readonly coordinatorCheckbox: Locator;
+  readonly targetAdminSelect: Locator;
   readonly cancelButton: Locator;
   readonly submitButton: Locator;
 
@@ -46,7 +49,10 @@ export class PropositionFormDialogPage {
     this.dateInput = this.dialog.getByTestId('proposition-form-date-input').locator('input');
     this.startTimeInput = this.dialog.getByTestId('proposition-form-start-time-input').locator('input');
     this.endTimeInput = this.dialog.getByTestId('proposition-form-end-time-input').locator('input');
-    this.tracksInput = this.dialog.getByTestId('proposition-form-tracks-input').locator('input');
+    this.firingLineSelect = this.dialog.getByTestId('proposition-form-firing-line-select');
+    this.trackNosSelect = this.dialog.getByTestId('proposition-form-track-nos-select');
+    this.coordinatorCheckbox = this.dialog.getByTestId('proposition-form-coordinator-checkbox');
+    this.targetAdminSelect = this.dialog.getByTestId('proposition-form-target-admin-select');
     this.cancelButton = this.dialog.getByTestId('proposition-form-cancel-button');
     this.submitButton = this.dialog.getByTestId('proposition-form-submit-button');
   }
@@ -77,7 +83,10 @@ export class ReservationFormDialogPage {
   readonly dateInput: Locator;
   readonly startTimeInput: Locator;
   readonly endTimeInput: Locator;
-  readonly tracksInput: Locator;
+  readonly firingLineSelect: Locator;
+  readonly trackNosSelect: Locator;
+  readonly templateSelect: Locator;
+  readonly adminMessageInput: Locator;
   readonly forceSwitch: Locator;
   readonly cancelButton: Locator;
   readonly submitButton: Locator;
@@ -87,7 +96,10 @@ export class ReservationFormDialogPage {
     this.dateInput = this.dialog.getByTestId('reservation-form-date-input').locator('input');
     this.startTimeInput = this.dialog.getByTestId('reservation-form-start-time-input').locator('input');
     this.endTimeInput = this.dialog.getByTestId('reservation-form-end-time-input').locator('input');
-    this.tracksInput = this.dialog.getByTestId('reservation-form-tracks-input').locator('input');
+    this.firingLineSelect = this.dialog.getByTestId('reservation-form-firing-line-select');
+    this.trackNosSelect = this.dialog.getByTestId('reservation-form-track-nos-select');
+    this.templateSelect = this.dialog.getByTestId('reservation-form-template-select');
+    this.adminMessageInput = this.dialog.getByTestId('reservation-form-admin-message-input').locator('textarea');
     this.forceSwitch = this.dialog.getByTestId('reservation-form-force-switch');
     this.cancelButton = this.dialog.getByTestId('reservation-form-cancel-button');
     this.submitButton = this.dialog.getByTestId('reservation-form-submit-button');
