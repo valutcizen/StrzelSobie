@@ -2,15 +2,25 @@ import { Result } from '../result';
 import { UserProfile } from '../users/model';
 import { Reservation, Proposition, Record as RangeRecord } from './model';
 
+export type BookingScopeDto = {
+  firingLineId: number;
+  trackNos: number[];
+};
+
+export type BookingMetadataDto = {
+  trackNos: number[];
+  [key: string]: unknown;
+};
+
 /**
  * Command model for creating a new reservation directly.
  * Corresponds to the request payload for `POST /api/v1/ranges/{rangeSlug}/reservations`.
  */
-export type CreateReservationCommand = {
+export type CreateReservationCommand = BookingScopeDto & {
   eventDate: Reservation['event_date'];
   startTime: Reservation['start_time'];
   endTime: Reservation['end_time'];
-  tracksRequested: Reservation['tracks_requested'];
+  metadata?: Record<string, unknown>;
 };
 
 /**
@@ -22,7 +32,9 @@ export type CreateReservationFromPropositionCommand = {
   eventDate?: Reservation['event_date'];
   startTime?: Reservation['start_time'];
   endTime?: Reservation['end_time'];
-  tracksRequested?: Reservation['tracks_requested'];
+  adminMessage: string;
+  templateId?: number;
+  metadata?: Record<string, unknown>;
 };
 
 /**
@@ -45,30 +57,29 @@ export type CancelReservationCommand = {
  * DTO for a newly created reservation.
  * Corresponds to the response payload for `POST /api/v1/ranges/{rangeSlug}/reservations`.
  */
-export type CreatedReservationDto = Pick<Reservation, 'id' | 'range_id' | 'coordinator_id'>;
+export type CreatedReservationDto = Pick<Reservation, 'id' | 'range_id' | 'approved_by_admin_id'>;
 
-export type PropositionEventDto = {
+export type PropositionEventDto = BookingScopeDto & {
   id: number;
   userId: number;
   isMember: boolean; // True if the user is a club member, for UI highlighting
   eventDate: string;
   startTime: string;
   endTime: string;
-  tracksRequested: number;
+  hasCoordinatorLicenseInGroup: boolean;
 };
 
-export type ReservationEventDto = {
+export type ReservationEventDto = BookingScopeDto & {
   id: number;
   propositionId: number | null;
   eventDate: string;
   startTime: string;
   endTime: string;
-  tracksRequested: number | null;
   details: {
-    coordinatorId: number;
+    approvedByAdminId: number;
   } | null;
   proposition: PropositionDetailDto | null;
-}
+};
 
 export type RecordEventDto = {
   id: RangeRecord['id'];
@@ -111,7 +122,11 @@ export type CreatePropositionCommand = {
   eventDate: Proposition['event_date'];
   startTime: Proposition['start_time'];
   endTime: Proposition['end_time'];
-  tracksRequested: Proposition['tracks_requested'];
+  firingLineId: Proposition['firing_line_id'];
+  trackNos: number[];
+  hasCoordinatorLicenseInGroup: boolean;
+  targetAdminUserId?: number;
+  metadata?: Record<string, unknown>;
 };
 
 export type CancelPropositionCommand = {
@@ -164,7 +179,10 @@ export type PropositionDetailDto = {
   eventDate: Proposition['event_date'];
   startTime: Proposition['start_time'];
   endTime: Proposition['end_time'];
-  tracksRequested: Proposition['tracks_requested'];
+  firingLineId: Proposition['firing_line_id'];
+  trackNos: number[];
+  hasCoordinatorLicenseInGroup: boolean;
+  metadata: BookingMetadataDto;
   createdAt: string | null;
   requester: PersonSummaryDto | null;
   notes?: string | null;
@@ -173,14 +191,16 @@ export type PropositionDetailDto = {
 export type ReservationDetailDto = {
   id: Reservation['id'];
   rangeId: Reservation['range_id'];
-  coordinatorId: Reservation['coordinator_id'];
+  approvedByAdminId: Reservation['approved_by_admin_id'];
   propositionId: Reservation['proposition_id'];
   proposition: PropositionDetailDto | null;
   eventDate: Reservation['event_date'];
   startTime: Reservation['start_time'];
   endTime: Reservation['end_time'];
-  tracksRequested: Reservation['tracks_requested'];
+  firingLineId: Reservation['firing_line_id'];
+  trackNos: number[];
+  metadata: BookingMetadataDto;
   createdAt: string | null;
-  coordinator: PersonSummaryDto | null;
+  approvedByAdmin: PersonSummaryDto | null;
   notes?: string | null;
 };

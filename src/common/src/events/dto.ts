@@ -22,6 +22,7 @@ export type CreateEventCommand = {
   guestPolicy?: Event['guest_policy'];
   waitlistLimit?: Event['waitlist_limit'];
   registrationDeadline?: Event['registration_deadline'];
+  firingLineIds?: number[];
 };
 
 export type UpdateEventCommand = {
@@ -39,6 +40,7 @@ export type UpdateEventCommand = {
   waitlistLimit?: Event['waitlist_limit'];
   registrationDeadline?: Event['registration_deadline'];
   status?: Event['status'];
+  firingLineIds?: number[];
 };
 
 export type EventSummaryDto = {
@@ -53,6 +55,7 @@ export type EventSummaryDto = {
   audience: EventAudience;
   capacityType: EventCapacityType;
   status: EventStatus;
+  firingLineIds?: number[];
 };
 
 export type EventDetailsDto = {
@@ -78,6 +81,7 @@ export type EventDetailsDto = {
   updatedAt: Event['updated_at'];
   participants?: EventParticipantDto[];
   waitlist?: EventParticipantDto[];
+  firingLineIds?: number[];
 };
 
 export type EventsListResponseDto = {

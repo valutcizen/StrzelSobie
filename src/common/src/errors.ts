@@ -86,6 +86,34 @@ export class UnauthorizedPropositionError extends Error {
   }
 }
 
+export class MemberRoleRequiredError extends Error {
+  constructor(message = 'Only members can create propositions') {
+    super(message);
+    this.name = 'MemberRoleRequiredError';
+  }
+}
+
+export class PropositionDeclarationRequiredError extends Error {
+  constructor(message = 'Coordinator declaration is required for proposition creation') {
+    super(message);
+    this.name = 'PropositionDeclarationRequiredError';
+  }
+}
+
+export class RangeAdminRoleRequiredError extends Error {
+  constructor(message = 'Only range administrators can perform this action') {
+    super(message);
+    this.name = 'RangeAdminRoleRequiredError';
+  }
+}
+
+export class InvalidTargetAdminError extends Error {
+  constructor(message = 'Selected target administrator is invalid for this range') {
+    super(message);
+    this.name = 'InvalidTargetAdminError';
+  }
+}
+
 export class PropositionNotFoundError extends Error {
   constructor(message = 'Proposition not found') {
     super(message);
@@ -120,7 +148,8 @@ export type ReservationConflictItem = {
   eventDate: string;
   startTime: string;
   endTime: string;
-  tracksRequested: number;
+  firingLineId: number;
+  trackNos: number[];
 };
 
 export type ReservationConflictDetails = {

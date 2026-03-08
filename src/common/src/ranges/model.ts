@@ -17,6 +17,15 @@ export interface ShootingRange {
   extras: string; // JSON blob for optional range data
 }
 
+export interface FiringLine {
+  id: number;
+  range_id: number;
+  name: string;
+  tracks_count: number;
+  length_meters: number | null;
+  sort_order: number;
+}
+
 export interface AuditLog {
   id: number;
   user_id: number | null;

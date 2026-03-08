@@ -6,19 +6,21 @@ export interface Proposition {
   event_date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
   created_at: string;
 }
 
 export interface Reservation {
   id: number;
   proposition_id: number | null;
-  coordinator_id: number;
+  approved_by_admin_id: number;
   range_id: number;
   event_date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
   created_at: string;
 }
 

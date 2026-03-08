@@ -442,6 +442,8 @@ export class RangesService implements IRangesService {
       operatingHours,
       extras,
       parkingLocation,
+      firingLines: [],
+      administratorContacts: [],
     };
 
     return dto;

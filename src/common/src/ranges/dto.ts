@@ -1,4 +1,4 @@
-import { ShootingRange } from './model';
+import { FiringLine, ShootingRange } from './model';
 
 /**
  * DTO for a shooting range summary.
@@ -38,6 +38,21 @@ export type RangeExtras = {
   details?: string | null;
 };
 
+export type RangeAdministratorContactDto = {
+  userId: number;
+  email: string | null;
+  phoneNumber: string | null;
+  displayName: string | null;
+};
+
+export type FiringLineDto = {
+  id: FiringLine['id'];
+  name: FiringLine['name'];
+  tracksCount: FiringLine['tracks_count'];
+  lengthMeters: FiringLine['length_meters'];
+  sortOrder: FiringLine['sort_order'];
+};
+
 /**
  * DTO for detailed shooting range information.
  * Corresponds to the response payload for `GET /api/v1/ranges/{rangeSlug}`.
@@ -58,6 +73,8 @@ export type RangeDetailsDto = {
   operatingHours: OperatingHours;
   extras: RangeExtras;
   parkingLocation: RangeParkingLocation | null;
+  firingLines: FiringLineDto[];
+  administratorContacts: RangeAdministratorContactDto[];
 };
 
 export type RangeListResponseDto = RangeSummaryDto[];

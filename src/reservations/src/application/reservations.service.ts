@@ -146,10 +146,11 @@ export class ReservationsService implements IReservationsService {
 
       const filteredReservations = reservations.map((r: Reservation) => {
         const canViewDetails = isAdmin || isMember || isCoordinator;
-        const tracksRequested = canViewDetails ? r.tracks_requested : null;
+        const trackNos = canViewDetails ? this.buildLegacyTrackNos(r.tracks_requested) : [];
+        const firingLineId = canViewDetails ? this.resolveLegacyFiringLineId(r) : 0;
         const details = canViewDetails
           ? {
-              coordinatorId: r.coordinator_id,
+              approvedByAdminId: r.coordinator_id,
             }
           : null;
 
@@ -162,7 +163,8 @@ export class ReservationsService implements IReservationsService {
           eventDate: r.event_date,
           startTime: r.start_time,
           endTime: r.end_time,
-          tracksRequested,
+          firingLineId,
+          trackNos,
           details,
           proposition: propositionDetail,
         };
@@ -176,7 +178,9 @@ export class ReservationsService implements IReservationsService {
           eventDate: p.event_date,
           startTime: p.start_time,
           endTime: p.end_time,
-          tracksRequested: p.tracks_requested,
+          firingLineId: this.resolveLegacyFiringLineId(p),
+          trackNos: this.buildLegacyTrackNos(p.tracks_requested),
+          hasCoordinatorLicenseInGroup: false,
         })),
         reservations: filteredReservations,
         events,
@@ -246,7 +250,7 @@ export class ReservationsService implements IReservationsService {
         user
       );
 
-      const coordinator = this.buildPersonSummary(
+      const approvedByAdmin = this.buildPersonSummary(
         reservation.coordinator_id,
         reservation.coordinator_email,
         reservation.coordinator_phone_number
@@ -255,15 +259,17 @@ export class ReservationsService implements IReservationsService {
       const dto: ReservationDetailDto = {
         id: reservation.id,
         rangeId: reservation.range_id,
-        coordinatorId: reservation.coordinator_id,
+        approvedByAdminId: reservation.coordinator_id,
         propositionId: reservation.proposition_id,
         proposition: propositionDetailDto,
         eventDate: reservation.event_date,
         startTime: reservation.start_time,
         endTime: reservation.end_time,
-        tracksRequested: reservation.tracks_requested,
+        firingLineId: this.resolveLegacyFiringLineId(reservation),
+        trackNos: this.buildLegacyTrackNos(reservation.tracks_requested),
+        metadata: { trackNos: this.buildLegacyTrackNos(reservation.tracks_requested) },
         createdAt: reservation.created_at ?? null,
-        coordinator,
+        approvedByAdmin,
       };
 
       return Result.ok(dto);
@@ -434,7 +440,7 @@ export class ReservationsService implements IReservationsService {
       );
 
       const totalTracksUsed = usage.propositions_tracks + usage.reservations_tracks;
-      if (totalTracksUsed + command.tracksRequested > totalTracks) {
+      if (totalTracksUsed + command.trackNos.length > totalTracks) {
         return Result.fail(new PropositionConflictError());
       }
 
@@ -444,7 +450,7 @@ export class ReservationsService implements IReservationsService {
         event_date: command.eventDate,
         start_time: command.startTime,
         end_time: command.endTime,
-        tracks_requested: command.tracksRequested,
+        tracks_requested: command.trackNos.length,
       };
 
       const proposition = await this.reservationsRepository.createProposition(record);
@@ -458,7 +464,8 @@ export class ReservationsService implements IReservationsService {
           eventDate: command.eventDate,
           startTime: command.startTime,
           endTime: command.endTime,
-          tracksRequested: command.tracksRequested,
+          firingLineId: command.firingLineId,
+          trackNos: command.trackNos,
         },
       });
 
@@ -594,7 +601,7 @@ export class ReservationsService implements IReservationsService {
       event_date: command.eventDate,
       start_time: command.startTime,
       end_time: command.endTime,
-      tracks_requested: command.tracksRequested,
+      tracks_requested: command.trackNos.length,
     };
 
     try {
@@ -610,7 +617,8 @@ export class ReservationsService implements IReservationsService {
           eventDate: reservation.event_date,
           startTime: reservation.start_time,
           endTime: reservation.end_time,
-          tracksRequested: reservation.tracks_requested,
+          firingLineId: command.firingLineId,
+          trackNos: command.trackNos,
           forceApplied: force && blockingConflicts.length > 0,
         },
       });
@@ -622,7 +630,7 @@ export class ReservationsService implements IReservationsService {
       const dto: CreatedReservationDto = {
         id: reservation.id,
         range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
+        approved_by_admin_id: reservation.coordinator_id,
       };
 
       return Result.ok(dto);
@@ -660,7 +668,8 @@ export class ReservationsService implements IReservationsService {
     const eventDate = command.eventDate ?? proposition.event_date;
     const startTime = command.startTime ?? proposition.start_time;
     const endTime = command.endTime ?? proposition.end_time;
-    const tracksRequested = command.tracksRequested ?? proposition.tracks_requested;
+    const resolvedTrackNos = this.buildLegacyTrackNos(proposition.tracks_requested);
+    const resolvedFiringLineId = this.resolveLegacyFiringLineId(proposition);
     const totalTracks = rangeDetails.totalTracks ?? 0;
 
     if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
@@ -672,7 +681,8 @@ export class ReservationsService implements IReservationsService {
         eventDate,
         startTime,
         endTime,
-        tracksRequested,
+        firingLineId: resolvedFiringLineId,
+        trackNos: resolvedTrackNos,
       },
       totalTracks
     );
@@ -721,7 +731,7 @@ export class ReservationsService implements IReservationsService {
       event_date: eventDate,
       start_time: startTime,
       end_time: endTime,
-      tracks_requested: tracksRequested,
+      tracks_requested: resolvedTrackNos.length,
     };
 
     try {
@@ -741,13 +751,14 @@ export class ReservationsService implements IReservationsService {
           eventDate: reservation.event_date,
           startTime: reservation.start_time,
           endTime: reservation.end_time,
-          tracksRequested: reservation.tracks_requested,
+          firingLineId: resolvedFiringLineId,
+          trackNos: resolvedTrackNos,
           forceApplied: force && blockingConflicts.length > 0,
           adjustments: {
             eventDateChanged: eventDate !== proposition.event_date,
             startTimeChanged: startTime !== proposition.start_time,
             endTimeChanged: endTime !== proposition.end_time,
-            tracksRequestedChanged: tracksRequested !== proposition.tracks_requested,
+            trackNosChanged: false,
           },
         },
       });
@@ -759,7 +770,7 @@ export class ReservationsService implements IReservationsService {
       const dto: CreatedReservationDto = {
         id: reservation.id,
         range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
+        approved_by_admin_id: reservation.coordinator_id,
       };
 
       return Result.ok(dto);
@@ -776,7 +787,8 @@ export class ReservationsService implements IReservationsService {
       eventDate: conflict.event_date,
       startTime: conflict.start_time,
       endTime: conflict.end_time,
-      tracksRequested: conflict.tracks_requested,
+      firingLineId: this.resolveLegacyFiringLineId(conflict),
+      trackNos: this.buildLegacyTrackNos(conflict.tracks_requested),
     }));
   }
   private async resolveLinkedPropositionDetail(
@@ -827,7 +839,10 @@ export class ReservationsService implements IReservationsService {
       eventDate: proposition.event_date,
       startTime: proposition.start_time,
       endTime: proposition.end_time,
-      tracksRequested: proposition.tracks_requested,
+      firingLineId: this.resolveLegacyFiringLineId(proposition),
+      trackNos: this.buildLegacyTrackNos(proposition.tracks_requested),
+      hasCoordinatorLicenseInGroup: false,
+      metadata: { trackNos: this.buildLegacyTrackNos(proposition.tracks_requested) },
       createdAt: proposition.created_at ?? null,
       requester,
     };
@@ -1130,7 +1145,7 @@ export class ReservationsService implements IReservationsService {
       return timeError;
     }
 
-    const tracksError = this.validateReservationTracks(command.tracksRequested, totalTracks);
+    const tracksError = this.validateReservationTracks(command.trackNos, totalTracks);
     if (tracksError) {
       return tracksError;
     }
@@ -1138,13 +1153,15 @@ export class ReservationsService implements IReservationsService {
     return null;
   }
 
-  private validateReservationTracks(tracksRequested: number, totalTracks: number): Error | null {
-    if (!Number.isInteger(tracksRequested) || tracksRequested < 1) {
-      return new InvalidReservationTimeError('Tracks requested must be a positive integer');
+  private validateReservationTracks(trackNos: number[], totalTracks: number): Error | null {
+    if (!Array.isArray(trackNos) || trackNos.length < 1) {
+      return new InvalidReservationTimeError('trackNos must contain at least one track');
     }
 
-    if (tracksRequested > totalTracks) {
-      return new InvalidReservationTimeError('Tracks requested cannot exceed range capacity');
+    const allTrackNosAreValid =
+      trackNos.every((trackNo) => Number.isInteger(trackNo) && trackNo >= 1 && trackNo <= totalTracks);
+    if (!allTrackNosAreValid) {
+      return new InvalidReservationTimeError('All track numbers must be within firing line capacity');
     }
 
     return null;
@@ -1403,13 +1420,30 @@ export class ReservationsService implements IReservationsService {
     }
 
     if (
-      !Number.isInteger(command.tracksRequested) ||
-      command.tracksRequested < 1 ||
-      command.tracksRequested > totalTracks
+      !Array.isArray(command.trackNos) ||
+      command.trackNos.length < 1 ||
+      command.trackNos.some(
+        (trackNo) => !Number.isInteger(trackNo) || trackNo < 1 || trackNo > totalTracks
+      )
     ) {
-      return new InvalidPropositionTimeError('Tracks requested must be between 1 and the range capacity');
+      return new InvalidPropositionTimeError(
+        'trackNos must contain values between 1 and the range capacity'
+      );
     }
 
     return null;
+  }
+
+  private resolveLegacyFiringLineId(entity: unknown): number {
+    const value = (entity as { firing_line_id?: unknown }).firing_line_id;
+    return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 0;
+  }
+
+  private buildLegacyTrackNos(trackCount: number): number[] {
+    if (!Number.isInteger(trackCount) || trackCount < 1) {
+      return [];
+    }
+
+    return Array.from({ length: trackCount }, (_, index) => index + 1);
   }
 }
