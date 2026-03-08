@@ -95,6 +95,23 @@ const parseAllowedOrigins = (rawOrigins?: string): string[] =>
     .map((value) => value.trim())
     .filter(Boolean);
 
+const createNotificationsService = (env: Env): NotificationsService => {
+  const notificationsRepository = new NotificationsDbRepository(env.DB);
+  const emailSender =
+    env.NOTIFICATIONS_EMAIL_PROVIDER === 'console' && env.NOTIFICATIONS_EMAIL_FROM
+      ? new ConsoleNotificationsEmailSender()
+      : undefined;
+  const retentionDays = env.NOTIFICATIONS_RETENTION_DAYS
+    ? Number.parseInt(env.NOTIFICATIONS_RETENTION_DAYS, 10)
+    : undefined;
+
+  return new NotificationsService(notificationsRepository, {
+    retentionDays,
+    emailFrom: env.NOTIFICATIONS_EMAIL_FROM,
+    emailSender,
+  });
+};
+
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // CORS Middleware
@@ -139,7 +156,7 @@ app.use('*', async (c, next) => {
   const reservationsRepository = new ReservationsDbRepository(c.env.DB);
   const eventsRepository = new EventsDbRepository(c.env.DB);
   const auditRepository = new AuditDbRepository(c.env.DB);
-  const notificationsRepository = new NotificationsDbRepository(c.env.DB);
+  const notificationsService = createNotificationsService(c.env);
 
   // Services
   const auditService = new AuditService(auditRepository);
@@ -163,19 +180,6 @@ app.use('*', async (c, next) => {
     userService,
     auditService,
   });
-  const emailSender =
-    c.env.NOTIFICATIONS_EMAIL_PROVIDER === 'console' && c.env.NOTIFICATIONS_EMAIL_FROM
-      ? new ConsoleNotificationsEmailSender()
-      : undefined;
-  const retentionDays = c.env.NOTIFICATIONS_RETENTION_DAYS
-    ? Number.parseInt(c.env.NOTIFICATIONS_RETENTION_DAYS, 10)
-    : undefined;
-  const notificationsService = new NotificationsService(notificationsRepository, {
-    retentionDays,
-    emailFrom: c.env.NOTIFICATIONS_EMAIL_FROM,
-    emailSender,
-  });
-
   const reservationsService = new ReservationsService(
     rangesService,
     reservationsRepository,
@@ -273,4 +277,19 @@ app.get('/embed/map.js', async (_c) => {
   return cacheEmbedResponse(cacheKey, EMBED_MAP_JS, 'application/javascript; charset=utf-8');
 });
 
-export default app;
+const worker = {
+  fetch: app.fetch,
+  scheduled: async (_controller: ScheduledController, env: Env, _ctx: ExecutionContext) => {
+    const notificationsService = createNotificationsService(env);
+    const result = await notificationsService.cleanupExpiredNotifications();
+    if (!result.isSuccess) {
+      console.error('Scheduled notifications cleanup failed', result.getError());
+      return;
+    }
+    console.info('Scheduled notifications cleanup completed', {
+      expiredCount: result.getValue(),
+    });
+  },
+};
+
+export default worker;

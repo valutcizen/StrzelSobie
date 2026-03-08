@@ -18,6 +18,7 @@ Worker composes `@strzel-sobie/notifications` and passes it to the reservations 
   - `NOTIFICATIONS_EMAIL_FROM=<sender@domain>`
 - Without email config, the system uses in-app notifications only.
 - Optional: `NOTIFICATIONS_RETENTION_DAYS` overrides default 28-day retention.
+- Expired notification cleanup runs from native Worker cron trigger (`scheduled` event).
 
 ### Example:
 
