@@ -195,6 +195,13 @@ export class ReservationCancellationError extends Error {
   }
 }
 
+export class MessageTemplateNotFoundError extends Error {
+  constructor(message = 'Message template not found') {
+    super(message);
+    this.name = 'MessageTemplateNotFoundError';
+  }
+}
+
 export class RangeClosedError extends Error {
   constructor(message = 'Range is closed for the selected time window') {
     super(message);

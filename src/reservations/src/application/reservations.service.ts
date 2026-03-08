@@ -31,6 +31,7 @@ import {
   PropositionDeclarationRequiredError,
   InvalidRecordTimeError,
   InvalidReservationTimeError,
+  MessageTemplateNotFoundError,
   PersonSummaryDto,
   PropositionAlreadyClosedError,
   PropositionConflictError,
@@ -483,7 +484,7 @@ export class ReservationsService implements IReservationsService {
 
     const current = await this.reservationsRepository.getAdminMessageTemplateById(templateId);
     if (!current) {
-      return Result.fail(new PropositionNotFoundError('Message template not found'));
+      return Result.fail(new MessageTemplateNotFoundError());
     }
     if (!this.canUserManageTemplates(user, current.range_id)) {
       return Result.fail(new ForbiddenError('User is not allowed to update message templates'));
@@ -496,7 +497,7 @@ export class ReservationsService implements IReservationsService {
         typeof command.isActive === 'boolean' ? (command.isActive ? 1 : 0) : undefined,
     });
     if (!updated) {
-      return Result.fail(new PropositionNotFoundError('Message template not found'));
+      return Result.fail(new MessageTemplateNotFoundError());
     }
 
     return Result.ok(this.mapMessageTemplate(updated));

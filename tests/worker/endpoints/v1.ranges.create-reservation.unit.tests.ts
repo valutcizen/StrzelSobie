@@ -75,7 +75,7 @@ describe('CreateReservation endpoint contract', () => {
     const reservation: CreatedReservationDto = {
       id: 123,
       range_id: 17,
-      coordinator_id: user.id,
+      approved_by_admin_id: user.id,
     };
     const reservationsService = {
       createReservation: vi.fn().mockResolvedValue(Result.ok(reservation)),
@@ -87,7 +87,8 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
     };
 
@@ -108,7 +109,8 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
       { force: false },
       user
@@ -128,7 +130,7 @@ describe('CreateReservation endpoint contract', () => {
     const reservation: CreatedReservationDto = {
       id: 456,
       range_id: 99,
-      coordinator_id: user.id,
+      approved_by_admin_id: user.id,
     };
     const reservationsService = {
       createReservation: vi.fn().mockResolvedValue(Result.ok(reservation)),
@@ -140,7 +142,7 @@ describe('CreateReservation endpoint contract', () => {
         propositionId: 88,
         startTime: '14:00',
         endTime: '15:00',
-        tracksRequested: 1,
+        adminMessage: 'Approved',
       },
     };
 
@@ -156,7 +158,7 @@ describe('CreateReservation endpoint contract', () => {
         propositionId: 88,
         startTime: '14:00',
         endTime: '15:00',
-        tracksRequested: 1,
+        adminMessage: 'Approved',
       },
       { force: true },
       user
@@ -184,7 +186,8 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
     };
 
@@ -200,7 +203,8 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
       { force: false },
       user
@@ -231,7 +235,8 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
     };
 
@@ -247,7 +252,8 @@ describe('CreateReservation endpoint contract', () => {
         eventDate: '2024-07-15',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
       { force: false },
       user

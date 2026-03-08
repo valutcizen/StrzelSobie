@@ -42,12 +42,11 @@ const DirectReservationBodySchema = z
       ),
     startTime: TimeSchema,
     endTime: TimeSchema,
-    tracksRequested: z.coerce
-      .number({
-        invalid_type_error: 'Tracks requested must be a number',
-      })
-      .int('Tracks requested must be an integer')
-      .min(1, 'At least one track must be requested'),
+    firingLineId: z.coerce.number().int().positive('firingLineId must be positive'),
+    trackNos: z
+      .array(z.coerce.number().int().positive('track numbers must be positive integers'))
+      .min(1, 'At least one track must be selected'),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -117,14 +116,9 @@ const FromPropositionBodySchema = z
       .optional(),
     startTime: TimeSchema.optional(),
     endTime: TimeSchema.optional(),
-    tracksRequested: z
-      .coerce
-      .number({
-        invalid_type_error: 'tracksRequested must be a number',
-      })
-      .int('tracksRequested must be an integer')
-      .min(1, 'At least one track must be requested')
-      .optional(),
+    adminMessage: z.string().trim().min(1, 'adminMessage is required'),
+    templateId: z.coerce.number().int().positive().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .strict()
   .refine(
@@ -180,7 +174,7 @@ export class CreateReservation extends OpenAPIRoute {
             schema: z.object({
               id: z.number(),
               range_id: z.number(),
-              coordinator_id: z.number(),
+              approved_by_admin_id: z.number(),
             }),
           },
         },
@@ -223,7 +217,9 @@ export class CreateReservation extends OpenAPIRoute {
         eventDate: requestBody.eventDate,
         startTime: requestBody.startTime,
         endTime: requestBody.endTime,
-        tracksRequested: requestBody.tracksRequested,
+        adminMessage: requestBody.adminMessage,
+        templateId: requestBody.templateId,
+        metadata: requestBody.metadata,
       };
       command = propositionCommand;
     } else {
@@ -231,7 +227,9 @@ export class CreateReservation extends OpenAPIRoute {
         eventDate: requestBody.eventDate,
         startTime: requestBody.startTime,
         endTime: requestBody.endTime,
-        tracksRequested: requestBody.tracksRequested,
+        firingLineId: requestBody.firingLineId,
+        trackNos: requestBody.trackNos,
+        metadata: requestBody.metadata,
       };
       command = directCommand;
     }

@@ -10,6 +10,8 @@ import { GetUsers } from './endpoints/v1/user/get-users';
 import { SetUserRoleRoute } from './endpoints/v1/user/set-role';
 import { RemoveUserRoleRoute } from './endpoints/v1/user/remove-role';
 import { DeleteUserRoute } from './endpoints/v1/user/delete-user';
+import { UpsertAdminContactProfile } from './endpoints/v1/user/upsert-admin-contact-profile';
+import { UpsertAdminContactProfileOverride } from './endpoints/v1/user/upsert-admin-contact-profile-override';
 import { GetRangesRoute } from './endpoints/v1/ranges/get-ranges';
 import { GetRange } from './endpoints/v1/ranges/get-range';
 import { CreateRange } from './endpoints/v1/ranges/create-range';
@@ -26,6 +28,9 @@ import { DeleteEventSignup } from './endpoints/v1/ranges/delete-event-signup';
 import { CreateProposition } from './endpoints/v1/ranges/create-proposition';
 import { CreateRecord } from './endpoints/v1/ranges/create-record';
 import { CreateReservation } from './endpoints/v1/ranges/create-reservation';
+import { GetMessageTemplates } from './endpoints/v1/ranges/get-message-templates';
+import { CreateMessageTemplate } from './endpoints/v1/ranges/create-message-template';
+import { UpdateMessageTemplate } from './endpoints/v1/ranges/update-message-template';
 import { DeleteProposition } from './endpoints/v1/propositions/delete-proposition';
 import { DeleteReservation } from './endpoints/v1/reservations/delete-reservation';
 import { GetPropositionDetail } from './endpoints/v1/propositions/get-proposition';
@@ -187,6 +192,12 @@ openapi.get('/api/v1/user/roles', authMiddleware, GetRoles);
 openapi.post('/api/v1/users/:userId/roles', authMiddleware, SetUserRoleRoute);
 openapi.delete('/api/v1/users/:userId/roles/:roleId', authMiddleware, RemoveUserRoleRoute);
 openapi.delete('/api/v1/users/:userId', authMiddleware, DeleteUserRoute);
+openapi.patch('/api/v1/users/:userId/admin-contact-profile', authMiddleware, UpsertAdminContactProfile);
+openapi.patch(
+  '/api/v1/users/:userId/admin-contact-profile-overrides/:rangeId',
+  authMiddleware,
+  UpsertAdminContactProfileOverride
+);
 
 openapi.get('/api/v1/ranges', GetRangesRoute);
 openapi.get('/api/v1/map-ranges', GetMapRangesRoute);
@@ -218,6 +229,9 @@ openapi.delete(
 openapi.post('/api/v1/ranges/:rangeSlug/propositions', authMiddleware, CreateProposition);
 openapi.post('/api/v1/ranges/:rangeSlug/reservations', authMiddleware, CreateReservation);
 openapi.post('/api/v1/ranges/:rangeSlug/records', authMiddleware, CreateRecord);
+openapi.get('/api/v1/ranges/:rangeSlug/message-templates', authMiddleware, GetMessageTemplates);
+openapi.post('/api/v1/ranges/:rangeSlug/message-templates', authMiddleware, CreateMessageTemplate);
+openapi.patch('/api/v1/message-templates/:templateId', authMiddleware, UpdateMessageTemplate);
 openapi.get('/api/v1/propositions/:propositionId', authMiddleware, GetPropositionDetail);
 openapi.delete('/api/v1/propositions/:propositionId', authMiddleware, DeleteProposition);
 openapi.get('/api/v1/reservations/:reservationId', authMiddleware, GetReservationDetail);

@@ -361,6 +361,11 @@ export class UserService implements IUserService {
     }
 
     try {
+      const targetUser = await this.userRepository.getById(targetUserId);
+      if (!targetUser || targetUser.is_deleted === 1) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+
       const current = await this.userRepository.getAdminContactProfile(targetUserId);
       const updated = await this.userRepository.upsertAdminContactProfile({
         userId: targetUserId,
@@ -397,6 +402,15 @@ export class UserService implements IUserService {
     }
 
     try {
+      const targetUser = await this.userRepository.getById(targetUserId);
+      if (!targetUser || targetUser.is_deleted === 1) {
+        return Result.fail(new UserNotFoundError(`User with id ${targetUserId} not found`));
+      }
+      const rangeExistsResult = await this.rangesService.existsRangeById(command.rangeId);
+      if (!rangeExistsResult.isSuccess || !rangeExistsResult.getValue()) {
+        return Result.fail(new RangeNotFoundError(`Range with id ${command.rangeId} not found`));
+      }
+
       const current = await this.userRepository.getAdminContactProfileOverride(
         targetUserId,
         command.rangeId

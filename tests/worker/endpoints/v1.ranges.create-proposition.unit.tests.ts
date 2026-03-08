@@ -84,7 +84,9 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
     };
 
@@ -105,7 +107,9 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
       user
     );
@@ -131,7 +135,9 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
     };
 
@@ -147,7 +153,9 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
       user
     );
@@ -177,7 +185,9 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
     };
 
@@ -193,7 +203,9 @@ describe('CreateProposition endpoint contract', () => {
         eventDate: '2024-06-01',
         startTime: '10:00',
         endTime: '11:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
       user
     );

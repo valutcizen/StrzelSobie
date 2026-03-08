@@ -46,7 +46,9 @@ describe('POST /api/v1/ranges/:rangeSlug/propositions', () => {
         eventDate: '2024-05-01',
         startTime: '10:00',
         endTime: '11:30',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
     });
 
@@ -56,7 +58,9 @@ describe('POST /api/v1/ranges/:rangeSlug/propositions', () => {
         eventDate: '2024-05-01',
         startTime: '10:00',
         endTime: '11:30',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
       memberUser,
     );
@@ -85,7 +89,9 @@ describe('POST /api/v1/ranges/:rangeSlug/propositions', () => {
         eventDate: '2024-05-01',
         startTime: '10:00',
         endTime: '11:30',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
+        hasCoordinatorLicenseInGroup: true,
       },
     });
 

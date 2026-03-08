@@ -33,12 +33,13 @@ const BodySchema = z
       ),
     startTime: TimeSchema,
     endTime: TimeSchema,
-    tracksRequested: z.coerce
-      .number({
-        invalid_type_error: 'Tracks requested must be a number',
-      })
-      .int('Tracks requested must be an integer')
-      .min(1, 'At least one track must be requested'),
+    firingLineId: z.coerce.number().int().positive('firingLineId must be positive'),
+    trackNos: z
+      .array(z.coerce.number().int().positive('track numbers must be positive integers'))
+      .min(1, 'At least one track must be selected'),
+    hasCoordinatorLicenseInGroup: z.boolean(),
+    targetAdminUserId: z.coerce.number().int().positive().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .superRefine((value, ctx) => {
     const [startHours, startMinutes] = value.startTime.split(':').map(Number);
@@ -150,7 +151,11 @@ export class CreateProposition extends OpenAPIRoute {
       eventDate: requestBody.eventDate,
       startTime: requestBody.startTime,
       endTime: requestBody.endTime,
-      tracksRequested: requestBody.tracksRequested,
+      firingLineId: requestBody.firingLineId,
+      trackNos: requestBody.trackNos,
+      hasCoordinatorLicenseInGroup: requestBody.hasCoordinatorLicenseInGroup,
+      targetAdminUserId: requestBody.targetAdminUserId,
+      metadata: requestBody.metadata,
     };
 
     const result = await reservationsService.createProposition(

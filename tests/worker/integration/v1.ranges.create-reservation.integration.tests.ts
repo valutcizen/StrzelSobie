@@ -29,7 +29,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
     const reservation: CreatedReservationDto = {
       id: 101,
       range_id: 7,
-      coordinator_id: 31,
+      approved_by_admin_id: 31,
     };
 
     const reservationsService = {
@@ -48,7 +48,8 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '11:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
     });
 
@@ -58,7 +59,8 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '11:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
       { force: true },
       coordinator,
@@ -73,7 +75,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
     const reservation: CreatedReservationDto = {
       id: 102,
       range_id: 7,
-      coordinator_id: 31,
+      approved_by_admin_id: 31,
     };
 
     const reservationsService = {
@@ -92,7 +94,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         propositionId: 55,
         startTime: '12:00',
         endTime: '13:00',
-        tracksRequested: 2,
+        adminMessage: 'Approved. See you on range.',
       },
     });
 
@@ -102,7 +104,7 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         propositionId: 55,
         startTime: '12:00',
         endTime: '13:00',
-        tracksRequested: 2,
+        adminMessage: 'Approved. See you on range.',
       },
       { force: false },
       coordinator,
@@ -119,7 +121,8 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '10:00',
-        tracksRequested: 2,
+        firingLineId: 101,
+        trackNos: [1, 2],
       },
     ];
 
@@ -141,7 +144,8 @@ describe('POST /api/v1/ranges/:rangeSlug/reservations', () => {
         eventDate: '2024-05-20',
         startTime: '09:00',
         endTime: '11:00',
-        tracksRequested: 3,
+        firingLineId: 101,
+        trackNos: [1, 2, 3],
       },
     });
 

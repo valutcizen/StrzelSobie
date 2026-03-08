@@ -1,7 +1,11 @@
 import {
   ForbiddenError,
   InvalidPropositionTimeError,
+  InvalidTargetAdminError,
   InvalidReservationTimeError,
+  MemberRoleRequiredError,
+  MessageTemplateNotFoundError,
+  PropositionDeclarationRequiredError,
   RangeClosedError,
   PropositionAlreadyClosedError,
   PropositionConflictError,
@@ -16,6 +20,7 @@ import {
   InvalidRecordTimeError,
   RecordCreationError,
   RangeBookingNotAllowedError,
+  RangeAdminRoleRequiredError,
 } from '@strzel-sobie/common';
 
 type ErrorResponse = {
@@ -40,6 +45,34 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 403,
       body: { code: 'forbidden', message: error.message },
+    };
+  }
+
+  if (error instanceof MemberRoleRequiredError) {
+    return {
+      status: 403,
+      body: { code: 'member_role_required', message: error.message },
+    };
+  }
+
+  if (error instanceof RangeAdminRoleRequiredError) {
+    return {
+      status: 403,
+      body: { code: 'range_admin_role_required', message: error.message },
+    };
+  }
+
+  if (error instanceof PropositionDeclarationRequiredError) {
+    return {
+      status: 400,
+      body: { code: 'coordinator_declaration_required', message: error.message },
+    };
+  }
+
+  if (error instanceof InvalidTargetAdminError) {
+    return {
+      status: 400,
+      body: { code: 'invalid_target_admin', message: error.message },
     };
   }
 
@@ -109,6 +142,13 @@ export const mapReservationsError = (error: Error): ErrorResponse => {
     return {
       status: 404,
       body: { code: 'proposition_not_found', message: error.message },
+    };
+  }
+
+  if (error instanceof MessageTemplateNotFoundError) {
+    return {
+      status: 404,
+      body: { code: 'message_template_not_found', message: error.message },
     };
   }
 

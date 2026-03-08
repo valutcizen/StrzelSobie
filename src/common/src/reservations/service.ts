@@ -3,6 +3,7 @@ import {
   CalendarEventsDto,
   CancelPropositionCommand,
   CancelReservationCommand,
+  CreateMessageTemplateCommand,
   CreateRecordCommand,
   CreatePropositionCommand,
   CreateReservationOptions,
@@ -11,8 +12,10 @@ import {
   CreatedPropositionDto,
   CreatedReservationDto,
   GetCalendarEventsQuery,
+  MessageTemplateDto,
   PropositionDetailDto,
   ReservationDetailDto,
+  UpdateMessageTemplateCommand,
 } from './dto';
 import { UserDto } from '../users/dto';
 
@@ -44,4 +47,19 @@ export interface IReservationsService {
     reservationId: number,
     user: UserDto
   ): Promise<Result<ReservationDetailDto>>;
+  listMessageTemplates(
+    rangeSlug: string,
+    includeInactive: boolean,
+    user: UserDto
+  ): Promise<Result<MessageTemplateDto[]>>;
+  createMessageTemplate(
+    rangeSlug: string,
+    command: CreateMessageTemplateCommand,
+    user: UserDto
+  ): Promise<Result<MessageTemplateDto>>;
+  updateMessageTemplate(
+    templateId: number,
+    command: UpdateMessageTemplateCommand,
+    user: UserDto
+  ): Promise<Result<MessageTemplateDto>>;
 }
