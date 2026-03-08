@@ -38,12 +38,24 @@ export interface PersonSummary {
   displayName?: string | null
 }
 
+export interface OverlapDeclarationContextItem {
+  type: 'proposition' | 'reservation'
+  id: number
+  eventDate: string
+  startTime: string
+  endTime: string
+  firingLineId: number
+  trackNos: number[]
+  hasCoordinatorLicenseInGroup: boolean | null
+}
+
 export interface PropositionEventDetail {
   type: 'proposition'
   propositionId: number
   firingLineId: number | null
   trackNos: number[]
   hasCoordinatorLicenseInGroup: boolean | null
+  overlapDeclarationContext?: OverlapDeclarationContextItem[]
   status: 'open' | 'converted' | 'cancelled' | null
   createdAt: string | null
   requester: PersonSummary | null
@@ -57,6 +69,7 @@ export interface ReservationEventDetail {
   proposition: PropositionEventDetail | null
   firingLineId: number | null
   trackNos: number[]
+  overlapDeclarationContext?: OverlapDeclarationContextItem[]
   createdAt: string | null
   approvedByAdmin: PersonSummary | null
   notes?: string | null

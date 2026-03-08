@@ -166,6 +166,43 @@
                     {{ t('calendar.eventDetail.labels.trackNosDemand', { tracks: propositionSectionTrackNos.join(', ') }) }}
                   </v-list-item-title>
                 </v-list-item>
+                <v-list-item v-if="propositionSectionCoordinatorDeclarationLabel">
+                  <template #prepend>
+                    <v-icon>mdi-shield-check</v-icon>
+                  </template>
+                  <v-list-item-title>
+                    {{ propositionSectionCoordinatorDeclarationLabel }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="propositionSectionOverlapContext.length > 0">
+                  <template #prepend>
+                    <v-icon>mdi-layers-triple-outline</v-icon>
+                  </template>
+                  <v-list-item-title>
+                    {{ t('calendar.eventDetail.labels.overlapDeclarationContextTitle') }}
+                  </v-list-item-title>
+                </v-list-item>
+                <v-list-item
+                  v-for="overlap in propositionSectionOverlapContext"
+                  :key="`${overlap.type}-${overlap.id}`"
+                >
+                  <template #prepend>
+                    <v-icon size="small">mdi-subdirectory-arrow-right</v-icon>
+                  </template>
+                  <v-list-item-title>
+                    {{
+                      t('calendar.eventDetail.labels.overlapDeclarationContextItem', {
+                        type: overlap.type === 'reservation'
+                          ? t('calendar.eventDetail.sections.reservation')
+                          : t('calendar.eventDetail.sections.proposition'),
+                        id: overlap.id,
+                        time: `${overlap.startTime}-${overlap.endTime}`,
+                        tracks: overlap.trackNos.join(', '),
+                        declaration: overlapDeclarationLabel(overlap.hasCoordinatorLicenseInGroup),
+                      })
+                    }}
+                  </v-list-item-title>
+                </v-list-item>
                 <v-list-item v-if="propositionSectionCreatedAt">
                   <template #prepend>
                     <v-icon>mdi-calendar-clock</v-icon>
@@ -223,6 +260,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../../stores/auth'
 import { UserRoleEnum } from '../../types/auth'
 import type {
+  OverlapDeclarationContextItem,
   PersonSummary,
   PropositionEventDetail,
   RangeEvent,
@@ -441,6 +479,42 @@ const propositionSectionNotes = computed(() =>
 )
 
 const propositionSectionTrackNos = computed(() => propositionSectionDetail.value?.trackNos ?? [])
+const propositionSectionOverlapContext = computed<OverlapDeclarationContextItem[]>(() => {
+  const direct = details.value?.overlapDeclarationContext
+  if (Array.isArray(direct) && direct.length > 0) {
+    return direct
+  }
+
+  return propositionSectionDetail.value?.overlapDeclarationContext ?? []
+})
+const propositionSectionCoordinatorDeclarationLabel = computed(() => {
+  const detailDeclaration = propositionSectionDetail.value?.hasCoordinatorLicenseInGroup
+  const metaDeclaration = event.value?.meta?.hasCoordinatorLicenseInGroup
+  const declaration =
+    typeof detailDeclaration === 'boolean'
+      ? detailDeclaration
+      : typeof metaDeclaration === 'boolean'
+        ? metaDeclaration
+        : null
+
+  if (declaration === null) {
+    return null
+  }
+
+  return declaration
+    ? t('calendar.eventDetail.labels.coordinatorDeclarationYes')
+    : t('calendar.eventDetail.labels.coordinatorDeclarationNo')
+})
+
+const overlapDeclarationLabel = (value: boolean | null) => {
+  if (value === true) {
+    return t('calendar.eventDetail.labels.coordinatorDeclarationYesShort')
+  }
+  if (value === false) {
+    return t('calendar.eventDetail.labels.coordinatorDeclarationNoShort')
+  }
+  return t('calendar.eventDetail.labels.coordinatorDeclarationUnknownShort')
+}
 
 const linkedPropositionId = computed(() => {
   if (propositionSectionId.value !== null) {

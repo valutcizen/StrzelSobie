@@ -707,6 +707,186 @@ describe('ReservationsService', () => {
       expect(result.isSuccess).toBe(true);
       expect(result.getValue().trackNos).toEqual([1, 3]);
     });
+
+    it('builds overlap declaration context for proposition details', async () => {
+      const ctx = createCtx();
+      const proposition = createPropositionDetailEntity({
+        id: 11,
+        event_date: '2024-01-10',
+        start_time: '10:00',
+        end_time: '11:00',
+        firing_line_id: 1,
+        metadata_json: metadata([2, 3], { hasCoordinatorLicenseInGroup: true }),
+      });
+
+      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(proposition);
+      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([
+        createPropositionEntity({
+          id: 11,
+          status: 'open',
+          event_date: '2024-01-10',
+          start_time: '10:00',
+          end_time: '11:00',
+          firing_line_id: 1,
+          metadata_json: metadata([2, 3], { hasCoordinatorLicenseInGroup: true }),
+        }),
+        createPropositionEntity({
+          id: 12,
+          status: 'open',
+          event_date: '2024-01-10',
+          start_time: '10:00',
+          end_time: '11:00',
+          firing_line_id: 1,
+          metadata_json: metadata([3], { hasCoordinatorLicenseInGroup: false }),
+        }),
+        createPropositionEntity({
+          id: 13,
+          status: 'converted',
+          event_date: '2024-01-10',
+          start_time: '09:45',
+          end_time: '10:15',
+          firing_line_id: 1,
+          metadata_json: metadata([2], { hasCoordinatorLicenseInGroup: true }),
+        }),
+        createPropositionEntity({
+          id: 14,
+          status: 'cancelled',
+          event_date: '2024-01-10',
+          start_time: '09:45',
+          end_time: '10:15',
+          firing_line_id: 1,
+          metadata_json: metadata([2], { hasCoordinatorLicenseInGroup: true }),
+        }),
+      ]);
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({
+          id: 20,
+          event_date: '2024-01-10',
+          start_time: '09:30',
+          end_time: '10:30',
+          firing_line_id: 1,
+          metadata_json: metadata([3], { hasCoordinatorLicenseInGroup: false }),
+        }),
+        createReservationEntity({
+          id: 21,
+          event_date: '2024-01-10',
+          start_time: '09:30',
+          end_time: '10:30',
+          firing_line_id: 1,
+          metadata_json: metadata([6], { hasCoordinatorLicenseInGroup: true }),
+        }),
+      ]);
+
+      const result = await ctx.service.getPropositionDetails(
+        11,
+        createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] })
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().overlapDeclarationContext).toEqual([
+        {
+          type: 'reservation',
+          id: 20,
+          eventDate: '2024-01-10',
+          startTime: '09:30',
+          endTime: '10:30',
+          firingLineId: 1,
+          trackNos: [3],
+          hasCoordinatorLicenseInGroup: false,
+        },
+        {
+          type: 'proposition',
+          id: 13,
+          eventDate: '2024-01-10',
+          startTime: '09:45',
+          endTime: '10:15',
+          firingLineId: 1,
+          trackNos: [2],
+          hasCoordinatorLicenseInGroup: true,
+        },
+        {
+          type: 'proposition',
+          id: 12,
+          eventDate: '2024-01-10',
+          startTime: '10:00',
+          endTime: '11:00',
+          firingLineId: 1,
+          trackNos: [3],
+          hasCoordinatorLicenseInGroup: false,
+        },
+      ]);
+    });
+
+    it('builds overlap declaration context for reservation details and excludes self', async () => {
+      const ctx = createCtx();
+      const reservation = createReservationDetailEntity({
+        id: 100,
+        event_date: '2024-01-10',
+        start_time: '10:00',
+        end_time: '11:00',
+        firing_line_id: 1,
+        metadata_json: metadata([1, 2]),
+      });
+      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([
+        createPropositionEntity({
+          id: 201,
+          status: 'open',
+          event_date: '2024-01-10',
+          start_time: '10:00',
+          end_time: '10:30',
+          firing_line_id: 1,
+          metadata_json: metadata([1], { hasCoordinatorLicenseInGroup: true }),
+        }),
+      ]);
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({
+          id: 100,
+          event_date: '2024-01-10',
+          start_time: '10:00',
+          end_time: '11:00',
+          firing_line_id: 1,
+          metadata_json: metadata([1, 2], { hasCoordinatorLicenseInGroup: true }),
+        }),
+        createReservationEntity({
+          id: 101,
+          event_date: '2024-01-10',
+          start_time: '10:00',
+          end_time: '10:30',
+          firing_line_id: 1,
+          metadata_json: metadata([2]),
+        }),
+      ]);
+
+      const result = await ctx.service.getReservationDetails(
+        100,
+        createUser({ roles: [createRole(UserRole.Member)] })
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().overlapDeclarationContext).toEqual([
+        {
+          type: 'reservation',
+          id: 101,
+          eventDate: '2024-01-10',
+          startTime: '10:00',
+          endTime: '10:30',
+          firingLineId: 1,
+          trackNos: [2],
+          hasCoordinatorLicenseInGroup: null,
+        },
+        {
+          type: 'proposition',
+          id: 201,
+          eventDate: '2024-01-10',
+          startTime: '10:00',
+          endTime: '10:30',
+          firingLineId: 1,
+          trackNos: [1],
+          hasCoordinatorLicenseInGroup: true,
+        },
+      ]);
+    });
   });
 
   describe('cancelReservation', () => {

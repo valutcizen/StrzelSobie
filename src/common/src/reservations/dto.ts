@@ -12,6 +12,17 @@ export type BookingMetadataDto = {
   [key: string]: unknown;
 };
 
+export type OverlapDeclarationContextItemDto = {
+  type: 'proposition' | 'reservation';
+  id: number;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  firingLineId: number;
+  trackNos: number[];
+  hasCoordinatorLicenseInGroup: boolean | null;
+};
+
 /**
  * Command model for creating a new reservation directly.
  * Corresponds to the request payload for `POST /api/v1/ranges/{rangeSlug}/reservations`.
@@ -183,6 +194,7 @@ export type PropositionDetailDto = {
   trackNos: number[];
   hasCoordinatorLicenseInGroup: boolean;
   metadata: BookingMetadataDto;
+  overlapDeclarationContext?: OverlapDeclarationContextItemDto[];
   createdAt: string | null;
   requester: PersonSummaryDto | null;
   notes?: string | null;
@@ -200,6 +212,7 @@ export type ReservationDetailDto = {
   firingLineId: Reservation['firing_line_id'];
   trackNos: number[];
   metadata: BookingMetadataDto;
+  overlapDeclarationContext?: OverlapDeclarationContextItemDto[];
   createdAt: string | null;
   approvedByAdmin: PersonSummaryDto | null;
   notes?: string | null;

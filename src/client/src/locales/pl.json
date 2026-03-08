@@ -205,7 +205,14 @@
         "notes": "Notatki",
         "tracksDemand": "Zapotrzebowanie: {count} torów",
         "trackNosDemand": "Wybrane tory: {tracks}",
-        "participants": "Uczestnicy: {count}"
+        "participants": "Uczestnicy: {count}",
+        "coordinatorDeclarationYes": "Deklaracja uprawnień prowadzącego: tak",
+        "coordinatorDeclarationNo": "Deklaracja uprawnień prowadzącego: nie",
+        "coordinatorDeclarationYesShort": "tak",
+        "coordinatorDeclarationNoShort": "nie",
+        "coordinatorDeclarationUnknownShort": "brak danych",
+        "overlapDeclarationContextTitle": "Nakładające się zgłoszenia/rezerwacje",
+        "overlapDeclarationContextItem": "{type} #{id} · {time} · tory: {tracks} · deklaracja: {declaration}"
       },
       "actions": {
         "retry": "Ponów próbę"

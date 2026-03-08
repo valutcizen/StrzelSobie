@@ -44,15 +44,18 @@ describe('GetReservationDetail endpoint', () => {
     const reservationDetail: ReservationDetailDto = {
       id: 1,
       rangeId: 5,
-      coordinatorId: 12,
+      approvedByAdminId: 12,
       propositionId: null,
       proposition: null,
       eventDate: '2024-06-01',
       startTime: '10:00',
       endTime: '11:00',
-      tracksRequested: 2,
+      firingLineId: 2,
+      trackNos: [1, 2],
+      metadata: { trackNos: [1, 2] },
+      overlapDeclarationContext: [],
       createdAt: '2024-05-01T10:00:00Z',
-      coordinator: {
+      approvedByAdmin: {
         id: 12,
         email: 'coordinator@example.com',
         phoneNumber: null,

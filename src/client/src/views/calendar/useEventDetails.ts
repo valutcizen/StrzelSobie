@@ -1,6 +1,7 @@
 import { reactive, ref, watch } from 'vue'
 import { http } from '@/services/http'
 import type {
+  OverlapDeclarationContextItem,
   PropositionEventDetail,
   RangeEvent,
   RangeEventDetail,
@@ -44,6 +45,35 @@ const toPersonSummary = (raw: unknown): PersonSummary | null => {
   }
 }
 
+const toOverlapDeclarationContext = (
+  raw: unknown,
+): OverlapDeclarationContextItem[] => {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+
+  return raw
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
+    .map((item) => ({
+      type: (item.type === 'reservation' ? 'reservation' : 'proposition') as
+        | 'reservation'
+        | 'proposition',
+      id: typeof item.id === 'number' ? item.id : 0,
+      eventDate: typeof item.eventDate === 'string' ? item.eventDate : '',
+      startTime: typeof item.startTime === 'string' ? item.startTime : '',
+      endTime: typeof item.endTime === 'string' ? item.endTime : '',
+      firingLineId: typeof item.firingLineId === 'number' ? item.firingLineId : 0,
+      trackNos: Array.isArray(item.trackNos)
+        ? item.trackNos.filter((track): track is number => typeof track === 'number')
+        : [],
+      hasCoordinatorLicenseInGroup:
+        typeof item.hasCoordinatorLicenseInGroup === 'boolean'
+          ? item.hasCoordinatorLicenseInGroup
+          : null,
+    }))
+    .filter((item) => item.id > 0 && item.firingLineId > 0 && item.eventDate !== '')
+}
+
 const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEventDetail => {
   const data = (raw ?? {}) as Record<string, unknown>
 
@@ -75,6 +105,7 @@ const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEvent
   const createdAt = toNullableString(data.createdAt ?? data.created_at)
   const requester = toPersonSummary(data.requester ?? data.user)
   const notes = toNullableString(data.notes ?? data.additionalNotes ?? data.comment)
+  const overlapDeclarationContext = toOverlapDeclarationContext(data.overlapDeclarationContext)
 
   return {
     type: 'proposition',
@@ -82,6 +113,7 @@ const mapPropositionDetail = (raw: unknown, event: RangeEvent): PropositionEvent
     firingLineId,
     trackNos,
     hasCoordinatorLicenseInGroup,
+    overlapDeclarationContext,
     status,
     createdAt,
     requester,
@@ -111,6 +143,7 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
     data.approvedByAdmin ?? data.approved_by_admin ?? data.coordinator ?? data.owner ?? data.manager,
   )
   const notes = toNullableString(data.notes ?? data.additionalNotes ?? data.comment)
+  const overlapDeclarationContext = toOverlapDeclarationContext(data.overlapDeclarationContext)
   const rawPropositionDetail =
     data.proposition ?? data.linkedProposition ?? data.originalProposition ?? null
   const proposition =
@@ -127,6 +160,7 @@ const mapReservationDetail = (raw: unknown, event: RangeEvent): ReservationEvent
     proposition,
     firingLineId,
     trackNos,
+    overlapDeclarationContext,
     createdAt,
     approvedByAdmin,
     notes: notes ?? undefined,

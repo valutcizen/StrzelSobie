@@ -149,6 +149,10 @@ Notifications UI requested in PRD cannot be fully implemented now because there 
 - mark as read
 - dismiss/delete user notifications
 
+Additional API gap for proposition review UX:
+- detail endpoints do not expose overlap declaration context (`same firing line/tracks/time`) required by PRD for admin review.
+- proposal prepared in `.ai/range-administration-overlap-context-api-proposal.md`.
+
 Decision for Phase 7:
 - implement all reservation/admin/contact/template UI flows
 - defer notifications inbox UI to follow-up backend API phase.

@@ -33,6 +33,7 @@ import {
   InvalidRecordTimeError,
   InvalidReservationTimeError,
   MessageTemplateNotFoundError,
+  OverlapDeclarationContextItemDto,
   PersonSummaryDto,
   PropositionAlreadyClosedError,
   PropositionConflictError,
@@ -254,7 +255,21 @@ export class ReservationsService implements IReservationsService {
         return Result.fail(new ForbiddenError('User is not allowed to view this proposition'));
       }
 
-      return Result.ok(this.buildPropositionDetailDto(proposition));
+      const dto = this.buildPropositionDetailDto(proposition);
+      const overlapDeclarationContext = await this.buildOverlapDeclarationContext({
+        rangeId: proposition.range_id,
+        eventDate: proposition.event_date,
+        startTime: proposition.start_time,
+        endTime: proposition.end_time,
+        firingLineId: proposition.firing_line_id,
+        trackNos: dto.trackNos,
+        excludePropositionId: proposition.id,
+      });
+
+      return Result.ok({
+        ...dto,
+        overlapDeclarationContext,
+      });
     } catch (error) {
       return Result.fail(error as Error);
     }
@@ -290,6 +305,15 @@ export class ReservationsService implements IReservationsService {
         reservation.approved_by_admin_phone_number
       );
       const reservationMetadata = this.parseBookingMetadata(reservation.metadata_json);
+      const overlapDeclarationContext = await this.buildOverlapDeclarationContext({
+        rangeId: reservation.range_id,
+        eventDate: reservation.event_date,
+        startTime: reservation.start_time,
+        endTime: reservation.end_time,
+        firingLineId: reservation.firing_line_id,
+        trackNos: reservationMetadata.trackNos,
+        excludeReservationId: reservation.id,
+      });
 
       const dto: ReservationDetailDto = {
         id: reservation.id,
@@ -303,6 +327,7 @@ export class ReservationsService implements IReservationsService {
         firingLineId: reservation.firing_line_id,
         trackNos: reservationMetadata.trackNos,
         metadata: reservationMetadata,
+        overlapDeclarationContext,
         createdAt: reservation.created_at ?? null,
         approvedByAdmin,
       };
@@ -1684,6 +1709,90 @@ export class ReservationsService implements IReservationsService {
   private normalizeTrackNos(trackNos: number[]): number[] {
     const unique = Array.from(new Set(trackNos.filter((trackNo) => Number.isInteger(trackNo))));
     return unique.sort((a, b) => a - b);
+  }
+
+  private async buildOverlapDeclarationContext(params: {
+    rangeId: number;
+    eventDate: string;
+    startTime: string;
+    endTime: string;
+    firingLineId: number;
+    trackNos: number[];
+    excludePropositionId?: number;
+    excludeReservationId?: number;
+  }): Promise<OverlapDeclarationContextItemDto[]> {
+    const requestedTrackNos = this.normalizeTrackNos(params.trackNos);
+    if (requestedTrackNos.length === 0) {
+      return [];
+    }
+
+    const overlapsInTime = (startTime: string, endTime: string): boolean =>
+      startTime < params.endTime && endTime > params.startTime;
+    const hasTrackOverlap = (existingTrackNos: number[]): boolean =>
+      existingTrackNos.some((trackNo) => requestedTrackNos.includes(trackNo));
+
+    const [propositions, reservations] = await Promise.all([
+      this.reservationsRepository.getPropositions(params.rangeId, params.eventDate, params.eventDate),
+      this.reservationsRepository.getReservations(params.rangeId, params.eventDate, params.eventDate),
+    ]);
+
+    const propositionItems: OverlapDeclarationContextItemDto[] = propositions
+      .filter((proposition) => proposition.id !== params.excludePropositionId)
+      .filter((proposition) => proposition.status === 'open' || proposition.status === 'converted')
+      .filter((proposition) => proposition.event_date === params.eventDate)
+      .filter((proposition) => proposition.firing_line_id === params.firingLineId)
+      .filter((proposition) => overlapsInTime(proposition.start_time, proposition.end_time))
+      .map((proposition) => {
+        const metadata = this.parseBookingMetadata(proposition.metadata_json);
+        return {
+          type: 'proposition' as const,
+          id: proposition.id,
+          eventDate: proposition.event_date,
+          startTime: proposition.start_time,
+          endTime: proposition.end_time,
+          firingLineId: proposition.firing_line_id,
+          trackNos: metadata.trackNos,
+          hasCoordinatorLicenseInGroup:
+            typeof metadata.hasCoordinatorLicenseInGroup === 'boolean'
+              ? metadata.hasCoordinatorLicenseInGroup
+              : null,
+        };
+      })
+      .filter((item) => hasTrackOverlap(item.trackNos));
+
+    const reservationItems: OverlapDeclarationContextItemDto[] = reservations
+      .filter((reservation) => reservation.id !== params.excludeReservationId)
+      .filter((reservation) => reservation.event_date === params.eventDate)
+      .filter((reservation) => reservation.firing_line_id === params.firingLineId)
+      .filter((reservation) => overlapsInTime(reservation.start_time, reservation.end_time))
+      .map((reservation) => {
+        const metadata = this.parseBookingMetadata(reservation.metadata_json);
+        return {
+          type: 'reservation' as const,
+          id: reservation.id,
+          eventDate: reservation.event_date,
+          startTime: reservation.start_time,
+          endTime: reservation.end_time,
+          firingLineId: reservation.firing_line_id,
+          trackNos: metadata.trackNos,
+          hasCoordinatorLicenseInGroup:
+            typeof metadata.hasCoordinatorLicenseInGroup === 'boolean'
+              ? metadata.hasCoordinatorLicenseInGroup
+              : null,
+        };
+      })
+      .filter((item) => hasTrackOverlap(item.trackNos));
+
+    const typeOrder = { reservation: 0, proposition: 1 } as const;
+    return [...reservationItems, ...propositionItems].sort((a, b) => {
+      if (a.startTime !== b.startTime) {
+        return a.startTime.localeCompare(b.startTime);
+      }
+      if (a.type !== b.type) {
+        return typeOrder[a.type] - typeOrder[b.type];
+      }
+      return a.id - b.id;
+    });
   }
 
   private findTrackConflicts(

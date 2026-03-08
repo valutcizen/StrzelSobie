@@ -205,7 +205,14 @@
         "notes": "Notes",
         "tracksDemand": "Tracks requested: {count}",
         "trackNosDemand": "Requested tracks: {tracks}",
-        "participants": "Participants: {count}"
+        "participants": "Participants: {count}",
+        "coordinatorDeclarationYes": "Coordinator license declaration: yes",
+        "coordinatorDeclarationNo": "Coordinator license declaration: no",
+        "coordinatorDeclarationYesShort": "yes",
+        "coordinatorDeclarationNoShort": "no",
+        "coordinatorDeclarationUnknownShort": "unknown",
+        "overlapDeclarationContextTitle": "Overlapping propositions/reservations",
+        "overlapDeclarationContextItem": "{type} #{id} · {time} · tracks: {tracks} · declaration: {declaration}"
       },
       "actions": {
         "retry": "Try again"
