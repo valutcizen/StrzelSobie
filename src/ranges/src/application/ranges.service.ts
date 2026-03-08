@@ -108,7 +108,8 @@ export class RangesService implements IRangesService {
     }
 
     try {
-      const dto = this.buildRangeDetailsDto(range, user);
+      const firingLines = await this.getRangeFiringLines(range.id);
+      const dto = this.buildRangeDetailsDto(range, firingLines, user);
 
       return Result.ok(dto);
     } catch (error) {
@@ -295,7 +296,8 @@ export class RangesService implements IRangesService {
       return Result.fail(auditResult.getError());
     }
 
-    const dto = this.buildRangeDetailsDto(range, user);
+    const updatedFiringLines = await this.getRangeFiringLines(range.id);
+    const dto = this.buildRangeDetailsDto(range, updatedFiringLines, user);
     return Result.ok(dto);
   }
 
@@ -358,7 +360,8 @@ export class RangesService implements IRangesService {
       return Result.fail(auditResult.getError());
     }
 
-    const dto = this.buildRangeDetailsDto(created, user);
+    const createdFiringLines = await this.getRangeFiringLines(created.id);
+    const dto = this.buildRangeDetailsDto(created, createdFiringLines, user);
     return Result.ok(dto);
   }
 
@@ -421,6 +424,13 @@ export class RangesService implements IRangesService {
 
   private buildRangeDetailsDto(
     range: ShootingRange,
+    firingLines: Array<{
+      id: number;
+      name: string;
+      tracksCount: number;
+      lengthMeters: number | null;
+      sortOrder: number;
+    }>,
     user: UserDto | null = null
   ): RangeDetailsDto {
     const operatingHours = this.parseOperatingHours(range.operatingHours);
@@ -442,7 +452,13 @@ export class RangesService implements IRangesService {
       operatingHours,
       extras,
       parkingLocation,
-      firingLines: [],
+      firingLines: firingLines.map((line) => ({
+        id: line.id,
+        name: line.name,
+        tracksCount: line.tracksCount,
+        lengthMeters: line.lengthMeters,
+        sortOrder: line.sortOrder,
+      })),
       administratorContacts: [],
     };
 
@@ -469,6 +485,22 @@ export class RangesService implements IRangesService {
   private isGlobalAdmin(user: UserDto): boolean {
     const globalRoles = user.roles.map((role) => role.name);
     return globalRoles.includes(UserRole.ClubCommunityAdministrator);
+  }
+
+  private async getRangeFiringLines(
+    rangeId: number
+  ): Promise<Array<{ id: number; name: string; tracksCount: number; lengthMeters: number | null; sortOrder: number }>> {
+    const repositoryWithLines = this.rangesRepository as IRangesRepository & {
+      findFiringLinesByRangeId?: (
+        id: number
+      ) => Promise<Array<{ id: number; name: string; tracksCount: number; lengthMeters: number | null; sortOrder: number }>>;
+    };
+
+    if (typeof repositoryWithLines.findFiringLinesByRangeId !== 'function') {
+      return [];
+    }
+
+    return repositoryWithLines.findFiringLinesByRangeId(rangeId);
   }
 
   private parseExtras(raw: unknown): RangeExtras {

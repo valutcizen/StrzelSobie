@@ -1,7 +1,7 @@
 import { IDatabase } from '@strzel-sobie/common/models';
 import type { RangeType } from '@strzel-sobie/common';
 import { IRangesRepository } from '../domain/ranges.repository';
-import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
+import { FiringLine, ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
 // Represents the structure in the ranges_shooting_ranges table
 type ShootingRangeDb = {
@@ -24,6 +24,15 @@ type ShootingRangeSummaryDb = Pick<
   ShootingRangeDb,
   'id' | 'slug' | 'type' | 'allows_reservations' | 'latitude' | 'longitude' | 'display_name' | 'extras'
 >;
+
+type FiringLineDb = {
+  id: number;
+  range_id: number;
+  name: string;
+  tracks_count: number;
+  length_meters: number | null;
+  sort_order: number;
+};
 
 export class RangesDbRepository implements IRangesRepository {
   constructor(private readonly db: IDatabase) {}
@@ -123,6 +132,25 @@ export class RangesDbRepository implements IRangesRepository {
     }
 
     return this.mapDbRange(result);
+  }
+
+  public async findFiringLinesByRangeId(rangeId: number): Promise<FiringLine[]> {
+    const stmt = this.db.prepare(
+      `SELECT id, range_id, name, tracks_count, length_meters, sort_order
+       FROM ranges_firing_lines
+       WHERE range_id = ?
+       ORDER BY sort_order ASC, id ASC`
+    );
+    const { results } = await stmt.bind(rangeId).all<FiringLineDb>();
+
+    return (results ?? []).map((line) => ({
+      id: line.id,
+      rangeId: line.range_id,
+      name: line.name,
+      tracksCount: line.tracks_count,
+      lengthMeters: line.length_meters,
+      sortOrder: line.sort_order,
+    }));
   }
 
   public async create(range: Omit<ShootingRange, 'id'>): Promise<ShootingRange> {

@@ -24,6 +24,9 @@ import {
   GetCalendarEventsQuery,
   ForbiddenError,
   InvalidPropositionTimeError,
+  InvalidTargetAdminError,
+  MemberRoleRequiredError,
+  PropositionDeclarationRequiredError,
   InvalidRecordTimeError,
   InvalidReservationTimeError,
   PersonSummaryDto,
@@ -42,6 +45,7 @@ import {
   Result,
   RangeClosedError,
   RangeBookingNotAllowedError,
+  RangeAdminRoleRequiredError,
   UnauthorizedPropositionError,
   OperatingHours,
   EventSummaryDto,
@@ -57,7 +61,6 @@ import {
   RecordEntity,
   Reservation,
   ReservationDetail,
-  ReservationConflict,
 } from '../domain/reservations.repository';
 
 type RoleLike = { name?: string | null } | string | null | undefined;
@@ -67,6 +70,12 @@ type UserRoleContext = {
   roles?: RoleLike[];
   rangeRoles?: RangeRolesRecord;
   range_roles?: RangeRolesRecord;
+};
+
+type BookingMetadata = {
+  trackNos: number[];
+  hasCoordinatorLicenseInGroup?: boolean;
+  [key: string]: unknown;
 };
 
 export class ReservationsService implements IReservationsService {
@@ -146,11 +155,12 @@ export class ReservationsService implements IReservationsService {
 
       const filteredReservations = reservations.map((r: Reservation) => {
         const canViewDetails = isAdmin || isMember || isCoordinator;
-        const trackNos = canViewDetails ? this.buildLegacyTrackNos(r.tracks_requested) : [];
-        const firingLineId = canViewDetails ? this.resolveLegacyFiringLineId(r) : 0;
+        const metadata = this.parseBookingMetadata(r.metadata_json);
+        const trackNos = canViewDetails ? metadata.trackNos : [];
+        const firingLineId = canViewDetails ? r.firing_line_id : 0;
         const details = canViewDetails
           ? {
-              approvedByAdminId: r.coordinator_id,
+              approvedByAdminId: r.approved_by_admin_id,
             }
           : null;
 
@@ -178,9 +188,11 @@ export class ReservationsService implements IReservationsService {
           eventDate: p.event_date,
           startTime: p.start_time,
           endTime: p.end_time,
-          firingLineId: this.resolveLegacyFiringLineId(p),
-          trackNos: this.buildLegacyTrackNos(p.tracks_requested),
-          hasCoordinatorLicenseInGroup: false,
+          firingLineId: p.firing_line_id,
+          trackNos: this.parseBookingMetadata(p.metadata_json).trackNos,
+          hasCoordinatorLicenseInGroup: Boolean(
+            this.parseBookingMetadata(p.metadata_json).hasCoordinatorLicenseInGroup
+          ),
         })),
         reservations: filteredReservations,
         events,
@@ -251,23 +263,24 @@ export class ReservationsService implements IReservationsService {
       );
 
       const approvedByAdmin = this.buildPersonSummary(
-        reservation.coordinator_id,
-        reservation.coordinator_email,
-        reservation.coordinator_phone_number
+        reservation.approved_by_admin_id,
+        reservation.approved_by_admin_email,
+        reservation.approved_by_admin_phone_number
       );
+      const reservationMetadata = this.parseBookingMetadata(reservation.metadata_json);
 
       const dto: ReservationDetailDto = {
         id: reservation.id,
         rangeId: reservation.range_id,
-        approvedByAdminId: reservation.coordinator_id,
+        approvedByAdminId: reservation.approved_by_admin_id,
         propositionId: reservation.proposition_id,
         proposition: propositionDetailDto,
         eventDate: reservation.event_date,
         startTime: reservation.start_time,
         endTime: reservation.end_time,
-        firingLineId: this.resolveLegacyFiringLineId(reservation),
-        trackNos: this.buildLegacyTrackNos(reservation.tracks_requested),
-        metadata: { trackNos: this.buildLegacyTrackNos(reservation.tracks_requested) },
+        firingLineId: reservation.firing_line_id,
+        trackNos: reservationMetadata.trackNos,
+        metadata: reservationMetadata,
         createdAt: reservation.created_at ?? null,
         approvedByAdmin,
       };
@@ -296,7 +309,7 @@ export class ReservationsService implements IReservationsService {
     const rangeId = rangeDetails.id;
 
     if (!this.canUserCreateReservation(user, rangeId)) {
-      return Result.fail(new ForbiddenError('User is not allowed to create reservations for this range'));
+      return Result.fail(new RangeAdminRoleRequiredError());
     }
 
     const force = Boolean(options.force);
@@ -406,17 +419,29 @@ export class ReservationsService implements IReservationsService {
     }
     const rangeDetails = rangeDetailsResult.getValue();
     const rangeId = rangeDetails.id;
-    const totalTracks = rangeDetails.totalTracks ?? 0;
 
-    if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
+    if (rangeDetails.allowsReservations === false) {
       return Result.fail(new RangeBookingNotAllowedError());
     }
 
     if (!this.canUserCreateProposition(user, rangeId)) {
-      return Result.fail(new UnauthorizedPropositionError());
+      return Result.fail(new MemberRoleRequiredError());
     }
 
-    const validationError = this.validatePropositionCommand(command, totalTracks);
+    if (typeof command.hasCoordinatorLicenseInGroup !== 'boolean') {
+      return Result.fail(new PropositionDeclarationRequiredError());
+    }
+
+    const userRoleNames = new Set(user.roles.map((role) => role.name));
+    const hasCoordinatorRole = userRoleNames.has(UserRole.Coordinator);
+    const coordinatorDeclaration = hasCoordinatorRole ? true : command.hasCoordinatorLicenseInGroup;
+
+    const selectedFiringLine = rangeDetails.firingLines.find((line) => line.id === command.firingLineId);
+    if (!selectedFiringLine) {
+      return Result.fail(new InvalidPropositionTimeError('Invalid firing line selected'));
+    }
+
+    const validationError = this.validatePropositionCommand(command, selectedFiringLine.tracksCount);
     if (validationError) {
       return Result.fail(validationError);
     }
@@ -432,17 +457,38 @@ export class ReservationsService implements IReservationsService {
     }
 
     try {
-      const usage = await this.reservationsRepository.getOverlappingUsage(
-        rangeId,
-        command.eventDate,
-        command.startTime,
-        command.endTime
+      const [propositions, reservations] = await Promise.all([
+        this.reservationsRepository.getPropositions(rangeId, command.eventDate, command.eventDate),
+        this.reservationsRepository.getReservations(rangeId, command.eventDate, command.eventDate),
+      ]);
+      const conflicts = this.findTrackConflicts(
+        {
+          eventDate: command.eventDate,
+          startTime: command.startTime,
+          endTime: command.endTime,
+          firingLineId: command.firingLineId,
+          trackNos: command.trackNos,
+        },
+        propositions,
+        reservations
       );
-
-      const totalTracksUsed = usage.propositions_tracks + usage.reservations_tracks;
-      if (totalTracksUsed + command.trackNos.length > totalTracks) {
+      if (conflicts.length > 0) {
         return Result.fail(new PropositionConflictError());
       }
+
+      if (
+        command.targetAdminUserId !== undefined &&
+        command.targetAdminUserId !== null &&
+        (!Number.isInteger(command.targetAdminUserId) || command.targetAdminUserId < 1)
+      ) {
+        return Result.fail(new InvalidTargetAdminError());
+      }
+
+      const metadata: BookingMetadata = {
+        ...(command.metadata ?? {}),
+        trackNos: command.trackNos,
+        hasCoordinatorLicenseInGroup: coordinatorDeclaration,
+      };
 
       const record: CreatePropositionRecord = {
         user_id: user.id,
@@ -450,7 +496,8 @@ export class ReservationsService implements IReservationsService {
         event_date: command.eventDate,
         start_time: command.startTime,
         end_time: command.endTime,
-        tracks_requested: command.trackNos.length,
+        firing_line_id: command.firingLineId,
+        metadata_json: JSON.stringify(metadata),
       };
 
       const proposition = await this.reservationsRepository.createProposition(record);
@@ -466,6 +513,8 @@ export class ReservationsService implements IReservationsService {
           endTime: command.endTime,
           firingLineId: command.firingLineId,
           trackNos: command.trackNos,
+          targetAdminUserId: command.targetAdminUserId ?? null,
+          hasCoordinatorLicenseInGroup: coordinatorDeclaration,
         },
       });
 
@@ -551,12 +600,16 @@ export class ReservationsService implements IReservationsService {
     force: boolean,
     user: UserDto
   ): Promise<Result<CreatedReservationDto>> {
-    const totalTracks = rangeDetails.totalTracks ?? 0;
-    if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
+    if (rangeDetails.allowsReservations === false) {
       return Result.fail(new RangeBookingNotAllowedError());
     }
 
-    const validationError = this.validateReservationCommand(command, totalTracks);
+    const selectedFiringLine = rangeDetails.firingLines.find((line) => line.id === command.firingLineId);
+    if (!selectedFiringLine) {
+      return Result.fail(new InvalidReservationTimeError('Invalid firing line selected'));
+    }
+
+    const validationError = this.validateReservationCommand(command, selectedFiringLine.tracksCount);
     if (validationError) {
       return Result.fail(validationError);
     }
@@ -571,40 +624,37 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(operatingHoursError);
     }
 
-    let conflicts: ReservationConflict[];
     try {
-      conflicts = await this.reservationsRepository.getOverlappingReservationsDetails(
-        rangeDetails.id,
-        command.eventDate,
-        command.startTime,
-        command.endTime
-      );
-    } catch (error) {
-      return Result.fail(error as Error);
-    }
+      const [propositions, reservations] = await Promise.all([
+        this.reservationsRepository.getPropositions(rangeDetails.id, command.eventDate, command.eventDate),
+        this.reservationsRepository.getReservations(rangeDetails.id, command.eventDate, command.eventDate),
+      ]);
+      const conflicts = this.findTrackConflicts(command, propositions, reservations);
+      const blockingConflicts = conflicts.filter((conflict) => conflict.type === 'reservation');
 
-    const blockingConflicts = conflicts.filter((conflict) => conflict.type === 'reservation');
+      if (blockingConflicts.length > 0 && !force) {
+        return Result.fail(
+          new ReservationConflictError({
+            conflicts: this.mapReservationConflicts(conflicts),
+            requiresForce: true,
+          })
+        );
+      }
 
-    if (blockingConflicts.length > 0 && !force) {
-      return Result.fail(
-        new ReservationConflictError({
-          conflicts: this.mapReservationConflicts(conflicts),
-          requiresForce: true,
-        })
-      );
-    }
-
-    const record: CreateReservationRecord = {
-      range_id: rangeDetails.id,
-      coordinator_id: user.id,
-      proposition_id: null,
-      event_date: command.eventDate,
-      start_time: command.startTime,
-      end_time: command.endTime,
-      tracks_requested: command.trackNos.length,
-    };
-
-    try {
+      const metadata: BookingMetadata = {
+        ...(command.metadata ?? {}),
+        trackNos: this.normalizeTrackNos(command.trackNos),
+      };
+      const record: CreateReservationRecord = {
+        range_id: rangeDetails.id,
+        approved_by_admin_id: user.id,
+        proposition_id: null,
+        event_date: command.eventDate,
+        start_time: command.startTime,
+        end_time: command.endTime,
+        firing_line_id: command.firingLineId,
+        metadata_json: JSON.stringify(metadata),
+      };
       const reservation = await this.reservationsRepository.createReservation(record);
 
       const auditResult = await this.auditService.logAction({
@@ -630,7 +680,7 @@ export class ReservationsService implements IReservationsService {
       const dto: CreatedReservationDto = {
         id: reservation.id,
         range_id: reservation.range_id,
-        approved_by_admin_id: reservation.coordinator_id,
+        approved_by_admin_id: reservation.approved_by_admin_id,
       };
 
       return Result.ok(dto);
@@ -646,6 +696,10 @@ export class ReservationsService implements IReservationsService {
     force: boolean,
     user: UserDto
   ): Promise<Result<CreatedReservationDto>> {
+    if (typeof command.adminMessage !== 'string' || command.adminMessage.trim().length === 0) {
+      return Result.fail(new InvalidReservationTimeError('adminMessage is required for proposition conversion'));
+    }
+
     let proposition: Proposition | null;
     try {
       proposition = await this.reservationsRepository.getPropositionById(command.propositionId);
@@ -665,15 +719,19 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(new PropositionAlreadyClosedError());
     }
 
+    const propositionMetadata = this.parseBookingMetadata(proposition.metadata_json);
     const eventDate = command.eventDate ?? proposition.event_date;
     const startTime = command.startTime ?? proposition.start_time;
     const endTime = command.endTime ?? proposition.end_time;
-    const resolvedTrackNos = this.buildLegacyTrackNos(proposition.tracks_requested);
-    const resolvedFiringLineId = this.resolveLegacyFiringLineId(proposition);
-    const totalTracks = rangeDetails.totalTracks ?? 0;
+    const resolvedTrackNos = propositionMetadata.trackNos;
+    const resolvedFiringLineId = proposition.firing_line_id;
+    const selectedFiringLine = rangeDetails.firingLines.find((line) => line.id === resolvedFiringLineId);
 
-    if (rangeDetails.allowsReservations === false || totalTracks <= 0) {
+    if (rangeDetails.allowsReservations === false) {
       return Result.fail(new ForbiddenError('Reservations are not available for this range'));
+    }
+    if (!selectedFiringLine) {
+      return Result.fail(new InvalidReservationTimeError('Invalid firing line selected'));
     }
 
     const validationError = this.validateReservationCommand(
@@ -684,7 +742,7 @@ export class ReservationsService implements IReservationsService {
         firingLineId: resolvedFiringLineId,
         trackNos: resolvedTrackNos,
       },
-      totalTracks
+      selectedFiringLine.tracksCount
     );
     if (validationError) {
       return Result.fail(validationError);
@@ -700,41 +758,47 @@ export class ReservationsService implements IReservationsService {
       return Result.fail(operatingHoursError);
     }
 
-    let conflicts: ReservationConflict[];
     try {
-      conflicts = await this.reservationsRepository.getOverlappingReservationsDetails(
-        rangeDetails.id,
-        eventDate,
-        startTime,
-        endTime,
+      const [propositions, reservations] = await Promise.all([
+        this.reservationsRepository.getPropositions(rangeDetails.id, eventDate, eventDate),
+        this.reservationsRepository.getReservations(rangeDetails.id, eventDate, eventDate),
+      ]);
+      const conflicts = this.findTrackConflicts(
+        {
+          eventDate,
+          startTime,
+          endTime,
+          firingLineId: resolvedFiringLineId,
+          trackNos: resolvedTrackNos,
+        },
+        propositions,
+        reservations,
         { excludePropositionId: proposition.id }
       );
-    } catch (error) {
-      return Result.fail(error as Error);
-    }
+      const blockingConflicts = conflicts.filter((conflict) => conflict.type === 'reservation');
+      if (blockingConflicts.length > 0 && !force) {
+        return Result.fail(
+          new ReservationConflictError({
+            conflicts: this.mapReservationConflicts(conflicts),
+            requiresForce: true,
+          })
+        );
+      }
 
-    const blockingConflicts = conflicts.filter((conflict) => conflict.type === 'reservation');
-
-    if (blockingConflicts.length > 0 && !force) {
-      return Result.fail(
-        new ReservationConflictError({
-          conflicts: this.mapReservationConflicts(conflicts),
-          requiresForce: true,
-        })
-      );
-    }
-
-    const record: CreateReservationRecord = {
-      range_id: rangeDetails.id,
-      coordinator_id: user.id,
-      proposition_id: proposition.id,
-      event_date: eventDate,
-      start_time: startTime,
-      end_time: endTime,
-      tracks_requested: resolvedTrackNos.length,
-    };
-
-    try {
+      const reservationMetadata: BookingMetadata = {
+        ...(command.metadata ?? {}),
+        trackNos: this.normalizeTrackNos(resolvedTrackNos),
+      };
+      const record: CreateReservationRecord = {
+        range_id: rangeDetails.id,
+        approved_by_admin_id: user.id,
+        proposition_id: proposition.id,
+        event_date: eventDate,
+        start_time: startTime,
+        end_time: endTime,
+        firing_line_id: resolvedFiringLineId,
+        metadata_json: JSON.stringify(reservationMetadata),
+      };
       const reservation = await this.reservationsRepository.createReservationFromProposition(
         record,
         proposition.id
@@ -758,7 +822,9 @@ export class ReservationsService implements IReservationsService {
             eventDateChanged: eventDate !== proposition.event_date,
             startTimeChanged: startTime !== proposition.start_time,
             endTimeChanged: endTime !== proposition.end_time,
-            trackNosChanged: false,
+            trackNosChanged:
+              JSON.stringify(this.normalizeTrackNos(resolvedTrackNos)) !==
+              JSON.stringify(this.normalizeTrackNos(propositionMetadata.trackNos)),
           },
         },
       });
@@ -770,7 +836,7 @@ export class ReservationsService implements IReservationsService {
       const dto: CreatedReservationDto = {
         id: reservation.id,
         range_id: reservation.range_id,
-        approved_by_admin_id: reservation.coordinator_id,
+        approved_by_admin_id: reservation.approved_by_admin_id,
       };
 
       return Result.ok(dto);
@@ -780,15 +846,17 @@ export class ReservationsService implements IReservationsService {
     }
   }
 
-  private mapReservationConflicts(conflicts: ReservationConflict[]): ReservationConflictItem[] {
+  private mapReservationConflicts(
+    conflicts: Array<{ id: number; type: 'reservation' | 'proposition'; eventDate: string; startTime: string; endTime: string; firingLineId: number; trackNos: number[] }>
+  ): ReservationConflictItem[] {
     return conflicts.map((conflict) => ({
       id: conflict.id,
       type: conflict.type,
-      eventDate: conflict.event_date,
-      startTime: conflict.start_time,
-      endTime: conflict.end_time,
-      firingLineId: this.resolveLegacyFiringLineId(conflict),
-      trackNos: this.buildLegacyTrackNos(conflict.tracks_requested),
+      eventDate: conflict.eventDate,
+      startTime: conflict.startTime,
+      endTime: conflict.endTime,
+      firingLineId: conflict.firingLineId,
+      trackNos: conflict.trackNos,
     }));
   }
   private async resolveLinkedPropositionDetail(
@@ -830,6 +898,7 @@ export class ReservationsService implements IReservationsService {
       proposition.requester_email,
       proposition.requester_phone_number
     );
+    const metadata = this.parseBookingMetadata(proposition.metadata_json);
 
     return {
       id: proposition.id,
@@ -839,10 +908,10 @@ export class ReservationsService implements IReservationsService {
       eventDate: proposition.event_date,
       startTime: proposition.start_time,
       endTime: proposition.end_time,
-      firingLineId: this.resolveLegacyFiringLineId(proposition),
-      trackNos: this.buildLegacyTrackNos(proposition.tracks_requested),
-      hasCoordinatorLicenseInGroup: false,
-      metadata: { trackNos: this.buildLegacyTrackNos(proposition.tracks_requested) },
+      firingLineId: proposition.firing_line_id,
+      trackNos: metadata.trackNos,
+      hasCoordinatorLicenseInGroup: Boolean(metadata.hasCoordinatorLicenseInGroup),
+      metadata,
       createdAt: proposition.created_at ?? null,
       requester,
     };
@@ -1052,8 +1121,9 @@ export class ReservationsService implements IReservationsService {
         eventDate: deletedReservation.event_date,
         startTime: deletedReservation.start_time,
         endTime: deletedReservation.end_time,
-        tracksRequested: deletedReservation.tracks_requested,
-        coordinatorId: deletedReservation.coordinator_id,
+        firingLineId: deletedReservation.firing_line_id,
+        trackNos: this.parseBookingMetadata(deletedReservation.metadata_json).trackNos,
+        approvedByAdminId: deletedReservation.approved_by_admin_id,
       },
     });
 
@@ -1068,24 +1138,14 @@ export class ReservationsService implements IReservationsService {
 
   private canUserCreateReservation(user: UserDto, rangeId: number): boolean {
     const globalRoleNames = new Set(user.roles.map((role) => role.name));
-    if (
-      globalRoleNames.has(UserRole.ClubCommunityAdministrator) ||
-      globalRoleNames.has(UserRole.Coordinator)
-    ) {
+    if (globalRoleNames.has(UserRole.ClubCommunityAdministrator)) {
       return true;
     }
 
     const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
     const rangeRoleNames = new Set(rangeRoles.map((role) => role.name));
 
-    if (
-      rangeRoleNames.has(UserRole.ShootingRangeAdministrator) ||
-      rangeRoleNames.has(UserRole.Coordinator)
-    ) {
-      return true;
-    }
-
-    return false;
+    return rangeRoleNames.has(UserRole.ShootingRangeAdministrator);
   }
 
   private canUserCancelReservation(user: UserDto, reservation: Reservation): boolean {
@@ -1106,7 +1166,7 @@ export class ReservationsService implements IReservationsService {
 
     if (
       rangeRoleNames.has(UserRole.Coordinator) &&
-      reservation.coordinator_id === user.id
+      reservation.approved_by_admin_id === user.id
     ) {
       return true;
     }
@@ -1136,6 +1196,10 @@ export class ReservationsService implements IReservationsService {
     command: CreateReservationCommand,
     totalTracks: number
   ): Error | null {
+    if (!Number.isInteger(command.firingLineId) || command.firingLineId < 1) {
+      return new InvalidReservationTimeError('firingLineId must be a positive integer');
+    }
+
     const timeError = this.validateReservationTimeWindow(
       command.eventDate,
       command.startTime,
@@ -1347,33 +1411,22 @@ export class ReservationsService implements IReservationsService {
 
   private canUserCreateProposition(user: UserDto, rangeId: number): boolean {
     const globalRoleNames = new Set(user.roles.map((role) => role.name));
-    if (
-      globalRoleNames.has(UserRole.ClubCommunityAdministrator) ||
-      globalRoleNames.has(UserRole.Coordinator) ||
-      globalRoleNames.has(UserRole.Member) ||
-      globalRoleNames.has(UserRole.Guest)
-    ) {
+    if (globalRoleNames.has(UserRole.Member)) {
       return true;
     }
 
     const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
-    const rangeRoleNames = new Set(rangeRoles.map((role) => role.name));
-
-    if (
-      rangeRoleNames.has(UserRole.ShootingRangeAdministrator) ||
-      rangeRoleNames.has(UserRole.Coordinator) ||
-      rangeRoleNames.has(UserRole.Member)
-    ) {
-      return true;
-    }
-
-    return false;
+    return rangeRoles.some((role) => role.name === UserRole.Member);
   }
 
   private validatePropositionCommand(
     command: CreatePropositionCommand,
     totalTracks: number
   ): Error | null {
+    if (!Number.isInteger(command.firingLineId) || command.firingLineId < 1) {
+      return new InvalidPropositionTimeError('firingLineId must be a positive integer');
+    }
+
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
     if (!datePattern.test(command.eventDate) || Number.isNaN(new Date(command.eventDate).getTime())) {
       return new InvalidPropositionTimeError('Event date must be a valid YYYY-MM-DD value');
@@ -1434,16 +1487,87 @@ export class ReservationsService implements IReservationsService {
     return null;
   }
 
-  private resolveLegacyFiringLineId(entity: unknown): number {
-    const value = (entity as { firing_line_id?: unknown }).firing_line_id;
-    return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 0;
-  }
-
-  private buildLegacyTrackNos(trackCount: number): number[] {
-    if (!Number.isInteger(trackCount) || trackCount < 1) {
-      return [];
+  private parseBookingMetadata(metadataJson: string | null | undefined): BookingMetadata {
+    if (!metadataJson) {
+      return { trackNos: [] };
     }
 
-    return Array.from({ length: trackCount }, (_, index) => index + 1);
+    try {
+      const parsed = JSON.parse(metadataJson) as Partial<BookingMetadata>;
+      return {
+        ...parsed,
+        trackNos: this.normalizeTrackNos(Array.isArray(parsed.trackNos) ? parsed.trackNos : []),
+      };
+    } catch {
+      return { trackNos: [] };
+    }
   }
+
+  private normalizeTrackNos(trackNos: number[]): number[] {
+    const unique = Array.from(new Set(trackNos.filter((trackNo) => Number.isInteger(trackNo))));
+    return unique.sort((a, b) => a - b);
+  }
+
+  private findTrackConflicts(
+    requested: {
+      eventDate: string;
+      startTime: string;
+      endTime: string;
+      firingLineId: number;
+      trackNos: number[];
+    },
+    propositions: Proposition[],
+    reservations: Reservation[],
+    options?: { excludePropositionId?: number; excludeReservationId?: number }
+  ): Array<{
+    id: number;
+    type: 'reservation' | 'proposition';
+    eventDate: string;
+    startTime: string;
+    endTime: string;
+    firingLineId: number;
+    trackNos: number[];
+  }> {
+    const requestedTrackNos = this.normalizeTrackNos(requested.trackNos);
+    const hasTrackOverlap = (existingTrackNos: number[]): boolean =>
+      existingTrackNos.some((trackNo) => requestedTrackNos.includes(trackNo));
+    const overlapsInTime = (startTime: string, endTime: string): boolean =>
+      startTime < requested.endTime && endTime > requested.startTime;
+
+    const propositionConflicts = propositions
+      .filter((proposition) => proposition.status === 'open')
+      .filter((proposition) => proposition.id !== options?.excludePropositionId)
+      .filter((proposition) => proposition.event_date === requested.eventDate)
+      .filter((proposition) => proposition.firing_line_id === requested.firingLineId)
+      .filter((proposition) => overlapsInTime(proposition.start_time, proposition.end_time))
+      .map((proposition) => ({
+        id: proposition.id,
+        type: 'proposition' as const,
+        eventDate: proposition.event_date,
+        startTime: proposition.start_time,
+        endTime: proposition.end_time,
+        firingLineId: proposition.firing_line_id,
+        trackNos: this.parseBookingMetadata(proposition.metadata_json).trackNos,
+      }))
+      .filter((proposition) => hasTrackOverlap(proposition.trackNos));
+
+    const reservationConflicts = reservations
+      .filter((reservation) => reservation.id !== options?.excludeReservationId)
+      .filter((reservation) => reservation.event_date === requested.eventDate)
+      .filter((reservation) => reservation.firing_line_id === requested.firingLineId)
+      .filter((reservation) => overlapsInTime(reservation.start_time, reservation.end_time))
+      .map((reservation) => ({
+        id: reservation.id,
+        type: 'reservation' as const,
+        eventDate: reservation.event_date,
+        startTime: reservation.start_time,
+        endTime: reservation.end_time,
+        firingLineId: reservation.firing_line_id,
+        trackNos: this.parseBookingMetadata(reservation.metadata_json).trackNos,
+      }))
+      .filter((reservation) => hasTrackOverlap(reservation.trackNos));
+
+    return [...propositionConflicts, ...reservationConflicts];
+  }
+
 }

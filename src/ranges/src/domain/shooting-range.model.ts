@@ -20,3 +20,12 @@ export type ShootingRangeSummary = Pick<
   ShootingRange,
   'id' | 'slug' | 'type' | 'allowsReservations' | 'latitude' | 'longitude' | 'displayName' | 'extras'
 >;
+
+export type FiringLine = {
+  id: number;
+  rangeId: number;
+  name: string;
+  tracksCount: number;
+  lengthMeters: number | null;
+  sortOrder: number;
+};

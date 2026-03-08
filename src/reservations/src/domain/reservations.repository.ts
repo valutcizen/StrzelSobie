@@ -6,19 +6,21 @@ export type Proposition = {
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
   is_member: boolean;
 };
 
 export type Reservation = {
   id: number;
   range_id: number;
-  coordinator_id: number;
+  approved_by_admin_id: number;
   proposition_id: number | null;
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
 };
 
 export type PropositionDetail = Proposition & {
@@ -29,8 +31,8 @@ export type PropositionDetail = Proposition & {
 
 export type ReservationDetail = Reservation & {
   created_at: string | null;
-  coordinator_email: string | null;
-  coordinator_phone_number: string | null;
+  approved_by_admin_email: string | null;
+  approved_by_admin_phone_number: string | null;
 };
 
 export type RecordEntity = {
@@ -59,12 +61,8 @@ export type CreatePropositionRecord = {
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
-};
-
-export type OverlappingUsage = {
-  propositions_tracks: number;
-  reservations_tracks: number;
+  firing_line_id: number;
+  metadata_json: string;
 };
 
 export type ReservationConflict = {
@@ -73,36 +71,25 @@ export type ReservationConflict = {
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
 };
 
 export type CreateReservationRecord = {
   range_id: number;
-  coordinator_id: number;
+  approved_by_admin_id: number;
   proposition_id: number | null;
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
 };
 
 export interface IReservationsRepository {
   getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]>;
   getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]>;
   getRecords(rangeId: number, startDate: string, endDate: string): Promise<RecordEntity[]>;
-  getOverlappingUsage(
-    rangeId: number,
-    eventDate: string,
-    startTime: string,
-    endTime: string
-  ): Promise<OverlappingUsage>;
-  getOverlappingReservationsDetails(
-    rangeId: number,
-    eventDate: string,
-    startTime: string,
-    endTime: string,
-    options?: { excludeReservationId?: number; excludePropositionId?: number }
-  ): Promise<ReservationConflict[]>;
   createProposition(record: CreatePropositionRecord): Promise<Proposition>;
   createReservation(record: CreateReservationRecord): Promise<Reservation>;
   createReservationFromProposition(record: CreateReservationRecord, propositionId: number): Promise<Reservation>;

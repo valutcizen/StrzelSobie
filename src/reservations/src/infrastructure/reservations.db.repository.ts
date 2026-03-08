@@ -4,13 +4,11 @@ import {
   CreateRecordData,
   CreateReservationRecord,
   IReservationsRepository,
-  OverlappingUsage,
   Proposition,
   PropositionDetail,
   RecordEntity,
   Reservation,
   ReservationDetail,
-  ReservationConflict,
 } from '../domain/reservations.repository';
 
 type PropositionDb = {
@@ -21,7 +19,8 @@ type PropositionDb = {
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
   is_member: number;
 };
 
@@ -35,17 +34,18 @@ type ReservationDb = {
   id: number;
   proposition_id: number | null;
   range_id: number;
-  coordinator_id: number;
+  approved_by_admin_id: number;
   event_date: string;
   start_time: string;
   end_time: string;
-  tracks_requested: number;
+  firing_line_id: number;
+  metadata_json: string;
 };
 
 type ReservationDetailDb = ReservationDb & {
   created_at: string | null;
-  coordinator_email: string | null;
-  coordinator_phone_number: string | null;
+  approved_by_admin_email: string | null;
+  approved_by_admin_phone_number: string | null;
 };
 
 type RecordDb = {
@@ -59,14 +59,6 @@ type RecordDb = {
   created_at: string;
 };
 
-type ConflictRow = {
-  id: number;
-  event_date: string;
-  start_time: string;
-  end_time: string;
-  tracks_requested: number;
-};
-
 const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   id: dbProposition.id,
   user_id: dbProposition.user_id,
@@ -75,7 +67,8 @@ const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   event_date: dbProposition.event_date,
   start_time: dbProposition.start_time,
   end_time: dbProposition.end_time,
-  tracks_requested: dbProposition.tracks_requested,
+  firing_line_id: dbProposition.firing_line_id,
+  metadata_json: dbProposition.metadata_json,
   is_member: Boolean(dbProposition.is_member),
 });
 
@@ -90,18 +83,19 @@ const mapDbReservation = (dbReservation: ReservationDb): Reservation => ({
   id: dbReservation.id,
   proposition_id: dbReservation.proposition_id,
   range_id: dbReservation.range_id,
-  coordinator_id: dbReservation.coordinator_id,
+  approved_by_admin_id: dbReservation.approved_by_admin_id,
   event_date: dbReservation.event_date,
   start_time: dbReservation.start_time,
   end_time: dbReservation.end_time,
-  tracks_requested: dbReservation.tracks_requested,
+  firing_line_id: dbReservation.firing_line_id,
+  metadata_json: dbReservation.metadata_json,
 });
 
 const mapDbReservationDetail = (dbReservation: ReservationDetailDb): ReservationDetail => ({
   ...mapDbReservation(dbReservation),
   created_at: dbReservation.created_at ?? null,
-  coordinator_email: dbReservation.coordinator_email ?? null,
-  coordinator_phone_number: dbReservation.coordinator_phone_number ?? null,
+  approved_by_admin_email: dbReservation.approved_by_admin_email ?? null,
+  approved_by_admin_phone_number: dbReservation.approved_by_admin_phone_number ?? null,
 });
 
 const mapDbRecord = (dbRecord: RecordDb): RecordEntity => ({
@@ -128,7 +122,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
           rp.event_date,
           rp.start_time,
           rp.end_time,
-          rp.tracks_requested,
+          rp.firing_line_id,
+          rp.metadata_json,
           EXISTS (
             SELECT 1
             FROM users_user_global_roles ugr
@@ -148,7 +143,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]> {
     const stmt = this.db.prepare(
-      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested
+      `SELECT id, proposition_id, range_id, approved_by_admin_id, event_date, start_time, end_time, firing_line_id, metadata_json
        FROM reservations_reservations
        WHERE range_id = ? AND event_date BETWEEN ? AND ?`
     );
@@ -168,115 +163,11 @@ export class ReservationsDbRepository implements IReservationsRepository {
     return (results ?? []).map(mapDbRecord);
   }
 
-  public async getOverlappingUsage(
-    rangeId: number,
-    eventDate: string,
-    startTime: string,
-    endTime: string
-  ): Promise<OverlappingUsage> {
-    const stmt = this.db.prepare(
-      `SELECT
-        COALESCE((
-          SELECT SUM(tracks_requested)
-          FROM reservations_propositions
-          WHERE range_id = ?
-            AND event_date = ?
-            AND status = 'open'
-            AND start_time < ?
-            AND end_time > ?
-        ), 0) AS propositions_tracks,
-        COALESCE((
-          SELECT SUM(tracks_requested)
-          FROM reservations_reservations
-          WHERE range_id = ?
-            AND event_date = ?
-            AND start_time < ?
-            AND end_time > ?
-        ), 0) AS reservations_tracks`
-    );
-
-    const usage = await stmt
-      .bind(rangeId, eventDate, endTime, startTime, rangeId, eventDate, endTime, startTime)
-      .first<{ propositions_tracks: number | null; reservations_tracks: number | null }>();
-
-    return {
-      propositions_tracks: usage?.propositions_tracks ?? 0,
-      reservations_tracks: usage?.reservations_tracks ?? 0,
-    };
-  }
-
-  public async getOverlappingReservationsDetails(
-    rangeId: number,
-    eventDate: string,
-    startTime: string,
-    endTime: string,
-    options?: { excludeReservationId?: number; excludePropositionId?: number }
-  ): Promise<ReservationConflict[]> {
-    const conflicts: ReservationConflict[] = [];
-    const excludeReservationId = options?.excludeReservationId;
-    const excludePropositionId = options?.excludePropositionId;
-
-    const reservationSql = `
-      SELECT id, event_date, start_time, end_time, tracks_requested
-      FROM reservations_reservations
-      WHERE range_id = ?
-        AND event_date = ?
-        AND start_time < ?
-        AND end_time > ?
-        ${excludeReservationId ? 'AND id != ?' : ''}
-    `;
-    const reservationBindings: Array<number | string> = [rangeId, eventDate, endTime, startTime];
-    if (excludeReservationId) {
-      reservationBindings.push(excludeReservationId);
-    }
-    const reservationStmt = this.db.prepare(reservationSql);
-    const reservationResults = await reservationStmt.bind(...reservationBindings).all<ConflictRow>();
-    conflicts.push(
-      ...((reservationResults.results ?? []).map((row) => ({
-        id: row.id,
-        type: 'reservation' as const,
-        event_date: row.event_date,
-        start_time: row.start_time,
-        end_time: row.end_time,
-        tracks_requested: row.tracks_requested,
-      })))
-    );
-
-    const propositionSql = `
-      SELECT id, event_date, start_time, end_time, tracks_requested
-      FROM reservations_propositions
-      WHERE range_id = ?
-        AND status = 'open'
-        AND event_date = ?
-        AND start_time < ?
-        AND end_time > ?
-        ${excludePropositionId ? 'AND id != ?' : ''}
-    `;
-    const propositionBindings: Array<number | string> = [rangeId, eventDate, endTime, startTime];
-    if (excludePropositionId) {
-      propositionBindings.push(excludePropositionId);
-    }
-    const propositionStmt = this.db.prepare(propositionSql);
-    const propositionResults = await propositionStmt.bind(...propositionBindings).all<ConflictRow>();
-    conflicts.push(
-      ...((propositionResults.results ?? []).map((row) => ({
-        id: row.id,
-        type: 'proposition' as const,
-        event_date: row.event_date,
-        start_time: row.start_time,
-        end_time: row.end_time,
-        tracks_requested: row.tracks_requested,
-      })))
-    );
-
-    return conflicts;
-  }
-
   public async createProposition(record: CreatePropositionRecord): Promise<Proposition> {
     const stmt = this.db.prepare(
       `INSERT INTO reservations_propositions
-        (user_id, range_id, status, event_date, start_time, end_time, tracks_requested)
-       VALUES (?, ?, 'open', ?, ?, ?, ?)
+        (user_id, range_id, status, event_date, start_time, end_time, firing_line_id, metadata_json)
+       VALUES (?, ?, 'open', ?, ?, ?, ?, ?)
        RETURNING
          id,
          user_id,
@@ -285,7 +176,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
          event_date,
          start_time,
          end_time,
-         tracks_requested,
+         firing_line_id,
+         metadata_json,
          EXISTS (
            SELECT 1
            FROM users_user_global_roles ugr
@@ -302,7 +194,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
         record.event_date,
         record.start_time,
         record.end_time,
-        record.tracks_requested
+        record.firing_line_id,
+        record.metadata_json
       )
       .first<PropositionDb>();
 
@@ -388,7 +281,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
           rp.event_date,
           rp.start_time,
           rp.end_time,
-          rp.tracks_requested,
+          rp.firing_line_id,
+          rp.metadata_json,
           EXISTS (
             SELECT 1
             FROM users_user_global_roles ugr
@@ -419,7 +313,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
           rp.event_date,
           rp.start_time,
           rp.end_time,
-          rp.tracks_requested,
+          rp.firing_line_id,
+          rp.metadata_json,
           rp.created_at,
           EXISTS (
             SELECT 1
@@ -457,7 +352,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
          event_date,
          start_time,
          end_time,
-         tracks_requested,
+         firing_line_id,
+         metadata_json,
          EXISTS (
            SELECT 1
            FROM users_user_global_roles ugr
@@ -478,7 +374,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
 
   public async getReservationById(id: number): Promise<Reservation | null> {
     const stmt = this.db.prepare(
-      `SELECT id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested
+      `SELECT id, proposition_id, range_id, approved_by_admin_id, event_date, start_time, end_time, firing_line_id, metadata_json
        FROM reservations_reservations
        WHERE id = ?`
     );
@@ -498,16 +394,17 @@ export class ReservationsDbRepository implements IReservationsRepository {
          rr.id,
          rr.proposition_id,
          rr.range_id,
-         rr.coordinator_id,
+         rr.approved_by_admin_id,
          rr.event_date,
          rr.start_time,
          rr.end_time,
-         rr.tracks_requested,
+         rr.firing_line_id,
+         rr.metadata_json,
          rr.created_at,
-         uu.email AS coordinator_email,
-         uu.phone_number AS coordinator_phone_number
+         uu.email AS approved_by_admin_email,
+         uu.phone_number AS approved_by_admin_phone_number
        FROM reservations_reservations rr
-       LEFT JOIN users_users uu ON uu.id = rr.coordinator_id
+       LEFT JOIN users_users uu ON uu.id = rr.approved_by_admin_id
        WHERE rr.id = ?`
     );
 
@@ -524,7 +421,7 @@ export class ReservationsDbRepository implements IReservationsRepository {
     const stmt = this.db.prepare(
       `DELETE FROM reservations_reservations
        WHERE id = ?
-       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested`
+       RETURNING id, proposition_id, range_id, approved_by_admin_id, event_date, start_time, end_time, firing_line_id, metadata_json`
     );
 
     const record = await stmt.bind(id).first<ReservationDb>();
@@ -549,7 +446,8 @@ export class ReservationsDbRepository implements IReservationsRepository {
          event_date,
          start_time,
          end_time,
-         tracks_requested,
+         firing_line_id,
+         metadata_json,
          EXISTS (
            SELECT 1
            FROM users_user_global_roles ugr
@@ -598,20 +496,21 @@ export class ReservationsDbRepository implements IReservationsRepository {
     const propositionId = record.proposition_id ?? null;
     const stmt = this.db.prepare(
       `INSERT INTO reservations_reservations
-        (proposition_id, coordinator_id, range_id, event_date, start_time, end_time, tracks_requested)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       RETURNING id, proposition_id, range_id, coordinator_id, event_date, start_time, end_time, tracks_requested`
+        (proposition_id, approved_by_admin_id, range_id, event_date, start_time, end_time, firing_line_id, metadata_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, proposition_id, range_id, approved_by_admin_id, event_date, start_time, end_time, firing_line_id, metadata_json`
     );
 
     const created = await stmt
       .bind(
         propositionId,
-        record.coordinator_id,
+        record.approved_by_admin_id,
         record.range_id,
         record.event_date,
         record.start_time,
         record.end_time,
-        record.tracks_requested
+        record.firing_line_id,
+        record.metadata_json
       )
       .first<ReservationDb>();
 
