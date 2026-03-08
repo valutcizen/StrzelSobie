@@ -1,6 +1,7 @@
 import {
   IAuditService,
   IEventsService,
+  INotificationsService,
   IReservationsService,
   IRangesService,
   EventAudience,
@@ -83,12 +84,28 @@ type BookingMetadata = {
   [key: string]: unknown;
 };
 
+const NOOP_NOTIFICATIONS_SERVICE: INotificationsService = {
+  async notifyNewProposition() {
+    return Result.ok(undefined);
+  },
+  async notifyPropositionConverted() {
+    return Result.ok(undefined);
+  },
+  async notifyReservationCancelled() {
+    return Result.ok(undefined);
+  },
+  async cleanupExpiredNotifications() {
+    return Result.ok(0);
+  },
+};
+
 export class ReservationsService implements IReservationsService {
   constructor(
     private readonly rangesService: IRangesService,
     private readonly reservationsRepository: IReservationsRepository,
     private readonly eventsService: IEventsService,
-    private readonly auditService: IAuditService
+    private readonly auditService: IAuditService,
+    private readonly notificationsService: INotificationsService = NOOP_NOTIFICATIONS_SERVICE
   ) {}
 
   public async getCalendarEvents(query: GetCalendarEventsQuery): Promise<Result<CalendarEventsDto>> {
@@ -621,6 +638,24 @@ export class ReservationsService implements IReservationsService {
         return Result.fail(auditResult.getError());
       }
 
+      if (command.targetAdminUserId !== undefined && command.targetAdminUserId !== null) {
+        const notifyAdminResult = await this.notificationsService.notifyNewProposition({
+          recipientUserId: command.targetAdminUserId,
+          propositionId: proposition.id,
+          rangeId,
+          rangeSlug,
+          eventDate: command.eventDate,
+          startTime: command.startTime,
+          endTime: command.endTime,
+          firingLineId: command.firingLineId,
+          trackNos: command.trackNos,
+          requesterUserId: user.id,
+        });
+        if (!notifyAdminResult.isSuccess) {
+          console.error('Failed to dispatch proposition notification', notifyAdminResult.getError());
+        }
+      }
+
       const dto: CreatedPropositionDto = {
         id: proposition.id,
         user_id: proposition.user_id,
@@ -930,6 +965,27 @@ export class ReservationsService implements IReservationsService {
 
       if (!auditResult.isSuccess) {
         return Result.fail(auditResult.getError());
+      }
+
+      const notifyMemberResult = await this.notificationsService.notifyPropositionConverted({
+        recipientUserId: proposition.user_id,
+        propositionId: proposition.id,
+        reservationId: reservation.id,
+        rangeId: rangeDetails.id,
+        rangeSlug: rangeDetails.slug,
+        eventDate: reservation.event_date,
+        startTime: reservation.start_time,
+        endTime: reservation.end_time,
+        firingLineId: reservation.firing_line_id,
+        trackNos: this.normalizeTrackNos(resolvedTrackNos),
+        approvedByAdminId: user.id,
+        adminMessage: command.adminMessage,
+      });
+      if (!notifyMemberResult.isSuccess) {
+        console.error(
+          'Failed to dispatch proposition conversion notification',
+          notifyMemberResult.getError()
+        );
       }
 
       const dto: CreatedReservationDto = {

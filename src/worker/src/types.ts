@@ -11,6 +11,9 @@ export type Env = {
   DB: D1Database;
   SESSIONS_KV: KVNamespace;
   AUTH_MODULE?: string;
+  NOTIFICATIONS_EMAIL_PROVIDER?: string;
+  NOTIFICATIONS_EMAIL_FROM?: string;
+  NOTIFICATIONS_RETENTION_DAYS?: string;
 };
 
 export type Variables = {

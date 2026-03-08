@@ -47,6 +47,11 @@ import {
 import { UserDbRepository, UserService } from '@strzel-sobie/users';
 import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/reservations';
 import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
+import {
+  ConsoleNotificationsEmailSender,
+  NotificationsDbRepository,
+  NotificationsService,
+} from '@strzel-sobie/notifications';
 import { authMiddleware } from './middleware/auth';
 import { resolveAuthModule } from './auth/module-registry';
 import { RANGE_TYPES, Result, type RangeType } from '@strzel-sobie/common';
@@ -134,6 +139,7 @@ app.use('*', async (c, next) => {
   const reservationsRepository = new ReservationsDbRepository(c.env.DB);
   const eventsRepository = new EventsDbRepository(c.env.DB);
   const auditRepository = new AuditDbRepository(c.env.DB);
+  const notificationsRepository = new NotificationsDbRepository(c.env.DB);
 
   // Services
   const auditService = new AuditService(auditRepository);
@@ -157,11 +163,25 @@ app.use('*', async (c, next) => {
     userService,
     auditService,
   });
+  const emailSender =
+    c.env.NOTIFICATIONS_EMAIL_PROVIDER === 'console' && c.env.NOTIFICATIONS_EMAIL_FROM
+      ? new ConsoleNotificationsEmailSender()
+      : undefined;
+  const retentionDays = c.env.NOTIFICATIONS_RETENTION_DAYS
+    ? Number.parseInt(c.env.NOTIFICATIONS_RETENTION_DAYS, 10)
+    : undefined;
+  const notificationsService = new NotificationsService(notificationsRepository, {
+    retentionDays,
+    emailFrom: c.env.NOTIFICATIONS_EMAIL_FROM,
+    emailSender,
+  });
+
   const reservationsService = new ReservationsService(
     rangesService,
     reservationsRepository,
     eventsService,
-    auditService
+    auditService,
+    notificationsService
   );
 
   c.set('authService', authService);

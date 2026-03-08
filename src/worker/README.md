@@ -8,6 +8,17 @@ As the composition root, the worker is responsible for assembling the applicatio
 
 This means the worker is the only place in the application where modules have direct knowledge of each other's concrete implementations. It "wires up" the different parts of the system.
 
+## Notifications wiring
+
+Worker composes `@strzel-sobie/notifications` and passes it to the reservations module.
+
+- In-app notifications are always persisted.
+- Email delivery is optional and enabled only when both are provided:
+  - `NOTIFICATIONS_EMAIL_PROVIDER=console`
+  - `NOTIFICATIONS_EMAIL_FROM=<sender@domain>`
+- Without email config, the system uses in-app notifications only.
+- Optional: `NOTIFICATIONS_RETENTION_DAYS` overrides default 28-day retention.
+
 ### Example:
 
 Following the example from the `common` module's documentation, the `worker` would be responsible for creating the `hasRole` function from the `users` module and providing it to the `reservations` module.

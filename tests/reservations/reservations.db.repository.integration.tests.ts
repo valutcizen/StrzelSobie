@@ -214,9 +214,30 @@ describe('ReservationsDbRepository integration', () => {
     });
   });
 
-  it.skip(
-    'legacy SQL overlap aggregation moved to service-level range+date conflict resolution (phase 3)'
-  );
+  it('getPropositions returns only open propositions in selected range/date window', async () => {
+    const openProposition = await insertProposition({
+      event_date: '2024-03-12',
+      status: 'open',
+    });
+    await insertProposition({
+      event_date: '2024-03-12',
+      status: 'converted',
+    });
+    await insertProposition({
+      event_date: '2024-03-12',
+      status: 'cancelled',
+    });
+
+    const propositions = await repository.getPropositions(1, '2024-03-01', '2024-03-31');
+
+    expect(propositions).toHaveLength(1);
+    expect(propositions[0]).toMatchObject({
+      id: openProposition.id,
+      status: 'open',
+      range_id: 1,
+      event_date: '2024-03-12',
+    });
+  });
 
   it('createProposition inserts and returns new entity', async () => {
     const proposition = await repository.createProposition({
