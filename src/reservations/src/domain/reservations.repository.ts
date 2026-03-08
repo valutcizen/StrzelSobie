@@ -86,6 +86,17 @@ export type CreateReservationRecord = {
   metadata_json: string;
 };
 
+export type AdminMessageTemplate = {
+  id: number;
+  range_id: number;
+  created_by_admin_id: number;
+  name: string;
+  content: string;
+  is_active: number;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export interface IReservationsRepository {
   getPropositions(rangeId: number, startDate: string, endDate: string): Promise<Proposition[]>;
   getReservations(rangeId: number, startDate: string, endDate: string): Promise<Reservation[]>;
@@ -102,4 +113,16 @@ export interface IReservationsRepository {
   getReservationDetailById(id: number): Promise<ReservationDetail | null>;
   deleteReservation(id: number): Promise<Reservation | null>;
   reopenProposition(id: number): Promise<Proposition | null>;
+  listAdminMessageTemplates?(rangeId: number, includeInactive?: boolean): Promise<AdminMessageTemplate[]>;
+  createAdminMessageTemplate?(record: {
+    range_id: number;
+    created_by_admin_id: number;
+    name: string;
+    content: string;
+  }): Promise<AdminMessageTemplate>;
+  updateAdminMessageTemplate?(
+    id: number,
+    changes: { name?: string; content?: string; is_active?: number }
+  ): Promise<AdminMessageTemplate | null>;
+  getAdminMessageTemplateById?(id: number): Promise<AdminMessageTemplate | null>;
 }

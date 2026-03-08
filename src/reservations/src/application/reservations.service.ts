@@ -11,6 +11,7 @@ import {
   CalendarEventsDto,
   CancelPropositionCommand,
   CancelReservationCommand,
+  CreateMessageTemplateCommand,
   CreatePropositionCommand,
   CreateRecordCommand,
   CreateRecordResult,
@@ -22,6 +23,7 @@ import {
   CreatedRecordDto,
   CreatedReservationDto,
   GetCalendarEventsQuery,
+  MessageTemplateDto,
   ForbiddenError,
   InvalidPropositionTimeError,
   InvalidTargetAdminError,
@@ -50,12 +52,14 @@ import {
   OperatingHours,
   EventSummaryDto,
   UserDto,
+  UpdateMessageTemplateCommand,
 } from '@strzel-sobie/common';
 import {
   CreatePropositionRecord,
   CreateRecordData,
   CreateReservationRecord,
   IReservationsRepository,
+  AdminMessageTemplate,
   Proposition,
   PropositionDetail,
   RecordEntity,
@@ -402,6 +406,100 @@ export class ReservationsService implements IReservationsService {
     };
 
     return Result.ok(dto);
+  }
+
+  public async listMessageTemplates(
+    rangeSlug: string,
+    includeInactive: boolean,
+    user: UserDto
+  ): Promise<Result<MessageTemplateDto[]>> {
+    const rangeDetailsResult = await this.rangesService.getRangeDetails(rangeSlug, user);
+    if (!rangeDetailsResult.isSuccess) {
+      return Result.fail(rangeDetailsResult.getError());
+    }
+    const rangeDetails = rangeDetailsResult.getValue();
+    if (!this.canUserManageTemplates(user, rangeDetails.id)) {
+      return Result.fail(new ForbiddenError('User is not allowed to list message templates'));
+    }
+    if (!this.reservationsRepository.listAdminMessageTemplates) {
+      return Result.ok([]);
+    }
+
+    try {
+      const templates = await this.reservationsRepository.listAdminMessageTemplates(
+        rangeDetails.id,
+        includeInactive
+      );
+      return Result.ok(templates.map((template) => this.mapMessageTemplate(template)));
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async createMessageTemplate(
+    rangeSlug: string,
+    command: CreateMessageTemplateCommand,
+    user: UserDto
+  ): Promise<Result<MessageTemplateDto>> {
+    const rangeDetailsResult = await this.rangesService.getRangeDetails(rangeSlug, user);
+    if (!rangeDetailsResult.isSuccess) {
+      return Result.fail(rangeDetailsResult.getError());
+    }
+    const rangeDetails = rangeDetailsResult.getValue();
+    if (!this.canUserManageTemplates(user, rangeDetails.id)) {
+      return Result.fail(new ForbiddenError('User is not allowed to create message templates'));
+    }
+    if (!this.reservationsRepository.createAdminMessageTemplate) {
+      return Result.fail(new Error('Message templates repository is not configured'));
+    }
+    if (!command.name.trim() || !command.content.trim()) {
+      return Result.fail(new InvalidReservationTimeError('Template name and content are required'));
+    }
+
+    try {
+      const template = await this.reservationsRepository.createAdminMessageTemplate({
+        range_id: rangeDetails.id,
+        created_by_admin_id: user.id,
+        name: command.name.trim(),
+        content: command.content,
+      });
+      return Result.ok(this.mapMessageTemplate(template));
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async updateMessageTemplate(
+    templateId: number,
+    command: UpdateMessageTemplateCommand,
+    user: UserDto
+  ): Promise<Result<MessageTemplateDto>> {
+    if (
+      !this.reservationsRepository.getAdminMessageTemplateById ||
+      !this.reservationsRepository.updateAdminMessageTemplate
+    ) {
+      return Result.fail(new Error('Message templates repository is not configured'));
+    }
+
+    const current = await this.reservationsRepository.getAdminMessageTemplateById(templateId);
+    if (!current) {
+      return Result.fail(new PropositionNotFoundError('Message template not found'));
+    }
+    if (!this.canUserManageTemplates(user, current.range_id)) {
+      return Result.fail(new ForbiddenError('User is not allowed to update message templates'));
+    }
+
+    const updated = await this.reservationsRepository.updateAdminMessageTemplate(templateId, {
+      name: command.name?.trim(),
+      content: command.content,
+      is_active:
+        typeof command.isActive === 'boolean' ? (command.isActive ? 1 : 0) : undefined,
+    });
+    if (!updated) {
+      return Result.fail(new PropositionNotFoundError('Message template not found'));
+    }
+
+    return Result.ok(this.mapMessageTemplate(updated));
   }
 
   public async createProposition(
@@ -1186,6 +1284,16 @@ export class ReservationsService implements IReservationsService {
     return rangeRoleNames.has(UserRole.ShootingRangeAdministrator);
   }
 
+  private canUserManageTemplates(user: UserDto, rangeId: number): boolean {
+    const globalRoleNames = new Set(user.roles.map((role) => role.name));
+    if (globalRoleNames.has(UserRole.ClubCommunityAdministrator)) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    return rangeRoles.some((role) => role.name === UserRole.ShootingRangeAdministrator);
+  }
+
   private isReservationConversion(
     command: CreateReservationPayload
   ): command is CreateReservationFromPropositionCommand {
@@ -1501,6 +1609,19 @@ export class ReservationsService implements IReservationsService {
     } catch {
       return { trackNos: [] };
     }
+  }
+
+  private mapMessageTemplate(template: AdminMessageTemplate): MessageTemplateDto {
+    return {
+      id: template.id,
+      rangeId: template.range_id,
+      createdByAdminId: template.created_by_admin_id,
+      name: template.name,
+      content: template.content,
+      isActive: template.is_active === 1,
+      createdAt: template.created_at,
+      updatedAt: template.updated_at,
+    };
   }
 
   private normalizeTrackNos(trackNos: number[]): number[] {

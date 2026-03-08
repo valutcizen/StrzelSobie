@@ -204,3 +204,25 @@ export type ReservationDetailDto = {
   approvedByAdmin: PersonSummaryDto | null;
   notes?: string | null;
 };
+
+export type MessageTemplateDto = {
+  id: number;
+  rangeId: number;
+  createdByAdminId: number;
+  name: string;
+  content: string;
+  isActive: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type CreateMessageTemplateCommand = {
+  name: string;
+  content: string;
+};
+
+export type UpdateMessageTemplateCommand = {
+  name?: string;
+  content?: string;
+  isActive?: boolean;
+};

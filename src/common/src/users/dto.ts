@@ -42,3 +42,35 @@ export type DeleteUserCommand = {
 };
 
 export type GetUsersOptions = PaginatedQueryOptions<'id' | 'email' | 'createdAt'>;
+
+export type AdminContactProfileDto = {
+  userId: number;
+  email: string | null;
+  phoneNumber: string | null;
+  displayName: string | null;
+  isHiddenGlobally: boolean;
+};
+
+export type AdminContactProfileOverrideDto = {
+  userId: number;
+  rangeId: number;
+  email: string | null;
+  phoneNumber: string | null;
+  displayName: string | null;
+  isHiddenInRange: boolean;
+};
+
+export type UpsertAdminContactProfileCommand = {
+  email?: string | null;
+  phoneNumber?: string | null;
+  displayName?: string | null;
+  isHiddenGlobally?: boolean;
+};
+
+export type UpsertAdminContactProfileOverrideCommand = {
+  rangeId: number;
+  email?: string | null;
+  phoneNumber?: string | null;
+  displayName?: string | null;
+  isHiddenInRange?: boolean;
+};

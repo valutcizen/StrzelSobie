@@ -1,4 +1,6 @@
 import {
+  AdminContactProfileDto,
+  AdminContactProfileOverrideDto,
   IUserService,
   UserNotFoundError,
   User,
@@ -9,8 +11,19 @@ import {
   RoleScopeError,
   RangeNotFoundError,
   IAuditService,
+  UserRole,
 } from '@strzel-sobie/common/models';
-import { Result, GetUsersOptions, MeDto, UserDto, UserIdentifierDto, PaginatedUsersDto, DeleteUserCommand } from '@strzel-sobie/common';
+import {
+  DeleteUserCommand,
+  GetUsersOptions,
+  MeDto,
+  PaginatedUsersDto,
+  Result,
+  UpsertAdminContactProfileCommand,
+  UpsertAdminContactProfileOverrideCommand,
+  UserDto,
+  UserIdentifierDto,
+} from '@strzel-sobie/common';
 import { IUserRepository } from '../domain/user.repository';
 
 export class UserService implements IUserService {
@@ -311,5 +324,127 @@ export class UserService implements IUserService {
     } catch (error) {
       return Result.fail(error as Error);
     }
+  }
+
+  public async getVisibleRangeAdminContacts(
+    rangeId: number,
+    viewer: UserDto
+  ): Promise<Result<Array<{ userId: number; email: string | null; phoneNumber: string | null; displayName: string | null }>>> {
+    const canView = this.hasMemberOrHigher(viewer, rangeId);
+    if (!canView) {
+      return Result.fail(new ForbiddenError('User is not allowed to view administrator contacts'));
+    }
+
+    if (!this.userRepository.getVisibleRangeAdminContacts) {
+      return Result.ok([]);
+    }
+
+    try {
+      const contacts = await this.userRepository.getVisibleRangeAdminContacts(rangeId);
+      return Result.ok(contacts);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async upsertAdminContactProfile(
+    targetUserId: number,
+    command: UpsertAdminContactProfileCommand,
+    requester: UserDto
+  ): Promise<Result<AdminContactProfileDto>> {
+    const canManage = this.canManageOwnOrAdminProfile(targetUserId, requester);
+    if (!canManage) {
+      return Result.fail(new ForbiddenError('User is not allowed to manage this admin contact profile'));
+    }
+    if (!this.userRepository.upsertAdminContactProfile || !this.userRepository.getAdminContactProfile) {
+      return Result.fail(new Error('Admin contact profiles repository is not configured'));
+    }
+
+    try {
+      const current = await this.userRepository.getAdminContactProfile(targetUserId);
+      const updated = await this.userRepository.upsertAdminContactProfile({
+        userId: targetUserId,
+        email: command.email !== undefined ? command.email : current?.email ?? null,
+        phoneNumber:
+          command.phoneNumber !== undefined ? command.phoneNumber : current?.phoneNumber ?? null,
+        displayName:
+          command.displayName !== undefined ? command.displayName : current?.displayName ?? null,
+        isHiddenGlobally:
+          command.isHiddenGlobally !== undefined
+            ? command.isHiddenGlobally
+            : current?.isHiddenGlobally ?? false,
+      });
+      return Result.ok(updated);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  public async upsertAdminContactProfileOverride(
+    targetUserId: number,
+    command: UpsertAdminContactProfileOverrideCommand,
+    requester: UserDto
+  ): Promise<Result<AdminContactProfileOverrideDto>> {
+    const canManage = this.canManageOwnOrAdminProfile(targetUserId, requester);
+    if (!canManage) {
+      return Result.fail(new ForbiddenError('User is not allowed to manage this admin contact override'));
+    }
+    if (
+      !this.userRepository.upsertAdminContactProfileOverride ||
+      !this.userRepository.getAdminContactProfileOverride
+    ) {
+      return Result.fail(new Error('Admin contact overrides repository is not configured'));
+    }
+
+    try {
+      const current = await this.userRepository.getAdminContactProfileOverride(
+        targetUserId,
+        command.rangeId
+      );
+      const updated = await this.userRepository.upsertAdminContactProfileOverride({
+        userId: targetUserId,
+        rangeId: command.rangeId,
+        email: command.email !== undefined ? command.email : current?.email ?? null,
+        phoneNumber:
+          command.phoneNumber !== undefined ? command.phoneNumber : current?.phoneNumber ?? null,
+        displayName:
+          command.displayName !== undefined ? command.displayName : current?.displayName ?? null,
+        isHiddenInRange:
+          command.isHiddenInRange !== undefined
+            ? command.isHiddenInRange
+            : current?.isHiddenInRange ?? false,
+      });
+      return Result.ok(updated);
+    } catch (error) {
+      return Result.fail(error as Error);
+    }
+  }
+
+  private hasMemberOrHigher(user: UserDto, rangeId: number): boolean {
+    const globalRoles = new Set(user.roles.map((role) => role.name));
+    if (
+      globalRoles.has(UserRole.Member) ||
+      globalRoles.has(UserRole.Coordinator) ||
+      globalRoles.has(UserRole.Confirmator) ||
+      globalRoles.has(UserRole.ClubCommunityAdministrator)
+    ) {
+      return true;
+    }
+
+    const rangeRoles = user.rangeRoles[String(rangeId)] ?? [];
+    return rangeRoles.some((role) =>
+      [UserRole.Member, UserRole.Coordinator, UserRole.ShootingRangeAdministrator].includes(
+        role.name as UserRole
+      )
+    );
+  }
+
+  private canManageOwnOrAdminProfile(targetUserId: number, requester: UserDto): boolean {
+    if (targetUserId === requester.id) {
+      return true;
+    }
+
+    const globalRoles = new Set(requester.roles.map((role) => role.name));
+    return globalRoles.has(UserRole.ClubCommunityAdministrator);
   }
 }

@@ -148,6 +148,28 @@ describe('RangesService contract', () => {
     });
   });
 
+  it('includes administrator contacts for member viewer when resolver is configured', async () => {
+    const rawRange = buildRange();
+    asMock(rangesRepository.findBySlug).mockResolvedValue(rawRange);
+    const resolver = vi
+      .fn()
+      .mockResolvedValue(
+        Result.ok([{ userId: 11, email: 'admin@example.com', phoneNumber: null, displayName: 'Admin' }])
+      );
+    const member = buildUser({
+      roles: [{ id: 1, name: UserRole.Member, scope: 'global' }],
+    });
+    service = new RangesService(rangesRepository, auditService, resolver);
+
+    const result = await service.getRangeDetails(rawRange.slug, member);
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.getValue().administratorContacts).toEqual([
+      { userId: 11, email: 'admin@example.com', phoneNumber: null, displayName: 'Admin' },
+    ]);
+    expect(resolver).toHaveBeenCalledWith(rawRange.id, member);
+  });
+
   it('maps parking location from extras JSON', async () => {
     const rawRange = buildRange({
       extras: JSON.stringify({ parkingLocation: { latitude: 50.1234, longitude: 19.9876 } }),

@@ -44,7 +44,7 @@ import { ReservationsDbRepository, ReservationsService } from '@strzel-sobie/res
 import { AuditDbRepository, AuditService } from '@strzel-sobie/audit';
 import { authMiddleware } from './middleware/auth';
 import { resolveAuthModule } from './auth/module-registry';
-import { RANGE_TYPES, type RangeType } from '@strzel-sobie/common';
+import { RANGE_TYPES, Result, type RangeType } from '@strzel-sobie/common';
 
 const EMBED_MAP_ALLOWED_TYPES: RangeType[] = [...RANGE_TYPES];
 const EMBED_MAP_CACHE_VERSION = '5';
@@ -132,8 +132,18 @@ app.use('*', async (c, next) => {
 
   // Services
   const auditService = new AuditService(auditRepository);
-  const rangesService = new RangesService(rangesRepository, auditService);
-  const userService = new UserService(userRepository, rangesService, auditService);
+  let userService: UserService;
+  const rangesService = new RangesService(
+    rangesRepository,
+    auditService,
+    async (rangeId, viewer) => {
+      if (!userService) {
+        return Result.ok([]);
+      }
+      return userService.getVisibleRangeAdminContacts(rangeId, viewer);
+    }
+  );
+  userService = new UserService(userRepository, rangesService, auditService);
   const eventsService = new EventsService(rangesService, eventsRepository, auditService);
   const authModule = resolveAuthModule(c.env.AUTH_MODULE);
   const authService = authModule.createAuthService({

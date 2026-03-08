@@ -1,6 +1,12 @@
 import { IUserRepository } from '../domain/user.repository';
 import { IDatabase, User, Role } from '@strzel-sobie/common/models';
-import { MeDto, UserIdentifierDto, GetUsersOptions } from '@strzel-sobie/common';
+import {
+  AdminContactProfileDto,
+  AdminContactProfileOverrideDto,
+  GetUsersOptions,
+  MeDto,
+  UserIdentifierDto,
+} from '@strzel-sobie/common';
 
 export class UserDbRepository implements IUserRepository {
   constructor(private readonly db: IDatabase) {}
@@ -170,5 +176,205 @@ export class UserDbRepository implements IUserRepository {
 
     await deleteGlobalRolesStmt.bind(userId).run();
     await deleteRangeRolesStmt.bind(userId).run();
+  }
+
+  async getAdminContactProfile(userId: number): Promise<AdminContactProfileDto | null> {
+    const stmt = this.db.prepare(
+      `SELECT user_id, email, phone_number, display_name, is_hidden_globally
+       FROM users_admin_contact_profiles
+       WHERE user_id = ?`
+    );
+    const row = await stmt.bind(userId).first<{
+      user_id: number;
+      email: string | null;
+      phone_number: string | null;
+      display_name: string | null;
+      is_hidden_globally: number;
+    }>();
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      userId: row.user_id,
+      email: row.email ?? null,
+      phoneNumber: row.phone_number ?? null,
+      displayName: row.display_name ?? null,
+      isHiddenGlobally: row.is_hidden_globally === 1,
+    };
+  }
+
+  async upsertAdminContactProfile(profile: {
+    userId: number;
+    email: string | null;
+    phoneNumber: string | null;
+    displayName: string | null;
+    isHiddenGlobally: boolean;
+  }): Promise<AdminContactProfileDto> {
+    const stmt = this.db.prepare(
+      `INSERT INTO users_admin_contact_profiles
+        (user_id, email, phone_number, display_name, is_hidden_globally)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         email = excluded.email,
+         phone_number = excluded.phone_number,
+         display_name = excluded.display_name,
+         is_hidden_globally = excluded.is_hidden_globally,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING user_id, email, phone_number, display_name, is_hidden_globally`
+    );
+
+    const row = await stmt
+      .bind(
+        profile.userId,
+        profile.email,
+        profile.phoneNumber,
+        profile.displayName,
+        profile.isHiddenGlobally ? 1 : 0
+      )
+      .first<{
+        user_id: number;
+        email: string | null;
+        phone_number: string | null;
+        display_name: string | null;
+        is_hidden_globally: number;
+      }>();
+    if (!row) {
+      throw new Error('Failed to upsert admin contact profile');
+    }
+
+    return {
+      userId: row.user_id,
+      email: row.email ?? null,
+      phoneNumber: row.phone_number ?? null,
+      displayName: row.display_name ?? null,
+      isHiddenGlobally: row.is_hidden_globally === 1,
+    };
+  }
+
+  async getAdminContactProfileOverride(
+    userId: number,
+    rangeId: number
+  ): Promise<AdminContactProfileOverrideDto | null> {
+    const stmt = this.db.prepare(
+      `SELECT user_id, range_id, email, phone_number, display_name, is_hidden_in_range
+       FROM users_admin_contact_profile_overrides
+       WHERE user_id = ? AND range_id = ?`
+    );
+    const row = await stmt.bind(userId, rangeId).first<{
+      user_id: number;
+      range_id: number;
+      email: string | null;
+      phone_number: string | null;
+      display_name: string | null;
+      is_hidden_in_range: number;
+    }>();
+    if (!row) {
+      return null;
+    }
+
+    return {
+      userId: row.user_id,
+      rangeId: row.range_id,
+      email: row.email ?? null,
+      phoneNumber: row.phone_number ?? null,
+      displayName: row.display_name ?? null,
+      isHiddenInRange: row.is_hidden_in_range === 1,
+    };
+  }
+
+  async upsertAdminContactProfileOverride(override: {
+    userId: number;
+    rangeId: number;
+    email: string | null;
+    phoneNumber: string | null;
+    displayName: string | null;
+    isHiddenInRange: boolean;
+  }): Promise<AdminContactProfileOverrideDto> {
+    const stmt = this.db.prepare(
+      `INSERT INTO users_admin_contact_profile_overrides
+        (user_id, range_id, email, phone_number, display_name, is_hidden_in_range)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, range_id) DO UPDATE SET
+         email = excluded.email,
+         phone_number = excluded.phone_number,
+         display_name = excluded.display_name,
+         is_hidden_in_range = excluded.is_hidden_in_range,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING user_id, range_id, email, phone_number, display_name, is_hidden_in_range`
+    );
+
+    const row = await stmt
+      .bind(
+        override.userId,
+        override.rangeId,
+        override.email,
+        override.phoneNumber,
+        override.displayName,
+        override.isHiddenInRange ? 1 : 0
+      )
+      .first<{
+        user_id: number;
+        range_id: number;
+        email: string | null;
+        phone_number: string | null;
+        display_name: string | null;
+        is_hidden_in_range: number;
+      }>();
+    if (!row) {
+      throw new Error('Failed to upsert admin contact profile override');
+    }
+
+    return {
+      userId: row.user_id,
+      rangeId: row.range_id,
+      email: row.email ?? null,
+      phoneNumber: row.phone_number ?? null,
+      displayName: row.display_name ?? null,
+      isHiddenInRange: row.is_hidden_in_range === 1,
+    };
+  }
+
+  async getVisibleRangeAdminContacts(rangeId: number): Promise<Array<{
+    userId: number;
+    email: string | null;
+    phoneNumber: string | null;
+    displayName: string | null;
+  }>> {
+    const stmt = this.db.prepare(
+      `SELECT
+         u.id AS user_id,
+         COALESCE(o.email, p.email, u.email) AS email,
+         COALESCE(o.phone_number, p.phone_number, u.phone_number) AS phone_number,
+         COALESCE(o.display_name, p.display_name, NULL) AS display_name
+       FROM users_user_range_roles urr
+       JOIN users_roles r ON r.id = urr.role_id
+       JOIN users_users u ON u.id = urr.user_id
+       LEFT JOIN users_admin_contact_profiles p ON p.user_id = u.id
+       LEFT JOIN users_admin_contact_profile_overrides o
+         ON o.user_id = u.id AND o.range_id = urr.range_id
+       WHERE urr.range_id = ?
+         AND u.is_deleted = 0
+         AND r.name = 'Shooting Range Administrator'
+         AND COALESCE(p.is_hidden_globally, 0) = 0
+         AND COALESCE(o.is_hidden_in_range, 0) = 0
+       GROUP BY u.id
+       ORDER BY COALESCE(o.display_name, p.display_name, u.email) ASC`
+    );
+
+    const { results } = await stmt.bind(rangeId).all<{
+      user_id: number;
+      email: string | null;
+      phone_number: string | null;
+      display_name: string | null;
+    }>();
+
+    return (results ?? []).map((row) => ({
+      userId: row.user_id,
+      email: row.email ?? null,
+      phoneNumber: row.phone_number ?? null,
+      displayName: row.display_name ?? null,
+    }));
   }
 }

@@ -29,7 +29,14 @@ const DEFAULT_RANGE_COORDINATES = {
 const DEFAULT_TOTAL_TRACKS = 1;
 
 export class RangesService implements IRangesService {
-  constructor(private readonly rangesRepository: IRangesRepository, private readonly auditService: IAuditService) {}
+  constructor(
+    private readonly rangesRepository: IRangesRepository,
+    private readonly auditService: IAuditService,
+    private readonly resolveAdministratorContacts?: (
+      rangeId: number,
+      viewer: UserDto
+    ) => Promise<Result<Array<{ userId: number; email: string | null; phoneNumber: string | null; displayName: string | null }>>>
+  ) {}
 
   public async getRanges(options?: { types?: Array<ShootingRange['type']> }): Promise<Result<RangeListResponseDto>> {
 
@@ -109,7 +116,8 @@ export class RangesService implements IRangesService {
 
     try {
       const firingLines = await this.getRangeFiringLines(range.id);
-      const dto = this.buildRangeDetailsDto(range, firingLines, user);
+      const administratorContacts = await this.getAdministratorContacts(range.id, user);
+      const dto = this.buildRangeDetailsDto(range, firingLines, administratorContacts, user);
 
       return Result.ok(dto);
     } catch (error) {
@@ -297,7 +305,7 @@ export class RangesService implements IRangesService {
     }
 
     const updatedFiringLines = await this.getRangeFiringLines(range.id);
-    const dto = this.buildRangeDetailsDto(range, updatedFiringLines, user);
+    const dto = this.buildRangeDetailsDto(range, updatedFiringLines, [], user);
     return Result.ok(dto);
   }
 
@@ -361,7 +369,7 @@ export class RangesService implements IRangesService {
     }
 
     const createdFiringLines = await this.getRangeFiringLines(created.id);
-    const dto = this.buildRangeDetailsDto(created, createdFiringLines, user);
+    const dto = this.buildRangeDetailsDto(created, createdFiringLines, [], user);
     return Result.ok(dto);
   }
 
@@ -431,6 +439,12 @@ export class RangesService implements IRangesService {
       lengthMeters: number | null;
       sortOrder: number;
     }>,
+    administratorContacts: Array<{
+      userId: number;
+      email: string | null;
+      phoneNumber: string | null;
+      displayName: string | null;
+    }>,
     user: UserDto | null = null
   ): RangeDetailsDto {
     const operatingHours = this.parseOperatingHours(range.operatingHours);
@@ -459,7 +473,7 @@ export class RangesService implements IRangesService {
         lengthMeters: line.lengthMeters,
         sortOrder: line.sortOrder,
       })),
-      administratorContacts: [],
+      administratorContacts,
     };
 
     return dto;
@@ -501,6 +515,32 @@ export class RangesService implements IRangesService {
     }
 
     return repositoryWithLines.findFiringLinesByRangeId(rangeId);
+  }
+
+  private async getAdministratorContacts(
+    rangeId: number,
+    user: UserDto | null
+  ): Promise<Array<{ userId: number; email: string | null; phoneNumber: string | null; displayName: string | null }>> {
+    if (!user || !this.resolveAdministratorContacts) {
+      return [];
+    }
+
+    const userRoleNames = new Set(user.roles.map((role) => role.name));
+    const rangeRoleNames = new Set((user.rangeRoles[String(rangeId)] ?? []).map((role) => role.name));
+    const isMemberOrHigher =
+      userRoleNames.has(UserRole.Member) ||
+      userRoleNames.has(UserRole.Coordinator) ||
+      userRoleNames.has(UserRole.Confirmator) ||
+      userRoleNames.has(UserRole.ClubCommunityAdministrator) ||
+      rangeRoleNames.has(UserRole.Member) ||
+      rangeRoleNames.has(UserRole.Coordinator) ||
+      rangeRoleNames.has(UserRole.ShootingRangeAdministrator);
+    if (!isMemberOrHigher) {
+      return [];
+    }
+
+    const result = await this.resolveAdministratorContacts(rangeId, user);
+    return result.isSuccess ? result.getValue() : [];
   }
 
   private parseExtras(raw: unknown): RangeExtras {

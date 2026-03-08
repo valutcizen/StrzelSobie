@@ -4,6 +4,7 @@ import {
   CreateRecordData,
   CreateReservationRecord,
   IReservationsRepository,
+  AdminMessageTemplate,
   Proposition,
   PropositionDetail,
   RecordEntity,
@@ -59,6 +60,17 @@ type RecordDb = {
   created_at: string;
 };
 
+type AdminMessageTemplateDb = {
+  id: number;
+  range_id: number;
+  created_by_admin_id: number;
+  name: string;
+  content: string;
+  is_active: number;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 const mapDbProposition = (dbProposition: PropositionDb): Proposition => ({
   id: dbProposition.id,
   user_id: dbProposition.user_id,
@@ -107,6 +119,19 @@ const mapDbRecord = (dbRecord: RecordDb): RecordEntity => ({
   end_time: dbRecord.end_time,
   num_participants: dbRecord.num_participants,
   created_at: dbRecord.created_at,
+});
+
+const mapDbAdminMessageTemplate = (
+  dbTemplate: AdminMessageTemplateDb
+): AdminMessageTemplate => ({
+  id: dbTemplate.id,
+  range_id: dbTemplate.range_id,
+  created_by_admin_id: dbTemplate.created_by_admin_id,
+  name: dbTemplate.name,
+  content: dbTemplate.content,
+  is_active: dbTemplate.is_active,
+  created_at: dbTemplate.created_at ?? null,
+  updated_at: dbTemplate.updated_at ?? null,
 });
 
 export class ReservationsDbRepository implements IReservationsRepository {
@@ -490,6 +515,83 @@ export class ReservationsDbRepository implements IReservationsRepository {
     }
 
     return mapDbRecord(record);
+  }
+
+  public async listAdminMessageTemplates(
+    rangeId: number,
+    includeInactive = false
+  ): Promise<AdminMessageTemplate[]> {
+    const stmt = this.db.prepare(
+      `SELECT id, range_id, created_by_admin_id, name, content, is_active, created_at, updated_at
+       FROM reservations_admin_message_templates
+       WHERE range_id = ?
+         ${includeInactive ? '' : 'AND is_active = 1'}
+       ORDER BY updated_at DESC, id DESC`
+    );
+    const { results } = await stmt.bind(rangeId).all<AdminMessageTemplateDb>();
+    return (results ?? []).map(mapDbAdminMessageTemplate);
+  }
+
+  public async createAdminMessageTemplate(record: {
+    range_id: number;
+    created_by_admin_id: number;
+    name: string;
+    content: string;
+  }): Promise<AdminMessageTemplate> {
+    const stmt = this.db.prepare(
+      `INSERT INTO reservations_admin_message_templates
+        (range_id, created_by_admin_id, name, content, is_active)
+       VALUES (?, ?, ?, ?, 1)
+       RETURNING id, range_id, created_by_admin_id, name, content, is_active, created_at, updated_at`
+    );
+    const row = await stmt
+      .bind(record.range_id, record.created_by_admin_id, record.name, record.content)
+      .first<AdminMessageTemplateDb>();
+    if (!row) {
+      throw new Error('Failed to create admin message template');
+    }
+    return mapDbAdminMessageTemplate(row);
+  }
+
+  public async updateAdminMessageTemplate(
+    id: number,
+    changes: { name?: string; content?: string; is_active?: number }
+  ): Promise<AdminMessageTemplate | null> {
+    const current = await this.getAdminMessageTemplateById(id);
+    if (!current) {
+      return null;
+    }
+
+    const stmt = this.db.prepare(
+      `UPDATE reservations_admin_message_templates
+       SET
+         name = ?,
+         content = ?,
+         is_active = ?,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?
+       RETURNING id, range_id, created_by_admin_id, name, content, is_active, created_at, updated_at`
+    );
+    const row = await stmt
+      .bind(
+        changes.name ?? current.name,
+        changes.content ?? current.content,
+        changes.is_active ?? current.is_active,
+        id
+      )
+      .first<AdminMessageTemplateDb>();
+
+    return row ? mapDbAdminMessageTemplate(row) : null;
+  }
+
+  public async getAdminMessageTemplateById(id: number): Promise<AdminMessageTemplate | null> {
+    const stmt = this.db.prepare(
+      `SELECT id, range_id, created_by_admin_id, name, content, is_active, created_at, updated_at
+       FROM reservations_admin_message_templates
+       WHERE id = ?`
+    );
+    const row = await stmt.bind(id).first<AdminMessageTemplateDb>();
+    return row ? mapDbAdminMessageTemplate(row) : null;
   }
 
   private async insertReservation(record: CreateReservationRecord): Promise<Reservation> {

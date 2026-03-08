@@ -79,6 +79,11 @@ const createTestContext = () => {
     getByEmail: vi.fn<IUserRepository['getByEmail']>(),
     add: vi.fn<IUserRepository['add']>(),
     update: vi.fn<IUserRepository['update']>(),
+    getAdminContactProfile: vi.fn(),
+    upsertAdminContactProfile: vi.fn(),
+    getAdminContactProfileOverride: vi.fn(),
+    upsertAdminContactProfileOverride: vi.fn(),
+    getVisibleRangeAdminContacts: vi.fn(),
   };
 
   const rangesService: MockedRangesService = {
@@ -257,6 +262,35 @@ describe('UserService contract', () => {
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBe(failure);
+    });
+  });
+
+  describe('admin contacts', () => {
+    it('returns visible contacts for member viewer', async () => {
+      const { service, userRepository } = createTestContext();
+      const viewer = makeUserDto({
+        roles: [makeRole({ name: 'Member', scope: 'global' })],
+      });
+      (userRepository.getVisibleRangeAdminContacts as unknown as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { userId: 10, email: 'admin@example.com', phoneNumber: null, displayName: 'Admin' },
+      ]);
+
+      const result = await service.getVisibleRangeAdminContacts(1, viewer);
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toEqual([
+        { userId: 10, email: 'admin@example.com', phoneNumber: null, displayName: 'Admin' },
+      ]);
+    });
+
+    it('rejects guest viewer when requesting visible contacts', async () => {
+      const { service } = createTestContext();
+      const viewer = makeUserDto();
+
+      const result = await service.getVisibleRangeAdminContacts(1, viewer);
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ForbiddenError);
     });
   });
 
