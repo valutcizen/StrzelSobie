@@ -1,64 +1,47 @@
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
-import {
-  Result,
   CancelReservationCommand,
   CreatePropositionCommand,
   CreateRecordCommand,
   CreateReservationCommand,
-  IReservationsService,
-  IRangesService,
-  IUserService,
-  IAuditService,
-  User,
-  Role,
-  Proposition,
-  Reservation,
-  Record,
-  UserRole,
-  InvalidPropositionTimeError,
-  UnauthorizedPropositionError,
-  RangeDetailsDto,
-  UserDto,
-  UserProfile,
-  InvalidReservationTimeError,
-  ReservationCreationError,
-  ForbiddenError,
-  ReservationNotFoundError,
-  ReservationCancellationError,
-  RecordCreationError,
-  PropositionConflictError,
-  PropositionNotFoundError,
-  PropositionAlreadyClosedError,
-  ReservationConflictError,
-  InvalidRecordTimeError,
-  RangeClosedError,
-  RangeBookingNotAllowedError,
+  CreateReservationFromPropositionCommand,
+  CreatedReservationDto,
   EventAudience,
   EventCapacityType,
   EventRegistrationType,
   EventStatus,
+  ForbiddenError,
+  InvalidPropositionTimeError,
+  InvalidReservationTimeError,
+  InvalidTargetAdminError,
+  MemberRoleRequiredError,
+  Proposition,
+  PropositionAlreadyClosedError,
+  PropositionConflictError,
+  PropositionDeclarationRequiredError,
+  PropositionNotFoundError,
+  RangeAdminRoleRequiredError,
+  RangeDetailsDto,
+  Reservation,
+  ReservationCancellationError,
+  ReservationConflictError,
+  ReservationNotFoundError,
+  Result,
+  Role,
+  UserDto,
+  UserProfile,
+  UserRole,
 } from '@strzel-sobie/common/models';
 import { ReservationsService } from '../../src/reservations/src/application/reservations.service';
 import type {
+  AdminMessageTemplate,
   IReservationsRepository,
-  OverlappingUsage,
-  Proposition,
   PropositionDetail,
   RecordEntity,
-  Reservation,
   ReservationDetail,
-  ReservationConflict,
 } from '../../src/reservations/src/domain/reservations.repository';
 
-type TestContext = {
+type Ctx = {
   service: ReservationsService;
   rangesService: {
     getRangeDetails: ReturnType<typeof vi.fn>;
@@ -66,8 +49,7 @@ type TestContext = {
   reservationsRepository: {
     getPropositions: ReturnType<typeof vi.fn>;
     getReservations: ReturnType<typeof vi.fn>;
-    getOverlappingUsage: ReturnType<typeof vi.fn>;
-    getOverlappingReservationsDetails: ReturnType<typeof vi.fn>;
+    getRecords: ReturnType<typeof vi.fn>;
     createProposition: ReturnType<typeof vi.fn>;
     createReservation: ReturnType<typeof vi.fn>;
     createReservationFromProposition: ReturnType<typeof vi.fn>;
@@ -80,6 +62,10 @@ type TestContext = {
     getReservationDetailById: ReturnType<typeof vi.fn>;
     deleteReservation: ReturnType<typeof vi.fn>;
     reopenProposition: ReturnType<typeof vi.fn>;
+    listAdminMessageTemplates: ReturnType<typeof vi.fn>;
+    createAdminMessageTemplate: ReturnType<typeof vi.fn>;
+    updateAdminMessageTemplate: ReturnType<typeof vi.fn>;
+    getAdminMessageTemplateById: ReturnType<typeof vi.fn>;
   };
   eventsService: {
     getRangeEvents: ReturnType<typeof vi.fn>;
@@ -105,13 +91,13 @@ afterAll(() => {
   consoleErrorSpy.mockRestore();
 });
 
-const createRole = (name: UserRole, scope: Role['scope'] = 'global', idSeed = Math.floor(Math.random() * 1000)): Role => ({
-  id: idSeed,
+const createRole = (name: UserRole, scope: Role['scope'] = 'global', id = 1): Role => ({
+  id,
   name,
   scope,
 });
 
-const defaultOperatingHours: RangeDetailsDto['operatingHours'] = {
+const operatingHours: RangeDetailsDto['operatingHours'] = {
   monday: { open: '08:00', close: '20:00' },
   tuesday: { open: '08:00', close: '20:00' },
   wednesday: { open: '08:00', close: '20:00' },
@@ -125,20 +111,21 @@ const createRangeDetails = (overrides: Partial<RangeDetailsDto> = {}): RangeDeta
   id: 1,
   slug: 'alpha-range',
   displayName: 'Alpha Range',
-  totalTracks: 6,
-  operatingHours: defaultOperatingHours,
   type: 'club',
   allowsReservations: true,
-  publicDescription: null,
-  memberDescription: null,
-  latitude: 0,
-  longitude: 0,
-  parkingLocation: null,
+  totalTracks: 6,
+  operatingHours,
   extras: {},
+  parkingLocation: null,
+  firingLines: [
+    { id: 1, name: 'Line 1', tracksCount: 6, lengthMeters: 25, sortOrder: 1 },
+    { id: 2, name: 'Line 2', tracksCount: 4, lengthMeters: 50, sortOrder: 2 },
+  ],
+  administratorContacts: [],
   ...overrides,
 });
 
-const createUserDto = (overrides: Partial<UserDto> = {}): UserDto => ({
+const createUser = (overrides: Partial<UserDto> = {}): UserDto => ({
   id: 10,
   email: 'user@example.com',
   isDeleted: false,
@@ -148,9 +135,9 @@ const createUserDto = (overrides: Partial<UserDto> = {}): UserDto => ({
   ...overrides,
 });
 
-const createUserProfile = (overrides: Partial<UserProfile> = {}): UserProfile => ({
+const createProfile = (overrides: Partial<UserProfile> = {}): UserProfile => ({
   id: 10,
-  email: 'user@example.com',
+  email: 'profile@example.com',
   phone_number: null,
   is_deleted: 0,
   created_at: '2024-01-01T00:00:00Z',
@@ -158,6 +145,9 @@ const createUserProfile = (overrides: Partial<UserProfile> = {}): UserProfile =>
   range_roles: {},
   ...overrides,
 });
+
+const metadata = (trackNos: number[], extra: Record<string, unknown> = {}) =>
+  JSON.stringify({ ...extra, trackNos });
 
 const createPropositionEntity = (overrides: Partial<Proposition> = {}): Proposition => ({
   id: 7,
@@ -167,7 +157,8 @@ const createPropositionEntity = (overrides: Partial<Proposition> = {}): Proposit
   event_date: '2024-01-10',
   start_time: '10:00',
   end_time: '11:00',
-  tracks_requested: 2,
+  firing_line_id: 1,
+  metadata_json: metadata([1, 2], { hasCoordinatorLicenseInGroup: true }),
   is_member: true,
   ...overrides,
 });
@@ -175,7 +166,7 @@ const createPropositionEntity = (overrides: Partial<Proposition> = {}): Proposit
 const createPropositionDetailEntity = (
   overrides: Partial<PropositionDetail> = {}
 ): PropositionDetail => ({
-  ...createPropositionEntity(overrides as Partial<Proposition>),
+  ...createPropositionEntity(overrides),
   created_at: '2024-01-05T10:00:00Z',
   requester_email: 'requester@example.com',
   requester_phone_number: null,
@@ -185,22 +176,23 @@ const createPropositionDetailEntity = (
 const createReservationEntity = (overrides: Partial<Reservation> = {}): Reservation => ({
   id: 42,
   range_id: 1,
-  coordinator_id: 10,
+  approved_by_admin_id: 100,
   proposition_id: null,
   event_date: '2024-01-10',
   start_time: '12:00',
   end_time: '13:00',
-  tracks_requested: 3,
+  firing_line_id: 1,
+  metadata_json: metadata([2, 3]),
   ...overrides,
 });
 
 const createReservationDetailEntity = (
   overrides: Partial<ReservationDetail> = {}
 ): ReservationDetail => ({
-  ...createReservationEntity(overrides as Partial<Reservation>),
+  ...createReservationEntity(overrides),
   created_at: '2024-01-06T09:00:00Z',
-  coordinator_email: 'coordinator@example.com',
-  coordinator_phone_number: null,
+  approved_by_admin_email: 'admin@example.com',
+  approved_by_admin_phone_number: null,
   ...overrides,
 });
 
@@ -216,23 +208,19 @@ const createRecordEntity = (overrides: Partial<RecordEntity> = {}): RecordEntity
   ...overrides,
 });
 
-const createConflict = (overrides: Partial<ReservationConflict> = {}): ReservationConflict => ({
-  id: 90,
-  type: 'reservation',
-  event_date: '2024-01-10',
-  start_time: '10:30',
-  end_time: '11:30',
-  tracks_requested: 2,
+const createTemplate = (overrides: Partial<AdminMessageTemplate> = {}): AdminMessageTemplate => ({
+  id: 1,
+  range_id: 1,
+  created_by_admin_id: 100,
+  name: 'Default',
+  content: 'Approved.',
+  is_active: 1,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
   ...overrides,
 });
 
-const createUsage = (overrides: Partial<OverlappingUsage> = {}): OverlappingUsage => ({
-  propositions_tracks: 0,
-  reservations_tracks: 0,
-  ...overrides,
-});
-
-const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestContext => {
+const createCtx = (rangeOverrides: Partial<RangeDetailsDto> = {}): Ctx => {
   const rangeDetails = createRangeDetails(rangeOverrides);
 
   const rangesService = {
@@ -243,8 +231,6 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
     getPropositions: vi.fn().mockResolvedValue([] as Proposition[]),
     getReservations: vi.fn().mockResolvedValue([] as Reservation[]),
     getRecords: vi.fn().mockResolvedValue([] as RecordEntity[]),
-    getOverlappingUsage: vi.fn().mockResolvedValue(createUsage()),
-    getOverlappingReservationsDetails: vi.fn().mockResolvedValue([] as ReservationConflict[]),
     createProposition: vi.fn(),
     createReservation: vi.fn(),
     createReservationFromProposition: vi.fn(),
@@ -257,6 +243,10 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
     getReservationDetailById: vi.fn(),
     deleteReservation: vi.fn(),
     reopenProposition: vi.fn(),
+    listAdminMessageTemplates: vi.fn().mockResolvedValue([] as AdminMessageTemplate[]),
+    createAdminMessageTemplate: vi.fn(),
+    updateAdminMessageTemplate: vi.fn(),
+    getAdminMessageTemplateById: vi.fn(),
   };
 
   const eventsService = {
@@ -268,10 +258,10 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
   };
 
   const service = new ReservationsService(
-    rangesService as unknown as any,
+    rangesService as any,
     reservationsRepository as unknown as IReservationsRepository,
-    eventsService as unknown as any,
-    auditService as unknown as any
+    eventsService as any,
+    auditService as any
   );
 
   return {
@@ -284,90 +274,347 @@ const createTestContext = (rangeOverrides: Partial<RangeDetailsDto> = {}): TestC
   };
 };
 
-const createDirectReservationCommand = (overrides: Partial<CreateReservationCommand> = {}): CreateReservationCommand => ({
+const directReservation = (
+  overrides: Partial<CreateReservationCommand> = {}
+): CreateReservationCommand => ({
   eventDate: '2024-01-10',
   startTime: '12:00',
   endTime: '13:00',
-  tracksRequested: 2,
+  firingLineId: 1,
+  trackNos: [2, 1, 2],
   ...overrides,
 });
 
-const createCoordinatorUser = (): UserDto => createUserDto({ roles: [createRole(UserRole.Coordinator)] });
+const propositionCommand = (
+  overrides: Partial<CreatePropositionCommand> = {}
+): CreatePropositionCommand => ({
+  eventDate: '2024-01-10',
+  startTime: '10:00',
+  endTime: '11:00',
+  firingLineId: 1,
+  trackNos: [1, 2],
+  hasCoordinatorLicenseInGroup: false,
+  ...overrides,
+});
 
-type ReservationCommandOverrideFactory = (ctx: TestContext) => Partial<CreateReservationCommand>;
-type RecordCommandOverrideFactory = (ctx: TestContext) => Partial<CreateRecordCommand>;
-type PropositionCommandOverrideFactory = (ctx: TestContext) => Partial<CreatePropositionCommand>;
+const convertCommand = (
+  overrides: Partial<CreateReservationFromPropositionCommand> = {}
+): CreateReservationFromPropositionCommand => ({
+  propositionId: 7,
+  adminMessage: 'Approved with remarks',
+  ...overrides,
+});
 
-describe('ReservationsService contract', () => {
-  describe.skip('getCalendarEvents (legacy payload expectations, to be rewritten in next phases)', () => {
-    it('returns failure when range details lookup fails', async () => {
-      const ctx = createTestContext();
-      const rangeError = new Error('range missing');
-      ctx.rangesService.getRangeDetails.mockResolvedValueOnce(Result.fail<RangeDetailsDto>(rangeError));
+describe('ReservationsService', () => {
+  describe('createReservation (direct)', () => {
+    it('requires range admin role', async () => {
+      const ctx = createCtx();
+      const member = createUser({ roles: [createRole(UserRole.Member)] });
 
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: createUserProfile(),
-      });
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(rangeError);
-    });
-
-    it('returns failure when repository throws during event fetch', async () => {
-      const ctx = createTestContext();
-      const repoError = new Error('db unavailable');
-      ctx.reservationsRepository.getPropositions.mockRejectedValueOnce(repoError);
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([]);
-
-      const adminProfile = createUserProfile({
-        roles: [createRole(UserRole.ClubCommunityAdministrator)],
-      });
-
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: adminProfile,
-      });
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        directReservation(),
+        { force: false },
+        member
+      );
 
       expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(repoError);
+      expect(result.getError()).toBeInstanceOf(RangeAdminRoleRequiredError);
     });
 
-    it('keeps all events and details for range administrators', async () => {
-      const ctx = createTestContext();
-      const propositionA = createPropositionEntity({ id: 1, user_id: 10, range_id: ctx.rangeDetails.id });
-      const propositionB = createPropositionEntity({ id: 2, user_id: 99, range_id: ctx.rangeDetails.id });
-      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([propositionA, propositionB]);
+    it('returns conflict without force when overlapping reservation exists', async () => {
+      const ctx = createCtx();
+      const admin = createUser({
+        rangeRoles: {
+          [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
+        },
+      });
 
-      const reservationA = createReservationEntity({ id: 11, coordinator_id: 10 });
-      const reservationB = createReservationEntity({ id: 12, coordinator_id: 99 });
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservationA, reservationB]);
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({
+          id: 99,
+          event_date: '2024-01-10',
+          start_time: '12:30',
+          end_time: '13:30',
+          firing_line_id: 1,
+          metadata_json: metadata([1]),
+        }),
+      ]);
 
-      const adminProfile = createUserProfile({
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        directReservation({ trackNos: [1] }),
+        { force: false },
+        admin
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ReservationConflictError);
+    });
+
+    it('creates reservation with normalized trackNos when forced', async () => {
+      const ctx = createCtx();
+      const admin = createUser({
         roles: [createRole(UserRole.ClubCommunityAdministrator)],
       });
+      const saved = createReservationEntity({ approved_by_admin_id: admin.id });
 
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: adminProfile,
-      });
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({
+          id: 88,
+          event_date: '2024-01-10',
+          start_time: '12:15',
+          end_time: '12:45',
+          metadata_json: metadata([2]),
+        }),
+      ]);
+      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(saved);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        directReservation({ trackNos: [3, 1, 3] }),
+        { force: true },
+        admin
+      );
 
       expect(result.isSuccess).toBe(true);
-      const events = result.getValue();
-      expect(events.propositions).toHaveLength(2);
-      expect(events.reservations).toHaveLength(2);
-      expect(events.events).toEqual([]);
-      expect(events.reservations.every((event) => event.details !== null)).toBe(true);
+      expect(result.getValue()).toEqual<CreatedReservationDto>({
+        id: saved.id,
+        range_id: saved.range_id,
+        approved_by_admin_id: saved.approved_by_admin_id,
+      });
+      expect(ctx.reservationsRepository.createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata_json: JSON.stringify({ trackNos: [1, 3] }),
+        })
+      );
     });
 
-    it('maps events returned by the events service into calendar summaries', async () => {
-      const ctx = createTestContext();
+    it('validates selected firing line', async () => {
+      const ctx = createCtx();
+      const admin = createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        directReservation({ firingLineId: 999 }),
+        { force: false },
+        admin
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
+    });
+  });
+
+  describe('createReservation (conversion)', () => {
+    it('requires non-empty adminMessage', async () => {
+      const ctx = createCtx();
+      const admin = createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        convertCommand({ adminMessage: '   ' }),
+        { force: false },
+        admin
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
+    });
+
+    it('fails when proposition does not exist', async () => {
+      const ctx = createCtx();
+      const admin = createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(null);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        convertCommand(),
+        { force: false },
+        admin
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(PropositionNotFoundError);
+    });
+
+    it('fails when proposition is not open', async () => {
+      const ctx = createCtx();
+      const admin = createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(
+        createPropositionEntity({ status: 'converted' })
+      );
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        convertCommand(),
+        { force: false },
+        admin
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(PropositionAlreadyClosedError);
+    });
+
+    it('converts proposition and supports time adjustments', async () => {
+      const ctx = createCtx();
+      const admin = createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+      const source = createPropositionEntity({
+        id: 7,
+        firing_line_id: 1,
+        metadata_json: metadata([2, 3], { hasCoordinatorLicenseInGroup: true }),
+      });
+      const saved = createReservationEntity({
+        proposition_id: source.id,
+        approved_by_admin_id: admin.id,
+        event_date: '2024-01-11',
+        start_time: '14:00',
+        end_time: '15:00',
+      });
+
+      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(source);
+      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(saved);
+
+      const result = await ctx.service.createReservation(
+        ctx.rangeDetails.slug,
+        convertCommand({ eventDate: '2024-01-11', startTime: '14:00', endTime: '15:00' }),
+        { force: false },
+        admin
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(ctx.reservationsRepository.createReservationFromProposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          proposition_id: source.id,
+          event_date: '2024-01-11',
+          start_time: '14:00',
+          end_time: '15:00',
+          metadata_json: JSON.stringify({ trackNos: [2, 3] }),
+        }),
+        source.id
+      );
+    });
+  });
+
+  describe('createProposition', () => {
+    it('is limited to members', async () => {
+      const ctx = createCtx();
+      const guest = createUser({ roles: [createRole(UserRole.Guest)] });
+
+      const result = await ctx.service.createProposition(
+        ctx.rangeDetails.slug,
+        propositionCommand(),
+        guest
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(MemberRoleRequiredError);
+    });
+
+    it('requires coordinator declaration flag', async () => {
+      const ctx = createCtx();
+      const member = createUser({ roles: [createRole(UserRole.Member)] });
+
+      const result = await ctx.service.createProposition(
+        ctx.rangeDetails.slug,
+        {
+          ...propositionCommand(),
+          hasCoordinatorLicenseInGroup: undefined as unknown as boolean,
+        },
+        member
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(PropositionDeclarationRequiredError);
+    });
+
+    it('forces coordinator declaration to true for coordinator role', async () => {
+      const ctx = createCtx();
+      const coordinatorMember = createUser({
+        roles: [createRole(UserRole.Member), createRole(UserRole.Coordinator)],
+      });
+      const saved = createPropositionEntity({ user_id: coordinatorMember.id });
+      ctx.reservationsRepository.createProposition.mockResolvedValueOnce(saved);
+
+      const result = await ctx.service.createProposition(
+        ctx.rangeDetails.slug,
+        propositionCommand({ hasCoordinatorLicenseInGroup: false }),
+        coordinatorMember
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(ctx.reservationsRepository.createProposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata_json: JSON.stringify({
+            trackNos: [1, 2],
+            hasCoordinatorLicenseInGroup: true,
+          }),
+        })
+      );
+    });
+
+    it('detects conflicts on same line + overlapping track', async () => {
+      const ctx = createCtx();
+      const member = createUser({ roles: [createRole(UserRole.Member)] });
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({
+          id: 200,
+          event_date: '2024-01-10',
+          start_time: '10:30',
+          end_time: '11:30',
+          firing_line_id: 1,
+          metadata_json: metadata([2]),
+        }),
+      ]);
+
+      const result = await ctx.service.createProposition(
+        ctx.rangeDetails.slug,
+        propositionCommand({ trackNos: [2] }),
+        member
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(PropositionConflictError);
+    });
+
+    it('validates targetAdminUserId shape', async () => {
+      const ctx = createCtx();
+      const member = createUser({ roles: [createRole(UserRole.Member)] });
+
+      const result = await ctx.service.createProposition(
+        ctx.rangeDetails.slug,
+        propositionCommand({ targetAdminUserId: -5 }),
+        member
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(InvalidTargetAdminError);
+    });
+
+    it('returns InvalidPropositionTimeError for unknown firing line', async () => {
+      const ctx = createCtx();
+      const member = createUser({ roles: [createRole(UserRole.Member)] });
+
+      const result = await ctx.service.createProposition(
+        ctx.rangeDetails.slug,
+        propositionCommand({ firingLineId: 999 }),
+        member
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(InvalidPropositionTimeError);
+    });
+  });
+
+  describe('getCalendarEvents', () => {
+    it('maps public events and hides reservation details for guest', async () => {
+      const ctx = createCtx();
+      const ownProposition = createPropositionEntity({ id: 1, user_id: 77 });
+      const otherProposition = createPropositionEntity({ id: 2, user_id: 10 });
+      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([ownProposition, otherProposition]);
+      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
+        createReservationEntity({ id: 50, metadata_json: metadata([1, 2]) }),
+      ]);
       ctx.eventsService.getRangeEvents.mockResolvedValueOnce(
         Result.ok({
           data: [
@@ -392,11 +639,16 @@ describe('ReservationsService contract', () => {
         rangeSlug: ctx.rangeDetails.slug,
         startDate: '2024-01-01',
         endDate: '2024-01-31',
-        user: createUserProfile(),
+        user: createProfile({ id: 77, roles: [createRole(UserRole.Guest)] }),
       });
 
       expect(result.isSuccess).toBe(true);
-      expect(result.getValue().events).toEqual([
+      const payload = result.getValue();
+      expect(payload.propositions).toHaveLength(1);
+      expect(payload.propositions[0].id).toBe(ownProposition.id);
+      expect(payload.reservations[0].details).toBeNull();
+      expect(payload.reservations[0].trackNos).toEqual([]);
+      expect(payload.events).toEqual([
         {
           id: 55,
           slug: 'open-day',
@@ -408,840 +660,85 @@ describe('ReservationsService contract', () => {
       ]);
     });
 
-    it('keeps all propositions visible to members while exposing reservation details', async () => {
-      const ctx = createTestContext();
-      const ownProposition = createPropositionEntity({ id: 1, user_id: 10 });
-      const otherProposition = createPropositionEntity({ id: 2, user_id: 11 });
-      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([ownProposition, otherProposition]);
-
-      const ownReservation = createReservationEntity({ id: 20, coordinator_id: 10 });
-      const otherReservation = createReservationEntity({ id: 21, coordinator_id: 15 });
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([ownReservation, otherReservation]);
-
-      const memberProfile = createUserProfile({
-        id: 10,
-        roles: [createRole(UserRole.Member)],
-      });
-
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: memberProfile,
-      });
-
-      expect(result.isSuccess).toBe(true);
-      const events = result.getValue();
-      expect(events.propositions).toHaveLength(2);
-      const reservationDetails = events.reservations.find((event) => event.id === otherReservation.id);
-      expect(reservationDetails?.details?.coordinatorId).toBe(otherReservation.coordinator_id);
-      const ownReservationEvent = events.reservations.find((event) => event.id === ownReservation.id);
-      expect(ownReservationEvent?.details?.coordinatorId).toBe(ownReservation.coordinator_id);
-    });
-
-    it('filters propositions to the owner when the requester is a guest', async () => {
-      const ctx = createTestContext();
-      const ownProposition = createPropositionEntity({ id: 1, user_id: 77 });
-      const otherProposition = createPropositionEntity({ id: 2, user_id: 11 });
-      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([ownProposition, otherProposition]);
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([
-        createReservationEntity({ id: 40, coordinator_id: 12 }),
+    it('includes manual records for admins', async () => {
+      const ctx = createCtx();
+      ctx.reservationsRepository.getRecords.mockResolvedValueOnce([
+        createRecordEntity({ range_id: ctx.rangeDetails.id, admin_id: 10 }),
       ]);
 
-      const guestProfile = createUserProfile({ id: 77, roles: [createRole(UserRole.Guest)] });
-
       const result = await ctx.service.getCalendarEvents({
         rangeSlug: ctx.rangeDetails.slug,
         startDate: '2024-01-01',
         endDate: '2024-01-31',
-        user: guestProfile,
+        user: createProfile({ roles: [createRole(UserRole.ClubCommunityAdministrator)] }),
       });
 
       expect(result.isSuccess).toBe(true);
-      const events = result.getValue();
-      expect(events.propositions).toHaveLength(1);
-      expect(events.propositions[0].id).toBe(ownProposition.id);
-    });
-
-    it('attaches linked proposition details to reservation events when viewer has access', async () => {
-      const ctx = createTestContext();
-      const propositionDetail = createPropositionDetailEntity({
-        id: 55,
-        user_id: 200,
-        status: 'converted',
-      });
-      const reservation = createReservationEntity({
-        id: 90,
-        proposition_id: propositionDetail.id,
-        range_id: ctx.rangeDetails.id,
-      });
-
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
-      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(propositionDetail);
-
-      const coordinatorProfile = createUserProfile({
-        id: propositionDetail.user_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: coordinatorProfile,
-      });
-
-      expect(result.isSuccess).toBe(true);
-      const events = result.getValue();
-      expect(events.reservations).toHaveLength(1);
-      const reservationEvent = events.reservations[0];
-      expect(reservationEvent.propositionId).toBe(propositionDetail.id);
-      expect(reservationEvent.proposition?.id).toBe(propositionDetail.id);
-      expect(reservationEvent.proposition?.requester?.email).toBe(propositionDetail.requester_email);
-      expect(ctx.reservationsRepository.getPropositionDetailById).toHaveBeenCalledWith(propositionDetail.id);
-    });
-
-    it('redacts requester information when viewer cannot access linked proposition', async () => {
-      const ctx = createTestContext();
-      const propositionDetail = createPropositionDetailEntity({
-        id: 56,
-        status: 'converted',
-        user_id: 400,
-        requester_email: 'hidden@example.com',
-      });
-      const reservation = createReservationEntity({
-        id: 91,
-        proposition_id: propositionDetail.id,
-        range_id: ctx.rangeDetails.id,
-      });
-
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
-      ctx.reservationsRepository.getPropositions.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(propositionDetail);
-
-      const guestProfile = createUserProfile({
-        id: 1,
-        roles: [createRole(UserRole.Guest)],
-      });
-
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: guestProfile,
-      });
-
-      expect(result.isSuccess).toBe(true);
-      const reservationEvent = result.getValue().reservations[0];
-      expect(reservationEvent.propositionId).toBe(propositionDetail.id);
-      expect(reservationEvent.proposition?.requester).toBeNull();
-    });
-
-    it('does not expose reservation details to guests', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({
-        id: 32,
-        coordinator_id: 88,
-      });
-      ctx.reservationsRepository.getReservations.mockResolvedValueOnce([reservation]);
-
-      const guestProfile = createUserProfile({
-        id: 88,
-        roles: [createRole(UserRole.Guest)],
-      });
-
-      const result = await ctx.service.getCalendarEvents({
-        rangeSlug: ctx.rangeDetails.slug,
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        user: guestProfile,
-      });
-
-      expect(result.isSuccess).toBe(true);
-      const events = result.getValue();
-      expect(events.reservations).toHaveLength(1);
-      const reservationDetails = events.reservations[0];
-      expect(reservationDetails.details).toBeNull();
-      expect(reservationDetails.tracksRequested).toBeNull();
-    });
-  });
-
-  describe.skip('createReservation (direct) (to be rewritten for line+track conflict flow)', () => {
-    it('rejects deleted users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ isDeleted: true });
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('propagates range lookup failure', async () => {
-      const ctx = createTestContext();
-      const lookupError = new Error('range down');
-      ctx.rangesService.getRangeDetails.mockResolvedValueOnce(Result.fail<RangeDetailsDto>(lookupError));
-
-      const user = createUserDto({
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(lookupError);
-    });
-
-    it('rejects users without reservation permission', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [], rangeRoles: {} });
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    const invalidReservationCases: Array<[string, ReservationCommandOverrideFactory]> = [
-      ['event date uses invalid format', () => ({ eventDate: '20240110' })],
-      ['event date contains invalid calendar values', () => ({ eventDate: '2024-13-10' })],
-      ['start time uses invalid format', () => ({ startTime: '9am' })],
-      ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
-      ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
-      ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
-      ['time minutes fall outside allowed range', () => ({ startTime: '12:75' })],
-      ['times are not aligned to five-minute increments', () => ({ startTime: '10:02', endTime: '11:01' })],
-      ['end time is not later than start time', () => ({ startTime: '11:00', endTime: '11:00' })],
-      ['tracks requested is not an integer', () => ({ tracksRequested: 1.5 })],
-      ['tracks requested is below minimum', () => ({ tracksRequested: 0 })],
-      ['tracks requested exceed capacity', (ctx) => ({ tracksRequested: ctx.rangeDetails.totalTracks + 1 })],
-    ];
-
-    it.each(invalidReservationCases)('returns InvalidReservationTimeError when %s', async (_, overrideFactory) => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      const command = createDirectReservationCommand(overrideFactory(ctx));
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        command,
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
-    });
-
-    it('returns RangeClosedError when requested time is outside operating hours', async () => {
-      const ctx = createTestContext({
-        operatingHours: {
-          ...defaultOperatingHours,
-          wednesday: { open: '10:00', close: '12:00' },
-        },
-      });
-      const user = createCoordinatorUser();
-      const command = createDirectReservationCommand({ startTime: '09:00', endTime: '10:30' });
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        command,
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(RangeClosedError);
-      expect(ctx.reservationsRepository.getOverlappingReservationsDetails).not.toHaveBeenCalled();
-      expect(ctx.reservationsRepository.createReservation).not.toHaveBeenCalled();
-    });
-
-    it('returns failure when conflict exists and force disabled', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      const conflict = createConflict();
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([conflict]);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      const error = result.getError();
-      expect(error).toBeInstanceOf(ReservationConflictError);
-      if (error instanceof ReservationConflictError) {
-        expect(error.details.conflicts[0].id).toBe(conflict.id);
-      }
-    });
-
-    it('allows reservation creation when conflicts only include propositions', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: user.id });
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([
-        createConflict({ type: 'proposition' }),
-      ]);
-      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
-    });
-
-    it('propagates overlap lookup errors', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      const overlapError = new Error('overlap failed');
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockRejectedValueOnce(overlapError);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(overlapError);
-    });
-
-    it('fails when audit logging fails after reservation creation', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(
-        createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: user.id })
-      );
-      const auditError = new Error('audit down');
-      ctx.auditService.logAction.mockResolvedValueOnce(Result.fail<void>(auditError));
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(auditError);
-    });
-
-    it('creates reservation when conflicts exist but force flag is set', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([createConflict()]);
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: user.id });
-      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: true },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
-    });
-
-    it('allows range administrators with scoped roles to create reservations', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id });
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [],
-        rangeRoles: {
-          [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
-        },
-      });
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
-    });
-
-    it('allows range coordinators with scoped roles to create reservations', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 77 });
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [],
-        rangeRoles: {
-          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Coordinator, 'range')],
-        },
-      });
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.createReservation.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
-    });
-
-    it('wraps repository errors as ReservationCreationError', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.createReservation.mockRejectedValueOnce(new Error('insert failed'));
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createDirectReservationCommand(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationCreationError);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe.skip('createReservation (conversion) (to be rewritten for admin conversion flow)', () => {
-    const createConversionPayload = (
-      overrides: Partial<CreateReservationFromPropositionCommand> = {}
-    ): CreateReservationFromPropositionCommand => ({
-      propositionId: 7,
-      ...overrides,
-    });
-
-    it('propagates repository failure when loading proposition', async () => {
-      const ctx = createTestContext();
-      const loadError = new Error('lookup failed');
-      ctx.reservationsRepository.getPropositionById.mockRejectedValueOnce(loadError);
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(loadError);
-    });
-
-    it('fails when proposition is missing', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(null);
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(PropositionNotFoundError);
-    });
-
-    it('guards against propositions belonging to another range', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(
-        createPropositionEntity({ range_id: ctx.rangeDetails.id + 1 })
-      );
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('requires proposition to be open', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(
-        createPropositionEntity({ status: 'cancelled' })
-      );
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(PropositionAlreadyClosedError);
-    });
-
-    it('validates adjusted time window', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload({ startTime: '25:00' }),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
-    });
-
-    it('validates requested tracks against capacity', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload({ tracksRequested: ctx.rangeDetails.totalTracks + 1 }),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(InvalidReservationTimeError);
-    });
-
-    it('propagates overlap errors during conversion', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
-      const overlapError = new Error('overlap failed');
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockRejectedValueOnce(overlapError);
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(overlapError);
-    });
-
-    it('requires force flag when conflicts exist', async () => {
-      const ctx = createTestContext();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(createPropositionEntity());
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([createConflict()]);
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationConflictError);
-    });
-
-    it('converts proposition when conflicts only include other propositions', async () => {
-      const ctx = createTestContext();
-      const proposition = createPropositionEntity();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([
-        createConflict({ type: 'proposition' }),
-      ]);
-      const user = createCoordinatorUser();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: user.id,
-        proposition_id: proposition.id,
-      });
-      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
-    });
-
-    it('converts proposition with conflicts when force flag enabled', async () => {
-      const ctx = createTestContext();
-      const proposition = createPropositionEntity();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([createConflict()]);
-      const user = createCoordinatorUser();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: user.id,
-        proposition_id: proposition.id,
-      });
-      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: true },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
-    });
-
-    it('fails if audit logging fails after conversion', async () => {
-      const ctx = createTestContext();
-      const proposition = createPropositionEntity();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      const user = createCoordinatorUser();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: user.id,
-        proposition_id: proposition.id,
-      });
-      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
-      const auditError = new Error('audit failed');
-      ctx.auditService.logAction.mockResolvedValueOnce(Result.fail<void>(auditError));
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: true },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(auditError);
-    });
-
-    it('allows overriding reservation details during conversion', async () => {
-      const ctx = createTestContext();
-      const proposition = createPropositionEntity();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      const user = createCoordinatorUser();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: user.id,
-        proposition_id: proposition.id,
-        event_date: '2024-02-01',
-        start_time: '13:00',
-        end_time: '14:00',
-        tracks_requested: 3,
-      });
-      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload({
-          eventDate: '2024-02-01',
-          startTime: '13:00',
-          endTime: '14:00',
-          tracksRequested: 3,
-        }),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(ctx.reservationsRepository.getOverlappingReservationsDetails).toHaveBeenCalledWith(
-        ctx.rangeDetails.id,
-        '2024-02-01',
-        '13:00',
-        '14:00',
-        { excludePropositionId: proposition.id }
-      );
-      expect(ctx.reservationsRepository.createReservationFromProposition).toHaveBeenCalledWith(
-        expect.objectContaining({
-          event_date: '2024-02-01',
-          start_time: '13:00',
-          end_time: '14:00',
-          tracks_requested: 3,
-        }),
-        proposition.id
-      );
-    });
-
-    it('returns ReservationCreationError when conversion repository rejects', async () => {
-      const ctx = createTestContext();
-      const proposition = createPropositionEntity();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      ctx.reservationsRepository.createReservationFromProposition.mockRejectedValueOnce(new Error('convert failed'));
-      const user = createCoordinatorUser();
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationCreationError);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    });
-
-    it('converts proposition when validation passes and conflicts resolved', async () => {
-      const ctx = createTestContext();
-      const proposition = createPropositionEntity();
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.getOverlappingReservationsDetails.mockResolvedValueOnce([]);
-      const user = createCoordinatorUser();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: user.id,
-        proposition_id: proposition.id,
-        start_time: '10:00',
-        end_time: '11:00',
-      });
-      ctx.reservationsRepository.createReservationFromProposition.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.createReservation(
-        ctx.rangeDetails.slug,
-        createConversionPayload(),
-        { force: false },
-        user
-      );
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toEqual<CreatedReservationDto>({
-        id: reservation.id,
-        range_id: reservation.range_id,
-        coordinator_id: reservation.coordinator_id,
-      });
+      expect(result.getValue().records).toHaveLength(1);
     });
   });
 
   describe('getReservationDetails', () => {
-    it('includes proposition detail when viewer has access', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
-      const proposition = createPropositionDetailEntity({ id: 77, status: 'converted', user_id: 99 });
-      const reservation = createReservationDetailEntity({
-        id: 120,
-        proposition_id: proposition.id,
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: user.id,
-      });
+    it('returns forbidden for guest without roles', async () => {
+      const ctx = createCtx();
+      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(
+        createReservationDetailEntity({ id: 100 })
+      );
 
-      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.getPropositionDetailById.mockResolvedValueOnce(proposition);
-
-      const result = await ctx.service.getReservationDetails(reservation.id, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(ctx.reservationsRepository.getPropositionDetailById).toHaveBeenCalledWith(proposition.id);
-      const detail = result.getValue();
-      expect(detail.propositionId).toBe(proposition.id);
-      expect(detail.proposition).not.toBeNull();
-      expect(detail.proposition?.id).toBe(proposition.id);
-      expect(detail.proposition?.status).toBe('converted');
-      expect(detail.proposition?.requester?.id).toBe(proposition.user_id);
-    });
-
-    it('returns ForbiddenError when viewer lacks permission', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto(); // guest without roles
-      const proposition = createPropositionDetailEntity({ id: 81, user_id: 404 });
-      const reservation = createReservationDetailEntity({
-        id: 121,
-        proposition_id: proposition.id,
-        range_id: ctx.rangeDetails.id,
-      });
-
-      ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
-
-      const result = await ctx.service.getReservationDetails(reservation.id, user);
+      const result = await ctx.service.getReservationDetails(100, createUser());
 
       expect(result.isSuccess).toBe(false);
       expect(result.getError()).toBeInstanceOf(ForbiddenError);
-      expect(ctx.reservationsRepository.getPropositionDetailById).not.toHaveBeenCalled();
     });
 
-  it('propagates repository failures when loading linked proposition', async () => {
-      const ctx = createTestContext();
-      const user = createCoordinatorUser();
+    it('returns detail for member and maps trackNos from metadata', async () => {
+      const ctx = createCtx();
       const reservation = createReservationDetailEntity({
-        id: 122,
-        proposition_id: 91,
-        range_id: ctx.rangeDetails.id,
+        id: 101,
+        metadata_json: metadata([3, 1, 3]),
       });
-      const loadError = new Error('lookup failed');
-
       ctx.reservationsRepository.getReservationDetailById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.getPropositionDetailById.mockRejectedValueOnce(loadError);
 
-      const result = await ctx.service.getReservationDetails(reservation.id, user);
+      const result = await ctx.service.getReservationDetails(
+        101,
+        createUser({ roles: [createRole(UserRole.Member)] })
+      );
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().trackNos).toEqual([1, 3]);
+    });
+  });
+
+  describe('cancelReservation', () => {
+    const command: CancelReservationCommand = { reservationId: 22 };
+
+    it('returns ReservationNotFoundError for missing reservation', async () => {
+      const ctx = createCtx();
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(null);
+
+      const result = await ctx.service.cancelReservation(
+        command,
+        createUser({ roles: [createRole(UserRole.Coordinator)] })
+      );
 
       expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(loadError);
+      expect(result.getError()).toBeInstanceOf(ReservationNotFoundError);
+    });
+
+    it('returns ReservationCancellationError when reopening proposition fails', async () => {
+      const ctx = createCtx();
+      const reservation = createReservationEntity({ proposition_id: 71 });
+      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
+      ctx.reservationsRepository.reopenProposition.mockResolvedValueOnce(null);
+
+      const result = await ctx.service.cancelReservation(
+        command,
+        createUser({ roles: [createRole(UserRole.Coordinator)] })
+      );
+
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ReservationCancellationError);
     });
   });
 
@@ -1253,667 +750,59 @@ describe('ReservationsService contract', () => {
       numParticipants: 12,
     };
 
-    it('rejects deleted users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ isDeleted: true });
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('propagates range lookup failures', async () => {
-      const ctx = createTestContext();
-      const rangeError = new Error('range missing');
-      ctx.rangesService.getRangeDetails.mockResolvedValueOnce(Result.fail<RangeDetailsDto>(rangeError));
-      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(rangeError);
-    });
-
-    it('rejects users without record permission', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto();
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    const invalidRecordCases: Array<[string, RecordCommandOverrideFactory]> = [
-      ['event date uses invalid format', () => ({ eventDate: '2024/03/01' })],
-      ['event date contains invalid calendar values', () => ({ eventDate: '2024-13-01' })],
-      ['start time uses invalid format', () => ({ startTime: '9am' })],
-      ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
-      ['times are not aligned to five-minute increments', () => ({ startTime: '09:02', endTime: '10:01' })],
-      ['end time is not later than start time', () => ({ startTime: '10:00', endTime: '09:00' })],
-      ['participant count is not finite', () => ({ numParticipants: Number.POSITIVE_INFINITY })],
-      ['participant count below minimum after truncation', () => ({ numParticipants: 0.2 })],
-      ['participant count exceeds maximum', () => ({ numParticipants: 1000 })],
-    ];
-
-    it.each(invalidRecordCases)('returns InvalidRecordTimeError when %s', async (_, overrideFactory) => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
-      const invalidCommand = { ...command, ...overrideFactory(ctx) };
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, invalidCommand, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(InvalidRecordTimeError);
-    });
-
-    it('returns RecordCreationError when repository throws', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
-      ctx.reservationsRepository.createRecord.mockRejectedValueOnce(new Error('insert failed'));
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(RecordCreationError);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    });
-
-    it('returns RecordCreationError when audit logging fails', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
-      ctx.reservationsRepository.createRecord.mockResolvedValueOnce(createRecordEntity({ range_id: ctx.rangeDetails.id }));
-      const auditError = new Error('audit failed');
-      ctx.auditService.logAction.mockResolvedValueOnce(Result.fail<void>(auditError));
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(RecordCreationError);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    });
-
-    it('allows range administrators with scoped roles to create records', async () => {
-      const ctx = createTestContext();
-      const record = createRecordEntity({ range_id: ctx.rangeDetails.id });
-      const user = createUserDto({
-        id: record.admin_id,
-        roles: [],
-        rangeRoles: {
-          [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
-        },
-      });
-      ctx.reservationsRepository.createRecord.mockResolvedValueOnce(record);
-
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue().adminId).toBe(record.admin_id);
-    });
-
-    it('truncates participant counts before persisting records', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
-      const fractionalParticipants = 17.8;
-      const record = createRecordEntity({
-        range_id: ctx.rangeDetails.id,
-        admin_id: user.id,
-        num_participants: Math.trunc(fractionalParticipants),
-      });
-      ctx.reservationsRepository.createRecord.mockResolvedValueOnce(record);
-
+    it('requires admin role', async () => {
+      const ctx = createCtx();
       const result = await ctx.service.createRecord(
         ctx.rangeDetails.slug,
-        { ...command, numParticipants: fractionalParticipants },
-        user
+        command,
+        createUser({ roles: [createRole(UserRole.Member)] })
       );
 
-      expect(ctx.reservationsRepository.createRecord).toHaveBeenCalledWith(
-        expect.objectContaining({ num_participants: Math.trunc(fractionalParticipants) })
-      );
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue().numParticipants).toBe(Math.trunc(fractionalParticipants));
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ForbiddenError);
     });
 
-    it('returns created record DTO on success', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
-      const record = createRecordEntity({ range_id: ctx.rangeDetails.id, admin_id: user.id });
+    it('creates record for club admin', async () => {
+      const ctx = createCtx();
+      const admin = createUser({ roles: [createRole(UserRole.ClubCommunityAdministrator)] });
+      const record = createRecordEntity({ admin_id: admin.id, range_id: ctx.rangeDetails.id });
       ctx.reservationsRepository.createRecord.mockResolvedValueOnce(record);
 
-      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, user);
+      const result = await ctx.service.createRecord(ctx.rangeDetails.slug, command, admin);
 
       expect(result.isSuccess).toBe(true);
-      const dto = result.getValue();
-      expect(dto.id).toBe(record.id);
-      expect(dto.adminId).toBe(user.id);
+      expect(result.getValue().id).toBe(record.id);
     });
   });
 
-  describe.skip('createProposition (to be rewritten for member-only + declaration flow)', () => {
-    const command: CreatePropositionCommand = {
-      eventDate: '2024-04-01',
-      startTime: '10:00',
-      endTime: '11:00',
-      tracksRequested: 2,
-    };
-
-    it('rejects deleted users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ isDeleted: true });
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('propagates range detail errors', async () => {
-      const ctx = createTestContext();
-      const rangeError = new Error('range missing');
-      ctx.rangesService.getRangeDetails.mockResolvedValueOnce(Result.fail<RangeDetailsDto>(rangeError));
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(rangeError);
-    });
-
-    it('rejects unauthorized users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto();
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(UnauthorizedPropositionError);
-    });
-
-    it('rejects propositions when range does not allow reservations', async () => {
-      const ctx = createTestContext({ allowsReservations: false });
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(Error);
-      expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
-    });
-
-    it('rejects propositions when capacity is zero or unknown', async () => {
-      const ctx = createTestContext({ totalTracks: null });
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(RangeBookingNotAllowedError);
-      expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
-    });
-
-    const invalidPropositionCases: Array<[string, PropositionCommandOverrideFactory]> = [
-      ['event date uses invalid format', () => ({ eventDate: '2024/04/01' })],
-      ['event date contains invalid calendar values', () => ({ eventDate: '2024-13-01' })],
-      ['start time uses invalid format', () => ({ startTime: '10am' })],
-      ['time values fall outside allowed hours', () => ({ startTime: '24:00' })],
-      ['times are not aligned to five-minute increments', () => ({ startTime: '10:02', endTime: '11:01' })],
-      ['end time is not later than start time', () => ({ startTime: '11:00', endTime: '10:30' })],
-      ['tracks requested is not an integer', () => ({ tracksRequested: 1.5 })],
-      ['tracks requested is below minimum', () => ({ tracksRequested: 0 })],
-      ['tracks requested exceeds capacity', (ctx) => ({ tracksRequested: ctx.rangeDetails.totalTracks + 1 })],
-    ];
-
-    it.each(invalidPropositionCases)('returns InvalidPropositionTimeError when %s', async (_, overrideFactory) => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const invalidCommand = { ...command, ...overrideFactory(ctx) };
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, invalidCommand, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(InvalidPropositionTimeError);
-    });
-
-    it('returns RangeClosedError when proposition falls outside operating hours', async () => {
-      const ctx = createTestContext({
-        operatingHours: {
-          ...defaultOperatingHours,
-          tuesday: { open: '10:00', close: '12:00' },
-        },
-      });
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const narrowedCommand = {
-        ...command,
-        eventDate: '2024-04-02',
-        startTime: '08:00',
-        endTime: '09:00',
-      };
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, narrowedCommand, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(RangeClosedError);
-      expect(ctx.reservationsRepository.getOverlappingUsage).not.toHaveBeenCalled();
-      expect(ctx.reservationsRepository.createProposition).not.toHaveBeenCalled();
-    });
-
-    it('allows users with range member roles to create propositions', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({
-        roles: [],
-        rangeRoles: {
-          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Member, 'range')],
-        },
-      });
-      const proposition = createPropositionEntity({ range_id: ctx.rangeDetails.id, user_id: user.id });
-      ctx.reservationsRepository.createProposition.mockResolvedValueOnce(proposition);
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue().id).toBe(proposition.id);
-    });
-
-    it('detects track conflicts from overlapping usage', async () => {
-      const ctx = createTestContext({ totalTracks: 4 });
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      ctx.reservationsRepository.getOverlappingUsage.mockResolvedValueOnce(
-        createUsage({ propositions_tracks: 3, reservations_tracks: 1 })
-      );
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(PropositionConflictError);
-    });
-
-    it('propagates repository errors during creation flow', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const repoError = new Error('repository failed');
-      ctx.reservationsRepository.getOverlappingUsage.mockRejectedValueOnce(repoError);
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(repoError);
-    });
-
-    it('propagates repository errors when proposition insert fails', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const repoError = new Error('insert failed');
-      ctx.reservationsRepository.createProposition.mockRejectedValueOnce(repoError);
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(repoError);
-    });
-
-    it('fails when audit logging fails', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const proposition = createPropositionEntity({ range_id: ctx.rangeDetails.id, user_id: user.id });
-      ctx.reservationsRepository.createProposition.mockResolvedValueOnce(proposition);
-      const auditError = new Error('audit failed');
-      ctx.auditService.logAction.mockResolvedValueOnce(Result.fail<void>(auditError));
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(auditError);
-    });
-
-    it('creates proposition when inputs valid and capacity allows', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const proposition = createPropositionEntity({ range_id: ctx.rangeDetails.id, user_id: user.id });
-      ctx.reservationsRepository.createProposition.mockResolvedValueOnce(proposition);
-
-      const result = await ctx.service.createProposition(ctx.rangeDetails.slug, command, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue().id).toBe(proposition.id);
-    });
-  });
-
-  describe('cancelProposition', () => {
-    const command: CancelPropositionCommand = { propositionId: 11 };
-
-    it('rejects deleted users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ isDeleted: true });
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('propagates repository lookup failures', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const repoError = new Error('lookup failed');
-      ctx.reservationsRepository.getPropositionById.mockRejectedValueOnce(repoError);
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(repoError);
-    });
-
-    it('returns error when proposition missing', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(null);
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(PropositionNotFoundError);
-    });
-
-    it('rejects cancellations by other users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ id: 10, roles: [createRole(UserRole.Member)] });
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(
-        createPropositionEntity({ user_id: 99 })
-      );
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(UnauthorizedPropositionError);
-    });
-
-    it('rejects already closed propositions', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ id: 10, roles: [createRole(UserRole.Member)] });
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(
-        createPropositionEntity({ user_id: user.id, status: 'converted' })
-      );
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(PropositionAlreadyClosedError);
-    });
-
-    it('returns error when repository does not cancel proposition', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ id: 10, roles: [createRole(UserRole.Member)] });
-      const proposition = createPropositionEntity({ user_id: user.id, status: 'open' });
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.cancelProposition.mockResolvedValueOnce(null);
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(PropositionAlreadyClosedError);
-    });
-
-    it('propagates audit failures during cancellation', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ id: 10, roles: [createRole(UserRole.Member)] });
-      const proposition = createPropositionEntity({ user_id: user.id, status: 'open' });
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.cancelProposition.mockResolvedValueOnce(
-        createPropositionEntity({ ...proposition, status: 'cancelled' })
-      );
-      const auditError = new Error('audit failed');
-      ctx.auditService.logAction.mockResolvedValueOnce(Result.fail<void>(auditError));
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(auditError);
-    });
-
-    it('cancels propositions successfully', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ id: 10, roles: [createRole(UserRole.Member)] });
-      const proposition = createPropositionEntity({ user_id: user.id, status: 'open' });
-      ctx.reservationsRepository.getPropositionById.mockResolvedValueOnce(proposition);
-      ctx.reservationsRepository.cancelProposition.mockResolvedValueOnce(
-        createPropositionEntity({ ...proposition, status: 'cancelled' })
-      );
-
-      const result = await ctx.service.cancelProposition(command, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toBeUndefined();
-    });
-  });
-
-  describe.skip('cancelReservation (legacy ownership rules, to be adjusted in upcoming phases)', () => {
-    const command: CancelReservationCommand = { reservationId: 22 };
-
-    it('rejects deleted users', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ isDeleted: true });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('propagates repository lookup errors', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      const repoError = new Error('lookup failed');
-      ctx.reservationsRepository.getReservationById.mockRejectedValueOnce(repoError);
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(repoError);
-    });
-
-    it('returns ReservationNotFoundError when reservation missing', async () => {
-      const ctx = createTestContext();
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(null);
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationNotFoundError);
-    });
-
-    it('rejects users lacking cancel permission', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 99 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      const user = createUserDto({ roles: [createRole(UserRole.Member)] });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ForbiddenError);
-    });
-
-    it('propagates repository delete errors', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 10 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      const deleteError = new Error('delete failed');
-      ctx.reservationsRepository.deleteReservation.mockRejectedValueOnce(deleteError);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [],
-        rangeRoles: {
-          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Coordinator, 'range')],
-        },
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBe(deleteError);
-    });
-
-    it('returns ReservationNotFoundError when delete returns null', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 10 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(null);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationNotFoundError);
-    });
-
-    it('returns ReservationCancellationError when audit logging fails', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 10 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      const auditError = new Error('audit failed');
-      ctx.auditService.logAction.mockResolvedValueOnce(Result.fail<void>(auditError));
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationCancellationError);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    });
-
-    it('cancels reservations successfully for authorized users', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 10 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(result.getValue()).toBeUndefined();
-    });
-
-    it('reopens linked propositions when cancelling converted reservations', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: 10,
-        proposition_id: 71,
-      });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      const reopenedProposition = createPropositionEntity({ id: 71, status: 'open' });
-      ctx.reservationsRepository.reopenProposition.mockResolvedValueOnce(reopenedProposition);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(true);
-      expect(ctx.reservationsRepository.reopenProposition).toHaveBeenCalledWith(71);
-    });
-
-    it('fails cancellation when reopening the linked proposition throws', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: 10,
-        proposition_id: 88,
-      });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      const reopenError = new Error('reopen failed');
-      ctx.reservationsRepository.reopenProposition.mockRejectedValueOnce(reopenError);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationCancellationError);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to reopen proposition after reservation cancellation',
-        reopenError,
-      );
-    });
-
-    it('fails cancellation when reopening the linked proposition returns null', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({
-        range_id: ctx.rangeDetails.id,
-        coordinator_id: 10,
-        proposition_id: 99,
-      });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.reopenProposition.mockResolvedValueOnce(null);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [createRole(UserRole.Coordinator)],
-      });
-
-      const result = await ctx.service.cancelReservation(command, user);
-
-      expect(result.isSuccess).toBe(false);
-      expect(result.getError()).toBeInstanceOf(ReservationCancellationError);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to reopen proposition after reservation cancellation',
-        99,
-      );
-    });
-
-    it('allows range administrators with scoped roles to cancel reservations', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 99 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      const user = createUserDto({
-        id: 200,
-        roles: [],
+  describe('message templates', () => {
+    it('lists templates for range admin', async () => {
+      const ctx = createCtx();
+      const admin = createUser({
         rangeRoles: {
           [String(ctx.rangeDetails.id)]: [createRole(UserRole.ShootingRangeAdministrator, 'range')],
         },
       });
+      ctx.reservationsRepository.listAdminMessageTemplates.mockResolvedValueOnce([createTemplate()]);
 
-      const result = await ctx.service.cancelReservation(command, user);
+      const result = await ctx.service.listMessageTemplates(ctx.rangeDetails.slug, false, admin);
 
       expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toHaveLength(1);
+      expect(result.getValue()[0].isActive).toBe(true);
     });
 
-    it('allows range coordinators to cancel their own reservations', async () => {
-      const ctx = createTestContext();
-      const reservation = createReservationEntity({ range_id: ctx.rangeDetails.id, coordinator_id: 55 });
-      ctx.reservationsRepository.getReservationById.mockResolvedValueOnce(reservation);
-      ctx.reservationsRepository.deleteReservation.mockResolvedValueOnce(reservation);
-      const user = createUserDto({
-        id: reservation.coordinator_id,
-        roles: [],
-        rangeRoles: {
-          [String(ctx.rangeDetails.id)]: [createRole(UserRole.Coordinator, 'range')],
-        },
-      });
+    it('rejects listing templates for non-admin', async () => {
+      const ctx = createCtx();
 
-      const result = await ctx.service.cancelReservation(command, user);
+      const result = await ctx.service.listMessageTemplates(
+        ctx.rangeDetails.slug,
+        false,
+        createUser({ roles: [createRole(UserRole.Member)] })
+      );
 
-      expect(result.isSuccess).toBe(true);
+      expect(result.isSuccess).toBe(false);
+      expect(result.getError()).toBeInstanceOf(ForbiddenError);
     });
   });
 });
