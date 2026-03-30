@@ -51,9 +51,10 @@ const { t } = useI18n()
 const mapElementRef = ref<HTMLElement | null>(null)
 const mapInstance = ref<LeafletMap | null>(null)
 const markerClusterLayer = ref<L.LayerGroup | null>(null)
-const markerBySlug = ref<globalThis.Map<string, L.Marker>>(new globalThis.Map())
+const markerBySlug = ref<globalThis.Map<string, MarkerWithRangeType>>(new globalThis.Map())
 const markerClusterPluginPromise = ref<Promise<void> | null>(null)
 const mapResizeObserver = ref<ResizeObserver | null>(null)
+const mapViewRefreshHandler = ref<(() => void) | null>(null)
 const mapZoomEndHandler = ref<(() => void) | null>(null)
 const mapClusterClickHandler = ref<((event: L.LeafletEvent) => void) | null>(null)
 
@@ -81,7 +82,10 @@ const polandInteractionBounds = L.latLngBounds(
   [POLAND_BOUNDS.latMax + POLAND_INTERACTION_PADDING.north, POLAND_BOUNDS.lngMax + POLAND_INTERACTION_PADDING.east],
 )
 
-type MarkerWithRangeType = L.Marker & { options: L.MarkerOptions & { rangeType?: RangeType } }
+type MarkerWithRangeType = L.Marker & {
+  update: () => void
+  options: L.MarkerOptions & { rangeType?: RangeType }
+}
 
 const createDefaultLogoDataUri = (svgContent: string): string => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">${svgContent}</svg>`
@@ -295,6 +299,15 @@ const ensureClusterLayer = () => {
   mapInstance.value.addLayer(markerClusterLayer.value as unknown as L.Layer)
 }
 
+const refreshRenderedMarkers = () => {
+  for (const marker of markerBySlug.value.values()) {
+    marker.update()
+  }
+
+  const layer = markerClusterLayer.value as unknown as { refreshClusters?: () => void } | null
+  layer?.refreshClusters?.()
+}
+
 const syncMarkers = () => {
   if (!markerClusterLayer.value) {
     return
@@ -328,6 +341,10 @@ const syncMarkers = () => {
     markerClusterLayer.value.addLayer(marker)
     markerBySlug.value.set(range.slug, marker)
   }
+
+  requestAnimationFrame(() => {
+    refreshRenderedMarkers()
+  })
 }
 
 const invalidateMapSize = () => {
@@ -338,6 +355,7 @@ const invalidateMapSize = () => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       mapInstance.value?.invalidateSize({ pan: false, debounceMoveend: true })
+      refreshRenderedMarkers()
     })
   })
 }
@@ -365,10 +383,18 @@ const initializeMap = async () => {
   syncMarkers()
   invalidateMapSize()
 
-  mapZoomEndHandler.value = () => {
-    const layer = markerClusterLayer.value as unknown as { refreshClusters?: () => void } | null
+  mapViewRefreshHandler.value = () => {
     requestAnimationFrame(() => {
-      layer?.refreshClusters?.()
+      refreshRenderedMarkers()
+    })
+  }
+  mapInstance.value.on('zoom', mapViewRefreshHandler.value)
+  mapInstance.value.on('moveend', mapViewRefreshHandler.value)
+  mapInstance.value.on('viewreset', mapViewRefreshHandler.value)
+
+  mapZoomEndHandler.value = () => {
+    requestAnimationFrame(() => {
+      refreshRenderedMarkers()
     })
   }
   mapInstance.value.on('zoomend', mapZoomEndHandler.value)
@@ -402,6 +428,11 @@ watch(() => props.selectedSlug, () => {
 
 onBeforeUnmount(() => {
   if (mapInstance.value) {
+    if (mapViewRefreshHandler.value) {
+      mapInstance.value.off('zoom', mapViewRefreshHandler.value)
+      mapInstance.value.off('moveend', mapViewRefreshHandler.value)
+      mapInstance.value.off('viewreset', mapViewRefreshHandler.value)
+    }
     if (mapZoomEndHandler.value) {
       mapInstance.value.off('zoomend', mapZoomEndHandler.value)
     }
@@ -416,6 +447,7 @@ onBeforeUnmount(() => {
     mapInstance.value = null
   }
   mapClusterClickHandler.value = null
+  mapViewRefreshHandler.value = null
   mapResizeObserver.value?.disconnect()
   mapResizeObserver.value = null
 })
