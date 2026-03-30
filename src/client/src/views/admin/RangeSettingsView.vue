@@ -173,8 +173,16 @@ const schema = yup.object({
     .mixed<RangeDetails['type']>()
     .oneOf(['club', 'ally', 'coming-soon', 'meetup', 'office'])
     .required(t('admin.rangeSettings.validation.required')),
-  allowsReservations: yup.boolean().required(),
-  allowMemberEvents: yup.boolean().required(),
+  allowsReservations: yup.boolean().when('type', {
+    is: 'office',
+    then: (schema) => schema.notRequired(),
+    otherwise: (schema) => schema.required(),
+  }),
+  allowMemberEvents: yup.boolean().when('type', {
+    is: 'office',
+    then: (schema) => schema.notRequired(),
+    otherwise: (schema) => schema.required(),
+  }),
   voivodeship: yup
     .string()
     .nullable()
@@ -209,18 +217,16 @@ const schema = yup.object({
     .nullable(),
   publicDescription: yup.string().nullable(),
   memberDescription: yup.string().nullable(),
-  totalTracks: yup
-    .number()
-    .nullable()
-    .when('type', {
-      is: 'office',
-      then: (schema) => schema.notRequired(),
-      otherwise: (schema) =>
-        schema
-          .typeError(t('admin.rangeSettings.validation.required'))
-          .min(1, t('admin.rangeSettings.validation.minTracks'))
-          .required(t('admin.rangeSettings.validation.required')),
-    }),
+  totalTracks: yup.mixed().when('type', {
+    is: 'office',
+    then: (schema) => schema.notRequired(),
+    otherwise: () =>
+      yup
+        .number()
+        .typeError(t('admin.rangeSettings.validation.required'))
+        .min(1, t('admin.rangeSettings.validation.minTracks'))
+        .required(t('admin.rangeSettings.validation.required')),
+  }),
   operatingHours: yup.mixed<FormOperatingHours>().when('type', {
     is: 'office',
     then: (schema) => schema.notRequired(),
@@ -413,11 +419,13 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
 }
 
 const handleInvalidSubmit = ({ errors }: InvalidSubmissionContext) => {
-  if (Object.keys(errors).length === 0) {
+  const firstError = Object.values(errors).find((error): error is string => typeof error === 'string' && error.length > 0)
+
+  if (!firstError) {
     return
   }
 
-  showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
+  showSnackbar(firstError, 'error')
 }
 
 const deleteRange = async () => {
