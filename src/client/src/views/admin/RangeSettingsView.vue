@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Field, Form, type SubmissionHandler } from 'vee-validate'
+import { Field, Form, type InvalidSubmissionContext, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
 import { useRoute, useRouter } from 'vue-router'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
@@ -211,15 +211,27 @@ const schema = yup.object({
   memberDescription: yup.string().nullable(),
   totalTracks: yup
     .number()
-    .typeError(t('admin.rangeSettings.validation.required'))
-    .min(1, t('admin.rangeSettings.validation.minTracks'))
-    .required(t('admin.rangeSettings.validation.required')),
-  operatingHours: yup.object(
-    dayOrder.reduce((acc, day) => {
-      acc[day] = daySchema(t(`rangeLanding.days.${day}`))
-      return acc
-    }, {} as Record<DayKey, ReturnType<typeof daySchema>>),
-  ),
+    .nullable()
+    .when('type', {
+      is: 'office',
+      then: (schema) => schema.notRequired(),
+      otherwise: (schema) =>
+        schema
+          .typeError(t('admin.rangeSettings.validation.required'))
+          .min(1, t('admin.rangeSettings.validation.minTracks'))
+          .required(t('admin.rangeSettings.validation.required')),
+    }),
+  operatingHours: yup.mixed<FormOperatingHours>().when('type', {
+    is: 'office',
+    then: (schema) => schema.notRequired(),
+    otherwise: () =>
+      yup.object(
+        dayOrder.reduce((acc, day) => {
+          acc[day] = daySchema(t(`rangeLanding.days.${day}`))
+          return acc
+        }, {} as Record<DayKey, ReturnType<typeof daySchema>>),
+      ),
+  }),
 })
 
 const showSnackbar = (message: string, color: 'success' | 'error' = 'success') => {
@@ -400,6 +412,14 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
   }
 }
 
+const handleInvalidSubmit = ({ errors }: InvalidSubmissionContext) => {
+  if (Object.keys(errors).length === 0) {
+    return
+  }
+
+  showSnackbar(t('admin.rangeSettings.errorMessage'), 'error')
+}
+
 const deleteRange = async () => {
   if (!rangeSlug.value || !canDeleteRange.value) {
     return
@@ -554,6 +574,7 @@ watch(
         :validation-schema="schema"
 
         @submit="submitSettings"
+        @invalid-submit="handleInvalidSubmit"
       >
         <template #default="{ values }">
           <v-card-text>
