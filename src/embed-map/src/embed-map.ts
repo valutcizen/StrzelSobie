@@ -56,13 +56,9 @@ const DEFAULT_CLUB_LOGO = createDefaultLogoDataUri(
   '<rect width="80" height="80" rx="20" fill="#1f2937"/><circle cx="40" cy="40" r="23" fill="none" stroke="#ffffff" stroke-width="6"/><circle cx="40" cy="40" r="13" fill="none" stroke="#ffffff" stroke-width="6"/><circle cx="40" cy="40" r="4.5" fill="#ffffff"/>',
 );
 
-const DEFAULT_ALLY_LOGO = createDefaultLogoDataUri(
-  '<rect width="80" height="80" rx="20" fill="#0f3b68"/><path d="M22 48c6-1 9-7 13-10 4-3 8-4 12-1 4-3 8-2 12 1 4 3 7 9 13 10v8H22z" fill="#ffffff"/><rect x="18" y="27" width="17" height="9" rx="4.5" fill="#ffffff"/><rect x="45" y="27" width="17" height="9" rx="4.5" fill="#ffffff"/>',
-);
-
-const typeStyleMap: Record<RangeType, { bgColor: string; logoUrl: string }> = {
+const typeStyleMap: Record<RangeType, { bgColor: string; logoUrl?: string; iconClass?: string; iconColor?: string; innerBgColor?: string }> = {
   club: { bgColor: '#2e7d32', logoUrl: DEFAULT_CLUB_LOGO },
-  ally: { bgColor: '#1565c0', logoUrl: DEFAULT_ALLY_LOGO },
+  ally: { bgColor: '#1565c0', iconClass: 'mdi mdi-handshake-outline', iconColor: '#0d47a1', innerBgColor: '#dbeafe' },
   'coming-soon': { bgColor: '#ef6c00', logoUrl: DEFAULT_CLUB_LOGO },
   meetup: { bgColor: '#00695c', logoUrl: DEFAULT_CLUB_LOGO },
   office: { bgColor: '#00897b', logoUrl: DEFAULT_CLUB_LOGO },
@@ -84,7 +80,7 @@ const getRangeLogoUrl = (range: RangeData, type: RangeType): string => {
     return customLogoUrl;
   }
 
-  return typeStyleMap[type].logoUrl;
+  return typeStyleMap[type].logoUrl ?? DEFAULT_CLUB_LOGO;
 };
 
 const escapeHtmlAttribute = (value: string): string =>
@@ -100,6 +96,10 @@ const createIcon = (range: RangeData): L.DivIcon => {
   const style = typeStyleMap[type];
   const logoUrl = escapeHtmlAttribute(getRangeLogoUrl(range, type));
   const size = 80;
+  const centerContent = style.iconClass
+    ? `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`
+    : `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`;
+  const innerBgColor = style.innerBgColor ?? 'rgba(255,255,255,0.97)';
 
   const pin = `
     <div style="width:${size}px;height:${size + 6}px;position: relative;">
@@ -116,8 +116,8 @@ const createIcon = (range: RangeData): L.DivIcon => {
         justify-content:center;
         overflow:hidden;
       ">
-        <div style="transform: rotate(45deg); width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.97); display:flex; align-items:center; justify-content:center; overflow:hidden;">
-          <img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />
+        <div style="transform: rotate(45deg); width:60px; height:60px; border-radius:50%; background:${innerBgColor}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          ${centerContent}
         </div>
       </div>
     </div>
