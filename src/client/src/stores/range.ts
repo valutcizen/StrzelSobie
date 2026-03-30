@@ -105,6 +105,9 @@ export const useRangeStore = defineStore('range', {
           if (payload.allowMemberEvents !== undefined) {
             nextExtras.allowMemberEvents = payload.allowMemberEvents
           }
+          if (payload.approximateLocation !== undefined) {
+            nextExtras.approximateLocation = payload.approximateLocation
+          }
           if (payload.mapLogoUrl !== undefined) {
             nextExtras.mapLogoUrl = payload.mapLogoUrl ?? null
           }
@@ -125,6 +128,7 @@ export const useRangeStore = defineStore('range', {
             ...(payload.parkingLocation !== undefined ? { parkingLocation: payload.parkingLocation ?? null } : {}),
             ...(payload.parkingLocation !== undefined ||
             payload.allowMemberEvents !== undefined ||
+            payload.approximateLocation !== undefined ||
             payload.mapLogoUrl !== undefined ||
             payload.voivodeship !== undefined
               ? { extras: nextExtras }
@@ -138,10 +142,16 @@ export const useRangeStore = defineStore('range', {
                   ...(payload.latitude !== undefined ? { latitude: payload.latitude ?? undefined } : {}),
                   ...(payload.longitude !== undefined ? { longitude: payload.longitude ?? undefined } : {}),
                   ...(payload.voivodeship !== undefined
+                    || payload.approximateLocation !== undefined
                     ? {
                         extras: {
                           ...(range.extras ?? {}),
-                          voivodeship: payload.voivodeship ?? null,
+                          ...(payload.voivodeship !== undefined
+                            ? { voivodeship: payload.voivodeship ?? null }
+                            : {}),
+                          ...(payload.approximateLocation !== undefined
+                            ? { approximateLocation: payload.approximateLocation }
+                            : {}),
                         },
                       }
                     : {}),

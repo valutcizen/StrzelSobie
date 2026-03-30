@@ -56,6 +56,7 @@ type RangeSettingsFormValues = {
   type: RangeDetails['type']
   allowsReservations: boolean
   allowMemberEvents: boolean
+  approximateLocation: boolean
   voivodeship: Voivodeship | null
   mapLogoUrl: string | null
   address: string | null
@@ -104,6 +105,7 @@ const initialValues = ref<RangeSettingsFormValues>({
   type: 'club',
   allowsReservations: true,
   allowMemberEvents: false,
+  approximateLocation: false,
   voivodeship: null,
   mapLogoUrl: null,
   address: null,
@@ -183,6 +185,7 @@ const schema = yup.object({
     then: (schema) => schema.notRequired(),
     otherwise: (schema) => schema.required(),
   }),
+  approximateLocation: yup.boolean().required(),
   voivodeship: yup
     .string()
     .nullable()
@@ -251,6 +254,7 @@ const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => (
   type: range.type ?? 'club',
   allowsReservations: range.allowsReservations ?? true,
   allowMemberEvents: range.extras?.allowMemberEvents ?? false,
+  approximateLocation: range.extras?.approximateLocation ?? false,
   voivodeship: (() => {
     const value = typeof range.extras?.voivodeship === 'string' ? range.extras.voivodeship.trim() : ''
     return VOIVODESHIPS.includes(value as Voivodeship) ? (value as Voivodeship) : null
@@ -373,6 +377,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
       type: values.type,
       allowsReservations: values.type === 'club' ? values.allowsReservations : false,
       allowMemberEvents: values.type === 'office' ? false : values.allowMemberEvents,
+      approximateLocation: values.approximateLocation,
       voivodeship: values.type === 'office' ? null : toNullableString(values.voivodeship),
       mapLogoUrl: values.type === 'office' ? null : toNullableString(values.mapLogoUrl),
       address: values.type === 'office' ? toNullableString(values.address) : null,
@@ -687,6 +692,28 @@ watch(
                     color="primary"
                     inset
                     data-testid="range-settings-allow-member-events-switch"
+                    @update:model-value="field.onChange"
+                  />
+                </Field>
+              </v-col>
+
+              <v-col
+                cols="12"
+                md="4"
+              >
+                <Field
+                  v-slot="{ field, errorMessage }"
+                  name="approximateLocation"
+                >
+                  <v-switch
+                    :label="t('admin.rangeSettings.approximateLocationLabel')"
+                    :hint="t('admin.rangeSettings.approximateLocationHint')"
+                    persistent-hint
+                    :model-value="field.value"
+                    :error-messages="errorMessage"
+                    color="primary"
+                    inset
+                    data-testid="range-settings-approximate-location-switch"
                     @update:model-value="field.onChange"
                   />
                 </Field>

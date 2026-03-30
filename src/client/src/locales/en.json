@@ -501,6 +501,8 @@
       "locationEmpty": "No location selected.",
       "locationCoordinates": "Lat: {lat}, Lng: {lng}",
       "clearLocation": "Clear location",
+      "approximateLocationLabel": "Approximate location",
+      "approximateLocationHint": "Hides exact coordinates and map links, and changes the map pin into a clean circle.",
       "latitudeLabel": "Latitude",
       "longitudeLabel": "Longitude",
       "parking": {
@@ -596,6 +598,9 @@
     "contact": "If you have any questions, contact the system administrator."
   },
   "range": {
+    "location": {
+      "approximateMessage": "Approximate location, contact the range caretaker."
+    },
     "actionBar": {
       "available": "Bookings are available for this range.",
       "unavailableHint": "Non-bookable ranges remain visible for information.",

@@ -135,6 +135,8 @@ const getRangeLogoUrl = (range: RangeSummary, type: RangeType): string => {
   return typeStyleMap[type].logoUrl ?? DEFAULT_CLUB_LOGO
 }
 
+const hasApproximateLocation = (range: RangeSummary): boolean => range.extras?.approximateLocation ?? false
+
 const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
   const type = normalizeRangeType(range.type)
   const style = typeStyleMap[type]
@@ -145,34 +147,56 @@ const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
     ? `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`
     : `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`
   const innerBgColor = style.innerBgColor ?? 'rgba(255,255,255,0.97)'
+  const isApproximateLocation = hasApproximateLocation(range)
 
-  const pin = `
-    <div style="width:${size}px;height:${size + 6}px;position: relative;">
-      <div style="
-        width:${size}px;
-        height:${size}px;
-        background: ${style.bgColor};
-        border:2px solid #ffffff;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        box-shadow:${shadow};
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        overflow:hidden;
-      ">
-        <div style="transform: rotate(45deg); width:60px; height:60px; border-radius:50%; background:${innerBgColor}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-          ${centerContent}
+  const pin = isApproximateLocation
+    ? `
+      <div style="width:${size}px;height:${size}px;position: relative;">
+        <div style="
+          width:${size}px;
+          height:${size}px;
+          background: ${style.bgColor};
+          border:2px solid #ffffff;
+          border-radius: 50%;
+          box-shadow:${shadow};
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          overflow:hidden;
+        ">
+          <div style="width:60px; height:60px; border-radius:50%; background:${innerBgColor}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            ${centerContent}
+          </div>
         </div>
       </div>
-    </div>
-  `
+    `
+    : `
+      <div style="width:${size}px;height:${size + 6}px;position: relative;">
+        <div style="
+          width:${size}px;
+          height:${size}px;
+          background: ${style.bgColor};
+          border:2px solid #ffffff;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          box-shadow:${shadow};
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          overflow:hidden;
+        ">
+          <div style="transform: rotate(45deg); width:60px; height:60px; border-radius:50%; background:${innerBgColor}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            ${centerContent}
+          </div>
+        </div>
+      </div>
+    `
 
   return L.divIcon({
     html: pin,
     className: 'leaflet-div-icon range-map__pin',
-    iconSize: [size, size + 12],
-    iconAnchor: [size / 2, size + 12],
+    iconSize: isApproximateLocation ? [size, size] : [size, size + 12],
+    iconAnchor: isApproximateLocation ? [size / 2, size / 2] : [size / 2, size + 12],
   })
 }
 

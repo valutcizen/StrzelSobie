@@ -501,6 +501,8 @@
       "locationEmpty": "Brak wybranej lokalizacji.",
       "locationCoordinates": "Szer.: {lat}, Dł.: {lng}",
       "clearLocation": "Wyczyść lokalizację",
+      "approximateLocationLabel": "Niedokładna lokalizacja",
+      "approximateLocationHint": "Ukrywa dokładne współrzędne i linki do map, a pinezkę na mapie zmienia na czyste kółko.",
       "latitudeLabel": "Szerokość geograficzna",
       "longitudeLabel": "Długość geograficzna",
       "parking": {
@@ -596,6 +598,9 @@
     "contact": "Jeśli masz pytania, skontaktuj się z administratorem"
   },
   "range": {
+    "location": {
+      "approximateMessage": "Lokalizacja niedokładna - skontaktuj się z opiekunem strzelnicy."
+    },
     "actionBar": {
       "available": "Rezerwacje są dostępne dla tej strzelnicy.",
       "unavailableHint": "Strzelnice bez rezerwacji są widoczne informacyjnie.",

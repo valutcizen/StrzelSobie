@@ -47,6 +47,7 @@ const updateRangeCommandSchema = z.object({
   longitude: z.number().optional().nullable(),
   parkingLocation: parkingLocationSchema.nullable().optional(),
   allowMemberEvents: z.boolean().optional(),
+  approximateLocation: z.boolean().optional(),
   mapLogoUrl: z.string().trim().url().nullable().optional(),
   voivodeship: z.string().trim().nullable().optional(),
   address: z.string().trim().nullable().optional(),

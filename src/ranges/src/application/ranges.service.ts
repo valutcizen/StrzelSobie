@@ -224,6 +224,12 @@ export class RangesService implements IRangesService {
       range.extras = JSON.stringify(extras);
     }
 
+    if (command.approximateLocation !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.approximateLocation = command.approximateLocation;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.mapLogoUrl !== undefined) {
       const extras = this.parseExtrasObject(range.extras);
       extras.mapLogoUrl =
@@ -337,6 +343,9 @@ export class RangesService implements IRangesService {
       extras.voivodeship = command.voivodeship.trim();
     } else if (command.voivodeship === null) {
       extras.voivodeship = null;
+    }
+    if (command.approximateLocation !== undefined) {
+      extras.approximateLocation = command.approximateLocation;
     }
 
     const created = await this.rangesRepository.create({
@@ -548,6 +557,8 @@ export class RangesService implements IRangesService {
     const parkingLocation = this.parseParkingLocation(extras.parkingLocation);
     const allowMemberEvents =
       typeof extras.allowMemberEvents === 'boolean' ? extras.allowMemberEvents : undefined;
+    const approximateLocation =
+      typeof extras.approximateLocation === 'boolean' ? extras.approximateLocation : undefined;
     const mapLogoUrl = this.parseOptionalString(extras.mapLogoUrl);
     const voivodeship = this.parseOptionalString(extras.voivodeship);
     const address = this.parseOptionalString(extras.address);
@@ -563,6 +574,7 @@ export class RangesService implements IRangesService {
     return {
       ...(parkingLocation ? { parkingLocation } : hasParkingLocation ? { parkingLocation: null } : {}),
       ...(allowMemberEvents !== undefined ? { allowMemberEvents } : {}),
+      ...(approximateLocation !== undefined ? { approximateLocation } : {}),
       ...(mapLogoUrl !== undefined ? { mapLogoUrl } : hasMapLogo ? { mapLogoUrl: null } : {}),
       ...(voivodeship !== undefined ? { voivodeship } : hasVoivodeship ? { voivodeship: null } : {}),
       ...(address !== undefined ? { address } : hasAddress ? { address: null } : {}),

@@ -34,7 +34,13 @@ const phone = computed(() => {
   return typeof value === 'string' ? value : null
 })
 
+const approximateLocation = computed(() => currentOffice.value?.extras?.approximateLocation ?? false)
+
 const coordinatesLabel = computed(() => {
+  if (approximateLocation.value) {
+    return null
+  }
+
   const lat = currentOffice.value?.latitude
   const lng = currentOffice.value?.longitude
   if (typeof lat === 'number' && typeof lng === 'number') {
@@ -44,6 +50,10 @@ const coordinatesLabel = computed(() => {
 })
 
 const locationLinks = computed(() => {
+  if (approximateLocation.value) {
+    return []
+  }
+
   const lat = currentOffice.value?.latitude
   const lng = currentOffice.value?.longitude
   if (typeof lat !== 'number' || typeof lng !== 'number') {
@@ -168,45 +178,58 @@ const goBack = () => {
                       >
                         {{ t('officeLanding.labels.location') }}
                       </div>
-                      <div data-testid="office-localization">
-                        {{ coordinatesLabel ?? '-' }}
-                      </div>
-                      <div
-                        v-if="locationLinks.length > 0"
-                        class="office-location-links mt-3"
+                      <v-alert
+                        v-if="approximateLocation"
+                        type="info"
+                        variant="tonal"
+                        border="start"
+                        density="comfortable"
+                        class="mb-0"
+                        data-testid="office-approximate-location-alert"
                       >
-                        <v-btn
-                          v-for="link in locationLinks"
-                          :key="link.key"
-                          :href="link.href"
-                          :prepend-icon="link.icon"
-                          target="_blank"
-                          rel="noopener"
-                          variant="tonal"
-                          size="small"
-                          :data-testid="link.testId"
+                        {{ t('range.location.approximateMessage') }}
+                      </v-alert>
+                      <template v-else>
+                        <div data-testid="office-localization">
+                          {{ coordinatesLabel ?? '-' }}
+                        </div>
+                        <div
+                          v-if="locationLinks.length > 0"
+                          class="office-location-links mt-3"
                         >
-                          {{ link.label }}
-                        </v-btn>
-                      </div>
+                          <v-btn
+                            v-for="link in locationLinks"
+                            :key="link.key"
+                            :href="link.href"
+                            :prepend-icon="link.icon"
+                            target="_blank"
+                            rel="noopener"
+                            variant="tonal"
+                            size="small"
+                            :data-testid="link.testId"
+                          >
+                            {{ link.label }}
+                          </v-btn>
+                        </div>
+                      </template>
                       <div class="text-caption text-medium-emphasis mt-4 mb-1">
-                      {{ t('officeLanding.labels.address') }}
+                        {{ t('officeLanding.labels.address') }}
                       </div>
                       <div data-testid="office-address">
-                      {{ address ?? '-' }}
+                        {{ address ?? '-' }}
                       </div>
 
                       <div class="text-caption text-medium-emphasis mt-4 mb-1">
-                      {{ t('officeLanding.labels.phone') }}
+                        {{ t('officeLanding.labels.phone') }}
                       </div>
                       <div data-testid="office-phone">
-                      <a
-                        v-if="phone"
-                        :href="`tel:${phone}`"
-                      >
-                        {{ phone }}
-                      </a>
-                      <span v-else>-</span>
+                        <a
+                          v-if="phone"
+                          :href="`tel:${phone}`"
+                        >
+                          {{ phone }}
+                        </a>
+                        <span v-else>-</span>
                       </div>
                     </v-card-text>
                   </v-card>

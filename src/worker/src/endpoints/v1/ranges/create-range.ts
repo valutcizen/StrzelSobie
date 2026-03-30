@@ -36,6 +36,7 @@ const createRangeCommandSchema = z.object({
   longitude: z.number().optional(),
   totalTracks: z.number().int().min(0).optional().nullable(),
   operatingHours: operatingHoursSchema.optional(),
+  approximateLocation: z.boolean().optional(),
   mapLogoUrl: z.string().trim().url().nullable().optional(),
   voivodeship: z.string().trim().nullable().optional(),
 });

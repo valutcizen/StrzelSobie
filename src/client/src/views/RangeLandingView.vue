@@ -38,6 +38,7 @@ const isBookingUnavailableNotice = computed(
 )
 const currentRange = computed(() => rangeStore.currentRange)
 const isMeetupRange = computed(() => currentRange.value?.type === 'meetup')
+const approximateLocation = computed(() => currentRange.value?.extras?.approximateLocation ?? false)
 const dateLocale = computed(() => (locale.value === 'pl' ? plLocale : enUS))
 const coordinates = computed(() => {
   const range = rangeStore.currentRange
@@ -321,6 +322,7 @@ watch(
                   v-if="!isMeetupRange"
                   :allows-reservations="currentRange?.allowsReservations ?? false"
                   :range-type="(currentRange?.type ?? 'club')"
+                  :approximate-location="approximateLocation"
                   :coordinates="coordinates"
                   :parking-coordinates="parkingCoordinates"
                   @open-calendar="handleOpenCalendar"

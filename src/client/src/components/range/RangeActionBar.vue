@@ -39,8 +39,19 @@
       </div>
     </div>
 
+    <v-alert
+      v-if="approximateLocation"
+      type="info"
+      variant="tonal"
+      border="start"
+      class="mt-4 mb-0"
+      data-testid="range-approximate-location-alert"
+    >
+      {{ t('range.location.approximateMessage') }}
+    </v-alert>
+
     <div
-      v-if="linkSections.length"
+      v-else-if="linkSections.length"
       class="mt-4 location-links"
     >
       <div
@@ -92,6 +103,7 @@ import type { RangeDetails } from '@/types/range'
 interface Props {
   allowsReservations: boolean
   rangeType: RangeDetails['type']
+  approximateLocation?: boolean
   coordinates?: {
     lat: number
     lng: number

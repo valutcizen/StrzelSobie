@@ -18,6 +18,7 @@ interface RangeData {
   displayName: string;
   latitude: number | null | undefined;
   longitude: number | null | undefined;
+  approximateLocation?: boolean;
   mapLogoUrl?: string | null;
 }
 
@@ -96,12 +97,34 @@ const createIcon = (range: RangeData): L.DivIcon => {
   const style = typeStyleMap[type];
   const logoUrl = escapeHtmlAttribute(getRangeLogoUrl(range, type));
   const size = 80;
+  const isApproximateLocation = range.approximateLocation ?? false;
   const centerContent = style.iconClass
     ? `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`
     : `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`;
   const innerBgColor = style.innerBgColor ?? 'rgba(255,255,255,0.97)';
 
-  const pin = `
+  const pin = isApproximateLocation
+    ? `
+    <div style="width:${size}px;height:${size}px;position: relative;">
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        background: ${style.bgColor};
+        border:2px solid #ffffff;
+        border-radius: 50%;
+        box-shadow:0 7px 18px rgba(0, 0, 0, 0.25);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+      ">
+        <div style="width:60px; height:60px; border-radius:50%; background:${innerBgColor}; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          ${centerContent}
+        </div>
+      </div>
+    </div>
+  `
+    : `
     <div style="width:${size}px;height:${size + 6}px;position: relative;">
       <div style="
         width:${size}px;
@@ -126,8 +149,8 @@ const createIcon = (range: RangeData): L.DivIcon => {
   return L.divIcon({
     html: pin,
     className: 'leaflet-div-icon embed-map__pin',
-    iconSize: [size, size + 6],
-    iconAnchor: [size / 2, size + 6],
+    iconSize: isApproximateLocation ? [size, size] : [size, size + 6],
+    iconAnchor: isApproximateLocation ? [size / 2, size / 2] : [size / 2, size + 6],
   });
 };
 

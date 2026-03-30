@@ -31,6 +31,7 @@ export type RangeParkingLocation = {
 export type RangeExtras = {
   parkingLocation?: RangeParkingLocation | null;
   allowMemberEvents?: boolean;
+  approximateLocation?: boolean;
   mapLogoUrl?: string | null;
   voivodeship?: string | null;
   address?: string | null;
@@ -100,6 +101,7 @@ export type UpdateRangeCommand = Partial<
   >
 > & {
   allowMemberEvents?: boolean;
+  approximateLocation?: boolean;
   mapLogoUrl?: string | null;
   voivodeship?: string | null;
   address?: string | null;
@@ -122,6 +124,7 @@ export type CreateRangeCommand = {
   longitude?: ShootingRange['longitude'];
   totalTracks?: ShootingRange['total_tracks'] | null;
   operatingHours?: OperatingHours;
+  approximateLocation?: boolean;
   mapLogoUrl?: string | null;
   voivodeship?: string | null;
 };
