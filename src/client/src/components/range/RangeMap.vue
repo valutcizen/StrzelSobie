@@ -51,11 +51,8 @@ const { t } = useI18n()
 const mapElementRef = ref<HTMLElement | null>(null)
 const mapInstance = ref<LeafletMap | null>(null)
 const markerClusterLayer = ref<L.LayerGroup | null>(null)
-const markerBySlug = ref<globalThis.Map<string, MarkerWithRangeType>>(new globalThis.Map())
 const markerClusterPluginPromise = ref<Promise<void> | null>(null)
 const mapResizeObserver = ref<ResizeObserver | null>(null)
-const mapViewRefreshHandler = ref<(() => void) | null>(null)
-const mapZoomEndHandler = ref<(() => void) | null>(null)
 const mapClusterClickHandler = ref<((event: L.LeafletEvent) => void) | null>(null)
 
 const POLAND_BOUNDS = {
@@ -83,7 +80,6 @@ const polandInteractionBounds = L.latLngBounds(
 )
 
 type MarkerWithRangeType = L.Marker & {
-  update: () => void
   options: L.MarkerOptions & { rangeType?: RangeType }
 }
 
@@ -326,22 +322,12 @@ const ensureClusterLayer = () => {
   mapInstance.value.addLayer(markerClusterLayer.value as unknown as L.Layer)
 }
 
-const refreshRenderedMarkers = () => {
-  for (const marker of markerBySlug.value.values()) {
-    marker.update()
-  }
-
-  const layer = markerClusterLayer.value as unknown as { refreshClusters?: () => void } | null
-  layer?.refreshClusters?.()
-}
-
 const syncMarkers = () => {
   if (!markerClusterLayer.value) {
     return
   }
 
   markerClusterLayer.value.clearLayers()
-  markerBySlug.value = new globalThis.Map()
 
   for (const range of validRanges.value) {
     const isSelected = range.slug === props.selectedSlug
@@ -366,12 +352,7 @@ const syncMarkers = () => {
     marker.on('click', () => emit('select', range.slug))
 
     markerClusterLayer.value.addLayer(marker)
-    markerBySlug.value.set(range.slug, marker)
   }
-
-  requestAnimationFrame(() => {
-    refreshRenderedMarkers()
-  })
 }
 
 const invalidateMapSize = () => {
@@ -382,7 +363,6 @@ const invalidateMapSize = () => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       mapInstance.value?.invalidateSize({ pan: false, debounceMoveend: true })
-      refreshRenderedMarkers()
     })
   })
 }
@@ -393,9 +373,6 @@ const initializeMap = async () => {
   }
 
   mapInstance.value = L.map(mapElementRef.value, {
-    zoomAnimation: false,
-    markerZoomAnimation: false,
-    fadeAnimation: false,
     maxBounds: polandInteractionBounds,
     maxBoundsViscosity: 0.85,
   })
@@ -409,22 +386,6 @@ const initializeMap = async () => {
   ensureClusterLayer()
   syncMarkers()
   invalidateMapSize()
-
-  mapViewRefreshHandler.value = () => {
-    requestAnimationFrame(() => {
-      refreshRenderedMarkers()
-    })
-  }
-  mapInstance.value.on('zoom', mapViewRefreshHandler.value)
-  mapInstance.value.on('moveend', mapViewRefreshHandler.value)
-  mapInstance.value.on('viewreset', mapViewRefreshHandler.value)
-
-  mapZoomEndHandler.value = () => {
-    requestAnimationFrame(() => {
-      refreshRenderedMarkers()
-    })
-  }
-  mapInstance.value.on('zoomend', mapZoomEndHandler.value)
 }
 
 onMounted(() => {
@@ -455,14 +416,6 @@ watch(() => props.selectedSlug, () => {
 
 onBeforeUnmount(() => {
   if (mapInstance.value) {
-    if (mapViewRefreshHandler.value) {
-      mapInstance.value.off('zoom', mapViewRefreshHandler.value)
-      mapInstance.value.off('moveend', mapViewRefreshHandler.value)
-      mapInstance.value.off('viewreset', mapViewRefreshHandler.value)
-    }
-    if (mapZoomEndHandler.value) {
-      mapInstance.value.off('zoomend', mapZoomEndHandler.value)
-    }
     if (markerClusterLayer.value) {
       if (mapClusterClickHandler.value) {
         ;(markerClusterLayer.value as unknown as { off: (event: string, handler: (event: L.LeafletEvent) => void) => void })
@@ -474,7 +427,6 @@ onBeforeUnmount(() => {
     mapInstance.value = null
   }
   mapClusterClickHandler.value = null
-  mapViewRefreshHandler.value = null
   mapResizeObserver.value?.disconnect()
   mapResizeObserver.value = null
 })
