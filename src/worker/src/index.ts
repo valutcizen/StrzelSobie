@@ -57,13 +57,14 @@ import { resolveAuthModule } from './auth/module-registry';
 import { RANGE_TYPES, Result, type RangeType } from '@strzel-sobie/common';
 
 const EMBED_MAP_ALLOWED_TYPES: RangeType[] = [...RANGE_TYPES];
-const EMBED_MAP_CACHE_VERSION = '7';
+const EMBED_MAP_CACHE_VERSION = '8';
 const EMBED_MAP_CONFIG_VERSION = `types:${EMBED_MAP_ALLOWED_TYPES.join(',')}`;
 
 const cacheEmbedResponse = async (
   cacheKey: string,
   body: string,
-  contentType: string
+  contentType: string,
+  cacheControl = 'public, max-age=86400'
 ): Promise<Response> => {
   const cache = globalThis.caches?.default;
   const request = new Request(cacheKey);
@@ -79,7 +80,7 @@ const cacheEmbedResponse = async (
     status: 200,
     headers: {
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': cacheControl,
     },
   });
 
@@ -269,7 +270,16 @@ openapi.delete(
 app.get('/embed/map', async (_c) => {
   // Cache by path only (ignore query params like parentOrigin)
   const cacheKey = `https://cache.strzel-sobie/embed/map?v=${EMBED_MAP_CACHE_VERSION}&cfg=${EMBED_MAP_CONFIG_VERSION}`;
-  return cacheEmbedResponse(cacheKey, EMBED_MAP_HTML, 'text/html; charset=utf-8');
+  const html = EMBED_MAP_HTML.replace(
+    'src="/embed/map.js"',
+    `src="/embed/map.js?v=${EMBED_MAP_CACHE_VERSION}"`,
+  );
+  return cacheEmbedResponse(
+    cacheKey,
+    html,
+    'text/html; charset=utf-8',
+    'no-store',
+  );
 });
 
 app.get('/embed/map.js', async (_c) => {
