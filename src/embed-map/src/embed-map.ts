@@ -84,6 +84,9 @@ const getRangeLogoUrl = (range: RangeData, type: RangeType): string => {
   return typeStyleMap[type].logoUrl ?? DEFAULT_CLUB_LOGO;
 };
 
+const hasCustomRangeLogo = (range: RangeData): boolean =>
+  typeof range.mapLogoUrl === 'string' && range.mapLogoUrl.trim().length > 0;
+
 const escapeHtmlAttribute = (value: string): string =>
   value
     .replace(/&/g, '&amp;')
@@ -98,9 +101,9 @@ const createIcon = (range: RangeData): L.DivIcon => {
   const logoUrl = escapeHtmlAttribute(getRangeLogoUrl(range, type));
   const size = 80;
   const isApproximateLocation = range.approximateLocation ?? false;
-  const centerContent = style.iconClass
-    ? `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`
-    : `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`;
+  const centerContent = hasCustomRangeLogo(range) || !style.iconClass
+    ? `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`
+    : `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`;
   const innerBgColor = style.innerBgColor ?? 'rgba(255,255,255,0.97)';
 
   const pin = isApproximateLocation

@@ -75,8 +75,7 @@ const buildEmbedAssets = async () => {
   ]);
 
   const htmlWithoutCdnLinks = html
-    .replace(/<link[^>]+leaflet[^>]+>/gi, '')
-    .replace(/<link[^>]+materialdesignicons[^>]+>/gi, '');
+    .replace(/<link[^>]+leaflet[^>]+>/gi, '');
 
   const minifiedHtml = minifyHtml(
     htmlWithoutCdnLinks.replace(

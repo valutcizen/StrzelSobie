@@ -135,6 +135,9 @@ const getRangeLogoUrl = (range: RangeSummary, type: RangeType): string => {
   return typeStyleMap[type].logoUrl ?? DEFAULT_CLUB_LOGO
 }
 
+const hasCustomRangeLogo = (range: RangeSummary): boolean =>
+  typeof range.extras?.mapLogoUrl === 'string' && range.extras.mapLogoUrl.trim().length > 0
+
 const hasApproximateLocation = (range: RangeSummary): boolean => range.extras?.approximateLocation ?? false
 
 const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
@@ -143,9 +146,9 @@ const createIcon = (range: RangeSummary, isSelected: boolean): DivIcon => {
   const logoUrl = escapeHtmlAttribute(getRangeLogoUrl(range, type))
   const size = 80
   const shadow = isSelected ? '0 10px 24px rgba(0, 0, 0, 0.32)' : '0 7px 18px rgba(0, 0, 0, 0.25)'
-  const centerContent = style.iconClass
-    ? `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`
-    : `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`
+  const centerContent = hasCustomRangeLogo(range) || !style.iconClass
+    ? `<img src="${logoUrl}" alt="" width="56" height="56" style="display:block; object-fit:cover; border-radius:50%;" />`
+    : `<i class="${style.iconClass}" style="font-size:36px; color:${style.iconColor ?? '#1f2937'}; line-height:1;"></i>`
   const innerBgColor = style.innerBgColor ?? 'rgba(255,255,255,0.97)'
   const isApproximateLocation = hasApproximateLocation(range)
 

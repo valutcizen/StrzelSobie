@@ -8,6 +8,7 @@ import vuetify from './plugins/vuetify'
 import { setupValidation } from './plugins/vee-validate'
 import { setupHttpInterceptors } from './services/http'
 import { useAuthStore } from './stores/auth'
+import '@mdi/font/css/materialdesignicons.css'
 import './style.css'
 import './assets/flag-icons.css'
 
