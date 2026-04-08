@@ -536,12 +536,22 @@ const canAccept = computed(() =>
   (authStore.hasAnyRole([UserRoleEnum.ShootingRangeAdministrator, UserRoleEnum.ClubCommunityAdministrator]) ||
     authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator])),
 )
+
+const isOwnProposition = computed(() =>
+  isProposition.value &&
+  typeof event.value?.meta?.userId === 'number' &&
+  String(event.value?.meta?.userId) === authStore.user?.id,
+)
+
 const canCancel = computed(() =>
   Boolean(
     event.value &&
       event.value.type !== 'record' &&
-      (authStore.hasAnyRole([UserRoleEnum.ShootingRangeAdministrator, UserRoleEnum.ClubCommunityAdministrator]) ||
-        authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator])),
+      (
+        authStore.hasAnyRole([UserRoleEnum.ShootingRangeAdministrator, UserRoleEnum.ClubCommunityAdministrator]) ||
+        authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator]) ||
+        isOwnProposition.value
+      ),
   ),
 )
 

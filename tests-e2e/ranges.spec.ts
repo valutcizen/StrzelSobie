@@ -1,4 +1,4 @@
-import { expect, test, type TestInfo } from '@playwright/test';
+import { expect, request, test, type TestInfo } from '@playwright/test';
 import { RangeLandingPage } from './pages/range-landing.page';
 import { claimSlot } from './support/calendar-slots';
 import { translate } from './support/i18n';
@@ -76,8 +76,12 @@ test.describe('Ranges', () => {
     await expect(landingPage.openCalendarButton).toBeDisabled();
   });
 
-  test('reservation attempts for non-bookable ranges return a conflict @range-admin', async ({ page }, testInfo) => {
+  test('reservation attempts for non-bookable ranges return a conflict @admin', async ({ page }, testInfo) => {
     const slotClaim = claimSlot(slotSeed(testInfo, 'non-bookable'));
+    const adminContext = await request.newContext({
+      baseURL: 'http://localhost:5173',
+      storageState: 'tests-e2e/.auth/admin.json',
+    });
     const payload = {
       eventDate: slotClaim.slot.eventDate,
       startTime: slotClaim.slot.startTime,
@@ -88,7 +92,7 @@ test.describe('Ranges', () => {
 
     try {
       for (const slug of [allyRangeSlug, comingSoonRangeSlug]) {
-        const response = await page.request.post(`/api/v1/ranges/${slug}/reservations`, {
+        const response = await adminContext.post(`/api/v1/ranges/${slug}/reservations`, {
           data: payload,
         });
         expect(response.status()).toBe(409);
@@ -96,6 +100,7 @@ test.describe('Ranges', () => {
         expect((body as { code?: string }).code).toBe('reservations_not_available_for_ally_range');
       }
     } finally {
+      await adminContext.dispose();
       slotClaim.release();
     }
   });

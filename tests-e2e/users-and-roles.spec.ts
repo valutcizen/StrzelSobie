@@ -1,5 +1,7 @@
 import { test, expect, request } from '@playwright/test';
+import { claimSlot } from './support/calendar-slots';
 import { translate } from './support/i18n';
+import { getFiringLineForTracks } from './support/range-fixtures';
 
 test.describe('Users & Roles', () => {
   test('an admin can assign and remove roles from a user @admin', async ({ page }) => {
@@ -169,151 +171,104 @@ test.describe('Users & Roles', () => {
     await expect(pendingUserItem.locator('.v-chip', { hasText: coordinatorRoleLabel })).toHaveCount(0);
   });
 
-  test('a guest sees only their own propositions and no reservation details for others @guest', async ({ page }) => {
-
-    const formatDate = (date: Date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-        date.getDate(),
-      ).padStart(2, '0')}`;
-    const formatTime = (date: Date) =>
-      `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
-    const today = new Date();
-    const dayOffset = (today.getDay() + 6) % 7; // Monday = 0
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - dayOffset);
-    monday.setHours(0, 0, 0, 0);
-
-    const eventDateObj = new Date(monday);
-    eventDateObj.setDate(monday.getDate() + 1);
-    eventDateObj.setHours(10, 0, 0, 0);
-
-    const eventEndObj = new Date(eventDateObj);
-    eventEndObj.setHours(eventDateObj.getHours() + 1);
-
-    const eventDate = formatDate(eventDateObj);
-    const startTime = formatTime(eventDateObj);
-    const endTime = formatTime(eventEndObj);
+  test('a guest sees only their own propositions and no reservation details for others @guest', async ({ page }, testInfo) => {
 
     const memberContext = await request.newContext({ storageState: 'tests-e2e/.auth/member.json' });
-    const createResponse = await memberContext.post('http://localhost:5173/api/v1/ranges/dobczyce/propositions', {
-      data: {
-        eventDate,
-        startTime,
-        endTime,
-        firingLineId: 1,
-        trackNos: [1],
-        hasCoordinatorLicenseInGroup: true,
-      },
-    });
-    if (!createResponse.ok()) {
-      console.error(await createResponse.text());
-    }
-    expect(createResponse.ok()).toBeTruthy();
-
-    const { id: propositionId } = await createResponse.json();
-
     const rangeAdminContext = await request.newContext({ storageState: 'tests-e2e/.auth/range-admin.json' });
-    const candidateDayOffsets = [2, 3, 4]; // mid-week slots to reduce conflict risk
-    const candidateHours = [8, 12, 16];
-
+    const propositionClaim = claimSlot(`${testInfo.project.name}:${testInfo.title}:guest-proposition`);
+    const reservationClaim = claimSlot(`${testInfo.project.name}:${testInfo.title}:guest-reservation`);
+    let propositionId: number | null = null;
     let reservationId: number | null = null;
 
-    for (const dayOffsetCandidate of candidateDayOffsets) {
-      if (reservationId) {
-        break;
+    try {
+      const memberFiringLine = await getFiringLineForTracks(memberContext, 'http://localhost:5173', 'dobczyce', 1);
+      const createResponse = await memberContext.post('http://localhost:5173/api/v1/ranges/dobczyce/propositions', {
+        data: {
+          eventDate: propositionClaim.slot.eventDate,
+          startTime: propositionClaim.slot.startTime,
+          endTime: propositionClaim.slot.endTime,
+          firingLineId: memberFiringLine.id,
+          trackNos: [1],
+          hasCoordinatorLicenseInGroup: true,
+        },
+      });
+      if (!createResponse.ok()) {
+        console.error(await createResponse.text());
       }
+      expect(createResponse.ok()).toBeTruthy();
 
-      for (const hourCandidate of candidateHours) {
-        const reservationStartObj = new Date(monday);
-        reservationStartObj.setDate(monday.getDate() + dayOffsetCandidate);
-        reservationStartObj.setHours(hourCandidate, 0, 0, 0);
+      propositionId = (await createResponse.json()).id ?? null;
+      expect(propositionId).toBeTruthy();
 
-        const reservationEndObj = new Date(reservationStartObj);
-        reservationEndObj.setHours(reservationStartObj.getHours() + 1);
+      const reservationFiringLine = await getFiringLineForTracks(rangeAdminContext, 'http://localhost:5173', 'dobczyce', 2);
+      const reservationResponse = await rangeAdminContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
+        data: {
+          eventDate: reservationClaim.slot.eventDate,
+          startTime: reservationClaim.slot.startTime,
+          endTime: reservationClaim.slot.endTime,
+          firingLineId: reservationFiringLine.id,
+          trackNos: [1, 2],
+        },
+      });
 
-          const reservationResponse = await rangeAdminContext.post('http://localhost:5173/api/v1/ranges/dobczyce/reservations', {
-            data: {
-              eventDate: formatDate(reservationStartObj),
-              startTime: formatTime(reservationStartObj),
-              endTime: formatTime(reservationEndObj),
-              firingLineId: 1,
-              trackNos: [1, 2],
-            },
-          });
+      reservationId = reservationResponse.ok() ? (await reservationResponse.json()).id ?? null : null;
+      expect(reservationId).toBeDefined();
+      const resolvedReservationId = reservationId!;
 
-        if (!reservationResponse.ok()) {
-          continue;
-        }
+      await page.goto('/dobczyce/calendar');
 
-        const payload = await reservationResponse.json();
-        reservationId = payload.id ?? null;
-        break;
+      const calendarResponse = await page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/v1/ranges/dobczyce/events') &&
+          response.request().method() === 'GET' &&
+          response.status() === 200,
+      );
+
+      const calendarPayload = await calendarResponse.json();
+      const propositionEntry = (calendarPayload.propositions ?? []).find(
+        (item: { id: number }) => item.id === propositionId,
+      );
+      expect(propositionEntry).toBeUndefined();
+
+      const reservationEntry = (calendarPayload.reservations ?? []).find(
+        (item: { id: number }) => item.id === resolvedReservationId,
+      );
+      expect(reservationEntry).toBeDefined();
+      expect(reservationEntry?.details).toBeNull();
+      expect(reservationEntry?.trackNos).toEqual([]);
+
+      const propositionLocator = page.locator(
+        `[data-event-id="proposition-${propositionId}"]`,
+      );
+      await expect(propositionLocator).toHaveCount(0);
+
+      const reservationDetailResponse = await page.request.get(
+        `/api/v1/reservations/${resolvedReservationId}`,
+      );
+      expect(reservationDetailResponse.status()).toBe(403);
+
+      const propositionDetailResponse = await page.request.get(
+        `/api/v1/propositions/${propositionId}`,
+      );
+      const propositionStatus = propositionDetailResponse.status();
+      expect(propositionStatus).toBeGreaterThanOrEqual(400);
+      expect(propositionStatus).toBeLessThan(500);
+    } finally {
+      if (reservationId !== null) {
+        await rangeAdminContext.delete(`http://localhost:5173/api/v1/reservations/${reservationId}`).catch(() => {});
       }
+      if (propositionId !== null) {
+        await memberContext.delete(`http://localhost:5173/api/v1/propositions/${propositionId}`).catch(() => {});
+      }
+      propositionClaim.release();
+      reservationClaim.release();
+      await Promise.all([memberContext.dispose(), rangeAdminContext.dispose()]);
     }
-
-    expect(reservationId).toBeDefined();
-    const resolvedReservationId = reservationId!;
-
-    await page.goto('/dobczyce/calendar');
-
-    const calendarResponse = await page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/v1/ranges/dobczyce/events') &&
-        response.request().method() === 'GET' &&
-        response.status() === 200,
-    );
-
-    const calendarPayload = await calendarResponse.json();
-    const propositionEntry = (calendarPayload.propositions ?? []).find(
-      (item: { id: number }) => item.id === propositionId,
-    );
-    expect(propositionEntry).toBeUndefined();
-
-    const reservationEntry = (calendarPayload.reservations ?? []).find(
-      (item: { id: number }) => item.id === resolvedReservationId,
-    );
-    expect(reservationEntry).toBeDefined();
-    expect(reservationEntry?.details).toBeNull();
-    expect(reservationEntry?.trackNos).toEqual([]);
-
-    const propositionLocator = page.locator(
-      `[data-event-id="proposition-${propositionId}"]`,
-    );
-    await expect(propositionLocator).toHaveCount(0);
-
-    const reservationDetailResponse = await page.request.get(
-      `/api/v1/reservations/${resolvedReservationId}`,
-    );
-    expect(reservationDetailResponse.status()).toBe(403);
-
-    const propositionDetailResponse = await page.request.get(
-      `/api/v1/propositions/${propositionId}`,
-    );
-    const propositionStatus = propositionDetailResponse.status();
-    expect(propositionStatus).toBeGreaterThanOrEqual(400);
-    expect(propositionStatus).toBeLessThan(500);
   });
 
-  test('a range admin can view contact details for a managed reservation @range-admin', async ({ page }) => {
-
-    const formatDate = (date: Date) =>
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-        date.getDate(),
-      ).padStart(2, '0')}`;
-    const formatTime = (date: Date) =>
-      `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
-    const today = new Date();
-    const dayOffset = (today.getDay() + 6) % 7; // Monday = 0
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - dayOffset);
-    monday.setHours(0, 0, 0, 0);
-
+  test('a range admin can view contact details for a managed reservation @range-admin', async ({ page }, testInfo) => {
     const memberContext = await request.newContext({ storageState: 'tests-e2e/.auth/member.json' });
-    const candidateDayOffsets = [2, 3, 4, 5];
-    const candidateHours = [8, 11, 14, 17, 19];
-    const candidateMinutes = [5, 20, 35, 50];
+    const propositionClaim = claimSlot(`${testInfo.project.name}:${testInfo.title}:managed-proposition`);
 
     const toDisplayTime = (time: string) => {
       const [hours, minutes] = time.split(':');
@@ -323,135 +278,121 @@ test.describe('Users & Roles', () => {
     let propositionId: number | null = null;
     let reservationId: number | null = null;
     let selectedSlot: { eventDate: string; startTime: string; endTime: string; label: string } | null = null;
+    try {
+      const memberFiringLine = await getFiringLineForTracks(memberContext, 'http://localhost:5173', 'dobczyce', 1);
+      const propositionResponse = await memberContext.post(
+        'http://localhost:5173/api/v1/ranges/dobczyce/propositions',
+        {
+          data: {
+            eventDate: propositionClaim.slot.eventDate,
+            startTime: propositionClaim.slot.startTime,
+            endTime: propositionClaim.slot.endTime,
+            firingLineId: memberFiringLine.id,
+            trackNos: [1],
+            hasCoordinatorLicenseInGroup: true,
+          },
+        },
+      );
 
-    slotSearch: for (const dayOffset of candidateDayOffsets) {
-      for (const hour of candidateHours) {
-        for (const minute of candidateMinutes) {
-          const propositionStart = new Date(monday);
-          propositionStart.setDate(monday.getDate() + dayOffset);
-          propositionStart.setHours(hour, minute, 0, 0);
+      if (propositionResponse.ok()) {
+        const propositionPayload = await propositionResponse.json();
+        propositionId = propositionPayload.id;
 
-          const propositionEnd = new Date(propositionStart);
-          propositionEnd.setHours(propositionStart.getHours() + 1);
+        const reservationPayload = {
+          propositionId,
+          eventDate: propositionClaim.slot.eventDate,
+          startTime: propositionClaim.slot.startTime,
+          endTime: propositionClaim.slot.endTime,
+          adminMessage: 'Approved for contact details test',
+        };
 
-          const eventDate = formatDate(propositionStart);
-          const startTime = formatTime(propositionStart);
-          const endTime = formatTime(propositionEnd);
+        let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
+          data: reservationPayload,
+        });
 
-          const propositionResponse = await memberContext.post(
-            'http://localhost:5173/api/v1/ranges/dobczyce/propositions',
-            {
-              data: {
-                eventDate,
-                startTime,
-                endTime,
-                firingLineId: 1,
-                trackNos: [1],
-                hasCoordinatorLicenseInGroup: true,
-              },
-            },
-          );
-
-          if (!propositionResponse.ok()) {
-            continue;
+        if (!reservationResponse.ok()) {
+          const errorText = await reservationResponse.text();
+          let errorBody: { code?: string } | null = null;
+          try {
+            errorBody = JSON.parse(errorText);
+          } catch {
+            errorBody = null;
           }
 
-          const propositionPayload = await propositionResponse.json();
-          propositionId = propositionPayload.id;
-
-          const reservationPayload = {
-            propositionId,
-            eventDate,
-            startTime,
-            endTime,
-            adminMessage: 'Approved for contact details test',
-          };
-
-          let reservationResponse = await page.request.post('/api/v1/ranges/dobczyce/reservations', {
-            data: reservationPayload,
-          });
-
-          if (!reservationResponse.ok()) {
-            const errorText = await reservationResponse.text();
-            let errorBody: { code?: string } | null = null;
-            try {
-              errorBody = JSON.parse(errorText);
-            } catch {
-              errorBody = null;
-            }
-
-            if (reservationResponse.status() === 400 && errorBody?.code === 'reservation_force_required') {
-              reservationResponse = await page.request.post(
-                '/api/v1/ranges/dobczyce/reservations?force=true',
-                { data: reservationPayload },
-              );
-            } else {
-              await memberContext
-                .delete(`http://localhost:5173/api/v1/propositions/${propositionId}`)
-                .catch(() => {});
-              propositionId = null;
-              continue;
-            }
+          if (reservationResponse.status() === 400 && errorBody?.code === 'reservation_force_required') {
+            reservationResponse = await page.request.post(
+              '/api/v1/ranges/dobczyce/reservations?force=true',
+              { data: reservationPayload },
+            );
           }
+        }
 
-          if (!reservationResponse.ok()) {
-            await memberContext.delete(`http://localhost:5173/api/v1/propositions/${propositionId}`).catch(() => {});
-            propositionId = null;
-            continue;
-          }
-
+        if (reservationResponse.ok()) {
           const reservationPayloadResponse = await reservationResponse.json();
           reservationId = reservationPayloadResponse.id;
-          const displayLabel = `${toDisplayTime(startTime)} - ${toDisplayTime(endTime)}`;
-          selectedSlot = { eventDate, startTime, endTime, label: displayLabel };
-          break slotSearch;
+          const displayLabel = `${toDisplayTime(propositionClaim.slot.startTime)} - ${toDisplayTime(propositionClaim.slot.endTime)}`;
+          selectedSlot = {
+            eventDate: propositionClaim.slot.eventDate,
+            startTime: propositionClaim.slot.startTime,
+            endTime: propositionClaim.slot.endTime,
+            label: displayLabel,
+          };
         }
       }
-    }
 
-    if (!propositionId || !reservationId || !selectedSlot) {
-      throw new Error('Failed to create a unique reservation for coordinator test without conflicts.');
-    }
-
-    const { startTime, label: eventLabel } = selectedSlot;
-
-    await page.goto('/dobczyce/calendar');
-
-    const eventsResponsePromise = page.waitForResponse((response) => {
-      if (!response.url().includes('/api/v1/ranges/dobczyce/events')) {
-        return false;
+      if (!propositionId || !reservationId || !selectedSlot) {
+        throw new Error('Failed to create a unique reservation for coordinator test without conflicts.');
       }
-      if (response.request().method() !== 'GET') {
-        return false;
+
+      const { label: eventLabel } = selectedSlot;
+
+      await page.goto('/dobczyce/calendar');
+
+      const eventsResponsePromise = page.waitForResponse((response) => {
+        if (!response.url().includes('/api/v1/ranges/dobczyce/events')) {
+          return false;
+        }
+        if (response.request().method() !== 'GET') {
+          return false;
+        }
+        return response.status() === 200;
+      });
+
+      await eventsResponsePromise;
+      const eventsPayload = await eventsResponsePromise.then((response) => response.json());
+
+      const reservationEntry = (eventsPayload.reservations ?? []).find(
+        (item: { id: number }) => item.id === reservationId,
+      );
+      expect(reservationEntry).toBeDefined();
+
+      const eventLocator = page
+        .locator('.fc-timegrid-event')
+        .filter({ hasText: eventLabel })
+        .filter({ hasText: 'Rezerwacja' })
+        .first();
+      await expect(eventLocator).toBeVisible({ timeout: 20000 });
+
+      await eventLocator.scrollIntoViewIfNeeded();
+      await eventLocator.click({ force: true });
+
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+
+      await expect(dialog.getByText('member@e2e.com')).toBeVisible();
+      await expect(dialog.getByText('303303303')).toBeVisible();
+
+      await dialog.getByRole('button', { name: translate('common.actions.close') }).click();
+      await expect(dialog).toBeHidden();
+    } finally {
+      if (reservationId !== null) {
+        await page.request.delete(`/api/v1/reservations/${reservationId}`).catch(() => {});
       }
-      return response.status() === 200;
-    });
-
-    await eventsResponsePromise;
-    const eventsPayload = await eventsResponsePromise.then((response) => response.json());
-
-    const reservationEntry = (eventsPayload.reservations ?? []).find(
-      (item: { id: number }) => item.id === reservationId,
-    );
-    expect(reservationEntry).toBeDefined();
-
-    const eventLocator = page
-      .locator('.fc-timegrid-event')
-      .filter({ hasText: eventLabel })
-      .filter({ hasText: 'Rezerwacja' })
-      .first();
-    await expect(eventLocator).toBeVisible({ timeout: 20000 });
-
-    await eventLocator.scrollIntoViewIfNeeded();
-    await eventLocator.click({ force: true });
-
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    await expect(dialog.getByText('member@e2e.com')).toBeVisible();
-    await expect(dialog.getByText('303303303')).toBeVisible();
-
-    await dialog.getByRole('button', { name: translate('common.actions.close') }).click();
-    await expect(dialog).toBeHidden();
+      if (propositionId !== null) {
+        await memberContext.delete(`http://localhost:5173/api/v1/propositions/${propositionId}`).catch(() => {});
+      }
+      propositionClaim.release();
+      await memberContext.dispose();
+    }
   });
 });

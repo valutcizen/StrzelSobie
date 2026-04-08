@@ -37,7 +37,8 @@ const canForceReservations = computed(() =>
   authStore.hasAnyRole([
     UserRoleEnum.ShootingRangeAdministrator,
     UserRoleEnum.ClubCommunityAdministrator,
-  ]),
+  ]) ||
+  authStore.hasAnyRangeRole([UserRoleEnum.ShootingRangeAdministrator]),
 )
 const canCreateReservations = computed(
   () =>

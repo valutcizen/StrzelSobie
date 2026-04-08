@@ -525,18 +525,10 @@ test.describe('Events', () => {
       const startInput = page.getByTestId('event-form-start-time-input').locator('input');
       const endInput = page.getByTestId('event-form-end-time-input').locator('input');
 
-      await startInput.evaluate((element, value) => {
-        element.value = value;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-      }, editTargetEvent.updatedStart);
+      await startInput.fill(editTargetEvent.updatedStart);
       await expect(startInput).toHaveValue(editTargetEvent.updatedStart);
 
-      await endInput.evaluate((element, value) => {
-        element.value = value;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-      }, editTargetEvent.updatedEnd);
+      await endInput.fill(editTargetEvent.updatedEnd);
       await expect(endInput).toHaveValue(editTargetEvent.updatedEnd);
 
       const patchResponsePromise = page.waitForResponse(
@@ -544,12 +536,13 @@ test.describe('Events', () => {
           response.url().includes(`/api/v1/ranges/${rangeSlug}/events/${editTargetEvent.slug}`) &&
           response.request().method() === 'PATCH',
       );
+      const detailResponseAfterSavePromise = waitForEventDetails(page, rangeSlug, editTargetEvent.slug);
 
       await page.getByTestId('event-form-submit-button').click();
       await patchResponsePromise;
-
-      const detailReloadPromise = waitForEventDetails(page, rangeSlug, editTargetEvent.slug);
-      await detailReloadPromise;
+      await page.waitForURL(`/${rangeSlug}/events/${editTargetEvent.slug}`);
+      await detailResponseAfterSavePromise;
+      await expect(page.getByTestId('event-detail-view')).toBeVisible();
 
       await expect(page.getByText(`${editTargetEvent.updatedStart} – ${editTargetEvent.updatedEnd}`)).toBeVisible();
     } finally {

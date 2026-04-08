@@ -7,6 +7,7 @@ import {
 import { ConfirmationDialogPage } from './pages/components/confirmation-dialog.page';
 import { claimSlot, type SlotCandidate } from './support/calendar-slots';
 import { translate } from './support/i18n';
+import { getFiringLineForTracks } from './support/range-fixtures';
 
 const rangeSlug = 'dobczyce';
 const calendarPath = `/${rangeSlug}/calendar`;
@@ -42,12 +43,13 @@ const scrollCalendarToSlot = async (page: Page, slot: SlotCandidate | null) => {
 };
 
 const createPropositionViaApi = async (context: APIRequestContext, slot: SlotCandidate) => {
+  const firingLine = await getFiringLineForTracks(context, 'http://localhost:5173', rangeSlug, 1);
   const response = await context.post(`/api/v1/ranges/${rangeSlug}/propositions`, {
     data: {
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      firingLineId: 1,
+      firingLineId: firingLine.id,
       trackNos: [1],
       hasCoordinatorLicenseInGroup: true,
     },
@@ -125,20 +127,16 @@ test.describe('Propositions', () => {
     }
   });
 
-  test('range admin can cancel a proposition @range-admin', async ({ page }, testInfo) => {
+  test('member can cancel their own proposition @member', async ({ page }, testInfo) => {
     const calendarPage = new CalendarPage(page);
     const eventDetailDialog = new EventDetailDialogPage(page);
     const confirmationDialog = new ConfirmationDialogPage(page);
     const { slot, release } = claimSlot(slotSeed(testInfo, 'cancel'));
 
     let propositionId: number | null = null;
-    const memberContext = await request.newContext({
-      baseURL: 'http://localhost:5173',
-      storageState: 'tests-e2e/.auth/member.json',
-    });
 
     try {
-      propositionId = await createPropositionViaApi(memberContext, slot);
+      propositionId = await createPropositionViaApi(page.request, slot);
 
       const initialEventsResponse = waitForCalendarEvents(page);
       await page.goto(calendarPath);
@@ -176,8 +174,7 @@ test.describe('Propositions', () => {
         });
       }
     } finally {
-      await deletePropositionViaApi(memberContext, propositionId);
-      await memberContext.dispose();
+      await deletePropositionViaApi(page.request, propositionId);
       release();
     }
   });

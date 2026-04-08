@@ -1,6 +1,7 @@
 import { expect, test, request, type APIRequestContext, type Page, type TestInfo } from '@playwright/test';
 import { claimSlot, type SlotCandidate } from './support/calendar-slots';
 import { translate } from './support/i18n';
+import { getFiringLineForTracks } from './support/range-fixtures';
 
 const rangeSlug = 'dobczyce';
 const apiBaseUrl = 'http://localhost:5173';
@@ -36,12 +37,13 @@ const scrollCalendarToSlot = async (page: Page, slot: SlotCandidate | null) => {
 };
 
 const createProposition = async (context: APIRequestContext, slot: SlotCandidate) => {
+  const firingLine = await getFiringLineForTracks(context, apiBaseUrl, rangeSlug, 1);
   const response = await context.post(`${apiBaseUrl}/api/v1/ranges/${rangeSlug}/propositions`, {
     data: {
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      firingLineId: 1,
+      firingLineId: firingLine.id,
       trackNos: [1],
       hasCoordinatorLicenseInGroup: true,
     },
@@ -60,12 +62,14 @@ const createReservation = async (
   slot: SlotCandidate,
   options?: { trackNos?: number[] },
 ) => {
+  const trackNos = options?.trackNos ?? [1, 2];
+  const firingLine = await getFiringLineForTracks(context, apiBaseUrl, rangeSlug, trackNos.length);
   const payload = {
     eventDate: slot.eventDate,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    firingLineId: 1,
-    trackNos: options?.trackNos ?? [1, 2],
+    firingLineId: firingLine.id,
+    trackNos,
   };
 
   let response = await context.post(`${apiBaseUrl}/api/v1/ranges/${rangeSlug}/reservations`, { data: payload });

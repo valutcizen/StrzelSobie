@@ -7,8 +7,39 @@ describe('RangesDbRepository integration', () => {
   let repository: RangesDbRepository;
 
   beforeEach(async () => {
-    dbHandle = await createTestDatabase();
+    dbHandle = await createTestDatabase({ includeMockData: false });
     repository = new RangesDbRepository(dbHandle.db);
+
+    await dbHandle.d1
+      .prepare(
+        `INSERT INTO ranges_shooting_ranges (
+          id,
+          slug,
+          display_name,
+          type,
+          allows_reservations,
+          is_deleted,
+          total_tracks,
+          operating_hours
+        ) VALUES
+          (1, ?, ?, 'club', 1, 0, ?, ?),
+          (2, ?, ?, 'ally', 0, 0, 0, '{}'),
+          (3, ?, ?, 'coming-soon', 0, 0, 0, '{}'),
+          (4, ?, ?, 'office', 0, 0, 0, '{}')`
+      )
+      .bind(
+        'strzel-sobie-krakow',
+        'Strzel Sobie Kraków',
+        10,
+        '{"monday":{"open":"09:00","close":"17:00"}}',
+        'ally-krakow',
+        'Ally Kraków',
+        'coming-soon-podhale',
+        'Coming Soon Podhale',
+        'biuro-krakow',
+        'Biuro Kraków',
+      )
+      .run();
   });
 
   afterEach(() => {

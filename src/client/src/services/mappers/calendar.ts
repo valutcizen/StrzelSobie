@@ -125,6 +125,7 @@ export const mapCalendarEvents = (dto: CalendarEventsDto): RangeEvent[] => {
     allDay: false,
     meta: {
       propositionId: event.id,
+      userId: event.userId,
       firingLineId: event.firingLineId,
       trackNos: event.trackNos,
       hasCoordinatorLicenseInGroup: event.hasCoordinatorLicenseInGroup,

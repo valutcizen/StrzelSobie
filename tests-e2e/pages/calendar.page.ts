@@ -99,7 +99,7 @@ export class ReservationFormDialogPage {
     this.firingLineSelect = this.dialog.getByTestId('reservation-form-firing-line-select');
     this.trackNosSelect = this.dialog.getByTestId('reservation-form-track-nos-select');
     this.templateSelect = this.dialog.getByTestId('reservation-form-template-select');
-    this.adminMessageInput = this.dialog.getByTestId('reservation-form-admin-message-input').locator('textarea');
+    this.adminMessageInput = this.dialog.getByTestId('reservation-form-admin-message-input').locator('textarea:not([readonly])');
     this.forceSwitch = this.dialog.getByTestId('reservation-form-force-switch');
     this.cancelButton = this.dialog.getByTestId('reservation-form-cancel-button');
     this.submitButton = this.dialog.getByTestId('reservation-form-submit-button');

@@ -6,6 +6,7 @@ export type RangeEventType = 'proposition' | 'reservation' | 'record' | 'event'
 
 export interface RangeEventMeta {
   propositionId?: number | null
+  userId?: number | null
   reservationId?: number
   firingLineId?: number | null
   trackNos?: number[]

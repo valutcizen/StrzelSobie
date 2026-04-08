@@ -7,6 +7,7 @@ import {
 import { ConfirmationDialogPage } from './pages/components/confirmation-dialog.page';
 import { claimSlot, type SlotCandidate } from './support/calendar-slots';
 import { translate } from './support/i18n';
+import { getFiringLineForTracks } from './support/range-fixtures';
 
 const rangeSlug = 'dobczyce';
 const calendarPath = `/${rangeSlug}/calendar`;
@@ -54,12 +55,13 @@ const createProposition = async (
   context: APIRequestContext,
   slot: SlotCandidate,
 ) => {
+  const firingLine = await getFiringLineForTracks(context, apiBaseUrl, rangeSlug, 1);
   const response = await context.post(`${apiBaseUrl}/api/v1/ranges/${rangeSlug}/propositions`, {
     data: {
       eventDate: slot.eventDate,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      firingLineId: 1,
+      firingLineId: firingLine.id,
       trackNos: [1],
       hasCoordinatorLicenseInGroup: true,
     },
@@ -96,6 +98,11 @@ const createReservation = async (
   slot: SlotCandidate,
   options?: CreateReservationOptions,
 ) => {
+  const trackNos = options?.trackNos ?? [1, 2];
+  const firingLine =
+    options?.propositionId !== undefined && options?.propositionId !== null
+      ? null
+      : await getFiringLineForTracks(context, apiBaseUrl, rangeSlug, trackNos.length);
   const payload =
     options?.propositionId !== undefined && options?.propositionId !== null
       ? {
@@ -109,8 +116,8 @@ const createReservation = async (
           eventDate: slot.eventDate,
           startTime: slot.startTime,
           endTime: slot.endTime,
-          firingLineId: 1,
-          trackNos: options?.trackNos ?? [1, 2],
+          firingLineId: firingLine!.id,
+          trackNos,
         };
 
   const querySuffix = options?.force ? '?force=true' : '';
@@ -186,6 +193,7 @@ test.describe('Reservations', () => {
       await expect(eventDetailDialog.acceptButton).toBeVisible();
       await eventDetailDialog.acceptButton.click();
       await expect(reservationForm.dialog).toBeVisible();
+      await reservationForm.adminMessageInput.fill('Approved by range admin');
 
       const createResponsePromise = page.waitForResponse(
         (response) =>
@@ -406,9 +414,6 @@ test.describe('Reservations', () => {
       await reservationForm.dateInput.fill(slotClaim.slot.eventDate);
       await reservationForm.startTimeInput.fill(slotClaim.slot.startTime);
       await reservationForm.endTimeInput.fill(slotClaim.slot.endTime);
-      await reservationForm.trackNosSelect.click();
-      await page.getByRole('option', { name: /^1$/ }).click();
-      await page.keyboard.press('Escape');
 
       const failureResponsePromise = page.waitForResponse(
         (response) =>
