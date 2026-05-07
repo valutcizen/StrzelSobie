@@ -378,7 +378,7 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
       allowsReservations: values.type === 'club' ? values.allowsReservations : false,
       allowMemberEvents: values.type === 'office' ? false : values.allowMemberEvents,
       approximateLocation: values.approximateLocation,
-      voivodeship: values.type === 'office' ? null : toNullableString(values.voivodeship),
+      voivodeship: toNullableString(values.voivodeship),
       mapLogoUrl: values.type === 'office' ? null : toNullableString(values.mapLogoUrl),
       address: values.type === 'office' ? toNullableString(values.address) : null,
       phone: values.type === 'office' ? toNullableString(values.phone) : null,
@@ -906,7 +906,6 @@ watch(
                     </v-row>
 
                     <v-row
-                      v-if="values.type !== 'office'"
                       class="mt-1"
                       dense
                     >

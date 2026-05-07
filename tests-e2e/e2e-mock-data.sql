@@ -114,7 +114,7 @@ INSERT INTO ranges_shooting_ranges (
     19.9123,
     '{}',
     0,
-    '{"address":"ul. Testowa 1, Kraków","phone":"+48111222333","details":"E2E office details."}'
+    '{"address":"ul. Testowa 1, Kraków","phone":"+48111222333","details":"E2E office details.","voivodeship":"malopolskie"}'
   );
 
 INSERT INTO ranges_firing_lines (id, range_id, name, length_meters, tracks_count, sort_order) VALUES

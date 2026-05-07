@@ -67,7 +67,10 @@
           v-if="showVoivodeship"
           #item.voivodeship="{ item }"
         >
-          <span data-testid="range-list-voivodeship">
+          <span
+            data-testid="range-list-voivodeship"
+            :data-range-slug="item.slug"
+          >
             {{ getVoivodeshipLabel(item) }}
           </span>
         </template>

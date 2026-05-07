@@ -23,6 +23,10 @@ export class RangeDirectoryPage {
     return this.table.locator(`[data-testid="range-type-badge"][data-range-slug="${slug}"]`);
   }
 
+  voivodeshipCell(slug: string): Locator {
+    return this.table.locator(`[data-testid="range-list-voivodeship"][data-range-slug="${slug}"]`);
+  }
+
   detailsButton(slug: string): Locator {
     return this.table.getByTestId(`range-list-details-button-${slug}`);
   }

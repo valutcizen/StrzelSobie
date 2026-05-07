@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import RangeList from '@/components/range/RangeList.vue'
+import { VOIVODESHIP_LABELS, type Voivodeship } from '@/constants/voivodeships'
 import { useRangeStore } from '@/stores/range'
 import type { RangeSummary } from '@/types/range'
 import { setLastRangeId } from '@/utils/lastRange'
@@ -14,6 +15,8 @@ const rangeStore = useRangeStore()
 const page = ref(1)
 const selectedSlug = ref<string | null>(null)
 const mode = ref<'office' | 'all'>('office')
+const selectedVoivodeshipFilter = ref<'all' | 'empty' | Voivodeship>('all')
+const sortMode = ref<'default' | 'name-asc' | 'name-desc' | 'voivodeship-asc' | 'voivodeship-desc'>('default')
 
 const isLoading = computed(() => rangeStore.isDirectoryLoading)
 const loadError = computed(() => rangeStore.directoryError)
@@ -24,8 +27,87 @@ const modeOptions = computed(() => [
   { value: 'all' as const, label: t('rangeDirectory.offices.modeAll') },
 ])
 
+const normalizeVoivodeship = (value: unknown): Voivodeship | null => {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? (trimmed as Voivodeship) : null
+}
+
+const compareVoivodeship = (a: RangeSummary, b: RangeSummary, direction: 'asc' | 'desc') => {
+  const aValue = normalizeVoivodeship(a.extras?.voivodeship)
+  const bValue = normalizeVoivodeship(b.extras?.voivodeship)
+  const aLabel = aValue ? VOIVODESHIP_LABELS[aValue] ?? aValue : ''
+  const bLabel = bValue ? VOIVODESHIP_LABELS[bValue] ?? bValue : ''
+
+  if (!aLabel && !bLabel) return 0
+  if (!aLabel) return 1
+  if (!bLabel) return -1
+
+  const cmp = aLabel.localeCompare(bLabel, 'pl', { sensitivity: 'base' })
+  return direction === 'desc' ? -cmp : cmp
+}
+
+const voivodeshipFilterOptions = computed(() => {
+  const values = new Set<Voivodeship>()
+  for (const range of ranges.value) {
+    const normalized = normalizeVoivodeship(range.extras?.voivodeship)
+    if (normalized) {
+      values.add(normalized)
+    }
+  }
+
+  const sorted = [...values].sort((a, b) =>
+    (VOIVODESHIP_LABELS[a] ?? a).localeCompare(VOIVODESHIP_LABELS[b] ?? b, 'pl', { sensitivity: 'base' }),
+  )
+
+  return [
+    { value: 'all' as const, label: t('rangeDirectory.catalog.filters.allVoivodeships') },
+    { value: 'empty' as const, label: t('rangeDirectory.catalog.filters.emptyVoivodeship') },
+    ...sorted.map((value) => ({ value, label: VOIVODESHIP_LABELS[value] ?? value })),
+  ]
+})
+
+const sortOptions = computed(() => [
+  { value: 'default' as const, label: t('rangeDirectory.catalog.sort.default') },
+  { value: 'name-asc' as const, label: t('rangeDirectory.catalog.sort.nameAsc') },
+  { value: 'name-desc' as const, label: t('rangeDirectory.catalog.sort.nameDesc') },
+  { value: 'voivodeship-asc' as const, label: t('rangeDirectory.catalog.sort.voivodeshipAsc') },
+  { value: 'voivodeship-desc' as const, label: t('rangeDirectory.catalog.sort.voivodeshipDesc') },
+])
+
+const filteredRanges = computed<RangeSummary[]>(() => {
+  return ranges.value.filter((range) => {
+    const normalized = normalizeVoivodeship(range.extras?.voivodeship)
+    if (selectedVoivodeshipFilter.value === 'all') {
+      return true
+    }
+    if (selectedVoivodeshipFilter.value === 'empty') {
+      return normalized === null
+    }
+
+    return normalized === selectedVoivodeshipFilter.value
+  })
+})
+
 const sortedRanges = computed<RangeSummary[]>(() => {
-  return [...ranges.value].sort((a, b) => a.displayName.localeCompare(b.displayName, 'pl', { sensitivity: 'base' }))
+  return [...filteredRanges.value].sort((a, b) => {
+    if (sortMode.value === 'voivodeship-asc' || sortMode.value === 'voivodeship-desc') {
+      const direction = sortMode.value === 'voivodeship-asc' ? 'asc' : 'desc'
+      const voivodeshipCompare = compareVoivodeship(a, b, direction)
+      if (voivodeshipCompare !== 0) {
+        return voivodeshipCompare
+      }
+    }
+
+    if (sortMode.value === 'name-desc') {
+      return -a.displayName.localeCompare(b.displayName, 'pl', { sensitivity: 'base' })
+    }
+
+    return a.displayName.localeCompare(b.displayName, 'pl', { sensitivity: 'base' })
+  })
 })
 
 const itemsPerPage = 10
@@ -50,7 +132,12 @@ void loadRanges()
 watch(mode, () => {
   page.value = 1
   selectedSlug.value = null
+  selectedVoivodeshipFilter.value = 'all'
   void loadRanges()
+})
+
+watch([selectedVoivodeshipFilter, sortMode], () => {
+  page.value = 1
 })
 
 watch(pageCount, (next) => {
@@ -98,6 +185,32 @@ const handleSelect = (slug: string) => {
           item-title="label"
           item-value="value"
           data-testid="offices-mode-select"
+        />
+      </v-col>
+      <v-col
+        cols="12"
+        md="4"
+      >
+        <v-select
+          v-model="selectedVoivodeshipFilter"
+          :label="t('rangeDirectory.catalog.filters.voivodeshipLabel')"
+          :items="voivodeshipFilterOptions"
+          item-title="label"
+          item-value="value"
+          data-testid="offices-voivodeship-filter"
+        />
+      </v-col>
+      <v-col
+        cols="12"
+        md="4"
+      >
+        <v-select
+          v-model="sortMode"
+          :label="t('rangeDirectory.catalog.sort.label')"
+          :items="sortOptions"
+          item-title="label"
+          item-value="value"
+          data-testid="offices-voivodeship-sort"
         />
       </v-col>
     </v-row>

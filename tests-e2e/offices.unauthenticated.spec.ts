@@ -11,7 +11,10 @@ test.describe('Offices directory (public)', () => {
     await expect(page.getByRole('heading', { name: translate('rangeDirectory.officesTitle') })).toBeVisible();
 
     await expect(page.getByTestId('offices-mode-select')).toBeVisible();
+    await expect(page.getByTestId('offices-voivodeship-filter')).toBeVisible();
+    await expect(page.getByTestId('offices-voivodeship-sort')).toBeVisible();
     await expect(directoryPage.nameCell('office-e2e')).toBeVisible();
+    await expect(directoryPage.voivodeshipCell('office-e2e')).toHaveText('Małopolskie');
     await expect(directoryPage.typeBadge('office-e2e')).toHaveText(translate('rangeTypes.office'));
 
     await directoryPage.detailsButton('office-e2e').click();
@@ -27,4 +30,3 @@ test.describe('Offices directory (public)', () => {
     await expect(phoneLink).toContainText('+48111222333');
   });
 });
-
