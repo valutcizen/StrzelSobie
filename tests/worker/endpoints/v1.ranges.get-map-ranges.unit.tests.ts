@@ -60,6 +60,10 @@ describe('GetMapRangesRoute endpoint contract', () => {
         allowsReservations: true,
         latitude: 50.1,
         longitude: 19.1,
+        extras: {
+          mapBubbleDescription: 'Plain text info',
+          mapBubbleShowExactLocationLinks: true,
+        },
       },
       {
         id: 2,
@@ -87,6 +91,15 @@ describe('GetMapRangesRoute endpoint contract', () => {
       200,
     );
     expect(response.status).toBe(200);
+    expect(response.payload).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          slug: 'club-a',
+          mapBubbleDescription: 'Plain text info',
+          mapBubbleShowExactLocationLinks: true,
+        }),
+      ]),
+    );
   });
 
   it('returns 400 for invalid type query value', async () => {
@@ -103,4 +116,3 @@ describe('GetMapRangesRoute endpoint contract', () => {
     expect(response).toEqual({ payload: { error: 'Invalid range type filter' }, status: 400 });
   });
 });
-

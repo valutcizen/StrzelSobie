@@ -11,6 +11,86 @@
     <style>
         body { margin: 0; padding: 0; overflow: hidden; }
         #map { height: 100vh; width: 100vw; }
+        .embed-map__details-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+            width: min(360px, calc(100vw - 32px));
+            height: 100vh;
+            box-sizing: border-box;
+            background: #ffffff;
+            box-shadow: -12px 0 32px rgba(15, 23, 42, 0.22);
+            color: #172033;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            transform: translateX(110%);
+            transition: transform 180ms ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .embed-map__details-panel--open {
+            transform: translateX(0);
+        }
+        .embed-map__details-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 20px 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .embed-map__details-title {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.25;
+            font-weight: 700;
+        }
+        .embed-map__details-close {
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 50%;
+            background: #f3f4f6;
+            color: #111827;
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+        }
+        .embed-map__details-body {
+            padding: 16px 20px 20px;
+            overflow-y: auto;
+        }
+        .embed-map__details-description {
+            margin: 0;
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+        .embed-map__details-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .embed-map__details-link {
+            display: inline-flex;
+            min-height: 40px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #1f2937;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0 12px;
+        }
+        @media (max-width: 480px) {
+            .embed-map__details-panel {
+                width: 100vw;
+            }
+        }
         .embed-map__pin {
             background: transparent !important;
             border: none !important;

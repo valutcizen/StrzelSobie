@@ -12,6 +12,8 @@ const mapRangeSchema = z.object({
   longitude: z.number(),
   mapLogoUrl: z.string().nullable().optional(),
   approximateLocation: z.boolean().optional(),
+  mapBubbleDescription: z.string().nullable().optional(),
+  mapBubbleShowExactLocationLinks: z.boolean().optional(),
 });
 
 const getMapRangesQuerySchema = z.object({
@@ -105,6 +107,11 @@ export class GetMapRangesRoute extends OpenAPIRoute {
             ? range.extras.mapLogoUrl.trim()
             : null,
         approximateLocation: range.extras?.approximateLocation ?? false,
+        mapBubbleDescription:
+          typeof range.extras?.mapBubbleDescription === 'string' && range.extras.mapBubbleDescription.trim().length > 0
+            ? range.extras.mapBubbleDescription.trim()
+            : null,
+        mapBubbleShowExactLocationLinks: range.extras?.mapBubbleShowExactLocationLinks ?? false,
       }));
 
     return c.json(ranges, 200);

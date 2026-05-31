@@ -527,6 +527,15 @@
       "voivodeshipEmptyOption": "(empty)",
       "mapLogoUrlLabel": "Map logo (URL)",
       "mapLogoUrlHint": "Optional: provide a logo URL used in the embedded map pin.",
+      "mapBubble": {
+        "heading": "Embedded map bubble",
+        "hint": "Configure the panel shown after clicking a pin on the map embedded on an external site.",
+        "showExactLocationLinksLabel": "Show map links",
+        "showExactLocationLinksHint": "Shows Google Maps and OpenStreetMap buttons when the object has an exact location.",
+        "exactLocationUnavailableHint": "Map links are hidden when the location is marked as approximate.",
+        "descriptionLabel": "Bubble description",
+        "descriptionHint": "Plain text shown in the panel after clicking a pin."
+      },
       "officeAddressLabel": "Office address",
       "officePhoneLabel": "Phone",
       "officeDetailsLabel": "Office details",

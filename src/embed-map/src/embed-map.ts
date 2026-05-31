@@ -20,6 +20,8 @@ interface RangeData {
   longitude: number | null | undefined;
   approximateLocation?: boolean;
   mapLogoUrl?: string | null;
+  mapBubbleDescription?: string | null;
+  mapBubbleShowExactLocationLinks?: boolean;
 }
 
 type RangeType = 'club' | 'ally' | 'coming-soon' | 'meetup' | 'office';
@@ -214,19 +216,91 @@ const createClusterIcon = (cluster: L.MarkerCluster): L.DivIcon => {
   });
 };
 
-const getParentOrigin = (): string => {
-  const param = new URLSearchParams(window.location.search).get('parentOrigin');
-  if (!param) {
-    return '*';
+const hasExactLocationLinks = (range: RangeData): boolean =>
+  range.mapBubbleShowExactLocationLinks === true &&
+  range.approximateLocation !== true &&
+  typeof range.latitude === 'number' &&
+  typeof range.longitude === 'number';
+
+const createMapUrl = (range: RangeData, provider: 'google' | 'osm'): string => {
+  const latitude = Number(range.latitude);
+  const longitude = Number(range.longitude);
+  if (provider === 'google') {
+    return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
   }
 
-  try {
-    const { origin } = new URL(param);
-    return origin;
-  } catch {
-    console.warn('Invalid parentOrigin parameter, defaulting to "*".');
-    return '*';
-  }
+  return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`;
+};
+
+const createDetailsPanel = (): { open: (range: RangeData) => void } => {
+  const panel = document.createElement('aside');
+  panel.className = 'embed-map__details-panel';
+  panel.setAttribute('aria-hidden', 'true');
+
+  const header = document.createElement('div');
+  header.className = 'embed-map__details-header';
+
+  const title = document.createElement('h2');
+  title.className = 'embed-map__details-title';
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'embed-map__details-close';
+  closeButton.setAttribute('aria-label', 'Close panel');
+  closeButton.textContent = 'x';
+
+  const body = document.createElement('div');
+  body.className = 'embed-map__details-body';
+
+  const close = () => {
+    panel.classList.remove('embed-map__details-panel--open');
+    panel.setAttribute('aria-hidden', 'true');
+  };
+
+  closeButton.addEventListener('click', close);
+  header.append(title, closeButton);
+  panel.append(header, body);
+  document.body.append(panel);
+
+  return {
+    open: (range: RangeData) => {
+      title.textContent = range.displayName;
+      body.replaceChildren();
+
+      const description = typeof range.mapBubbleDescription === 'string' ? range.mapBubbleDescription.trim() : '';
+      if (description.length > 0) {
+        const descriptionElement = document.createElement('p');
+        descriptionElement.className = 'embed-map__details-description';
+        descriptionElement.textContent = description;
+        body.append(descriptionElement);
+      }
+
+      if (hasExactLocationLinks(range)) {
+        const actions = document.createElement('div');
+        actions.className = 'embed-map__details-actions';
+
+        const googleLink = document.createElement('a');
+        googleLink.className = 'embed-map__details-link';
+        googleLink.href = createMapUrl(range, 'google');
+        googleLink.target = '_blank';
+        googleLink.rel = 'noopener noreferrer';
+        googleLink.textContent = 'Google Maps';
+
+        const osmLink = document.createElement('a');
+        osmLink.className = 'embed-map__details-link';
+        osmLink.href = createMapUrl(range, 'osm');
+        osmLink.target = '_blank';
+        osmLink.rel = 'noopener noreferrer';
+        osmLink.textContent = 'OSM';
+
+        actions.append(googleLink, osmLink);
+        body.append(actions);
+      }
+
+      panel.classList.add('embed-map__details-panel--open');
+      panel.setAttribute('aria-hidden', 'false');
+    },
+  };
 };
 
 async function initMap() {
@@ -236,7 +310,7 @@ async function initMap() {
     return;
   }
 
-  const parentOrigin = getParentOrigin();
+  const detailsPanel = createDetailsPanel();
 
   const map = L.map(mapElement, {
     maxBounds: POLAND_INTERACTION_BOUNDS,
@@ -292,8 +366,7 @@ async function initMap() {
         });
 
         marker.on('click', () => {
-          const rangeUrl = '/' + (range.slug ?? range.id);
-          window.parent.postMessage({ type: 'navigate', url: rangeUrl }, parentOrigin);
+          detailsPanel.open(range);
         });
       });
     }

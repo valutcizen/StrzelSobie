@@ -187,6 +187,24 @@ describe('RangesService contract', () => {
     });
   });
 
+  it('maps embedded map bubble settings from extras JSON', async () => {
+    const rawRange = buildRange({
+      extras: JSON.stringify({
+        mapBubbleDescription: 'Use the north gate.',
+        mapBubbleShowExactLocationLinks: true,
+      }),
+    });
+    asMock(rangesRepository.findBySlug).mockResolvedValue(rawRange);
+
+    const result = await service.getRangeDetails(rawRange.slug);
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.getValue().extras).toMatchObject({
+      mapBubbleDescription: 'Use the north gate.',
+      mapBubbleShowExactLocationLinks: true,
+    });
+  });
+
   it('omits parking location when extras payload is invalid', async () => {
     const rawRange = buildRange({
       extras: '{"parkingLocation":{"latitude":"bad","longitude":null}}',

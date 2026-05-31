@@ -268,7 +268,7 @@ openapi.delete(
 );
 
 app.get('/embed/map', async (_c) => {
-  // Cache by path only (ignore query params like parentOrigin)
+  // Cache by path only.
   const cacheKey = `https://cache.strzel-sobie/embed/map?v=${EMBED_MAP_CACHE_VERSION}&cfg=${EMBED_MAP_CONFIG_VERSION}`;
   const html = EMBED_MAP_HTML.replace(
     'src="/embed/map.js"',

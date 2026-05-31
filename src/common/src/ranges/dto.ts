@@ -33,6 +33,8 @@ export type RangeExtras = {
   allowMemberEvents?: boolean;
   approximateLocation?: boolean;
   mapLogoUrl?: string | null;
+  mapBubbleDescription?: string | null;
+  mapBubbleShowExactLocationLinks?: boolean;
   voivodeship?: string | null;
   address?: string | null;
   phone?: string | null;
@@ -103,6 +105,8 @@ export type UpdateRangeCommand = Partial<
   allowMemberEvents?: boolean;
   approximateLocation?: boolean;
   mapLogoUrl?: string | null;
+  mapBubbleDescription?: string | null;
+  mapBubbleShowExactLocationLinks?: boolean;
   voivodeship?: string | null;
   address?: string | null;
   phone?: string | null;

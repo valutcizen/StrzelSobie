@@ -111,6 +111,12 @@ export const useRangeStore = defineStore('range', {
           if (payload.mapLogoUrl !== undefined) {
             nextExtras.mapLogoUrl = payload.mapLogoUrl ?? null
           }
+          if (payload.mapBubbleDescription !== undefined) {
+            nextExtras.mapBubbleDescription = payload.mapBubbleDescription ?? null
+          }
+          if (payload.mapBubbleShowExactLocationLinks !== undefined) {
+            nextExtras.mapBubbleShowExactLocationLinks = payload.mapBubbleShowExactLocationLinks
+          }
           if (payload.voivodeship !== undefined) {
             nextExtras.voivodeship = payload.voivodeship ?? null
           }
@@ -130,6 +136,8 @@ export const useRangeStore = defineStore('range', {
             payload.allowMemberEvents !== undefined ||
             payload.approximateLocation !== undefined ||
             payload.mapLogoUrl !== undefined ||
+            payload.mapBubbleDescription !== undefined ||
+            payload.mapBubbleShowExactLocationLinks !== undefined ||
             payload.voivodeship !== undefined
               ? { extras: nextExtras }
               : {}),

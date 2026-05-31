@@ -527,6 +527,15 @@
       "voivodeshipEmptyOption": "(puste)",
       "mapLogoUrlLabel": "Logo na mapie (URL)",
       "mapLogoUrlHint": "Opcjonalnie: podaj adres URL logotypu dla pinezki na mapie embeddowanej.",
+      "mapBubble": {
+        "heading": "Dymek na mapie embeddowanej",
+        "hint": "Skonfiguruj panel pokazywany po kliknięciu pinezki na mapie osadzonej na zewnętrznej stronie.",
+        "showExactLocationLinksLabel": "Pokaż linki do map",
+        "showExactLocationLinksHint": "Pokazuje przyciski Google Maps i OpenStreetMap, gdy obiekt ma dokładną lokalizację.",
+        "exactLocationUnavailableHint": "Linki do map są ukryte, gdy lokalizacja jest oznaczona jako niedokładna.",
+        "descriptionLabel": "Opis dla dymka",
+        "descriptionHint": "Plain text wyświetlany w panelu po kliknięciu pinezki."
+      },
       "officeAddressLabel": "Adres biura",
       "officePhoneLabel": "Telefon",
       "officeDetailsLabel": "Szczegóły biura",

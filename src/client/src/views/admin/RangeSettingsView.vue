@@ -57,8 +57,10 @@ type RangeSettingsFormValues = {
   allowsReservations: boolean
   allowMemberEvents: boolean
   approximateLocation: boolean
+  mapBubbleShowExactLocationLinks: boolean
   voivodeship: Voivodeship | null
   mapLogoUrl: string | null
+  mapBubbleDescription: string | null
   address: string | null
   phone: string | null
   details: string | null
@@ -106,8 +108,10 @@ const initialValues = ref<RangeSettingsFormValues>({
   allowsReservations: true,
   allowMemberEvents: false,
   approximateLocation: false,
+  mapBubbleShowExactLocationLinks: false,
   voivodeship: null,
   mapLogoUrl: null,
+  mapBubbleDescription: null,
   address: null,
   phone: null,
   details: null,
@@ -186,6 +190,7 @@ const schema = yup.object({
     otherwise: (schema) => schema.required(),
   }),
   approximateLocation: yup.boolean().required(),
+  mapBubbleShowExactLocationLinks: yup.boolean().required(),
   voivodeship: yup
     .string()
     .nullable()
@@ -210,6 +215,7 @@ const schema = yup.object({
       },
     ),
   address: yup.string().nullable(),
+  mapBubbleDescription: yup.string().nullable(),
   phone: yup.string().nullable(),
   details: yup.string().nullable(),
   location: yup
@@ -255,11 +261,13 @@ const mapRangeToFormValues = (range: RangeDetails): RangeSettingsFormValues => (
   allowsReservations: range.allowsReservations ?? true,
   allowMemberEvents: range.extras?.allowMemberEvents ?? false,
   approximateLocation: range.extras?.approximateLocation ?? false,
+  mapBubbleShowExactLocationLinks: range.extras?.mapBubbleShowExactLocationLinks ?? false,
   voivodeship: (() => {
     const value = typeof range.extras?.voivodeship === 'string' ? range.extras.voivodeship.trim() : ''
     return VOIVODESHIPS.includes(value as Voivodeship) ? (value as Voivodeship) : null
   })(),
   mapLogoUrl: range.extras?.mapLogoUrl ?? null,
+  mapBubbleDescription: typeof range.extras?.mapBubbleDescription === 'string' ? range.extras.mapBubbleDescription : null,
   address: typeof range.extras?.address === 'string' ? range.extras.address : null,
   phone: typeof range.extras?.phone === 'string' ? range.extras.phone : null,
   details: typeof range.extras?.details === 'string' ? range.extras.details : null,
@@ -378,8 +386,10 @@ const submitSettings: SubmissionHandler = async (rawValues) => {
       allowsReservations: values.type === 'club' ? values.allowsReservations : false,
       allowMemberEvents: values.type === 'office' ? false : values.allowMemberEvents,
       approximateLocation: values.approximateLocation,
+      mapBubbleShowExactLocationLinks: values.approximateLocation ? false : values.mapBubbleShowExactLocationLinks,
       voivodeship: toNullableString(values.voivodeship),
       mapLogoUrl: values.type === 'office' ? null : toNullableString(values.mapLogoUrl),
+      mapBubbleDescription: toNullableString(values.mapBubbleDescription),
       address: values.type === 'office' ? toNullableString(values.address) : null,
       phone: values.type === 'office' ? toNullableString(values.phone) : null,
       details: values.type === 'office' ? toNullableString(values.details) : null,
@@ -932,6 +942,77 @@ watch(
 
                   </div>
                 </Field>
+              </v-col>
+            </v-row>
+
+            <v-row class="mb-4">
+              <v-col cols="12">
+                <v-sheet
+                  border
+                  rounded="lg"
+                  class="pa-4"
+                  data-testid="range-settings-map-bubble-section"
+                >
+                  <div class="mb-4">
+                    <h3 class="text-subtitle-1 font-weight-medium mb-1">
+                      {{ t('admin.rangeSettings.mapBubble.heading') }}
+                    </h3>
+                    <p class="text-body-2 text-medium-emphasis mb-0">
+                      {{ t('admin.rangeSettings.mapBubble.hint') }}
+                    </p>
+                  </div>
+
+                  <v-row>
+                    <v-col
+                      cols="12"
+                      md="4"
+                    >
+                      <Field
+                        v-slot="{ field, errorMessage }"
+                        name="mapBubbleShowExactLocationLinks"
+                      >
+                        <v-switch
+                          :label="t('admin.rangeSettings.mapBubble.showExactLocationLinksLabel')"
+                          :hint="
+                            values.approximateLocation
+                              ? t('admin.rangeSettings.mapBubble.exactLocationUnavailableHint')
+                              : t('admin.rangeSettings.mapBubble.showExactLocationLinksHint')
+                          "
+                          persistent-hint
+                          :model-value="values.approximateLocation ? false : field.value"
+                          :error-messages="errorMessage"
+                          :disabled="values.approximateLocation"
+                          color="primary"
+                          inset
+                          data-testid="range-settings-map-bubble-show-exact-location-links-switch"
+                          @update:model-value="field.onChange"
+                        />
+                      </Field>
+                    </v-col>
+
+                    <v-col
+                      cols="12"
+                      md="8"
+                    >
+                      <Field
+                        v-slot="{ field, errorMessage }"
+                        name="mapBubbleDescription"
+                      >
+                        <v-textarea
+                          :label="t('admin.rangeSettings.mapBubble.descriptionLabel')"
+                          :hint="t('admin.rangeSettings.mapBubble.descriptionHint')"
+                          persistent-hint
+                          auto-grow
+                          :model-value="field.value ?? ''"
+                          :error-messages="errorMessage"
+                          data-testid="range-settings-map-bubble-description-textarea"
+                          @update:model-value="field.onChange"
+                          @blur="field.onBlur"
+                        />
+                      </Field>
+                    </v-col>
+                  </v-row>
+                </v-sheet>
               </v-col>
             </v-row>
 

@@ -239,6 +239,21 @@ export class RangesService implements IRangesService {
       range.extras = JSON.stringify(extras);
     }
 
+    if (command.mapBubbleDescription !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.mapBubbleDescription =
+        typeof command.mapBubbleDescription === 'string' && command.mapBubbleDescription.trim().length > 0
+          ? command.mapBubbleDescription.trim()
+          : null;
+      range.extras = JSON.stringify(extras);
+    }
+
+    if (command.mapBubbleShowExactLocationLinks !== undefined) {
+      const extras = this.parseExtrasObject(range.extras);
+      extras.mapBubbleShowExactLocationLinks = command.mapBubbleShowExactLocationLinks;
+      range.extras = JSON.stringify(extras);
+    }
+
     if (command.voivodeship !== undefined) {
       const extras = this.parseExtrasObject(range.extras);
       extras.voivodeship =
@@ -560,12 +575,18 @@ export class RangesService implements IRangesService {
     const approximateLocation =
       typeof extras.approximateLocation === 'boolean' ? extras.approximateLocation : undefined;
     const mapLogoUrl = this.parseOptionalString(extras.mapLogoUrl);
+    const mapBubbleDescription = this.parseOptionalString(extras.mapBubbleDescription);
+    const mapBubbleShowExactLocationLinks =
+      typeof extras.mapBubbleShowExactLocationLinks === 'boolean'
+        ? extras.mapBubbleShowExactLocationLinks
+        : undefined;
     const voivodeship = this.parseOptionalString(extras.voivodeship);
     const address = this.parseOptionalString(extras.address);
     const phone = this.parseOptionalString(extras.phone);
     const details = this.parseOptionalString(extras.details);
     const hasParkingLocation = Object.prototype.hasOwnProperty.call(extras, 'parkingLocation');
     const hasMapLogo = Object.prototype.hasOwnProperty.call(extras, 'mapLogoUrl');
+    const hasMapBubbleDescription = Object.prototype.hasOwnProperty.call(extras, 'mapBubbleDescription');
     const hasVoivodeship = Object.prototype.hasOwnProperty.call(extras, 'voivodeship');
     const hasAddress = Object.prototype.hasOwnProperty.call(extras, 'address');
     const hasPhone = Object.prototype.hasOwnProperty.call(extras, 'phone');
@@ -576,6 +597,12 @@ export class RangesService implements IRangesService {
       ...(allowMemberEvents !== undefined ? { allowMemberEvents } : {}),
       ...(approximateLocation !== undefined ? { approximateLocation } : {}),
       ...(mapLogoUrl !== undefined ? { mapLogoUrl } : hasMapLogo ? { mapLogoUrl: null } : {}),
+      ...(mapBubbleDescription !== undefined
+        ? { mapBubbleDescription }
+        : hasMapBubbleDescription
+          ? { mapBubbleDescription: null }
+          : {}),
+      ...(mapBubbleShowExactLocationLinks !== undefined ? { mapBubbleShowExactLocationLinks } : {}),
       ...(voivodeship !== undefined ? { voivodeship } : hasVoivodeship ? { voivodeship: null } : {}),
       ...(address !== undefined ? { address } : hasAddress ? { address: null } : {}),
       ...(phone !== undefined ? { phone } : hasPhone ? { phone: null } : {}),

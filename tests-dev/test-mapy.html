@@ -16,7 +16,7 @@
 
   <iframe
     id="map-iframe"
-    src="http://localhost:8787/embed/map?parentOrigin=http://localhost:3000"
+    src="http://localhost:8787/embed/map"
     style="width: 100%; height: 600px; border: 2px solid #007bff;"
     title="Mapa strzelnic"
   ></iframe>
@@ -34,7 +34,7 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    logMessage('Nasłuchuję na wiadomości z iframe...');
+    logMessage('Mapa obsługuje kliknięcie pinezki wewnątrz iframe i pokazuje panel boczny.');
 
     window.addEventListener('message', function(event) {
       // Dla lokalnego testu sprawdzamy, czy origin zgadza się z adresem serwera deweloperskiego
@@ -45,17 +45,7 @@
 
       logMessage(`Otrzymano wiadomość: ${JSON.stringify(event.data)}`);
 
-      if (event.data && event.data.type === 'navigate' && event.data.url) {
-        // Zwróć uwagę, że URL z iframe jest względny (np. /ranges/1)
-        // Tworzymy pełny URL na podstawie domeny *głównej aplikacji*, niekoniecznie workera
-        const targetAppUrl = new URL(event.data.url, 'http://localhost:5173').href; // Zakładając, że frontend działa na 5173
-
-        logMessage(`Próba przekierowania do: ${targetAppUrl}`);
-        
-        // Zamiast faktycznie przekierowywać, wyświetlamy alert,
-        // aby potwierdzić, że komunikacja działa poprawnie.
-        alert(`Otrzymano prośbę o przekierowanie do adresu: ${targetAppUrl}`);
-      }
+      logMessage('Ten scenariusz nie powinien już nawigować po kliknięciu pinezki.');
     }, false);
   </script>
 </body>
