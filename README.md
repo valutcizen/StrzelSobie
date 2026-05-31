@@ -103,6 +103,8 @@ The following scripts are available to be run from the project's root directory:
 - `npm run build`: Builds all modules/workspaces.
 - `npm run test`: Runs the test suite for the entire project using Vitest.
 - `npm run test:unit`: Runs only unit tests that match the `*.unit.tests.ts` naming convention.
+- `npm run hooks:install`: Enables the repository Git hooks. The pre-push hook blocks embed map changes unless `EMBED_MAP_CACHE_VERSION` is updated.
+- `npm run check:embed-cache`: Runs the embed map cache-version guard manually.
 
 ### Generating Password Hashes for Admin Users
 

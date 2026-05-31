@@ -25,7 +25,9 @@
     "dev:embed-page": "serve tests-dev -l 3000",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test --reporter=line",
-    "test:e2e-ci": "playwright test"
+    "test:e2e-ci": "playwright test",
+    "check:embed-cache": "node scripts/check-embed-cache-version.mjs",
+    "hooks:install": "node scripts/install-git-hooks.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
