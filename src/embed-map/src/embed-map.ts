@@ -233,7 +233,7 @@ const createMapUrl = (range: RangeData, provider: 'google' | 'osm'): string => {
   return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`;
 };
 
-const createDetailsPanel = (): { open: (range: RangeData) => void } => {
+const createDetailsPanel = (): { open: (range: RangeData) => void; close: () => void } => {
   const panel = document.createElement('aside');
   panel.className = 'embed-map__details-panel';
   panel.setAttribute('aria-hidden', 'true');
@@ -301,6 +301,7 @@ const createDetailsPanel = (): { open: (range: RangeData) => void } => {
       panel.classList.add('embed-map__details-panel--open');
       panel.setAttribute('aria-hidden', 'false');
     },
+    close,
   };
 };
 
@@ -333,6 +334,12 @@ async function initMap() {
   }).addTo(map);
   map.fitBounds(POLAND_LEAFLET_BOUNDS, { padding: [0, 0], animate: false });
   markerClusterGroup.addTo(map);
+  map.on('click', () => {
+    detailsPanel.close();
+  });
+  markerClusterGroup.on('clusterclick', () => {
+    detailsPanel.close();
+  });
 
   try {
     const response = await fetch('/api/v1/map-ranges?scope=embed');
@@ -349,6 +356,7 @@ async function initMap() {
         const marker = L.marker([range.latitude, range.longitude], {
           icon: createIcon(range),
           zIndexOffset: getMarkerZIndex(range),
+          bubblingMouseEvents: false,
         }) as MarkerWithRangeType;
         marker.options.rangeType = normalizeRangeType(range.type);
         marker.addTo(markerClusterGroup);
