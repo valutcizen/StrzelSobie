@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { setBrowserSanitizedHtml } from './browser-sanitizer';
 import 'leaflet.markercluster';
 // Force Leaflet to use explicit URLs instead of prepending its own imagePath
 // when running in the embed bundle.
@@ -269,9 +270,9 @@ const createDetailsPanel = (): { open: (range: RangeData) => void } => {
 
       const description = typeof range.mapBubbleDescription === 'string' ? range.mapBubbleDescription.trim() : '';
       if (description.length > 0) {
-        const descriptionElement = document.createElement('p');
+        const descriptionElement = document.createElement('div');
         descriptionElement.className = 'embed-map__details-description';
-        descriptionElement.textContent = description;
+        setBrowserSanitizedHtml(descriptionElement, description);
         body.append(descriptionElement);
       }
 

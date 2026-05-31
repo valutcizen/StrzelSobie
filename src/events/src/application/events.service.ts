@@ -28,6 +28,7 @@ import {
   EventValidationError,
   IEventsService,
 } from '@strzel-sobie/common/models';
+import { sanitizeOptionalRichTextHtml, sanitizeRichTextHtml } from '@strzel-sobie/common/rich-text';
 import {
   CreateEventRecord,
   CreateEventSignupRecord,
@@ -807,7 +808,7 @@ export class EventsService implements IEventsService {
       return new EventValidationError('Event name is required');
     }
 
-    if (!command.publicDescription || command.publicDescription.trim().length === 0) {
+    if (!sanitizeOptionalRichTextHtml(command.publicDescription)) {
       return new EventValidationError('Public description is required');
     }
 
@@ -861,6 +862,10 @@ export class EventsService implements IEventsService {
       return new EventValidationError('Event name is required');
     }
 
+    if (!sanitizeOptionalRichTextHtml(event.public_description)) {
+      return new EventValidationError('Public description is required');
+    }
+
     if (!DATE_PATTERN.test(event.event_date)) {
       return new EventValidationError('Event date must be in YYYY-MM-DD format');
     }
@@ -897,8 +902,8 @@ export class EventsService implements IEventsService {
       range_id: rangeId,
       created_by: userId,
       name: command.name.trim(),
-      public_description: command.publicDescription.trim(),
-      member_description: command.memberDescription ?? null,
+      public_description: sanitizeRichTextHtml(command.publicDescription),
+      member_description: sanitizeOptionalRichTextHtml(command.memberDescription),
       event_date: command.eventDate,
       start_time: command.startTime,
       end_time: command.endTime,
@@ -929,8 +934,14 @@ export class EventsService implements IEventsService {
   private buildUpdateRecord(command: UpdateEventCommand): UpdateEventRecord {
     return {
       name: command.name,
-      public_description: command.publicDescription,
-      member_description: command.memberDescription,
+      public_description:
+        command.publicDescription !== undefined
+          ? sanitizeRichTextHtml(command.publicDescription)
+          : undefined,
+      member_description:
+        command.memberDescription !== undefined
+          ? sanitizeOptionalRichTextHtml(command.memberDescription)
+          : undefined,
       event_date: command.eventDate,
       start_time: command.startTime,
       end_time: command.endTime,
@@ -949,8 +960,14 @@ export class EventsService implements IEventsService {
     return {
       ...event,
       name: command.name ?? event.name,
-      public_description: command.publicDescription ?? event.public_description,
-      member_description: command.memberDescription ?? event.member_description,
+      public_description:
+        command.publicDescription !== undefined
+          ? sanitizeRichTextHtml(command.publicDescription)
+          : event.public_description,
+      member_description:
+        command.memberDescription !== undefined
+          ? sanitizeOptionalRichTextHtml(command.memberDescription)
+          : event.member_description,
       event_date: command.eventDate ?? event.event_date,
       start_time: command.startTime ?? event.start_time,
       end_time: command.endTime ?? event.end_time,

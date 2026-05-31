@@ -22,4 +22,8 @@ This package contains the Vue 3 + TypeScript single-page application for Strzel 
 
 Authentication and registration are presented in the `AuthDialog` modal (triggered from the top app bar or guards) instead of a dedicated `/auth` route.
 
+## Rich Text
+
+Admin-editable HTML fields should use `src/components/common/RichTextEditor.vue` for editing and `src/components/common/RichTextContent.vue` for display. The backend sanitizes rich text before persistence with `sanitize-html`, and the renderer uses the browser Sanitizer API (`setHTML` / `setHTMLUnsafe`) with a text-only fallback when the API is unavailable.
+
 Run builds or dev servers via workspace scripts, e.g. `npm run dev -w src/client`.

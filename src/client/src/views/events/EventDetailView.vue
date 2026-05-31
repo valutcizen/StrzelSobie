@@ -82,11 +82,9 @@
                     </v-card-title>
                     <v-divider />
                     <v-card-text data-testid="event-detail-public-description">
-                      <!-- eslint-disable-next-line vue/no-v-html -->
-                      <div
+                      <RichTextContent
                         v-if="eventDetails.publicDescription"
-                        class="event-description"
-                        v-html="eventDetails.publicDescription"
+                        :html="eventDetails.publicDescription"
                       />
                       <p
                         v-else
@@ -111,11 +109,9 @@
                     </v-card-title>
                     <v-divider />
                     <v-card-text data-testid="event-detail-member-description">
-                      <!-- eslint-disable-next-line vue/no-v-html -->
-                      <div
+                      <RichTextContent
                         v-if="eventDetails.memberDescription"
-                        class="event-description"
-                        v-html="eventDetails.memberDescription"
+                        :html="eventDetails.memberDescription"
                       />
                       <p
                         v-else
@@ -256,6 +252,7 @@ import {
   type EventDetailsDto,
   type EventSignupResultDto,
 } from '@strzel-sobie/common/models'
+import RichTextContent from '@/components/common/RichTextContent.vue'
 import ParticipantList from '@/components/events/ParticipantList.vue'
 import SignUpDialog from '@/components/events/SignUpDialog.vue'
 import { http } from '@/services/http'

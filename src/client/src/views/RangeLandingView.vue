@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { format, parseISO } from 'date-fns'
 import { enUS, pl as plLocale } from 'date-fns/locale'
+import RichTextContent from '@/components/common/RichTextContent.vue'
 import RangeActionBar from '@/components/range/RangeActionBar.vue'
 import RangeTypeBadge from '@/components/range/RangeTypeBadge.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -361,11 +362,9 @@ watch(
                     </v-card-title>
                     <v-divider />
                     <v-card-text data-testid="range-public-description">
-                      <!-- eslint-disable-next-line vue/no-v-html -->
-                      <div
+                      <RichTextContent
                         v-if="currentRange?.publicDescription"
-                        class="range-description"
-                        v-html="currentRange.publicDescription"
+                        :html="currentRange.publicDescription"
                       />
                       <p
                         v-else
@@ -535,11 +534,9 @@ watch(
                 </v-card-title>
                 <v-divider />
                 <v-card-text data-testid="range-member-description">
-                  <!-- eslint-disable-next-line vue/no-v-html -->
-                  <div
+                  <RichTextContent
                     v-if="currentRange?.memberDescription"
-                    class="range-description"
-                    v-html="currentRange.memberDescription"
+                    :html="currentRange.memberDescription"
                   />
                   <p
                     v-else

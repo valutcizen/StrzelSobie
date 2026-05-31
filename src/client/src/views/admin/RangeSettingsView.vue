@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Field, Form, type InvalidSubmissionContext, type SubmissionHandler } from 'vee-validate'
 import * as yup from 'yup'
 import { useRoute, useRouter } from 'vue-router'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 import RangeLocationPicker from '@/components/range/RangeLocationPicker.vue'
 import RangeParkingLocationModal from '@/components/range/RangeParkingLocationModal.vue'
 import { VOIVODESHIPS, VOIVODESHIP_LABELS, type Voivodeship } from '@/constants/voivodeships'
@@ -998,14 +999,12 @@ watch(
                         v-slot="{ field, errorMessage }"
                         name="mapBubbleDescription"
                       >
-                        <v-textarea
+                        <RichTextEditor
                           :label="t('admin.rangeSettings.mapBubble.descriptionLabel')"
                           :hint="t('admin.rangeSettings.mapBubble.descriptionHint')"
-                          persistent-hint
-                          auto-grow
                           :model-value="field.value ?? ''"
                           :error-messages="errorMessage"
-                          data-testid="range-settings-map-bubble-description-textarea"
+                          data-testid="range-settings-map-bubble-description-editor"
                           @update:model-value="field.onChange"
                           @blur="field.onBlur"
                         />
@@ -1224,21 +1223,17 @@ watch(
 
                   name="publicDescription"
                 >
-                  <v-textarea
+                  <RichTextEditor
 
                     :label="t('admin.rangeSettings.publicDescriptionLabel')"
 
                     :hint="t('admin.rangeSettings.publicDescriptionHint')"
 
-                    persistent-hint
-
-                    auto-grow
-
                     :model-value="field.value ?? ''"
 
                     :error-messages="errorMessage"
 
-                    data-testid="range-settings-public-description-textarea"
+                    data-testid="range-settings-public-description-editor"
 
                     @update:model-value="field.onChange"
 
@@ -1258,21 +1253,17 @@ watch(
 
                   name="memberDescription"
                 >
-                  <v-textarea
+                  <RichTextEditor
 
                     :label="t('admin.rangeSettings.memberDescriptionLabel')"
 
                     :hint="t('admin.rangeSettings.memberDescriptionHint')"
 
-                    persistent-hint
-
-                    auto-grow
-
                     :model-value="field.value ?? ''"
 
                     :error-messages="errorMessage"
 
-                    data-testid="range-settings-member-description-textarea"
+                    data-testid="range-settings-member-description-editor"
 
                     @update:model-value="field.onChange"
 

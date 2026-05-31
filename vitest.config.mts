@@ -42,6 +42,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@strzel-sobie/common/rich-text',
+        replacement: path.join(rootDir, 'src', 'common', 'src', 'rich-text', 'index.ts'),
+      },
+      {
         find: '@strzel-sobie/common/models',
         replacement: path.join(rootDir, 'src', 'common', 'src', 'index.models.ts'),
       },

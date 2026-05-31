@@ -321,6 +321,34 @@ describe('RangesService contract', () => {
     });
   });
 
+  it('sanitizes rich text fields before updating a range', async () => {
+    const storedRange = buildRange();
+    asMock(rangesRepository.findBySlug).mockResolvedValue(storedRange);
+    asMock(rangesRepository.update).mockResolvedValue();
+    asMock(auditService.logAction).mockResolvedValue(Result.ok(undefined));
+
+    const user = buildUser({
+      roles: [{ id: 1, name: UserRole.ClubCommunityAdministrator, scope: 'global' }],
+    });
+
+    const result = await service.updateRangeDetails(
+      storedRange.slug,
+      {
+        publicDescription: '<p onclick="alert(1)">Public</p><script>alert(1)</script>',
+        memberDescription: '<a href="javascript:alert(1)">Member</a>',
+        mapBubbleDescription: '<strong>Gate</strong><img src="data:image/png;base64,aaa">',
+      },
+      user,
+    );
+
+    expect(result.isSuccess).toBe(true);
+    expect(rangesRepository.update).toHaveBeenCalledWith(expect.objectContaining({
+      publicDescription: '<p>Public</p>',
+      memberDescription: '<a>Member</a>',
+      extras: JSON.stringify({ mapBubbleDescription: '<strong>Gate</strong><img />' }),
+    }));
+  });
+
   it('updates range for range administrators without optional fields', async () => {
     const storedRange = buildRange({ id: 9, slug: 'local' });
     asMock(rangesRepository.findBySlug).mockResolvedValue(storedRange);

@@ -24,6 +24,21 @@
       "userWithId": "Użytkownik #{id}",
       "active": "Aktywny",
       "inactive": "Nieaktywny"
+    },
+    "richText": {
+      "bold": "Pogrubienie",
+      "italic": "Kursywa",
+      "bulletList": "Lista punktowana",
+      "numberedList": "Lista numerowana",
+      "heading2": "Nagłówek 2",
+      "heading3": "Nagłówek 3",
+      "quote": "Cytat",
+      "link": "Dodaj link",
+      "image": "Dodaj obraz",
+      "undo": "Cofnij",
+      "redo": "Ponów",
+      "linkPrompt": "Podaj adres linku",
+      "imagePrompt": "Podaj adres obrazu HTTPS"
     }
   },
   "app": {
@@ -534,15 +549,15 @@
         "showExactLocationLinksHint": "Pokazuje przyciski Google Maps i OpenStreetMap, gdy obiekt ma dokładną lokalizację.",
         "exactLocationUnavailableHint": "Linki do map są ukryte, gdy lokalizacja jest oznaczona jako niedokładna.",
         "descriptionLabel": "Opis dla dymka",
-        "descriptionHint": "Plain text wyświetlany w panelu po kliknięciu pinezki."
+        "descriptionHint": "Formatowany tekst wyświetlany w panelu po kliknięciu pinezki."
       },
       "officeAddressLabel": "Adres biura",
       "officePhoneLabel": "Telefon",
       "officeDetailsLabel": "Szczegóły biura",
       "publicDescriptionLabel": "Opis publiczny",
-      "publicDescriptionHint": "Widoczny dla wszystkich na stronie strzelnicy. Obsługuje podstawowy HTML.",
+      "publicDescriptionHint": "Widoczny dla wszystkich na stronie strzelnicy. Obsługuje formatowanie, linki i obrazy HTTPS.",
       "memberDescriptionLabel": "Opis dla członków",
-      "memberDescriptionHint": "Widoczny tylko dla zalogowanych członków. Obsługuje podstawowy HTML.",
+      "memberDescriptionHint": "Widoczny tylko dla zalogowanych członków. Obsługuje formatowanie, linki i obrazy HTTPS.",
       "operatingHoursHeading": "Godziny otwarcia",
       "openLabel": "Otwarte",
       "closedLabel": "Zamknięte",

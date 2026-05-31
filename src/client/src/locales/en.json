@@ -24,6 +24,21 @@
       "userWithId": "User #{id}",
       "active": "Active",
       "inactive": "Inactive"
+    },
+    "richText": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bulleted list",
+      "numberedList": "Numbered list",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "quote": "Quote",
+      "link": "Add link",
+      "image": "Add image",
+      "undo": "Undo",
+      "redo": "Redo",
+      "linkPrompt": "Enter link URL",
+      "imagePrompt": "Enter HTTPS image URL"
     }
   },
   "app": {
@@ -534,15 +549,15 @@
         "showExactLocationLinksHint": "Shows Google Maps and OpenStreetMap buttons when the object has an exact location.",
         "exactLocationUnavailableHint": "Map links are hidden when the location is marked as approximate.",
         "descriptionLabel": "Bubble description",
-        "descriptionHint": "Plain text shown in the panel after clicking a pin."
+        "descriptionHint": "Formatted text shown in the panel after clicking a pin."
       },
       "officeAddressLabel": "Office address",
       "officePhoneLabel": "Phone",
       "officeDetailsLabel": "Office details",
       "publicDescriptionLabel": "Public description",
-      "publicDescriptionHint": "Visible to everyone on the range page. Supports basic HTML.",
+      "publicDescriptionHint": "Visible to everyone on the range page. Supports formatting, links, and HTTPS images.",
       "memberDescriptionLabel": "Members-only description",
-      "memberDescriptionHint": "Visible only to logged-in members. Supports basic HTML.",
+      "memberDescriptionHint": "Visible only to logged-in members. Supports formatting, links, and HTTPS images.",
       "operatingHoursHeading": "Operating hours",
       "openLabel": "Open",
       "closedLabel": "Closed",

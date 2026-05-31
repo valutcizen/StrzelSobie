@@ -26,7 +26,7 @@
             :model-value="field.value"
             :error-messages="fieldError"
             data-testid="event-form-name-input"
-            @update:model-value="field.onChange"
+            @update:model-value="field.onChange($event ?? '')"
             @blur="field.onBlur"
           />
         </Field>
@@ -35,13 +35,11 @@
           v-slot="{ field, errorMessage: fieldError }"
           name="publicDescription"
         >
-          <v-textarea
+          <RichTextEditor
             :label="t('events.form.labels.publicDescription')"
             :model-value="field.value"
             :error-messages="fieldError"
-            rows="3"
-            auto-grow
-            data-testid="event-form-public-description-input"
+            data-testid="event-form-public-description-editor"
             @update:model-value="field.onChange"
             @blur="field.onBlur"
           />
@@ -51,13 +49,11 @@
           v-slot="{ field, errorMessage: fieldError }"
           name="memberDescription"
         >
-          <v-textarea
+          <RichTextEditor
             :label="t('events.form.labels.memberDescription')"
             :model-value="field.value ?? ''"
             :error-messages="fieldError"
-            rows="3"
-            auto-grow
-            data-testid="event-form-member-description-input"
+            data-testid="event-form-member-description-editor"
             @update:model-value="field.onChange"
             @blur="field.onBlur"
           />
@@ -279,6 +275,7 @@ import {
   EventGuestPolicy,
   EventRegistrationType,
 } from '@strzel-sobie/common/models'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 
 export type EventFormValues = {
   name: string

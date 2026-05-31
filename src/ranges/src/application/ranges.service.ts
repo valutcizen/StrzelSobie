@@ -18,6 +18,7 @@ import {
   UpdateRangeCommand,
   UserDto,
 } from '@strzel-sobie/common';
+import { sanitizeOptionalRichTextHtml } from '@strzel-sobie/common/rich-text';
 import { IRangesRepository } from '../domain/ranges.repository';
 import { ShootingRange, ShootingRangeSummary } from '../domain/shooting-range.model';
 
@@ -192,11 +193,11 @@ export class RangesService implements IRangesService {
     }
 
     if (command.publicDescription !== undefined) {
-      range.publicDescription = command.publicDescription;
+      range.publicDescription = sanitizeOptionalRichTextHtml(command.publicDescription);
     }
 
     if (command.memberDescription !== undefined) {
-      range.memberDescription = command.memberDescription;
+      range.memberDescription = sanitizeOptionalRichTextHtml(command.memberDescription);
     }
 
     if (command.latitude !== undefined) {
@@ -241,10 +242,7 @@ export class RangesService implements IRangesService {
 
     if (command.mapBubbleDescription !== undefined) {
       const extras = this.parseExtrasObject(range.extras);
-      extras.mapBubbleDescription =
-        typeof command.mapBubbleDescription === 'string' && command.mapBubbleDescription.trim().length > 0
-          ? command.mapBubbleDescription.trim()
-          : null;
+      extras.mapBubbleDescription = sanitizeOptionalRichTextHtml(command.mapBubbleDescription);
       range.extras = JSON.stringify(extras);
     }
 
@@ -362,15 +360,14 @@ export class RangesService implements IRangesService {
     if (command.approximateLocation !== undefined) {
       extras.approximateLocation = command.approximateLocation;
     }
-
     const created = await this.rangesRepository.create({
       slug: normalizedSlug,
       displayName: (command.displayName ?? normalizedSlug).trim(),
       type: normalizedType,
       allowsReservations,
       isDeleted: false,
-      publicDescription: command.publicDescription ?? null,
-      memberDescription: command.memberDescription ?? null,
+      publicDescription: sanitizeOptionalRichTextHtml(command.publicDescription),
+      memberDescription: sanitizeOptionalRichTextHtml(command.memberDescription),
       latitude: command.latitude ?? DEFAULT_RANGE_COORDINATES.latitude,
       longitude: command.longitude ?? DEFAULT_RANGE_COORDINATES.longitude,
       totalTracks: command.totalTracks ?? DEFAULT_TOTAL_TRACKS,
