@@ -114,7 +114,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string | null): void
-  (event: 'blur', value: FocusEvent): void
+  (event: 'blur', value: Event): void
 }>()
 
 const { t } = useI18n()
@@ -180,15 +180,22 @@ const insertImage = async () => {
   emitCurrentHtml()
 }
 
-const handlePaste = (event: ClipboardEvent) => {
-  const html = event.clipboardData?.getData('text/html')
-  const text = event.clipboardData?.getData('text/plain') ?? ''
+type ClipboardDataSource = {
+  clipboardData?: {
+    getData: (format: string) => string
+  }
+}
+
+const handlePaste = (event: Event) => {
+  const clipboardData = (event as ClipboardDataSource).clipboardData
+  const html = clipboardData?.getData('text/html')
+  const text = clipboardData?.getData('text/plain') ?? ''
   const nextHtml = html && html.trim().length > 0 ? getBrowserSanitizedHtml(html) : plainTextToHtml(text)
   document.execCommand('insertHTML', false, nextHtml)
   emitCurrentHtml()
 }
 
-const handleBlur = (event: FocusEvent) => {
+const handleBlur = (event: Event) => {
   emit('update:modelValue', getEditorHtml())
   emit('blur', event)
 }

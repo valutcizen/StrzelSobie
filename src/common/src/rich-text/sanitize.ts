@@ -50,12 +50,23 @@ const sanitizerOptions: IOptions = {
 };
 
 const isAllowedAnchorHref = (href: string): boolean => {
-  const normalized = href.replace(/[\u0000-\u001f\u007f\s]+/g, '').toLowerCase();
+  const normalized = Array.from(href)
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code > 31 && code !== 127 && !/\s/u.test(character);
+    })
+    .join('')
+    .toLowerCase();
+
   return normalized.startsWith('https://') || normalized.startsWith('mailto:') || normalized.startsWith('tel:');
 };
 
 const withoutLinkSecurityAttributes = (attribs: Record<string, string>): Record<string, string> => {
-  const { href: _href, target: _target, rel: _rel, ...rest } = attribs;
+  const rest = { ...attribs };
+  delete rest.href;
+  delete rest.target;
+  delete rest.rel;
+
   return rest;
 };
 
