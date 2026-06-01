@@ -57,7 +57,7 @@ import { resolveAuthModule } from './auth/module-registry';
 import { RANGE_TYPES, Result, type RangeType } from '@strzel-sobie/common';
 
 const EMBED_MAP_ALLOWED_TYPES: RangeType[] = [...RANGE_TYPES];
-const EMBED_MAP_CACHE_VERSION = '9';
+const EMBED_MAP_CACHE_VERSION = '10';
 const EMBED_MAP_CONFIG_VERSION = `types:${EMBED_MAP_ALLOWED_TYPES.join(',')}`;
 
 const cacheEmbedResponse = async (

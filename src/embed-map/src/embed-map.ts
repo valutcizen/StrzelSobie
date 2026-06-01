@@ -353,12 +353,17 @@ async function initMap() {
           return;
         }
 
+        const rangeType = normalizeRangeType(range.type);
+        if (rangeType === 'office') {
+          return;
+        }
+
         const marker = L.marker([range.latitude, range.longitude], {
           icon: createIcon(range),
           zIndexOffset: getMarkerZIndex(range),
           bubblingMouseEvents: false,
         }) as MarkerWithRangeType;
-        marker.options.rangeType = normalizeRangeType(range.type);
+        marker.options.rangeType = rangeType;
         marker.addTo(markerClusterGroup);
 
         marker.bindTooltip(range.displayName, {
